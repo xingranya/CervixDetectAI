@@ -1,5 +1,12 @@
 <template>
-  <q-item clickable tag="a" target="_blank" :href="link">
+  <q-item
+    clickable
+    tag="a"
+    target="_blank"
+    :to="link"
+    :active="isActive"
+    active-class="q-item--active text-weight-bold text-primary"
+  >
     <q-item-section v-if="icon" avatar>
       <q-icon :name="icon" />
     </q-item-section>
@@ -12,16 +19,28 @@
 </template>
 
 <script setup lang="ts">
-export interface EssentialLinkProps {
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
+
+interface EssentialLinkProps {
   title: string;
   caption?: string;
   link?: string;
   icon?: string;
+  route?: string;
 }
 
-withDefaults(defineProps<EssentialLinkProps>(), {
-  caption: '',
-  link: '#',
-  icon: '',
-});
+const props = withDefaults(defineProps<EssentialLinkProps>(), {
+  link: () => '',
+  icon: () => '',
+  route: () => '',
+  title: () => '',
+  caption: () => ''
+})
+
+const route = useRoute()
+
+const isActive = computed(() => {
+  return props.route && route.path.startsWith(props.route)
+})
 </script>

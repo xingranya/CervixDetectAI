@@ -1,23 +1,109 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="hHh Lpr lFf">
+    <!-- Top Header -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          @click="toggleLeftDrawer"
+        />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-toolbar-title>
+          <q-avatar>
+            <img src="https://placehold.co/60x60/1976D2/FFFFFF?text=CD" alt="CervixDetectAI Logo">
+          </q-avatar>
+          CervixDetectAI
+        </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <div class="q-gutter-sm row items-center no-wrap">
+          <!-- User Profile Dropdown -->
+          <q-btn
+            dense
+            flat
+            round
+            size="md"
+            icon="notifications"
+            aria-label="Notifications"
+          >
+            <q-badge color="red" text-color="white" floating>
+              3
+            </q-badge>
+          </q-btn>
+
+          <q-btn-dropdown
+            stretch
+            flat
+            label="张医生"
+          >
+            <q-list style="min-width: 200px;">
+              <q-item clickable v-ripple>
+                <q-item-section avatar>
+                  <q-icon name="account_circle" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>个人资料</q-item-label>
+                  <q-item-label caption>查看个人资料</q-item-label>
+                </q-item-section>
+              </q-item>
+              
+              <q-item clickable v-ripple>
+                <q-item-section avatar>
+                  <q-icon name="settings" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>设置</q-item-label>
+                </q-item-section>
+              </q-item>
+              
+              <q-separator />
+              
+              <q-item clickable v-ripple @click="logout">
+                <q-item-section avatar>
+                  <q-icon name="logout" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>退出登录</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
+    <!-- Left Sidebar Navigation -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      show-if-above
+      bordered
+      class="bg-grey-2"
+    >
       <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+        <q-item-label header class="text-weight-bold">CervixDetectAI</q-item-label>
 
-        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
+        <EssentialLink
+          v-for="link in essentialLinks"
+          :key="link.title"
+          v-bind="link"
+        />
+        
+        <q-separator class="q-my-sm" />
+        
+        <q-item-label header class="text-weight-bold">分析功能</q-item-label>
+        
+        <EssentialLink
+          v-for="link in analysisLinks"
+          :key="link.title"
+          v-bind="link"
+        />
       </q-list>
     </q-drawer>
 
+    <!-- Main Content Area -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -25,57 +111,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import EssentialLink from 'components/EssentialLink.vue'
 
-const linksList: EssentialLinkProps[] = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
-  },
-];
+const router = useRouter()
+const leftDrawerOpen = ref(true)
 
-const leftDrawerOpen = ref(false);
+const toggleLeftDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+// Main navigation links
+const essentialLinks = [
+  {
+    title: '仪表盘',
+    caption: '首页',
+    icon: 'dashboard',
+    route: '/app'
+  },
+  {
+    title: '病例管理',
+    caption: '患者记录',
+    icon: 'folder',
+    route: '/app/studies'
+  },
+  {
+    title: '上传分析',
+    caption: '新分析',
+    icon: 'upload',
+    route: '/app/upload'
+  },
+  {
+    title: '报告中心',
+    caption: '分析报告',
+    icon: 'description',
+    route: '/app/reports'
+  }
+]
+
+// Analysis-specific links
+const analysisLinks = [
+  {
+    title: 'AI模型',
+    caption: '模型管理',
+    icon: 'smart_toy',
+    route: '/app/models'
+  },
+  {
+    title: '系统设置',
+    caption: '系统配置',
+    icon: 'settings',
+    route: '/app/settings'
+  }
+]
+
+const logout = () => {
+  // Implement logout functionality
+  // This would typically clear the auth store and redirect to login
+  console.log('退出登录中...')
+  void router.push('/login')
 }
 </script>
+
+<style scoped>
+/* Add any layout-specific styles here if needed */
+</style>

@@ -1,23 +1,21 @@
 <template>
-  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
-    <div>
-      <div style="font-size: 30vh">404</div>
-
-      <div class="text-h2" style="opacity: 0.4">Oops. Nothing here...</div>
-
-      <q-btn
-        class="q-mt-xl"
-        color="white"
-        text-color="blue"
-        unelevated
-        to="/"
-        label="Go Home"
-        no-caps
-      />
+  <q-page padding>
+    <div class="row flex-center">
+      <div class="col-12 text-center">
+        <div class="text-h4 q-mb-md">404</div>
+        <div class="text-h6 text-grey">Oops. Nothing here...</div>
+        <q-btn 
+          class="q-mt-xl" 
+          color="primary" 
+          to="/app" 
+          label="Go Home" 
+          no-caps
+        />
+      </div>
     </div>
-  </div>
+  </q-page>
 </template>
 
 <script setup lang="ts">
-//
+// Error page component for 404
 </script>

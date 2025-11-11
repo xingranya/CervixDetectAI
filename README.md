@@ -1,43 +1,179 @@
-# CervixDetect AI (cervixdetectai)
+# CervixDetectAI - 宫颈癌AI筛查云平台
 
-CervixDetect AI project
+## 项目概述
 
-## Install the dependencies
+CervixDetectAI 是一个基于 Quasar 框架开发的宫颈癌影像AI辅助筛查SaaS云平台。本项目采用"互联网+医疗"的电子商务SaaS模式，通过云端提供服务，医疗机构可按次、按年或定制化购买服务，极大降低了初始投入门槛，实现了筛查服务的"即插即用"。
 
+### 核心创新
+- **技术创新**：通过自研算法，在保持高准确率的同时，显著降低了计算成本和参数数量，使其能在基层医疗机构的普通硬件上流畅运行
+- **模式创新**：采用SaaS云服务模式，实现宫颈癌筛查的普惠化
+
+## 功能特性
+
+### 用户认证
+- 用户登录/注册
+- 会话管理
+- 权限控制
+
+### 病例管理
+- 病例信息查看
+- 病例状态跟踪（已完成、处理中）
+- 病例搜索和筛选
+
+### AI分析
+- 宫颈图像上传
+- AI自动分析处理
+- 实时分析进度跟踪
+- 分析结果展示
+
+### 报告系统
+- 自动报告生成
+- 报告下载
+- 历史报告查看
+
+### 系统设置
+- 个人信息管理
+- 通知偏好设置
+- AI模型信息查看
+
+## 技术栈
+
+- **前端框架**: Quasar (Vue 3 + TypeScript)
+- **状态管理**: Pinia
+- **路由管理**: Vue Router
+- **UI组件**: Quasar Components
+- **构建工具**: Vite
+
+## 系统架构
+
+### 前端架构
+- **布局系统**: PublicLayout (公共页面) 和 MainLayout (应用主界面)
+- **状态管理**: 
+  - authStore: 用户认证状态
+  - studyStore: 病例数据管理
+  - analysisStore: AI分析任务管理
+- **路由结构**: 包含认证保护的路由系统
+
+### UI组件
+- **响应式设计**: 适配桌面端、平板、移动端
+- **中文界面**: 完全本地化的中文用户界面
+- **数据可视化**: 表格、图表、进度条等
+
+## 安装和运行
+
+### 环境要求
+- Node.js 16.x 或更高版本
+- npm 或 yarn
+
+### 安装步骤
+
+1. 克隆项目
 ```bash
-yarn
-# or
+git clone <repository-url>
+cd CervixDetectAI
+```
+
+2. 安装依赖
+```bash
 npm install
+# 或使用 yarn
+yarn install
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
-
+3. 启动开发服务器
 ```bash
-quasar dev
+npm run dev
+# 或使用 yarn
+yarn dev
 ```
 
-### Lint the files
-
+4. 构建生产版本
 ```bash
-yarn lint
-# or
-npm run lint
+npm run build
+# 或使用 yarn
+yarn build
 ```
 
-### Format the files
+## 演示功能
 
-```bash
-yarn format
-# or
-npm run format
+### 用户体验流程
+1. **登录页面**: 用户登录系统
+2. **仪表盘**: 查看整体统计信息和近期病例
+3. **病例管理**: 查看所有病例记录
+4. **图像上传**: 上传宫颈图像进行AI分析
+5. **结果查看**: 查看AI分析结果和详细报告
+6. **报告中心**: 访问历史分析报告
+7. **系统设置**: 管理个人偏好和账户信息
+
+### AI分析流程
+1. 用户上传宫颈图像
+2. 系统开始AI分析处理
+3. 实时显示分析进度
+4. 分析完成后显示诊断结果
+5. 提供临床建议和生物标志物信息
+
+## 项目结构
+
+```
+CervixDetectAI/
+├── src/
+│   ├── assets/          # 静态资源
+│   ├── components/      # 公共组件
+│   ├── layouts/         # 页面布局
+│   ├── pages/           # 页面组件
+│   ├── router/          # 路由配置
+│   ├── stores/          # Pinia状态管理
+│   └── App.vue          # 根组件
+├── quasar.config.ts     # Quasar构建配置
+├── package.json         # 项目配置
+└── README.md           # 项目说明
 ```
 
-### Build the app for production
+## 技术亮点
 
-```bash
-quasar build
-```
+### 1. 响应式设计
+- 完美适配各种屏幕尺寸
+- 采用Quasar的响应式布局系统
 
-### Customize the configuration
+### 2. 状态管理
+- 使用Pinia进行集中式状态管理
+- 类型安全的Store定义
+- 持久化存储支持
 
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+### 3. 国际化支持
+- 完全中文界面
+- 统一的术语使用
+
+### 4. 性能优化
+- 组件懒加载
+- 代码分割
+- 虚拟滚动（如需要）
+
+## 未来发展
+
+### 模型集成
+- 集成真实的宫颈癌AI检测模型
+- 实现云端模型服务
+
+### 数据分析
+- 提供更详细的统计分析
+- 趋势报告生成
+
+### 扩展功能
+- 多用户协作
+- 病例分享功能
+- 更详细的图像分析工具
+
+## 许可证
+
+本项目仅供演示和学术研究使用。
+
+## 贡献
+
+欢迎提交Issue和Pull Request来改进本项目。
+
+## 联系我们
+
+如有问题或建议，请通过以下方式联系我们：
+- 邮箱: [xingranya@outlook.jp]
+- GitHub: [https://github.com/xingranya]
