@@ -158,9 +158,9 @@ const essentialLinks = [
 // Analysis-specific links
 const analysisLinks = [
   {
-    title: 'AI模型',
-    caption: '模型管理',
-    icon: 'smart_toy',
+    title: 'API设置',
+    caption: '模型配置',
+    icon: 'api',
     route: '/app/models'
   },
   {

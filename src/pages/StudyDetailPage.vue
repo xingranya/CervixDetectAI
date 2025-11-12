@@ -245,14 +245,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { onMounted, onUnmounted, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
+import { useQuasar } from 'quasar';
 
 const route = useRoute();
 const studyStore = useStudyStore();
 const analysisStore = useAnalysisStore();
+const $q = useQuasar();
+
+// 轮询定时器
+const pollingInterval = ref<NodeJS.Timeout | null>(null);
 
 // Get study ID from route
 const studyId = computed(() => route.params.id as string);
@@ -328,14 +333,65 @@ onMounted(async () => {
       if (studyStore.currentStudy?.status === 'completed') {
         await analysisStore.getAnalysisResult(studyId.value);
       }
-      // If the study is processing, create an analysis task if needed
+      // If the study is processing, start polling for updates
       else if (studyStore.currentStudy?.status === 'processing') {
         await analysisStore.getAnalysisResult(studyId.value);
+        
+        // 启动轮询，每5秒检查一次状态
+        const pollUpdate = async () => {
+          try {
+            await analysisStore.getAnalysisResult(studyId.value);
+            
+            // 如果分析完成，停止轮询并显示通知
+            if (analysisStore.currentTask?.status === 'SUCCESS') {
+              if (pollingInterval.value) {
+                clearInterval(pollingInterval.value);
+                pollingInterval.value = null;
+              }
+              
+              $q.notify({
+                type: 'positive',
+                message: '🎉 AI分析完成！',
+                position: 'top',
+                timeout: 3000,
+              });
+              
+              // 更新病例状态
+              await studyStore.loadStudyById(studyId.value);
+            } else if (analysisStore.currentTask?.status === 'FAILED') {
+              if (pollingInterval.value) {
+                clearInterval(pollingInterval.value);
+                pollingInterval.value = null;
+              }
+              
+              $q.notify({
+                type: 'negative',
+                message: `❌ 分析失败: ${analysisStore.currentTask.error || '未知错误'}`,
+                position: 'top',
+                timeout: 5000,
+              });
+            }
+          } catch (error) {
+            console.error('轮询更新失败:', error);
+          }
+        };
+        
+        pollingInterval.value = setInterval(() => {
+          void pollUpdate();
+        }, 5000);
       }
     } catch (error) {
       console.error('加载病例时出错:', error);
       // Optionally redirect to an error page
     }
+  }
+});
+
+// 组件销毁时清理轮询
+onUnmounted(() => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+    pollingInterval.value = null;
   }
 });
 </script>

@@ -13,6 +13,7 @@ export interface Study {
   imageUrl: string; // URL to the medical image
   analysisResult?: AnalysisResult; // Result from AI analysis
   uploadedAt: string; // ISO date string
+  taskId?: string; // Backend task ID for tracking
 }
 
 export const useStudyStore = defineStore('study', {
@@ -53,10 +54,10 @@ export const useStudyStore = defineStore('study', {
               patientId: 'P001234',
               studyDate: '2024-11-10T09:30:00Z',
               status: 'completed',
-              modality: '阴道镜检查',
+              modality: 'MRI（磁共振成像）',
               bodyPart: '宫颈',
               description: '常规宫颈筛查',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=宫颈图像',
+              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=MRI图像',
               uploadedAt: '2024-11-10T09:30:00Z',
               analysisResult: {
                 diagnosis: '正常',
@@ -76,10 +77,10 @@ export const useStudyStore = defineStore('study', {
               patientId: 'P001235',
               studyDate: '2024-11-09T14:15:00Z',
               status: 'processing',
-              modality: '阴道镜检查',
+              modality: 'CT（计算机断层扫描）',
               bodyPart: '宫颈',
-              description: '异常巴氏涂片后随访',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=宫颈图像',
+              description: '肿瘤分期评估',
+              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=CT图像',
               uploadedAt: '2024-11-09T14:15:00Z',
             },
             {
@@ -88,18 +89,16 @@ export const useStudyStore = defineStore('study', {
               patientId: 'P001236',
               studyDate: '2024-11-08T11:45:00Z',
               status: 'completed',
-              modality: '阴道镜检查',
+              modality: 'PET-CT（正电子发射断层扫描）',
               bodyPart: '宫颈',
-              description: '初次筛查',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=宫颈图像',
+              description: '转移病灶筛查',
+              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=PET-CT图像',
               uploadedAt: '2024-11-08T11:45:00Z',
               analysisResult: {
                 diagnosis: 'ASC-US',
                 confidence: 0.78,
-                recommendations: ['建议HPV检测', '6个月后随访阴道镜检查'],
-                suspiciousAreas: [
-                  { x: 0.3, y: 0.4, width: 0.1, height: 0.1, type: 'abnormal' },
-                ],
+                recommendations: ['建议进一步MRI检查', '3个月后随访复查'],
+                suspiciousAreas: [],
                 biomarkers: {
                   HPV: '阳性',
                   p16: '阳性',

@@ -87,38 +87,172 @@
 
       <div class="col-lg-4 col-md-12">
         <q-card flat bordered>
+          <q-card-section class="bg-blue-1">
+            <div class="text-h6">
+              <q-icon name="info" color="primary" class="q-mr-sm" />
+              病例信息
+            </div>
+            <div class="text-caption text-grey-7 q-mt-sm">
+              请填写完整的患者信息，带 * 的为必填项
+            </div>
+          </q-card-section>
+          <q-separator />
           <q-card-section>
-            <div class="text-h6">病例信息</div>
             <q-form class="q-gutter-md">
               <q-input
                 v-model="studyInfo.patientName"
                 outlined
-                label="患者姓名"
+                label="患者姓名 *"
                 lazy-rules
-                :rules="[(val) => (val && val.length > 0) || '患者姓名为必填项']"
-              />
+                :rules="[(val) => (val && val.length > 0) || '请输入患者姓名']"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="person" color="primary" />
+                </template>
+                <template v-slot:hint>
+                  <div class="text-caption">
+                    <q-icon name="info" size="xs" class="q-mr-xs" />
+                    请输入患者的真实姓名
+                  </div>
+                </template>
+              </q-input>
 
               <q-input
                 v-model="studyInfo.patientId"
                 outlined
-                label="患者ID"
+                label="患者ID *"
                 lazy-rules
-                :rules="[(val) => (val && val.length > 0) || '患者ID为必填项']"
-              />
+                :rules="[(val) => (val && val.length > 0) || '请输入患者ID']"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="badge" color="primary" />
+                </template>
+                <template v-slot:hint>
+                  <div class="text-caption">
+                    <q-icon name="info" size="xs" class="q-mr-xs" />
+                    唯一识别码，如：P001234
+                  </div>
+                </template>
+              </q-input>
 
-              <q-input v-model="studyInfo.description" outlined label="病例描述" type="textarea" />
+              <q-input 
+                v-model="studyInfo.description" 
+                outlined 
+                label="病例描述（可选）" 
+                type="textarea" 
+                rows="3"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="description" color="primary" />
+                </template>
+                <template v-slot:hint>
+                  <div class="text-caption">
+                    <q-icon name="info" size="xs" class="q-mr-xs" />
+                    简要描述病例情况、症状等
+                  </div>
+                </template>
+              </q-input>
 
               <q-select
                 v-model="studyInfo.modality"
                 outlined
-                label="检查方式"
+                label="检查方式 *"
                 :options="modalities"
                 lazy-rules
-                :rules="[(val) => (val && val.length > 0) || '检查方式为必填项']"
-              />
+                :rules="[(val) => (val && val.length > 0) || '请选择检查方式']"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="medical_services" color="primary" />
+                </template>
+                <template v-slot:hint>
+                  <div class="text-caption">
+                    <q-icon name="info" size="xs" class="q-mr-xs" />
+                    选择本次医学影像检查类型
+                  </div>
+                </template>
+              </q-select>
 
-              <q-input v-model="studyInfo.studyDate" outlined label="检查日期" type="date" />
+              <q-input 
+                v-model="studyInfo.studyDate" 
+                outlined 
+                label="检查日期 *" 
+                type="date"
+                lazy-rules
+                :rules="[(val) => (val && val.length > 0) || '请选择检查日期']"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="event" color="primary" />
+                </template>
+                <template v-slot:hint>
+                  <div class="text-caption">
+                    <q-icon name="info" size="xs" class="q-mr-xs" />
+                    选择患者进行检查的日期
+                  </div>
+                </template>
+              </q-input>
             </q-form>
+          </q-card-section>
+        </q-card>
+
+        <!-- 注意事项 -->
+        <q-card flat bordered class="q-mt-md bg-orange-1">
+          <q-card-section>
+            <div class="text-subtitle2 text-weight-bold text-orange-9">
+              <q-icon name="warning" class="q-mr-sm" />
+              注意事项
+            </div>
+            <q-list dense class="q-mt-sm">
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="check_circle" color="orange" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption class="text-orange-9">
+                    请确保医学影像清晰、质量良好
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="check_circle" color="orange" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption class="text-orange-9">
+                    支持格式：DICOM、JPG、PNG、TIFF
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="check_circle" color="orange" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption class="text-orange-9">
+                    文件大小不超过20MB
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="check_circle" color="orange" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption class="text-orange-9">
+                    AI分析需要约30-60秒左右
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="check_circle" color="orange" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption class="text-orange-9">
+                    建议上传平扫或冠状位图像
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
           </q-card-section>
         </q-card>
       </div>
@@ -130,11 +264,10 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
+import { uploadImage } from 'src/services/apiService';
 
 const router = useRouter();
-const studyStore = useStudyStore();
 const analysisStore = useAnalysisStore();
 const $q = useQuasar();
 
@@ -151,12 +284,20 @@ const studyInfo = ref({
   patientName: '',
   patientId: '',
   description: '',
-  modality: '阴道镜检查',
-  studyDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+  modality: 'MRI（磁共振成像）',
+  studyDate: new Date().toISOString().split('T')[0] as string, // Today's date in YYYY-MM-DD format
 });
 
-// Available modalities
-const modalities = ['阴道镜检查', '巴氏涂片', '液基细胞学', 'HPV检测', '其他'];
+// Available modalities - 真实的宫颈癌医学影像检查类型
+const modalities = [
+  'MRI（磁共振成像）',
+  'CT（计算机断层扫描）',
+  'PET-CT（正电子发射断层扫描）',
+  '超声检查',
+  '阴道镜检查',
+  'X线造影',
+  '其他'
+];
 
 // Computed property for image preview
 const imagePreviewUrl = computed(() => {
@@ -189,7 +330,12 @@ const clearFile = () => {
 
 // Upload and analyze the image
 const uploadAndAnalyze = async () => {
+  console.log('🔵 uploadAndAnalyze 函数被调用');
+  console.log('📁 选中的文件:', selectedFile.value);
+  console.log('📋 病例信息:', studyInfo.value);
+  
   if (!selectedFile.value) {
+    console.warn('⚠️ 未选择文件');
     $q.notify({
       type: 'warning',
       message: '请先选择图像文件',
@@ -198,7 +344,8 @@ const uploadAndAnalyze = async () => {
     return;
   }
 
-  if (!studyInfo.value.patientName || !studyInfo.value.patientId || !studyInfo.value.modality) {
+  if (!studyInfo.value.patientName || !studyInfo.value.patientId || !studyInfo.value.modality || !studyInfo.value.studyDate) {
+    console.warn('⚠️ 缺少必填字段');
     $q.notify({
       type: 'warning',
       message: '请填写所有必填字段',
@@ -210,38 +357,117 @@ const uploadAndAnalyze = async () => {
   uploading.value = true;
 
   try {
-    // In a real app, this would upload the file to the backend
-    // For now, we'll simulate the upload and create a study
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate upload time
-
-    // Create the study with the provided information
-    const newStudy = await studyStore.createStudy({
+    console.log('📝 开始上传图像...');
+    
+    // 显示上传开始通知
+    $q.notify({
+      type: 'info',
+      message: '📤 正在上传图像，请稍候...',
+      position: 'top',
+      timeout: 3000,
+      icon: 'cloud_upload'
+    });
+    
+    // 调用后端 API 上传图像并创建分析任务
+    const response = await uploadImage({
+      image: selectedFile.value,
       patientName: studyInfo.value.patientName,
       patientId: studyInfo.value.patientId,
-      studyDate: studyInfo.value.studyDate + 'T00:00:00Z', // Convert to ISO format
+      studyDate: studyInfo.value.studyDate,
       modality: studyInfo.value.modality,
-      bodyPart: '宫颈',
       description: studyInfo.value.description,
-      imageUrl: imagePreviewUrl.value, // In a real app, this would come from the backend
     });
 
-    // Create an analysis task for this study
-    await analysisStore.createAnalysisTask(newStudy.id);
+    console.log('✅ 上传成功，任务ID:', response.taskId);
+    console.log('🏯 病例ID:', response.studyId);
 
     $q.notify({
       type: 'positive',
-      message: '病例上传成功，AI分析已启动！',
+      message: `✅ 病例上传成功！AI分析已启动，预计${response.estimatedTime}秒完成`,
       position: 'top',
+      timeout: 4000,
+      icon: 'check_circle',
+      actions: [
+        {
+          label: '查看详情',
+          color: 'white',
+          handler: () => {
+            void router.push(`/app/studies/${response.studyId}`);
+          }
+        }
+      ]
     });
 
-    // Navigate to the study details page
-    void router.push(`/app/studies/${newStudy.id}`);
+    // 跳转到病例详情页面
+    console.log(`🚀 跳转到病例详情: /app/studies/${response.studyId}`);
+    void router.push(`/app/studies/${response.studyId}`);
+
+    // 开始轮询任务状态，分析完成后显示通知
+    console.log(`🔄 开始轮询任务状态: ${response.taskId}`);
+    analysisStore.pollTaskStatus(response.taskId).then((task) => {
+      console.log('🎉 分析完成！状态:', task.status);
+      console.log('📋 结果:', task.result);
+      
+      if (task.status === 'SUCCESS') {
+        console.log('✅ 显示成功通知');
+        $q.notify({
+          type: 'positive',
+          message: '🎉 AI分析完成！请查看分析结果',
+          position: 'top',
+          timeout: 5000,
+          actions: [
+            {
+              label: '查看结果',
+              color: 'white',
+              handler: () => {
+                console.log('🔄 刷新页面以显示最新结果');
+                // 刷新页面以显示最新结果
+                window.location.reload();
+              }
+            }
+          ]
+        });
+      } else if (task.status === 'FAILED') {
+        console.error('❌ 显示失败通知:', task.error);
+        $q.notify({
+          type: 'negative',
+          message: `❌ 分析失败: ${task.error || '未知错误'}`,
+          position: 'top',
+          timeout: 5000,
+        });
+      }
+    }).catch((error) => {
+      console.error('❓ 轮询失败:', error);
+      $q.notify({
+        type: 'warning',
+        message: '轮询任务状态失败，请刷新页面查看结果',
+        position: 'top',
+      });
+    });
   } catch (error) {
-    console.error('上传错误:', error);
+    console.error('❌ 上传错误:', error);
+    
+    let errorMessage = '上传失败，请重试';
+    if (error instanceof Error) {
+      if (error.message.includes('Network Error') || error.message.includes('timeout')) {
+        errorMessage = '❌ 无法连接到后端服务，请确保后端已启动（运行: cd server && npm start）';
+      } else {
+        errorMessage = `❌ 上传失败: ${error.message}`;
+      }
+    }
+    
     $q.notify({
       type: 'negative',
-      message: '上传和分析图像时发生错误。请重试。',
+      message: errorMessage,
       position: 'top',
+      timeout: 8000,
+      icon: 'error',
+      actions: [
+        {
+          label: '关闭',
+          color: 'white'
+        }
+      ]
     });
   } finally {
     uploading.value = false;

@@ -46,7 +46,7 @@ const routes: RouteRecordRaw[] = [
       { 
         path: 'models', 
         name: 'models', 
-        component: () => import('pages/ModelsPage.vue') 
+        component: () => import('pages/ApiSettingsPage.vue') 
       },
       { 
         path: 'settings', 
