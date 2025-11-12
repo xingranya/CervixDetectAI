@@ -1,9 +1,7 @@
 <template>
   <q-item
     clickable
-    tag="a"
-    target="_blank"
-    :to="link"
+    :to="route"
     :active="isActive"
     active-class="q-item--active text-weight-bold text-primary"
   >
@@ -25,22 +23,21 @@ import { computed } from 'vue'
 interface EssentialLinkProps {
   title: string;
   caption?: string;
-  link?: string;
   icon?: string;
   route?: string;
 }
 
 const props = withDefaults(defineProps<EssentialLinkProps>(), {
-  link: () => '',
-  icon: () => '',
-  route: () => '',
-  title: () => '',
-  caption: () => ''
+  icon: '',
+  route: '',
+  title: '',
+  caption: ''
 })
 
-const route = useRoute()
+const currentRoute = useRoute()
 
 const isActive = computed(() => {
-  return props.route && route.path.startsWith(props.route)
+  if (!props.route) return false
+  return currentRoute.path.startsWith(props.route)
 })
 </script>

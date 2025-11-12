@@ -28,6 +28,7 @@
             size="md"
             icon="notifications"
             aria-label="Notifications"
+            @click="showNotifications"
           >
             <q-badge color="red" text-color="white" floating>
               3
@@ -40,7 +41,7 @@
             label="张医生"
           >
             <q-list style="min-width: 200px;">
-              <q-item clickable v-ripple>
+              <q-item clickable v-ripple @click="goToProfile">
                 <q-item-section avatar>
                   <q-icon name="account_circle" />
                 </q-item-section>
@@ -50,7 +51,7 @@
                 </q-item-section>
               </q-item>
               
-              <q-item clickable v-ripple>
+              <q-item clickable v-ripple @click="goToSettings">
                 <q-item-section avatar>
                   <q-icon name="settings" />
                 </q-item-section>
@@ -113,9 +114,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from 'src/stores/authStore'
+import { useQuasar } from 'quasar'
 import EssentialLink from 'components/EssentialLink.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const $q = useQuasar()
 const leftDrawerOpen = ref(true)
 
 const toggleLeftDrawer = () => {
@@ -166,10 +171,27 @@ const analysisLinks = [
   }
 ]
 
+const goToProfile = () => {
+  void router.push('/app/profile')
+}
+
+const goToSettings = () => {
+  void router.push('/app/settings')
+}
+
+const showNotifications = () => {
+  $q.notify({
+    type: 'info',
+    message: '您有3条新通知',
+    position: 'top',
+    actions: [
+      { label: '查看全部', color: 'white', handler: () => { /* 导航到通知页面 */ } }
+    ]
+  })
+}
+
 const logout = () => {
-  // Implement logout functionality
-  // This would typically clear the auth store and redirect to login
-  console.log('退出登录中...')
+  authStore.logout()
   void router.push('/login')
 }
 </script>

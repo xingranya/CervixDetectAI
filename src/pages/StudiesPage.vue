@@ -97,9 +97,11 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
+import { useQuasar } from 'quasar';
 
 const router = useRouter();
 const studyStore = useStudyStore();
+const $q = useQuasar();
 const filter = ref('');
 
 // Define table columns
@@ -131,9 +133,20 @@ const viewStudy = (id: string) => {
 
 // Function to download report
 const downloadReport = (id: string) => {
-  // In a real app, this would download the actual report
-  console.log(`下载病例 ${id} 的报告`);
-  alert(`下载功能将在实际应用中实现，病例 ${id}`);
+  $q.notify({
+    type: 'info',
+    message: `正在生成病例 ${id} 的报告...`,
+    position: 'top'
+  });
+  
+  // Simulate report generation and download
+  setTimeout(() => {
+    $q.notify({
+      type: 'positive',
+      message: `病例 ${id} 的报告下载成功！`,
+      position: 'top'
+    });
+  }, 1500);
 };
 
 // Load studies when component mounts

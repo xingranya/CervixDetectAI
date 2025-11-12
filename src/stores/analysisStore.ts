@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
 
 export interface AnalysisResult {
   diagnosis: string;
@@ -18,7 +18,7 @@ export interface AnalysisResult {
     Ki67: string;
   };
   detailedReport?: string;
-  heatmapData?: any;
+  heatmapData?: unknown;
 }
 
 export interface AnalysisTask {
@@ -42,29 +42,27 @@ export const useAnalysisStore = defineStore('analysis', {
 
   getters: {
     getTaskByStudyId: (state) => (studyId: string) => {
-      return state.tasks.find(task => task.studyId === studyId) || null;
+      return state.tasks.find((task) => task.studyId === studyId) || null;
     },
-    getActiveTasks: (state) => state.tasks.filter(task => 
-      task.status === 'PENDING' || task.status === 'PROCESSING'
-    ),
-    getCompletedTasks: (state) => state.tasks.filter(task => 
-      task.status === 'SUCCESS' || task.status === 'FAILED'
-    ),
+    getActiveTasks: (state) =>
+      state.tasks.filter((task) => task.status === 'PENDING' || task.status === 'PROCESSING'),
+    getCompletedTasks: (state) =>
+      state.tasks.filter((task) => task.status === 'SUCCESS' || task.status === 'FAILED'),
   },
 
   actions: {
     createAnalysisTask(studyId: string) {
       this.loading = true;
       this.error = null;
-      
-      return new Promise((resolve, reject) => {
+
+      return new Promise<AnalysisTask>((resolve) => {
         // Check if a task already exists for this study
-        let existingTask = this.getTaskByStudyId(studyId);
-        
+        const existingTask = this.getTaskByStudyId(studyId);
+
         if (existingTask) {
           // If the task is already completed or failed, we'll create a new one
           if (existingTask.status === 'SUCCESS' || existingTask.status === 'FAILED') {
-            this.tasks = this.tasks.filter(task => task.studyId !== studyId);
+            this.tasks = this.tasks.filter((task) => task.studyId !== studyId);
           } else {
             // If it's still processing, return the existing task
             this.currentTask = existingTask;
@@ -73,7 +71,7 @@ export const useAnalysisStore = defineStore('analysis', {
             return;
           }
         }
-        
+
         // Create new analysis task
         const newTask: AnalysisTask = {
           id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -82,130 +80,162 @@ export const useAnalysisStore = defineStore('analysis', {
           progress: 0,
           createdAt: new Date().toISOString(),
         };
-        
+
         this.tasks.push(newTask);
         this.currentTask = newTask;
-        
+
         // Simulate the analysis process
         this.simulateAnalysisProcess(newTask.id);
-        
+
         this.loading = false;
         resolve(newTask);
       });
     },
 
-    getAnalysisResult(studyId: string) {
+    getAnalysisResult(studyId: string): Promise<AnalysisTask> {
       const task = this.getTaskByStudyId(studyId);
       if (task) {
         this.currentTask = task;
         return Promise.resolve(task);
       }
-      
+
       // If no task exists, create one
       return this.createAnalysisTask(studyId);
     },
 
     cancelAnalysisTask(taskId: string) {
-      const taskIndex = this.tasks.findIndex(task => task.id === taskId);
-      if (taskIndex !== -1) {
-        const task = this.tasks[taskIndex];
-        this.tasks[taskIndex] = { 
-          ...task, 
-          status: 'FAILED', 
-          error: '用户取消' 
-        };
-        
-        if (this.currentTask && this.currentTask.id === taskId) {
-          this.currentTask = this.tasks[taskIndex];
-        }
+      const taskIndex = this.tasks.findIndex((task) => task.id === taskId);
+      if (taskIndex === -1) {
+        return;
+      }
+
+      const task = this.tasks[taskIndex];
+      if (!task) {
+        return;
+      }
+
+      const updatedTask: AnalysisTask = {
+        ...task,
+        status: 'FAILED',
+        error: '用户取消',
+      };
+
+      this.tasks.splice(taskIndex, 1, updatedTask);
+
+      if (this.currentTask && this.currentTask.id === taskId) {
+        this.currentTask = updatedTask;
       }
     },
 
     simulateAnalysisProcess(taskId: string) {
-      const taskIndex = this.tasks.findIndex(task => task.id === taskId);
+      const taskIndex = this.tasks.findIndex((task) => task.id === taskId);
       if (taskIndex === -1) return;
-      
+
+      const task = this.tasks[taskIndex];
+      if (!task) return;
+
       // Update to processing
-      const updatedTask = { ...this.tasks[taskIndex], status: 'PROCESSING' };
-      this.tasks[taskIndex] = updatedTask;
+      const updatedTask: AnalysisTask = { ...task, status: 'PROCESSING' };
+      this.tasks.splice(taskIndex, 1, updatedTask);
       if (this.currentTask && this.currentTask.id === taskId) {
-        this.currentTask = { ...updatedTask };
+        this.currentTask = updatedTask;
       }
-      
+
       // Simulate progress
       const interval = setInterval(() => {
-        const currentProgress = this.tasks[taskIndex].progress;
+        const currentTask = this.tasks[taskIndex];
+        if (!currentTask) {
+          clearInterval(interval);
+          return;
+        }
+
+        const currentProgress = currentTask.progress;
         if (currentProgress < 90) {
-          const newProgress = currentProgress + 10;
-          const updatedTaskProgress = {
-            ...this.tasks[taskIndex],
-            progress: newProgress
+          const newProgress = Math.min(currentProgress + 10, 90);
+          const updatedTaskProgress: AnalysisTask = {
+            ...currentTask,
+            progress: newProgress,
           };
-          this.tasks[taskIndex] = updatedTaskProgress;
+          this.tasks.splice(taskIndex, 1, updatedTaskProgress);
           if (this.currentTask && this.currentTask.id === taskId) {
-            this.currentTask = { ...updatedTaskProgress };
+            this.currentTask = updatedTaskProgress;
           }
         }
       }, 500);
-      
+
       // Simulate completion after random time (3-6 seconds)
-      setTimeout(() => {
-        clearInterval(interval);
-        
-        // Randomly determine success or failure for demo purposes
-        const isSuccess = Math.random() > 0.1; // 90% success rate
-        
-        if (isSuccess) {
-          const successTask = {
-            ...this.tasks[taskIndex],
-            status: 'SUCCESS',
-            progress: 100,
-            completedAt: new Date().toISOString(),
-            result: this.generateSimulatedResult()
-          };
-          this.tasks[taskIndex] = successTask;
-        } else {
-          const failedTask = {
-            ...this.tasks[taskIndex],
-            status: 'FAILED',
-            error: '因图像质量问题分析失败'
-          };
-          this.tasks[taskIndex] = failedTask;
-        }
-        
-        if (this.currentTask && this.currentTask.id === taskId) {
-          this.currentTask = { ...this.tasks[taskIndex] };
-        }
-      }, 3000 + Math.random() * 3000);
+      setTimeout(
+        () => {
+          clearInterval(interval);
+
+          // Randomly determine success or failure for demo purposes
+          const isSuccess = Math.random() > 0.1; // 90% success rate
+
+          if (isSuccess) {
+            const currentTask = this.tasks[taskIndex];
+            if (!currentTask) {
+              return;
+            }
+            const successTask: AnalysisTask = {
+              ...currentTask,
+              status: 'SUCCESS',
+              progress: 100,
+              completedAt: new Date().toISOString(),
+              result: this.generateSimulatedResult(),
+            };
+            this.tasks.splice(taskIndex, 1, successTask);
+          } else {
+            const currentTask = this.tasks[taskIndex];
+            if (!currentTask) {
+              return;
+            }
+            const failedTask: AnalysisTask = {
+              ...currentTask,
+              status: 'FAILED',
+              error: '因图像质量问题分析失败',
+            };
+            this.tasks.splice(taskIndex, 1, failedTask);
+          }
+
+          const updatedTask = this.tasks[taskIndex];
+          if (updatedTask && this.currentTask && this.currentTask.id === taskId) {
+            this.currentTask = updatedTask;
+          }
+        },
+        3000 + Math.random() * 3000,
+      );
     },
 
     generateSimulatedResult(): AnalysisResult {
       const diagnoses = ['正常', 'ASC-US', 'LSIL', 'HSIL', '浸润性癌'];
-      const selectedDiagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
-      
+      const selectedDiagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)] ?? '正常';
+
       return {
         diagnosis: selectedDiagnosis,
         confidence: 0.7 + Math.random() * 0.25, // Between 0.7 and 0.95
         recommendations: this.generateRecommendations(selectedDiagnosis),
-        suspiciousAreas: Math.random() > 0.5 ? [
-          { 
-            x: Math.random(), 
-            y: Math.random(), 
-            width: 0.1 + Math.random() * 0.1, 
-            height: 0.1 + Math.random() * 0.1, 
-            type: 'abnormal',
-            confidence: 0.7 + Math.random() * 0.25
-          }
-        ] : [],
+        suspiciousAreas:
+          Math.random() > 0.5
+            ? [
+                {
+                  x: Math.random(),
+                  y: Math.random(),
+                  width: 0.1 + Math.random() * 0.1,
+                  height: 0.1 + Math.random() * 0.1,
+                  type: 'abnormal',
+                  confidence: 0.7 + Math.random() * 0.25,
+                },
+              ]
+            : [],
         biomarkers: {
           HPV: Math.random() > 0.5 ? '阳性' : '阴性',
           p16: Math.random() > 0.7 ? '阳性' : '阴性',
-          Ki67: Math.random() > 0.5 ? '高' : '低'
+          Ki67: Math.random() > 0.5 ? '高' : '低',
         },
-        detailedReport: this.generateDetailedReport(selectedDiagnosis)
+        detailedReport: this.generateDetailedReport(selectedDiagnosis),
       };
     },
-    
+
     generateRecommendations(diagnosis: string): string[] {
       switch (diagnosis) {
         case '正常':
@@ -222,20 +252,22 @@ export const useAnalysisStore = defineStore('analysis', {
           return ['咨询专科医生', '可能需要进一步检测'];
       }
     },
-    
+
     generateDetailedReport(diagnosis: string): string {
       return `${diagnosis}诊断的宫颈细胞学分析报告。
       AI模型已在宫颈组织中识别出潜在异常。
       建议进一步临床评估。
       分析置信度：${((this.currentTask?.result?.confidence || 0) * 100).toFixed(1)}%。
-      
+
       主要发现：
-      - 细胞形态：${(diagnosis === '正常') ? '正常' : '异常'}
-      - 核质比：${(diagnosis === '正常') ? '正常' : '增加'}
-      - 核异型性：${(diagnosis === '正常') ? '无' : '有'}
-      
+      - 细胞形态：${diagnosis === '正常' ? '正常' : '异常'}
+      - 核质比：${diagnosis === '正常' ? '正常' : '增加'}
+      - 核异型性：${diagnosis === '正常' ? '无' : '有'}
+
       建议：
-      ${this.generateRecommendations(diagnosis).map((r: string) => `- ${r}`).join('\n')}`;
-    }
+      ${this.generateRecommendations(diagnosis)
+        .map((r: string) => `- ${r}`)
+        .join('\n')}`;
+    },
   },
-})
+});

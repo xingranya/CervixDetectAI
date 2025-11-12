@@ -54,9 +54,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
+import { useQuasar } from 'quasar';
 
 const router = useRouter();
 const studyStore = useStudyStore();
+const $q = useQuasar();
 
 // Define table columns for reports
 const reportColumns = [
@@ -76,7 +78,19 @@ const viewReport = (id: string) => {
 // Function to download a report
 const downloadReport = (id: string) => {
   // In a real app, this would download the actual report
-  console.log(`下载病例 ${id} 的报告`);
-  alert(`下载功能将在实际应用中实现，病例 ${id}`);
+  $q.notify({
+    type: 'info',
+    message: `正在生成报告 PDF...`,
+    position: 'top'
+  });
+  
+  // Simulate report generation and download
+  setTimeout(() => {
+    $q.notify({
+      type: 'positive',
+      message: `病例 ${id} 的报告下载成功！`,
+      position: 'top'
+    });
+  }, 1500);
 };
 </script>

@@ -102,7 +102,7 @@
           
           <q-card-section>
             <q-list>
-              <q-item clickable v-ripple>
+              <q-item clickable v-ripple @click="showChangePasswordDialog = true">
                 <q-item-section avatar>
                   <q-icon color="primary" name="lock" />
                 </q-item-section>
@@ -126,7 +126,7 @@
                 </q-item-section>
               </q-item>
               
-              <q-item clickable v-ripple>
+              <q-item clickable v-ripple @click="showPrivacyDialog = true">
                 <q-item-section avatar>
                   <q-icon color="accent" name="security" />
                 </q-item-section>
@@ -159,39 +159,202 @@
               color="primary" 
               class="full-width q-mt-md"
               flat
+              @click="checkForUpdates"
             />
           </q-card-section>
         </q-card>
       </div>
     </div>
+
+    <!-- 修改密码对话框 -->
+    <q-dialog v-model="showChangePasswordDialog">
+      <q-card style="min-width: 400px">
+        <q-card-section>
+          <div class="text-h6">修改密码</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form class="q-gutter-md">
+            <q-input
+              v-model="passwordForm.currentPassword"
+              type="password"
+              label="当前密码"
+              outlined
+              dense
+            />
+            <q-input
+              v-model="passwordForm.newPassword"
+              type="password"
+              label="新密码"
+              outlined
+              dense
+            />
+            <q-input
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              label="确认新密码"
+              outlined
+              dense
+            />
+          </q-form>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="取消" color="primary" v-close-popup />
+          <q-btn flat label="确认" color="primary" @click="changePassword" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- 隐私设置对话框 -->
+    <q-dialog v-model="showPrivacyDialog">
+      <q-card style="min-width: 400px">
+        <q-card-section>
+          <div class="text-h6">隐私设置</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form class="q-gutter-md">
+            <q-toggle
+              v-model="privacyForm.shareData"
+              label="允许数据用于研究目的（匿名化）"
+              left-label
+            />
+            <q-toggle
+              v-model="privacyForm.allowAnalytics"
+              label="允许使用分析数据改进服务"
+              left-label
+            />
+            <q-toggle
+              v-model="privacyForm.twoFactorAuth"
+              label="启用双因素认证"
+              left-label
+            />
+          </q-form>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="取消" color="primary" v-close-popup />
+          <q-btn flat label="保存" color="primary" @click="savePrivacySettings" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useQuasar } from 'quasar'
+
+const $q = useQuasar()
+
 // Account form data
-const accountForm = {
+const accountForm = ref({
   firstName: '张',
   lastName: '医生',
   email: 'zhang.doctor@hospital.com',
   institution: '市中心医院'
-};
+});
 
 // Notification preferences
-const notificationForm = {
+const notificationForm = ref({
   emailNotifications: true,
   pushNotifications: true,
   weeklyReports: false
-};
+});
+
+// Password form
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+
+// Privacy form
+const privacyForm = ref({
+  shareData: false,
+  allowAnalytics: true,
+  twoFactorAuth: false
+});
+
+// Dialog states
+const showChangePasswordDialog = ref(false);
+const showPrivacyDialog = ref(false);
 
 // Save account changes
 const saveAccount = () => {
-  // In a real app, this would save to the backend
-  alert('账户设置保存成功！');
+  $q.notify({
+    type: 'positive',
+    message: '账户设置保存成功！',
+    position: 'top'
+  });
 };
 
 // Save notification preferences
 const saveNotifications = () => {
-  // In a real app, this would save to the backend
-  alert('通知偏好设置保存成功！');
+  $q.notify({
+    type: 'positive',
+    message: '通知偏好设置保存成功！',
+    position: 'top'
+  });
+};
+
+// Change password
+const changePassword = () => {
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    $q.notify({
+      type: 'warning',
+      message: '请填写所有密码字段',
+      position: 'top'
+    });
+    return;
+  }
+  
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    $q.notify({
+      type: 'negative',
+      message: '新密码和确认密码不匹配',
+      position: 'top'
+    });
+    return;
+  }
+  
+  // In a real app, this would call an API
+  showChangePasswordDialog.value = false;
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+  
+  $q.notify({
+    type: 'positive',
+    message: '密码修改成功！',
+    position: 'top'
+  });
+};
+
+// Save privacy settings
+const savePrivacySettings = () => {
+  showPrivacyDialog.value = false;
+  $q.notify({
+    type: 'positive',
+    message: '隐私设置保存成功！',
+    position: 'top'
+  });
+};
+
+// Check for updates
+const checkForUpdates = () => {
+  $q.notify({
+    type: 'info',
+    message: '正在检查更新...',
+    position: 'top'
+  });
+  
+  // Simulate update check
+  setTimeout(() => {
+    $q.notify({
+      type: 'positive',
+      message: '您使用的已是最新版本！',
+      position: 'top'
+    });
+  }, 1500);
 };
 </script>

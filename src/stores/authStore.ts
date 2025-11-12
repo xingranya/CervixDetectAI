@@ -15,7 +15,8 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(email: string, password: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async login(email: string, _password: string) {
       this.isAuthenticating = true;
       try {
         // In a real app, this would be an API call to your backend
