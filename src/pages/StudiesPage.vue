@@ -99,10 +99,14 @@ import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
 
+console.log('📦 [StudiesPage] 组件已初始化');
+
 const router = useRouter();
 const studyStore = useStudyStore();
 const $q = useQuasar();
 const filter = ref('');
+
+console.log('🔍 [StudiesPage] studyStore 已初始化，当前 studies 数量:', studyStore.allStudies.length);
 
 // Define table columns
 const studyColumns = [
@@ -151,6 +155,15 @@ const downloadReport = (id: string) => {
 
 // Load studies when component mounts
 onMounted(async () => {
-  await studyStore.fetchStudies();
+  console.log('🔥 [StudiesPage] 组件已挂载，开始加载病例数据');
+  console.log('📋 [StudiesPage] 当前 studyStore.studies 长度:', studyStore.allStudies.length);
+  
+  try {
+    await studyStore.fetchStudies();
+    console.log('✅ [StudiesPage] 病例数据加载完成');
+    console.log('📊 [StudiesPage] 最终 studyStore.studies 长度:', studyStore.allStudies.length);
+  } catch (error) {
+    console.error('❌ [StudiesPage] 加载病例数据失败:', error);
+  }
 });
 </script>

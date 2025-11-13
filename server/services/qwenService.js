@@ -37,18 +37,18 @@ class QwenService {
     this.apiKey = process.env.QWEN_API_KEY;
     this.apiUrl = process.env.QWEN_API_URL;
     this.model = process.env.QWEN_MODEL || 'qwen-vl-max';
-    
+
     if (!this.apiKey) {
       throw new Error('QWEN_API_KEY 环境变量未设置');
     }
-    
+
     this.axiosInstance = axios.create({
       baseURL: this.apiUrl,
       timeout: 60000,
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
     });
   }
 
@@ -61,7 +61,7 @@ class QwenService {
     try {
       const imageBuffer = await fs.readFile(imagePath);
       const base64String = imageBuffer.toString('base64');
-      
+
       // 获取MIME类型
       let mimeType = 'image/jpeg';
       if (imagePath.endsWith('.png')) {
@@ -69,7 +69,7 @@ class QwenService {
       } else if (imagePath.endsWith('.tiff') || imagePath.endsWith('.tif')) {
         mimeType = 'image/tiff';
       }
-      
+
       return `data:${mimeType};base64,${base64String}`;
     } catch (error) {
       throw new Error(`图像Base64编码失败: ${error.message}`);
@@ -86,7 +86,7 @@ class QwenService {
     try {
       // 转换图像为Base64
       const imageDataUrl = await this.imageToBase64(imagePath);
-      
+
       // 构建请求体
       const requestBody = {
         model: this.model,
@@ -96,61 +96,61 @@ class QwenService {
             content: [
               {
                 type: 'text',
-                text: SYSTEM_PROMPT
+                text: SYSTEM_PROMPT,
               },
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageDataUrl
-                }
-              }
-            ]
-          }
+                  url: imageDataUrl,
+                },
+              },
+            ],
+          },
         ],
         temperature: 0.1,
         max_tokens: 2000,
-        top_p: 0.8
+        top_p: 0.8,
       };
-      
+
       // 发送请求
       console.log(`🤖 调用通义千问API (${this.model})...`);
       const response = await this.axiosInstance.post('/chat/completions', requestBody);
-      
+
       // 解析响应
       if (!response.data || !response.data.choices || response.data.choices.length === 0) {
         throw new Error('API响应格式错误：缺少choices字段');
       }
-      
+
       const content = response.data.choices[0].message.content;
       console.log('✅ API调用成功，正在解析结果...');
-      
+
       // 解析JSON结果
       let result;
       try {
         // 清理可能的markdown代码块标记
         let cleanContent = content.trim();
-        
+
         // 移除markdown代码块标记
         if (cleanContent.startsWith('```json')) {
           cleanContent = cleanContent.replace(/^```json\s*/, '');
         } else if (cleanContent.startsWith('```')) {
           cleanContent = cleanContent.replace(/^```\s*/, '');
         }
-        
+
         if (cleanContent.endsWith('```')) {
           cleanContent = cleanContent.replace(/\s*```$/, '');
         }
-        
+
         // 去除首尾空白
         cleanContent = cleanContent.trim();
-        
+
         result = JSON.parse(cleanContent);
         console.log('✅ JSON解析成功');
       } catch (parseError) {
         console.error('JSON解析失败，原始内容:', content);
         throw new Error(`解析AI响应失败: ${parseError.message}`);
       }
-      
+
       // 验证必需字段
       const requiredFields = ['diagnosis', 'confidence', 'recommendations', 'detailedReport'];
       for (const field of requiredFields) {
@@ -158,7 +158,7 @@ class QwenService {
           console.warn(`⚠️ 缺少必需字段: ${field}`);
         }
       }
-      
+
       // 标准化数据结构
       return {
         diagnosis: result.diagnosis || '未知',
@@ -167,24 +167,25 @@ class QwenService {
         biomarkers: result.biomarkers || {
           HPV: '未检测',
           p16: '未检测',
-          Ki67: '未检测'
+          Ki67: '未检测',
         },
-        recommendations: Array.isArray(result.recommendations) ? result.recommendations : ['请咨询专科医生'],
+        recommendations: Array.isArray(result.recommendations)
+          ? result.recommendations
+          : ['请咨询专科医生'],
         detailedReport: result.detailedReport || '分析报告生成失败',
-        rawResponse: content // 保存原始响应用于调试
+        rawResponse: content, // 保存原始响应用于调试
       };
-      
     } catch (error) {
       console.error(`❌ API调用失败 (剩余重试次数: ${retryCount - 1}):`, error.message);
-      
+
       // 重试逻辑
       if (retryCount > 1 && this.shouldRetry(error)) {
         const delay = (4 - retryCount) * 1000; // 递增延迟：1s, 2s, 3s
         console.log(`⏳ ${delay}ms后重试...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.analyzeImage(imagePath, retryCount - 1);
       }
-      
+
       // 抛出错误
       throw this.formatError(error);
     }
@@ -200,17 +201,17 @@ class QwenService {
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
       return true;
     }
-    
+
     // API限流应该重试
     if (error.response && error.response.status === 429) {
       return true;
     }
-    
+
     // 服务器错误应该重试
     if (error.response && error.response.status >= 500) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -223,8 +224,9 @@ class QwenService {
     if (error.response) {
       // API返回的错误
       const status = error.response.status;
-      const message = error.response.data?.error?.message || error.response.data?.message || '未知错误';
-      
+      const message =
+        error.response.data?.error?.message || error.response.data?.message || '未知错误';
+
       switch (status) {
         case 400:
           return new Error(`请求参数错误: ${message}`);

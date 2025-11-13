@@ -11,51 +11,6 @@
       <div class="col-md-8 col-xs-12">
         <q-card flat bordered>
           <q-card-section>
-            <div class="text-h6">账户设置</div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <q-form class="q-gutter-md">
-              <div class="row q-col-gutter-md">
-                <div class="col-md-6">
-                  <q-input
-                    v-model="accountForm.firstName"
-                    outlined
-                    label="名字"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <q-input
-                    v-model="accountForm.lastName"
-                    outlined
-                    label="姓氏"
-                  />
-                </div>
-              </div>
-              
-              <q-input
-                v-model="accountForm.email"
-                outlined
-                label="邮箱"
-                type="email"
-              />
-              
-              <q-input
-                v-model="accountForm.institution"
-                outlined
-                label="机构/医院"
-              />
-              
-              <div class="row q-mt-lg">
-                <q-space />
-                <q-btn color="primary" label="保存更改" @click="saveAccount" />
-              </div>
-            </q-form>
-          </q-card-section>
-        </q-card>
-
-        <q-card flat bordered class="q-mt-md">
-          <q-card-section>
             <div class="text-h6">通知偏好设置</div>
           </q-card-section>
           <q-separator />
@@ -91,11 +46,16 @@
       <div class="col-md-4 col-xs-12">
         <q-card flat bordered>
           <q-card-section class="text-center">
-            <q-avatar size="100px" class="q-mb-md">
-              <img src="https://cdn.quasar.dev/img/avatar.png" alt="用户头像">
+            <q-avatar size="100px" color="primary" text-color="white" class="q-mb-md">
+              <template v-if="user?.avatar_url">
+                <img :src="user.avatar_url" alt="用户头像">
+              </template>
+              <template v-else>
+                <div class="text-h2">{{ userInitial }}</div>
+              </template>
             </q-avatar>
-            <div class="text-h6">{{ accountForm.firstName }} {{ accountForm.lastName }}医生</div>
-            <div class="text-subtitle2">{{ accountForm.institution }}</div>
+            <div class="text-h6">{{ userName }}</div>
+            <div class="text-subtitle2">{{ user?.email || user?.phone || '' }}</div>
           </q-card-section>
           
           <q-separator />
@@ -239,18 +199,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { useAuthStore } from 'stores/authStore'
 
 const $q = useQuasar()
+const authStore = useAuthStore()
 
-// Account form data
-const accountForm = ref({
-  firstName: '张',
-  lastName: '医生',
-  email: 'zhang.doctor@hospital.com',
-  institution: '市中心医院'
-});
+// 获取当前用户
+const user = computed(() => authStore.user)
+
+// 用户名称
+const userName = computed(() => {
+  return user.value?.real_name || user.value?.username || '用户'
+})
+
+// 用户名称首字母（用于默认头像）
+const userInitial = computed(() => {
+  if (user.value?.real_name) {
+    return user.value.real_name.charAt(0).toUpperCase()
+  }
+  if (user.value?.username) {
+    return user.value.username.charAt(0).toUpperCase()
+  }
+  return 'U'
+})
 
 // Notification preferences
 const notificationForm = ref({
@@ -276,15 +249,6 @@ const privacyForm = ref({
 // Dialog states
 const showChangePasswordDialog = ref(false);
 const showPrivacyDialog = ref(false);
-
-// Save account changes
-const saveAccount = () => {
-  $q.notify({
-    type: 'positive',
-    message: '账户设置保存成功！',
-    position: 'top'
-  });
-};
 
 // Save notification preferences
 const saveNotifications = () => {

@@ -52,13 +52,20 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
 
+console.log('📦 [ReportsPage] 组件已初始化');
+
 const router = useRouter();
 const studyStore = useStudyStore();
 const $q = useQuasar();
+
+console.log('🔍 [ReportsPage] studyStore 已初始化');
+console.log('📊 [ReportsPage] 所有病例数:', studyStore.allStudies.length);
+console.log('📊 [ReportsPage] 已完成病例数:', studyStore.completedStudies.length);
 
 // Define table columns for reports
 const reportColumns = [
@@ -93,4 +100,19 @@ const downloadReport = (id: string) => {
     });
   }, 1500);
 };
+
+// Load studies when component mounts
+onMounted(async () => {
+  console.log('🔥 [ReportsPage] 组件已挂载，开始加载病例数据');
+  
+  try {
+    await studyStore.fetchStudies();
+    console.log('✅ [ReportsPage] 病例数据加载完成');
+    console.log('📊 [ReportsPage] 所有病例数:', studyStore.allStudies.length);
+    console.log('📊 [ReportsPage] 已完成病例数:', studyStore.completedStudies.length);
+    console.log('📊 [ReportsPage] 已完成病例列表:', studyStore.completedStudies);
+  } catch (error) {
+    console.error('❌ [ReportsPage] 加载病例数据失败:', error);
+  }
+});
 </script>

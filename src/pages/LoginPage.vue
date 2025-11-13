@@ -12,8 +12,20 @@
           <div class="text-subtitle2">登录您的账户</div>
         </q-card-section>
 
+        <!-- 登录方式切换 -->
+        <q-card-section class="q-pb-none">
+          <q-tabs v-model="loginType" dense class="text-grey" active-color="primary" indicator-color="primary">
+            <q-tab name="email" label="邮箱登录" />
+            <q-tab name="phone" label="手机登录" />
+          </q-tabs>
+          <div v-if="loginType === 'phone'" class="text-caption text-grey-6 q-mt-sm text-center">
+            输入手机号和验证码，新用户将自动注册
+          </div>
+        </q-card-section>
+
         <q-card-section>
-          <q-form @submit="onSubmit" class="q-gutter-md">
+          <!-- 邮箱登录 -->
+          <q-form v-if="loginType === 'email'" @submit="onSubmit" class="q-gutter-md">
             <q-input
               v-model="email"
               outlined
@@ -62,6 +74,63 @@
               </q-btn>
             </div>
           </q-form>
+
+          <!-- 短信登录 -->
+          <q-form v-else @submit.prevent="onSmsLogin" class="q-gutter-md">
+            <q-input
+              v-model="phone"
+              outlined
+              label="手机号"
+              type="tel"
+              maxlength="11"
+              lazy-rules
+              :rules="[val => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="phone" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="smsCode"
+              outlined
+              label="验证码"
+              maxlength="6"
+              lazy-rules
+              :rules="[val => val && val.length === 6 || '请输入6位验证码']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="shield" />
+              </template>
+              <template v-slot:append>
+                <q-btn
+                  :label="countdownText"
+                  :disable="!canSendSms"
+                  :loading="isSendingSms"
+                  flat
+                  dense
+                  color="primary"
+                  @click="sendSmsCode"
+                />
+              </template>
+            </q-input>
+
+            <div class="q-mt-xl">
+              <q-btn
+                color="primary"
+                :loading="authStore.isAuthenticating"
+                unelevated
+                rounded
+                size="lg"
+                style="width: 100%"
+                type="submit"
+                :disabled="authStore.isAuthenticating"
+              >
+                <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
+                <q-spinner-hourglass v-else />
+              </q-btn>
+            </div>
+          </q-form>
         </q-card-section>
 
         <q-card-section class="text-center q-pt-none">
@@ -74,33 +143,178 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
+import { authAPI } from 'src/services/api';
+import { useQuasar } from 'quasar';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const $q = useQuasar();
 
+const loginType = ref<'email' | 'phone'>('email');
 const email = ref('doctor@example.com'); // Demo credential
 const password = ref('password123'); // Demo credential
+const phone = ref('');
+const smsCode = ref('');
 const isPwd = ref(true);
 const rememberMe = ref(true);
+const countdown = ref(0);
+const isSendingSms = ref(false);
 
+// 倒计时文本
+const countdownText = computed(() => {
+  if (countdown.value > 0) {
+    return `${countdown.value}秒后重试`;
+  }
+  return '获取验证码';
+});
+
+// 是否可以发送短信
+const canSendSms = computed(() => {
+  return countdown.value === 0 && !isSendingSms.value && phone.value.length === 11;
+});
+
+// 发送短信验证码（登录/注册通用）
+const sendSmsCode = async () => {
+  if (!canSendSms.value) return;
+
+  // 验证手机号格式
+  const phoneRegex = /^1[3-9]\d{9}$/;
+  if (!phoneRegex.test(phone.value)) {
+    $q.notify({
+      type: 'negative',
+      message: '请输入正确的手机号',
+      position: 'top',
+    });
+    return;
+  }
+
+  isSendingSms.value = true;
+  try {
+    console.log('📱 发送短信验证码到:', phone.value);
+    // 发送验证码时不区分登录/注册，统一使用login类型
+    const response = await authAPI.sendSmsCode(phone.value, 'login');
+
+    if (response.success) {
+      $q.notify({
+        type: 'positive',
+        message: '验证码已发送，请注意查收',
+        position: 'top',
+      });
+
+      // 开始倒计时
+      countdown.value = 60;
+      const timer = setInterval(() => {
+        countdown.value--;
+        if (countdown.value <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: response.message || '验证码发送失败',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    console.error('发送验证码错误:', error);
+    const errorMessage = (error as {response?: {data?: {message?: string}}})?.response?.data?.message || '验证码发送失败';
+    $q.notify({
+      type: 'negative',
+      message: errorMessage,
+      position: 'top',
+    });
+  } finally {
+    isSendingSms.value = false;
+  }
+};
+
+// 邮箱登录
 const onSubmit = async () => {
   try {
     const result = await authStore.login(email.value, password.value);
     
     if (result.success) {
-      // Redirect to dashboard after successful login
+      $q.notify({
+        type: 'positive',
+        message: '登录成功',
+        position: 'top',
+      });
       const redirectPath = router.currentRoute.value.query.redirect as string || '/app';
       void router.push(redirectPath);
     } else {
-      // Handle login error
-      alert(result.error || '登录失败');
+      $q.notify({
+        type: 'negative',
+        message: result.error || '登录失败',
+        position: 'top',
+      });
     }
   } catch (error) {
     console.error('登录错误:', error);
-    alert('登录过程中发生错误');
+    $q.notify({
+      type: 'negative',
+      message: '登录过程中发生错误',
+      position: 'top',
+    });
+  }
+};
+
+// 短信登录/注册（自动判断）
+const onSmsLogin = async () => {
+  if (!phone.value || !smsCode.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请输入手机号和验证码',
+      position: 'top',
+    });
+    return;
+  }
+
+  try {
+    console.log('📱 短信登录/注册:', phone.value, smsCode.value);
+    
+    // 先尝试登录
+    let result = await authStore.smsLogin(phone.value, smsCode.value);
+
+    // 如果登录失败且提示手机号未注册，则自动注册
+    if (!result.success && result.error?.includes('未注册')) {
+      console.log('📝 手机号未注册，自动注册...');
+      $q.notify({
+        type: 'info',
+        message: '检测到新用户，正在为您注册...',
+        position: 'top',
+      });
+      
+      // 自动注册
+      result = await authStore.smsRegister(phone.value, smsCode.value);
+    }
+
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: '登录成功',
+        position: 'top',
+      });
+      const redirectPath = router.currentRoute.value.query.redirect as string || '/app';
+      void router.push(redirectPath);
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: result.error || '登录失败',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    console.error('短信登录/注册错误:', error);
+    const errorMessage = (error as {response?: {data?: {message?: string}}})?.response?.data?.message || '登录过程中发生错误';
+    $q.notify({
+      type: 'negative',
+      message: errorMessage,
+      position: 'top',
+    });
   }
 };
 </script>

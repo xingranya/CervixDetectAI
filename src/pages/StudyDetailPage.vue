@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div v-if="studyStore.loading" class="row flex-center q-my-xl">
+    <div v-if="loading || studyStore.loading" class="row flex-center q-my-xl">
       <q-spinner size="3em" color="primary" />
     </div>
 
@@ -250,6 +250,8 @@ import { useRoute } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
 import { useQuasar } from 'quasar';
+import { getStudyAnalysis } from 'src/services/apiService';
+import type { StudyAnalysisResponse } from 'src/services/apiService';
 
 const route = useRoute();
 const studyStore = useStudyStore();
@@ -259,21 +261,61 @@ const $q = useQuasar();
 // 轮询定时器
 const pollingInterval = ref<NodeJS.Timeout | null>(null);
 
+// 直接存储从新 API 获取的数据
+const studyData = ref<StudyAnalysisResponse | null>(null);
+const loading = ref(false);
+
 // Get study ID from route
 const studyId = computed(() => route.params.id as string);
 
-// Get current study
-const study = computed(() => studyStore.currentStudy);
+// 使用新 API 的数据或者 studyStore 的数据
+const study = computed(() => {
+  if (studyData.value) {
+    // 将新 API 数据转换为组件需要的格式
+    return {
+      id: studyData.value.studyId,
+      patientName: studyData.value.studyInfo.patientName,
+      patientId: studyData.value.studyInfo.patientId,
+      studyDate: studyData.value.studyInfo.studyDate,
+      modality: studyData.value.studyInfo.modality,
+      bodyPart: '宫颈',
+      description: studyData.value.studyInfo.description,
+      imageUrl: `http://localhost:3000${studyData.value.studyInfo.imageUrl}`,
+      status:
+        studyData.value.status === 'SUCCESS'
+          ? 'completed'
+          : studyData.value.status === 'PROCESSING'
+            ? 'processing'
+            : studyData.value.status === 'FAILED'
+              ? 'failed'
+              : 'pending',
+      uploadedAt: studyData.value.createdAt,
+    };
+  }
+  return studyStore.currentStudy;
+});
 
 // Get current analysis task
-const currentTask = computed(() => analysisStore.currentTask);
+const currentTask = computed(() => {
+  if (studyData.value) {
+    return {
+      status: studyData.value.status,
+      progress: studyData.value.progress,
+      result: studyData.value.result,
+      error: studyData.value.error,
+    };
+  }
+  return analysisStore.currentTask;
+});
 
 // Get analysis result
 const analysisResult = computed(() => {
-  if (currentTask.value?.result) {
+  if (studyData.value?.result) {
+    return studyData.value.result;
+  } else if (currentTask.value?.result) {
     return currentTask.value.result;
-  } else if (study.value?.analysisResult) {
-    return study.value.analysisResult;
+  } else if (studyStore.currentStudy?.analysisResult) {
+    return studyStore.currentStudy.analysisResult;
   }
   return undefined;
 });
@@ -327,62 +369,125 @@ const downloadReport = () => {
 onMounted(async () => {
   if (studyId.value) {
     try {
-      await studyStore.loadStudyById(studyId.value);
+      loading.value = true;
+      console.log('🔍 加载病例:', studyId.value);
 
-      // If the study exists and has a completed status, fetch analysis
-      if (studyStore.currentStudy?.status === 'completed') {
-        await analysisStore.getAnalysisResult(studyId.value);
-      }
-      // If the study is processing, start polling for updates
-      else if (studyStore.currentStudy?.status === 'processing') {
-        await analysisStore.getAnalysisResult(studyId.value);
-        
-        // 启动轮询，每5秒检查一次状态
-        const pollUpdate = async () => {
-          try {
-            await analysisStore.getAnalysisResult(studyId.value);
-            
-            // 如果分析完成，停止轮询并显示通知
-            if (analysisStore.currentTask?.status === 'SUCCESS') {
-              if (pollingInterval.value) {
-                clearInterval(pollingInterval.value);
-                pollingInterval.value = null;
+      // 先尝试从新 API 获取数据
+      try {
+        studyData.value = await getStudyAnalysis(studyId.value);
+        console.log('✅ 从新 API 获取病例数据:', studyData.value);
+
+        // 如果正在处理，启动轮询
+        if (studyData.value.status === 'PROCESSING' || studyData.value.status === 'PENDING') {
+          console.log('🔄 启动轮询，监控分析状态...');
+
+          const pollUpdate = async () => {
+            try {
+              const updatedData = await getStudyAnalysis(studyId.value);
+              studyData.value = updatedData;
+
+              // 如果分析完成，停止轮询并显示通知
+              if (updatedData.status === 'SUCCESS') {
+                if (pollingInterval.value) {
+                  clearInterval(pollingInterval.value);
+                  pollingInterval.value = null;
+                }
+
+                $q.notify({
+                  type: 'positive',
+                  message: '🎉 AI分析完成！',
+                  position: 'top',
+                  timeout: 3000,
+                });
+              } else if (updatedData.status === 'FAILED') {
+                if (pollingInterval.value) {
+                  clearInterval(pollingInterval.value);
+                  pollingInterval.value = null;
+                }
+
+                $q.notify({
+                  type: 'negative',
+                  message: `❌ 分析失败: ${updatedData.error || '未知错误'}`,
+                  position: 'top',
+                  timeout: 5000,
+                });
               }
-              
-              $q.notify({
-                type: 'positive',
-                message: '🎉 AI分析完成！',
-                position: 'top',
-                timeout: 3000,
-              });
-              
-              // 更新病例状态
-              await studyStore.loadStudyById(studyId.value);
-            } else if (analysisStore.currentTask?.status === 'FAILED') {
-              if (pollingInterval.value) {
-                clearInterval(pollingInterval.value);
-                pollingInterval.value = null;
-              }
-              
-              $q.notify({
-                type: 'negative',
-                message: `❌ 分析失败: ${analysisStore.currentTask.error || '未知错误'}`,
-                position: 'top',
-                timeout: 5000,
-              });
+            } catch (error) {
+              console.error('轮询更新失败:', error);
             }
-          } catch (error) {
-            console.error('轮询更新失败:', error);
-          }
-        };
-        
-        pollingInterval.value = setInterval(() => {
-          void pollUpdate();
-        }, 5000);
+          };
+
+          pollingInterval.value = setInterval(() => {
+            void pollUpdate();
+          }, 5000);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_apiError) {
+        // 如果新 API 失败，尝试使用旧 API
+        console.log('⚠️ 新 API 未找到数据，尝试使用旧 API...');
+        await studyStore.loadStudyById(parseInt(studyId.value));
+
+        // If the study exists and has a completed status, fetch analysis
+        if (studyStore.currentStudy?.status === 'completed') {
+          await analysisStore.getAnalysisResult(studyId.value);
+        }
+        // If the study is processing, start polling for updates
+        else if (studyStore.currentStudy?.status === 'processing') {
+          await analysisStore.getAnalysisResult(studyId.value);
+
+          // 启动轮询，每5秒检查一次状态
+          const pollUpdate = async () => {
+            try {
+              await analysisStore.getAnalysisResult(studyId.value);
+
+              // 如果分析完成，停止轮询并显示通知
+              if (analysisStore.currentTask?.status === 'SUCCESS') {
+                if (pollingInterval.value) {
+                  clearInterval(pollingInterval.value);
+                  pollingInterval.value = null;
+                }
+
+                $q.notify({
+                  type: 'positive',
+                  message: '🎉 AI分析完成！',
+                  position: 'top',
+                  timeout: 3000,
+                });
+
+                // 更新病例状态
+                await studyStore.loadStudyById(parseInt(studyId.value));
+              } else if (analysisStore.currentTask?.status === 'FAILED') {
+                if (pollingInterval.value) {
+                  clearInterval(pollingInterval.value);
+                  pollingInterval.value = null;
+                }
+
+                $q.notify({
+                  type: 'negative',
+                  message: `❌ 分析失败: ${analysisStore.currentTask.error || '未知错误'}`,
+                  position: 'top',
+                  timeout: 5000,
+                });
+              }
+            } catch (error) {
+              console.error('轮询更新失败:', error);
+            }
+          };
+
+          pollingInterval.value = setInterval(() => {
+            void pollUpdate();
+          }, 5000);
+        }
       }
     } catch (error) {
       console.error('加载病例时出错:', error);
-      // Optionally redirect to an error page
+      $q.notify({
+        type: 'negative',
+        message: '加载病例失败',
+        position: 'top',
+      });
+    } finally {
+      loading.value = false;
     }
   }
 });

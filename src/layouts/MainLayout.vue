@@ -3,18 +3,11 @@
     <!-- Top Header -->
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title>
           <q-avatar>
-            <img src="https://placehold.co/60x60/1976D2/FFFFFF?text=CD" alt="CervixDetectAI Logo">
+            <img src="https://placehold.co/60x60/1976D2/FFFFFF?text=CD" alt="CervixDetectAI Logo" />
           </q-avatar>
           CervixDetectAI
         </q-toolbar-title>
@@ -30,17 +23,24 @@
             aria-label="Notifications"
             @click="showNotifications"
           >
-            <q-badge color="red" text-color="white" floating>
-              3
-            </q-badge>
+            <q-badge color="red" text-color="white" floating> 3 </q-badge>
           </q-btn>
 
-          <q-btn-dropdown
-            stretch
-            flat
-            label="张医生"
-          >
-            <q-list style="min-width: 200px;">
+          <q-btn-dropdown stretch flat>
+            <template v-slot:label>
+              <div class="row items-center no-wrap">
+                <q-avatar size="32px" color="primary" text-color="white" class="q-mr-sm">
+                  <template v-if="authStore.user?.avatar_url">
+                    <img :src="authStore.user.avatar_url" alt="用户头像">
+                  </template>
+                  <template v-else>
+                    {{ userInitial }}
+                  </template>
+                </q-avatar>
+                <div>{{ userName }}</div>
+              </div>
+            </template>
+            <q-list style="min-width: 200px">
               <q-item clickable v-ripple @click="goToProfile">
                 <q-item-section avatar>
                   <q-icon name="account_circle" />
@@ -50,7 +50,7 @@
                   <q-item-label caption>查看个人资料</q-item-label>
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple @click="goToSettings">
                 <q-item-section avatar>
                   <q-icon name="settings" />
@@ -59,9 +59,9 @@
                   <q-item-label>设置</q-item-label>
                 </q-item-section>
               </q-item>
-              
+
               <q-separator />
-              
+
               <q-item clickable v-ripple @click="logout">
                 <q-item-section avatar>
                   <q-icon name="logout" />
@@ -77,30 +77,17 @@
     </q-header>
 
     <!-- Left Sidebar Navigation -->
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-      class="bg-grey-2"
-    >
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-2">
       <q-list>
         <q-item-label header class="text-weight-bold">CervixDetectAI</q-item-label>
 
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-        />
-        
+        <EssentialLink v-for="link in essentialLinks" :key="link.title" v-bind="link" />
+
         <q-separator class="q-my-sm" />
-        
+
         <q-item-label header class="text-weight-bold">分析功能</q-item-label>
-        
-        <EssentialLink
-          v-for="link in analysisLinks"
-          :key="link.title"
-          v-bind="link"
-        />
+
+        <EssentialLink v-for="link in analysisLinks" :key="link.title" v-bind="link" />
       </q-list>
     </q-drawer>
 
@@ -112,20 +99,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from 'src/stores/authStore'
-import { useQuasar } from 'quasar'
-import EssentialLink from 'components/EssentialLink.vue'
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from 'src/stores/authStore';
+import { useQuasar } from 'quasar';
+import EssentialLink from 'components/EssentialLink.vue';
 
-const router = useRouter()
-const authStore = useAuthStore()
-const $q = useQuasar()
-const leftDrawerOpen = ref(true)
+const router = useRouter();
+const authStore = useAuthStore();
+const $q = useQuasar();
+const leftDrawerOpen = ref(true);
+
+// 用户名称
+const userName = computed(() => {
+  return authStore.user?.real_name || authStore.user?.username || '用户'
+})
+
+// 用户名称首字母（用于默认头像）
+const userInitial = computed(() => {
+  if (authStore.user?.real_name) {
+    return authStore.user.real_name.charAt(0).toUpperCase()
+  }
+  if (authStore.user?.username) {
+    return authStore.user.username.charAt(0).toUpperCase()
+  }
+  return 'U'
+})
 
 const toggleLeftDrawer = () => {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+};
 
 // Main navigation links
 const essentialLinks = [
@@ -133,27 +136,27 @@ const essentialLinks = [
     title: '仪表盘',
     caption: '首页',
     icon: 'dashboard',
-    route: '/app'
+    route: '/app',
   },
   {
     title: '病例管理',
     caption: '患者记录',
     icon: 'folder',
-    route: '/app/studies'
+    route: '/app/studies',
   },
   {
     title: '上传分析',
     caption: '新分析',
     icon: 'upload',
-    route: '/app/upload'
+    route: '/app/upload',
   },
   {
     title: '报告中心',
     caption: '分析报告',
     icon: 'description',
-    route: '/app/reports'
-  }
-]
+    route: '/app/reports',
+  },
+];
 
 // Analysis-specific links
 const analysisLinks = [
@@ -161,23 +164,23 @@ const analysisLinks = [
     title: 'API设置',
     caption: '模型配置',
     icon: 'api',
-    route: '/app/models'
+    route: '/app/models',
   },
   {
     title: '系统设置',
     caption: '系统配置',
     icon: 'settings',
-    route: '/app/settings'
-  }
-]
+    route: '/app/settings',
+  },
+];
 
 const goToProfile = () => {
-  void router.push('/app/profile')
-}
+  void router.push('/app/profile');
+};
 
 const goToSettings = () => {
-  void router.push('/app/settings')
-}
+  void router.push('/app/settings');
+};
 
 const showNotifications = () => {
   $q.notify({
@@ -185,15 +188,21 @@ const showNotifications = () => {
     message: '您有3条新通知',
     position: 'top',
     actions: [
-      { label: '查看全部', color: 'white', handler: () => { /* 导航到通知页面 */ } }
-    ]
-  })
-}
+      {
+        label: '查看全部',
+        color: 'white',
+        handler: () => {
+          /* 导航到通知页面 */
+        },
+      },
+    ],
+  });
+};
 
-const logout = () => {
-  authStore.logout()
-  void router.push('/login')
-}
+const logout = async () => {
+  await authStore.logout();
+  void router.push('/login');
+};
 </script>
 
 <style scoped>

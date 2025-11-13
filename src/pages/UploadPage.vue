@@ -135,11 +135,11 @@
                 </template>
               </q-input>
 
-              <q-input 
-                v-model="studyInfo.description" 
-                outlined 
-                label="病例描述（可选）" 
-                type="textarea" 
+              <q-input
+                v-model="studyInfo.description"
+                outlined
+                label="病例描述（可选）"
+                type="textarea"
                 rows="3"
               >
                 <template v-slot:prepend>
@@ -172,10 +172,10 @@
                 </template>
               </q-select>
 
-              <q-input 
-                v-model="studyInfo.studyDate" 
-                outlined 
-                label="检查日期 *" 
+              <q-input
+                v-model="studyInfo.studyDate"
+                outlined
+                label="检查日期 *"
                 type="date"
                 lazy-rules
                 :rules="[(val) => (val && val.length > 0) || '请选择检查日期']"
@@ -227,9 +227,7 @@
                   <q-icon name="check_circle" color="orange" size="xs" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption class="text-orange-9">
-                    文件大小不超过20MB
-                  </q-item-label>
+                  <q-item-label caption class="text-orange-9"> 文件大小不超过20MB </q-item-label>
                 </q-item-section>
               </q-item>
               <q-item>
@@ -296,7 +294,7 @@ const modalities = [
   '超声检查',
   '阴道镜检查',
   'X线造影',
-  '其他'
+  '其他',
 ];
 
 // Computed property for image preview
@@ -333,7 +331,7 @@ const uploadAndAnalyze = async () => {
   console.log('🔵 uploadAndAnalyze 函数被调用');
   console.log('📁 选中的文件:', selectedFile.value);
   console.log('📋 病例信息:', studyInfo.value);
-  
+
   if (!selectedFile.value) {
     console.warn('⚠️ 未选择文件');
     $q.notify({
@@ -344,7 +342,12 @@ const uploadAndAnalyze = async () => {
     return;
   }
 
-  if (!studyInfo.value.patientName || !studyInfo.value.patientId || !studyInfo.value.modality || !studyInfo.value.studyDate) {
+  if (
+    !studyInfo.value.patientName ||
+    !studyInfo.value.patientId ||
+    !studyInfo.value.modality ||
+    !studyInfo.value.studyDate
+  ) {
     console.warn('⚠️ 缺少必填字段');
     $q.notify({
       type: 'warning',
@@ -358,16 +361,16 @@ const uploadAndAnalyze = async () => {
 
   try {
     console.log('📝 开始上传图像...');
-    
+
     // 显示上传开始通知
     $q.notify({
       type: 'info',
       message: '📤 正在上传图像，请稍候...',
       position: 'top',
       timeout: 3000,
-      icon: 'cloud_upload'
+      icon: 'cloud_upload',
     });
-    
+
     // 调用后端 API 上传图像并创建分析任务
     const response = await uploadImage({
       image: selectedFile.value,
@@ -393,9 +396,9 @@ const uploadAndAnalyze = async () => {
           color: 'white',
           handler: () => {
             void router.push(`/app/studies/${response.studyId}`);
-          }
-        }
-      ]
+          },
+        },
+      ],
     });
 
     // 跳转到病例详情页面
@@ -404,49 +407,52 @@ const uploadAndAnalyze = async () => {
 
     // 开始轮询任务状态，分析完成后显示通知
     console.log(`🔄 开始轮询任务状态: ${response.taskId}`);
-    analysisStore.pollTaskStatus(response.taskId).then((task) => {
-      console.log('🎉 分析完成！状态:', task.status);
-      console.log('📋 结果:', task.result);
-      
-      if (task.status === 'SUCCESS') {
-        console.log('✅ 显示成功通知');
+    analysisStore
+      .pollTaskStatus(response.taskId)
+      .then((task) => {
+        console.log('🎉 分析完成！状态:', task.status);
+        console.log('📋 结果:', task.result);
+
+        if (task.status === 'SUCCESS') {
+          console.log('✅ 显示成功通知');
+          $q.notify({
+            type: 'positive',
+            message: '🎉 AI分析完成！请查看分析结果',
+            position: 'top',
+            timeout: 5000,
+            actions: [
+              {
+                label: '查看结果',
+                color: 'white',
+                handler: () => {
+                  console.log('🔄 刷新页面以显示最新结果');
+                  // 刷新页面以显示最新结果
+                  window.location.reload();
+                },
+              },
+            ],
+          });
+        } else if (task.status === 'FAILED') {
+          console.error('❌ 显示失败通知:', task.error);
+          $q.notify({
+            type: 'negative',
+            message: `❌ 分析失败: ${task.error || '未知错误'}`,
+            position: 'top',
+            timeout: 5000,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('❓ 轮询失败:', error);
         $q.notify({
-          type: 'positive',
-          message: '🎉 AI分析完成！请查看分析结果',
+          type: 'warning',
+          message: '轮询任务状态失败，请刷新页面查看结果',
           position: 'top',
-          timeout: 5000,
-          actions: [
-            {
-              label: '查看结果',
-              color: 'white',
-              handler: () => {
-                console.log('🔄 刷新页面以显示最新结果');
-                // 刷新页面以显示最新结果
-                window.location.reload();
-              }
-            }
-          ]
         });
-      } else if (task.status === 'FAILED') {
-        console.error('❌ 显示失败通知:', task.error);
-        $q.notify({
-          type: 'negative',
-          message: `❌ 分析失败: ${task.error || '未知错误'}`,
-          position: 'top',
-          timeout: 5000,
-        });
-      }
-    }).catch((error) => {
-      console.error('❓ 轮询失败:', error);
-      $q.notify({
-        type: 'warning',
-        message: '轮询任务状态失败，请刷新页面查看结果',
-        position: 'top',
       });
-    });
   } catch (error) {
     console.error('❌ 上传错误:', error);
-    
+
     let errorMessage = '上传失败，请重试';
     if (error instanceof Error) {
       if (error.message.includes('Network Error') || error.message.includes('timeout')) {
@@ -455,7 +461,7 @@ const uploadAndAnalyze = async () => {
         errorMessage = `❌ 上传失败: ${error.message}`;
       }
     }
-    
+
     $q.notify({
       type: 'negative',
       message: errorMessage,
@@ -465,9 +471,9 @@ const uploadAndAnalyze = async () => {
       actions: [
         {
           label: '关闭',
-          color: 'white'
-        }
-      ]
+          color: 'white',
+        },
+      ],
     });
   } finally {
     uploading.value = false;

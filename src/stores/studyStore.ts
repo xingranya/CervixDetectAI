@@ -1,19 +1,27 @@
-import { defineStore } from 'pinia'
-import type { AnalysisResult } from './analysisStore'
+import { defineStore } from 'pinia';
+import type { AnalysisResult } from './analysisStore';
+import { studyAPI, analysisTaskAPI } from 'src/services/api';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface Study {
-  id: string;
+  id: number;
+  study_id: string;
+  patient_id: number;
   patientName: string;
   patientId: string;
   studyDate: string; // ISO date string
-  status: 'completed' | 'processing' | 'failed'; // AI analysis status
+  status: 'pending' | 'completed' | 'processing' | 'failed';
+  study_type: string;
   modality: string;
   bodyPart: string;
   description?: string;
-  imageUrl: string; // URL to the medical image
+  imageUrl?: string; // URL to the medical image
+  images?: Array<{ id: number; file_path: string; original_filename: string }>;
   analysisResult?: AnalysisResult; // Result from AI analysis
   uploadedAt: string; // ISO date string
-  taskId?: string; // Backend task ID for tracking
+  created_at: string;
+  taskId?: number; // Backend task ID for tracking
 }
 
 export const useStudyStore = defineStore('study', {
@@ -27,94 +35,71 @@ export const useStudyStore = defineStore('study', {
   getters: {
     allStudies: (state) => state.studies,
     getStudyById: (state) => (id: string) => {
-      return state.studies.find(study => study.id === id) || null;
+      const numId = parseInt(id);
+      return state.studies.find((study) => study.id === numId) || null;
     },
-    completedStudies: (state) => state.studies.filter(study => study.status === 'completed'),
-    processingStudies: (state) => state.studies.filter(study => study.status === 'processing'),
-    recentStudies: (state) => 
+    completedStudies: (state) => state.studies.filter((study) => study.status === 'completed'),
+    processingStudies: (state) => state.studies.filter((study) => study.status === 'processing'),
+    recentStudies: (state) =>
       [...state.studies]
         .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
         .slice(0, 5),
   },
 
   actions: {
-    fetchStudies() {
+    async fetchStudies(params?: {
+      page?: number;
+      limit?: number;
+      patient_id?: number;
+      status?: string;
+    }) {
+      console.log('📋 [fetchStudies] 开始获取病例列表', params);
       this.loading = true;
       this.error = null;
 
-      // In a real app, this would be an API call to your backend
-      // For now, we'll simulate the API call
-      return new Promise<Study[]>((resolve) => {
-        setTimeout(() => {
-          // Simulated data
-          this.studies = [
-            {
-              id: '1',
-              patientName: '张小明',
-              patientId: 'P001234',
-              studyDate: '2024-11-10T09:30:00Z',
-              status: 'completed',
-              modality: 'MRI（磁共振成像）',
-              bodyPart: '宫颈',
-              description: '常规宫颈筛查',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=MRI图像',
-              uploadedAt: '2024-11-10T09:30:00Z',
-              analysisResult: {
-                diagnosis: '正常',
-                confidence: 0.92,
-                recommendations: ['一年后常规随访'],
-                suspiciousAreas: [],
-                biomarkers: {
-                  HPV: '阴性',
-                  p16: '阴性',
-                  Ki67: '低',
-                },
-              },
-            },
-            {
-              id: '2',
-              patientName: '李小红',
-              patientId: 'P001235',
-              studyDate: '2024-11-09T14:15:00Z',
-              status: 'processing',
-              modality: 'CT（计算机断层扫描）',
-              bodyPart: '宫颈',
-              description: '肿瘤分期评估',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=CT图像',
-              uploadedAt: '2024-11-09T14:15:00Z',
-            },
-            {
-              id: '3',
-              patientName: '王小华',
-              patientId: 'P001236',
-              studyDate: '2024-11-08T11:45:00Z',
-              status: 'completed',
-              modality: 'PET-CT（正电子发射断层扫描）',
-              bodyPart: '宫颈',
-              description: '转移病灶筛查',
-              imageUrl: 'https://placehold.co/600x400/cccccc/666666?text=PET-CT图像',
-              uploadedAt: '2024-11-08T11:45:00Z',
-              analysisResult: {
-                diagnosis: 'ASC-US',
-                confidence: 0.78,
-                recommendations: ['建议进一步MRI检查', '3个月后随访复查'],
-                suspiciousAreas: [],
-                biomarkers: {
-                  HPV: '阳性',
-                  p16: '阳性',
-                  Ki67: '高',
-                },
-              },
-            },
-          ];
-          this.loading = false;
-          resolve(this.studies);
-        }, 800);
-      });
+      try {
+        console.log('📡 [fetchStudies] 调用 API: /api/studies');
+        const response = await studyAPI.getStudies(params);
+        console.log('✅ [fetchStudies] API 响应:', response);
+        
+        if (response.success) {
+          // Map backend data to frontend format
+          this.studies = response.data.studies.map((study: any) => ({
+            id: study.id,
+            study_id: study.study_id,
+            patient_id: study.patient_id,
+            patientName: study.patient?.name || '',
+            patientId: study.patient?.patient_id || '',
+            studyDate: study.study_date,
+            status: study.status,
+            study_type: study.study_type,
+            modality: study.study_type,
+            bodyPart: '宫颈',
+            description: study.description,
+            images: study.images,
+            imageUrl: study.images?.[0]?.file_path,
+            uploadedAt: study.created_at,
+            created_at: study.created_at,
+          }));
+          console.log('✅ [fetchStudies] 已映射病例数据，共', this.studies.length, '条');
+          console.log('📊 [fetchStudies] 病例列表:', this.studies);
+          return this.studies;
+        } else {
+          console.error('❌ [fetchStudies] API 返回失败:', response);
+        }
+      } catch (error: any) {
+        console.error('❌ [fetchStudies] 请求失败:', error);
+        console.error('❌ [fetchStudies] 错误详情:', error.response?.data);
+        this.error = error.response?.data?.message || '获取病例列表失败';
+        throw error;
+      } finally {
+        this.loading = false;
+        console.log('🏁 [fetchStudies] 结束，loading =', this.loading);
+      }
     },
 
-    async loadStudyById(id: string) {
-      const existingStudy = this.studies.find(study => study.id === id);
+    async loadStudyById(id: number) {
+      const existingStudy = this.studies.find((study) => study.id === id);
       if (existingStudy) {
         this.currentStudy = existingStudy;
         return existingStudy;
@@ -123,52 +108,128 @@ export const useStudyStore = defineStore('study', {
       this.loading = true;
       this.error = null;
 
-      return new Promise<Study>((resolve, reject) => {
-        setTimeout(() => {
-          // Find the study in our local array (in real app, fetch from API)
-          const study = this.studies.find(s => s.id === id);
-          
-          if (study) {
-            this.currentStudy = study;
-            this.loading = false;
-            resolve(study);
-          } else {
-            this.loading = false;
-            reject(new Error('研究未找到'));
-          }
-        }, 500);
-      });
+      try {
+        const response = await studyAPI.getStudy(id);
+        if (response.success) {
+          const study = {
+            id: response.data.study.id,
+            study_id: response.data.study.study_id,
+            patient_id: response.data.study.patient_id,
+            patientName: response.data.study.patient?.name || '',
+            patientId: response.data.study.patient?.patient_id || '',
+            studyDate: response.data.study.study_date,
+            status: response.data.study.status,
+            study_type: response.data.study.study_type,
+            modality: response.data.study.study_type,
+            bodyPart: '宫颈',
+            description: response.data.study.description,
+            images: response.data.study.images,
+            imageUrl: response.data.study.images?.[0]?.file_path,
+            uploadedAt: response.data.study.created_at,
+            created_at: response.data.study.created_at,
+          };
+          this.currentStudy = study;
+          return study;
+        }
+      } catch (error: any) {
+        this.error = error.response?.data?.message || '获取病例详情失败';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     },
 
-    createStudy(studyData: Omit<Study, 'id' | 'uploadedAt' | 'status'>) {
+    async createStudy(studyData: {
+      patient_id: number;
+      study_date: string;
+      study_type: string;
+      description?: string;
+      images?: File[];
+    }) {
       this.loading = true;
       this.error = null;
 
-      return new Promise<Study>((resolve) => {
-        setTimeout(() => {
+      try {
+        // Create study
+        const response = await studyAPI.createStudy({
+          patient_id: studyData.patient_id,
+          study_date: studyData.study_date,
+          study_type: studyData.study_type,
+          description: studyData.description,
+        });
+
+        if (response.success) {
           const newStudy: Study = {
-            ...studyData,
-            id: `study_${Date.now()}`,
-            status: 'processing', // New studies start as processing
-            uploadedAt: new Date().toISOString(),
+            id: response.data.study.id,
+            study_id: response.data.study.study_id,
+            patient_id: response.data.study.patient_id,
+            patientName: response.data.study.patient?.name || '',
+            patientId: response.data.study.patient?.patient_id || '',
+            studyDate: response.data.study.study_date,
+            status: 'pending',
+            study_type: response.data.study.study_type,
+            modality: response.data.study.study_type,
+            bodyPart: '宫颈',
+            description: response.data.study.description,
+            uploadedAt: response.data.study.created_at,
+            created_at: response.data.study.created_at,
           };
-          
+
+          // Upload images if provided
+          if (studyData.images && studyData.images.length > 0) {
+            const imagesResponse = await studyAPI.uploadImages(newStudy.id, studyData.images);
+            if (imagesResponse.success) {
+              newStudy.images = imagesResponse.data.images;
+              newStudy.imageUrl = imagesResponse.data.images[0]?.file_path;
+            }
+          }
+
           this.studies.unshift(newStudy);
           this.currentStudy = newStudy;
-          
-          // Simulate the analysis process by updating the status after a delay
-          setTimeout(() => {
-            this.updateStudyStatus(newStudy.id, 'completed');
-          }, 3000);
-          
-          this.loading = false;
-          resolve(newStudy);
-        }, 800);
-      });
+
+          // Create analysis task
+          if (newStudy.images && newStudy.images.length > 0) {
+            await analysisTaskAPI.createTask({ study_id: newStudy.id });
+            newStudy.status = 'processing';
+          }
+
+          return newStudy;
+        }
+      } catch (error: any) {
+        this.error = error.response?.data?.message || '创建病例失败';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     },
 
-    updateStudyStatus(studyId: string, status: Study['status']) {
-      const studyIndex = this.studies.findIndex(s => s.id === studyId);
+    async updateStudyStatus(studyId: number, status: Study['status']) {
+      const studyIndex = this.studies.findIndex((s) => s.id === studyId);
+      if (studyIndex === -1) {
+        return;
+      }
+
+      try {
+        await studyAPI.updateStudy(studyId, { status });
+
+        const study = this.studies[studyIndex];
+        if (!study) {
+          return;
+        }
+
+        const updatedStudy: Study = { ...study, status };
+        this.studies.splice(studyIndex, 1, updatedStudy);
+
+        if (this.currentStudy && this.currentStudy.id === studyId) {
+          this.currentStudy = updatedStudy;
+        }
+      } catch (error: any) {
+        console.error('更新病例状态失败:', error);
+      }
+    },
+
+    updateStudyAnalysisResult(studyId: number, analysisResult: AnalysisResult) {
+      const studyIndex = this.studies.findIndex((s) => s.id === studyId);
       if (studyIndex === -1) {
         return;
       }
@@ -178,33 +239,28 @@ export const useStudyStore = defineStore('study', {
         return;
       }
 
-      const updatedStudy: Study = { ...study, status };
+      const updatedStudy: Study = { ...study, analysisResult, status: 'completed' };
       this.studies.splice(studyIndex, 1, updatedStudy);
 
-      // If we're updating the current study, update that too
       if (this.currentStudy && this.currentStudy.id === studyId) {
         this.currentStudy = updatedStudy;
       }
     },
 
-    updateStudyAnalysisResult(studyId: string, analysisResult: AnalysisResult) {
-      const studyIndex = this.studies.findIndex(s => s.id === studyId);
-      if (studyIndex === -1) {
-        return;
+    async deleteStudy(studyId: number) {
+      try {
+        await studyAPI.deleteStudy(studyId);
+        const index = this.studies.findIndex((s) => s.id === studyId);
+        if (index !== -1) {
+          this.studies.splice(index, 1);
+        }
+        if (this.currentStudy?.id === studyId) {
+          this.currentStudy = null;
+        }
+      } catch (error: any) {
+        this.error = error.response?.data?.message || '删除病例失败';
+        throw error;
       }
-
-      const study = this.studies[studyIndex];
-      if (!study) {
-        return;
-      }
-
-      const updatedStudy: Study = { ...study, analysisResult };
-      this.studies.splice(studyIndex, 1, updatedStudy);
-
-      // If we're updating the current study, update that too
-      if (this.currentStudy && this.currentStudy.id === studyId) {
-        this.currentStudy = updatedStudy;
-      }
-    }
+    },
   },
-})
+});

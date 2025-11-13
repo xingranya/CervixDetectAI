@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
   },
   (error: Error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // 响应拦截器
@@ -35,7 +35,7 @@ apiClient.interceptors.response.use(
       console.error('❌ API错误:', error);
     }
     return Promise.reject(error instanceof Error ? error : new Error(String(error)));
-  }
+  },
 );
 
 export interface UploadImageRequest {
@@ -99,7 +99,7 @@ export async function uploadImage(data: UploadImageRequest): Promise<UploadImage
     patientName: data.patientName,
     patientId: data.patientId,
   });
-  
+
   const formData = new FormData();
   formData.append('image', data.image);
   formData.append('patientName', data.patientName);
@@ -111,7 +111,7 @@ export async function uploadImage(data: UploadImageRequest): Promise<UploadImage
   }
 
   console.log('📤 发送 POST 请求到:', `${API_BASE_URL}/analyze`);
-  
+
   const response = await apiClient.post<UploadImageResponse>('/analyze', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -149,7 +149,7 @@ export async function pollTaskStatus(
   taskId: string,
   onProgress?: (status: TaskStatusResponse) => void,
   interval = 2000,
-  maxAttempts = 150 // 5分钟
+  maxAttempts = 150, // 5分钟
 ): Promise<TaskStatusResponse> {
   let attempts = 0;
 

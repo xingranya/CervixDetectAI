@@ -6,7 +6,11 @@
         <q-card flat bordered>
           <q-card-section class="bg-primary text-white">
             <div class="text-h5">仪表盘</div>
-            <div class="text-subtitle2">欢迎回来，{{ authStore.currentUser?.name }}</div>
+            <div class="text-subtitle2">
+              欢迎回来，{{
+                authStore.currentUser?.real_name || authStore.currentUser?.username || '用户'
+              }}
+            </div>
           </q-card-section>
           <q-card-section>
             <div class="row items-center">
@@ -14,13 +18,7 @@
                 <p class="q-my-none">AI驱动的宫颈癌筛查仪表盘。上传患者图像以进行即时分析。</p>
               </div>
               <div class="col-4 flex justify-end">
-                <q-btn 
-                  color="primary" 
-                  icon="upload" 
-                  label="新分析" 
-                  no-caps
-                  to="/app/upload"
-                />
+                <q-btn color="primary" icon="upload" label="新分析" no-caps to="/app/upload" />
               </div>
             </div>
           </q-card-section>
@@ -60,7 +58,9 @@
                 <q-icon name="schedule" size="3rem" color="orange" />
               </q-card-section>
               <q-card-section>
-                <div class="text-h6 text-weight-bold">{{ studyStore.processingStudies.length }}</div>
+                <div class="text-h6 text-weight-bold">
+                  {{ studyStore.processingStudies.length }}
+                </div>
                 <div class="text-caption text-grey">处理中</div>
               </q-card-section>
             </q-card>
@@ -105,33 +105,24 @@
             >
               <template v-slot:body-cell-status="props">
                 <q-td :props="props">
-                  <q-chip
-                    :color="getStatusColor(props.row.status)"
-                    text-color="white"
-                    dense
-                  >
+                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" dense>
                     {{ props.row.status }}
                   </q-chip>
                 </q-td>
               </template>
-              
+
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props">
-                  <q-btn 
-                    flat 
-                    size="sm" 
-                    icon="remove_red_eye" 
+                  <q-btn
+                    flat
+                    size="sm"
+                    icon="remove_red_eye"
                     @click="viewStudy(props.row.id)"
                     v-if="props.row.status === 'completed'"
                   >
                     <q-tooltip>查看结果</q-tooltip>
                   </q-btn>
-                  <q-btn 
-                    flat 
-                    size="sm" 
-                    icon="schedule" 
-                    v-else
-                  >
+                  <q-btn flat size="sm" icon="schedule" v-else>
                     <q-tooltip>分析中</q-tooltip>
                   </q-btn>
                 </q-td>
@@ -161,7 +152,7 @@
                   <q-icon name="chevron_right" />
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple to="/app/studies">
                 <q-item-section avatar>
                   <q-icon color="secondary" name="folder" />
@@ -174,7 +165,7 @@
                   <q-icon name="chevron_right" />
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple to="/app/reports">
                 <q-item-section avatar>
                   <q-icon color="accent" name="description" />
@@ -187,7 +178,7 @@
                   <q-icon name="chevron_right" />
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple to="/app/models">
                 <q-item-section avatar>
                   <q-icon color="teal" name="smart_toy" />
@@ -220,22 +211,37 @@ const studyStore = useStudyStore();
 
 // Define table columns
 const studyColumns = [
-  { name: 'patientName', label: '患者', field: 'patientName', align: 'left' as const, sortable: true },
-  { name: 'studyDate', label: '日期', field: 'studyDate', align: 'left' as const, sortable: true,
-    format: (val: string) => new Date(val).toLocaleDateString() 
+  {
+    name: 'patientName',
+    label: '患者',
+    field: 'patientName',
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    name: 'studyDate',
+    label: '日期',
+    field: 'studyDate',
+    align: 'left' as const,
+    sortable: true,
+    format: (val: string) => new Date(val).toLocaleDateString(),
   },
   { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
   { name: 'status', label: '状态', field: 'status', align: 'left' as const },
-  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const }
+  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
 // Function to get status color based on status
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'completed': return 'green';
-    case 'processing': return 'orange';
-    case 'failed': return 'red';
-    default: return 'grey';
+    case 'completed':
+      return 'green';
+    case 'processing':
+      return 'orange';
+    case 'failed':
+      return 'red';
+    default:
+      return 'grey';
   }
 };
 

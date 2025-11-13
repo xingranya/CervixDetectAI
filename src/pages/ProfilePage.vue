@@ -12,12 +12,17 @@
       <div class="col-md-4 col-xs-12">
         <q-card flat bordered>
           <q-card-section class="text-center">
-            <q-avatar size="120px" class="q-mb-md">
-              <img :src="profileData.avatar" alt="用户头像">
+            <q-avatar size="120px" class="q-mb-md" color="primary" text-color="white">
+              <template v-if="user?.avatar_url">
+                <img :src="user.avatar_url" alt="用户头像">
+              </template>
+              <template v-else>
+                <div class="text-h3">{{ userInitial }}</div>
+              </template>
             </q-avatar>
-            <div class="text-h6">{{ profileData.firstName }} {{ profileData.lastName }}医生</div>
-            <div class="text-subtitle2 text-grey-6">{{ profileData.title }}</div>
-            <div class="text-caption text-grey-6 q-mt-sm">{{ profileData.email }}</div>
+            <div class="text-h6">{{ user?.real_name || user?.username || '用户' }}</div>
+            <div class="text-subtitle2 text-grey-6">{{ user?.role === 'doctor' ? '医生' : user?.role === 'admin' ? '管理员' : '用户' }}</div>
+            <div class="text-caption text-grey-6 q-mt-sm">{{ user?.email || user?.phone || '' }}</div>
             
             <q-btn 
               label="更改头像" 
@@ -34,18 +39,18 @@
           <q-card-section>
             <div class="q-gutter-sm">
               <div class="row items-center">
-                <div class="col-4 text-grey-6">医师编号</div>
-                <div class="col-8 text-weight-medium">{{ profileData.doctorId }}</div>
+                <div class="col-4 text-grey-6">用户名</div>
+                <div class="col-8 text-weight-medium">{{ user?.username || '-' }}</div>
               </div>
-              <div class="row items-center">
+              <div class="row items-center" v-if="profileData.phone">
+                <div class="col-4 text-grey-6">手机号</div>
+                <div class="col-8 text-weight-medium">{{ profileData.phone }}</div>
+              </div>
+              <div class="row items-center" v-if="profileData.department">
                 <div class="col-4 text-grey-6">科室</div>
                 <div class="col-8 text-weight-medium">{{ profileData.department }}</div>
               </div>
-              <div class="row items-center">
-                <div class="col-4 text-grey-6">职称</div>
-                <div class="col-8 text-weight-medium">{{ profileData.position }}</div>
-              </div>
-              <div class="row items-center">
+              <div class="row items-center" v-if="profileData.registeredDate">
                 <div class="col-4 text-grey-6">注册日期</div>
                 <div class="col-8 text-weight-medium">{{ new Date(profileData.registeredDate).toLocaleDateString() }}</div>
               </div>
@@ -161,7 +166,7 @@
         </q-card>
 
         <!-- 专业资质卡片 -->
-        <q-card flat bordered class="q-mt-md">
+        <q-card v-if="profileData.certifications.length > 0" flat bordered class="q-mt-md">
           <q-card-section>
             <div class="text-h6">专业资质</div>
           </q-card-section>
@@ -195,46 +200,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useAuthStore } from 'stores/authStore'
 
 const $q = useQuasar()
+const authStore = useAuthStore()
+
+// 获取当前用户
+const user = computed(() => authStore.user)
+
+// 用户名称首字母（用于默认头像）
+const userInitial = computed(() => {
+  if (user.value?.real_name) {
+    return user.value.real_name.charAt(0).toUpperCase()
+  }
+  if (user.value?.username) {
+    return user.value.username.charAt(0).toUpperCase()
+  }
+  return 'U'
+})
 
 // Profile data
 const profileData = ref({
-  firstName: '张',
-  lastName: '医生',
-  email: 'zhang.doctor@hospital.com',
-  phone: '+86 138-1234-5678',
-  institution: '市中心医院',
-  department: '妇科',
-  position: '主治医师',
-  title: '妇科主任',
-  address: '北京市朝阳区医院路123号',
-  doctorId: 'DOC-2024-001',
-  avatar: 'https://cdn.quasar.dev/img/avatar.png',
-  registeredDate: '2023-01-15',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  institution: '',
+  department: '',
+  position: '',
+  title: '',
+  address: '',
+  doctorId: '',
+  registeredDate: '',
   stats: {
-    totalCases: 342,
-    thisMonth: 28
+    totalCases: 0,
+    thisMonth: 0
   },
-  certifications: [
-    {
-      name: '执业医师资格证',
-      issuer: '中华人民共和国卫生部',
-      year: '2018'
-    },
-    {
-      name: '宫颈癌筛查专科培训证书',
-      issuer: '中国医师协会',
-      year: '2020'
-    },
-    {
-      name: 'AI辅助诊断系统认证',
-      issuer: 'CervixDetectAI',
-      year: '2023'
-    }
-  ]
+  certifications: [] as Array<{ name: string; issuer: string; year: string }>
+})
+
+// 初始化用户数据
+onMounted(() => {
+  if (user.value) {
+    profileData.value.email = user.value.email || ''
+    profileData.value.phone = user.value.phone || ''
+    profileData.value.firstName = user.value.real_name?.split(' ')[0] || ''
+    profileData.value.lastName = user.value.real_name?.split(' ')[1] || ''
+    // 注意：User模型没有created_at字段，使用last_login_at作为替代
+    profileData.value.registeredDate = user.value.last_login_at || new Date().toISOString()
+  }
 })
 
 // Create a backup for reset
