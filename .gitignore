@@ -32,3 +32,20 @@ yarn-error.log*
 
 # local .env files
 .env.local*
+
+# Production environment files (should be configured on server)
+.env.production
+server/.env.production
+
+# PM2 logs
+logs/
+*.log
+
+# Build output
+dist/
+
+# Server uploads and reports
+server/uploads/*
+server/reports/*
+!server/uploads/.gitkeep
+!server/reports/.gitkeep

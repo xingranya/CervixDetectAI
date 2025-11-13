@@ -27,20 +27,10 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <q-btn 
-                flat 
-                size="sm" 
-                icon="description" 
-                @click="viewReport(props.row.id)"
-              >
+              <q-btn flat size="sm" icon="description" @click="viewReport(props.row.id)">
                 <q-tooltip>查看报告</q-tooltip>
               </q-btn>
-              <q-btn 
-                flat 
-                size="sm" 
-                icon="file_download" 
-                @click="downloadReport(props.row.id)"
-              >
+              <q-btn flat size="sm" icon="file_download" @click="downloadReport(props.row.id)">
                 <q-tooltip>下载报告</q-tooltip>
               </q-btn>
             </q-td>
@@ -70,11 +60,29 @@ console.log('📊 [ReportsPage] 已完成病例数:', studyStore.completedStudie
 // Define table columns for reports
 const reportColumns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' as const, sortable: true },
-  { name: 'patientName', label: '患者姓名', field: 'patientName', align: 'left' as const, sortable: true },
-  { name: 'patientId', label: '患者ID', field: 'patientId', align: 'left' as const, sortable: true },
-  { name: 'studyDate', label: '检查日期', field: 'studyDate', align: 'left' as const, sortable: true },
+  {
+    name: 'patientName',
+    label: '患者姓名',
+    field: 'patientName',
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    name: 'patientId',
+    label: '患者ID',
+    field: 'patientId',
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    name: 'studyDate',
+    label: '检查日期',
+    field: 'studyDate',
+    align: 'left' as const,
+    sortable: true,
+  },
   { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
-  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const }
+  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
 // Function to view a report
@@ -88,15 +96,15 @@ const downloadReport = (id: string) => {
   $q.notify({
     type: 'info',
     message: `正在生成报告 PDF...`,
-    position: 'top'
+    position: 'top',
   });
-  
+
   // Simulate report generation and download
   setTimeout(() => {
     $q.notify({
       type: 'positive',
       message: `病例 ${id} 的报告下载成功！`,
-      position: 'top'
+      position: 'top',
     });
   }, 1500);
 };
@@ -104,7 +112,7 @@ const downloadReport = (id: string) => {
 // Load studies when component mounts
 onMounted(async () => {
   console.log('🔥 [ReportsPage] 组件已挂载，开始加载病例数据');
-  
+
   try {
     await studyStore.fetchStudies();
     console.log('✅ [ReportsPage] 病例数据加载完成');

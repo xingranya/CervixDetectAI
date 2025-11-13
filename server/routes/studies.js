@@ -136,7 +136,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     if (!study) {
       // 清理已上传的文件
       if (req.files) {
-        req.files.forEach(file => fs.unlinkSync(file.path));
+        req.files.forEach((file) => fs.unlinkSync(file.path));
       }
       return res.status(404).json({
         success: false,
@@ -148,7 +148,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
       // 清理已上传的文件
       if (req.files) {
-        req.files.forEach(file => fs.unlinkSync(file.path));
+        req.files.forEach((file) => fs.unlinkSync(file.path));
       }
       return res.status(403).json({
         success: false,
@@ -187,7 +187,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     console.error('上传影像错误:', error);
     // 清理已上传的文件
     if (req.files) {
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         if (fs.existsSync(file.path)) {
           fs.unlinkSync(file.path);
         }
@@ -209,11 +209,18 @@ router.get('/', authenticate, async (req, res) => {
   try {
     console.log('📡 [GET /api/studies] 接收到请求');
     console.log('👤 [GET /api/studies] 用户信息:', { id: req.user.id, role: req.user.role });
-    
+
     const { page = 1, limit = 10, patient_id, status, study_type, search } = req.query;
     const offset = (page - 1) * limit;
-    
-    console.log('🔍 [GET /api/studies] 查询参数:', { page, limit, patient_id, status, study_type, search });
+
+    console.log('🔍 [GET /api/studies] 查询参数:', {
+      page,
+      limit,
+      patient_id,
+      status,
+      study_type,
+      search,
+    });
 
     const where = {};
 
@@ -237,7 +244,7 @@ router.get('/', authenticate, async (req, res) => {
     } else {
       console.log('🔓 [GET /api/studies] 管理员，查询所有病例');
     }
-    
+
     console.log('📊 [GET /api/studies] WHERE 条件:', where);
 
     const { count, rows } = await Study.findAndCountAll({
@@ -263,9 +270,12 @@ router.get('/', authenticate, async (req, res) => {
       offset: parseInt(offset),
       order: [['study_date', 'DESC']],
     });
-    
+
     console.log('✅ [GET /api/studies] 查询结果: 总数 =', count, ', 返回 =', rows.length);
-    console.log('📊 [GET /api/studies] 病例数据:', rows.map(r => ({ id: r.id, study_id: r.study_id, status: r.status })));
+    console.log(
+      '📊 [GET /api/studies] 病例数据:',
+      rows.map((r) => ({ id: r.id, study_id: r.study_id, status: r.status })),
+    );
 
     res.json({
       success: true,

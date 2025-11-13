@@ -85,14 +85,16 @@ const Patient = sequelize.define(
         fields: ['created_by'],
       },
     ],
-  }
+  },
 );
 
 // Hook：创建患者前自动生成patient_id
 Patient.beforeCreate(async (patient) => {
   if (!patient.patient_id) {
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
     patient.patient_id = `P${timestamp}${random}`;
   }
 });

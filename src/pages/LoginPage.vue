@@ -1,6 +1,6 @@
 <template>
   <q-page class="flex flex-center bg-grey-2">
-    <div class="q-pa-md" style="width: 400px; max-width: 400px;">
+    <div class="q-pa-md" style="width: 400px; max-width: 400px">
       <div class="text-center q-mb-xl">
         <div class="text-h4 text-weight-bold text-primary q-mb-sm">CervixDetectAI</div>
         <div class="text-subtitle1 text-grey">AI驱动的宫颈癌筛查系统</div>
@@ -14,7 +14,13 @@
 
         <!-- 登录方式切换 -->
         <q-card-section class="q-pb-none">
-          <q-tabs v-model="loginType" dense class="text-grey" active-color="primary" indicator-color="primary">
+          <q-tabs
+            v-model="loginType"
+            dense
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+          >
             <q-tab name="email" label="邮箱登录" />
             <q-tab name="phone" label="手机登录" />
           </q-tabs>
@@ -32,7 +38,7 @@
               label="邮箱"
               type="email"
               lazy-rules
-              :rules="[val => val && val.length > 0 || '请输入您的邮箱']"
+              :rules="[(val) => (val && val.length > 0) || '请输入您的邮箱']"
             />
 
             <q-input
@@ -41,7 +47,7 @@
               label="密码"
               :type="isPwd ? 'password' : 'text'"
               lazy-rules
-              :rules="[val => val && val.length > 0 || '请输入您的密码']"
+              :rules="[(val) => (val && val.length > 0) || '请输入您的密码']"
             >
               <template v-slot:append>
                 <q-icon
@@ -59,13 +65,13 @@
             </div>
 
             <div class="q-mt-xl">
-              <q-btn 
-                color="primary" 
+              <q-btn
+                color="primary"
                 :loading="authStore.isAuthenticating"
-                unelevated 
-                rounded 
-                size="lg" 
-                style="width: 100%" 
+                unelevated
+                rounded
+                size="lg"
+                style="width: 100%"
                 type="submit"
                 :disabled="authStore.isAuthenticating"
               >
@@ -84,7 +90,7 @@
               type="tel"
               maxlength="11"
               lazy-rules
-              :rules="[val => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
+              :rules="[(val) => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
             >
               <template v-slot:prepend>
                 <q-icon name="phone" />
@@ -97,7 +103,7 @@
               label="验证码"
               maxlength="6"
               lazy-rules
-              :rules="[val => val && val.length === 6 || '请输入6位验证码']"
+              :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
             >
               <template v-slot:prepend>
                 <q-icon name="shield" />
@@ -221,7 +227,9 @@ const sendSmsCode = async () => {
     }
   } catch (error) {
     console.error('发送验证码错误:', error);
-    const errorMessage = (error as {response?: {data?: {message?: string}}})?.response?.data?.message || '验证码发送失败';
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      '验证码发送失败';
     $q.notify({
       type: 'negative',
       message: errorMessage,
@@ -236,14 +244,14 @@ const sendSmsCode = async () => {
 const onSubmit = async () => {
   try {
     const result = await authStore.login(email.value, password.value);
-    
+
     if (result.success) {
       $q.notify({
         type: 'positive',
         message: '登录成功',
         position: 'top',
       });
-      const redirectPath = router.currentRoute.value.query.redirect as string || '/app';
+      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
       void router.push(redirectPath);
     } else {
       $q.notify({
@@ -275,7 +283,7 @@ const onSmsLogin = async () => {
 
   try {
     console.log('📱 短信登录/注册:', phone.value, smsCode.value);
-    
+
     // 先尝试登录
     let result = await authStore.smsLogin(phone.value, smsCode.value);
 
@@ -287,7 +295,7 @@ const onSmsLogin = async () => {
         message: '检测到新用户，正在为您注册...',
         position: 'top',
       });
-      
+
       // 自动注册
       result = await authStore.smsRegister(phone.value, smsCode.value);
     }
@@ -298,7 +306,7 @@ const onSmsLogin = async () => {
         message: '登录成功',
         position: 'top',
       });
-      const redirectPath = router.currentRoute.value.query.redirect as string || '/app';
+      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
       void router.push(redirectPath);
     } else {
       $q.notify({
@@ -309,7 +317,9 @@ const onSmsLogin = async () => {
     }
   } catch (error) {
     console.error('短信登录/注册错误:', error);
-    const errorMessage = (error as {response?: {data?: {message?: string}}})?.response?.data?.message || '登录过程中发生错误';
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      '登录过程中发生错误';
     $q.notify({
       type: 'negative',
       message: errorMessage,

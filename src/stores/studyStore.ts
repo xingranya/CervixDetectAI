@@ -61,7 +61,7 @@ export const useStudyStore = defineStore('study', {
         console.log('📡 [fetchStudies] 调用 API: /api/studies');
         const response = await studyAPI.getStudies(params);
         console.log('✅ [fetchStudies] API 响应:', response);
-        
+
         if (response.success) {
           // Map backend data to frontend format
           this.studies = response.data.studies.map((study: any) => ({

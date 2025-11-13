@@ -31,7 +31,7 @@
               <div class="row items-center no-wrap">
                 <q-avatar size="32px" color="primary" text-color="white" class="q-mr-sm">
                   <template v-if="authStore.user?.avatar_url">
-                    <img :src="authStore.user.avatar_url" alt="用户头像">
+                    <img :src="authStore.user.avatar_url" alt="用户头像" />
                   </template>
                   <template v-else>
                     {{ userInitial }}
@@ -112,19 +112,19 @@ const leftDrawerOpen = ref(true);
 
 // 用户名称
 const userName = computed(() => {
-  return authStore.user?.real_name || authStore.user?.username || '用户'
-})
+  return authStore.user?.real_name || authStore.user?.username || '用户';
+});
 
 // 用户名称首字母（用于默认头像）
 const userInitial = computed(() => {
   if (authStore.user?.real_name) {
-    return authStore.user.real_name.charAt(0).toUpperCase()
+    return authStore.user.real_name.charAt(0).toUpperCase();
   }
   if (authStore.user?.username) {
-    return authStore.user.username.charAt(0).toUpperCase()
+    return authStore.user.username.charAt(0).toUpperCase();
   }
-  return 'U'
-})
+  return 'U';
+});
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;

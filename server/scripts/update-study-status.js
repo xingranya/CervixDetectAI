@@ -21,8 +21,8 @@ async function updateStudyStatus() {
     // 更新 status 值
     console.log('🔄 更新病例状态值...');
     const [result] = await connection.query(`
-      UPDATE studies 
-      SET status = 'pending' 
+      UPDATE studies
+      SET status = 'pending'
       WHERE status = 'uploaded'
     `);
     console.log(`✅ 病例状态更新完成! 更新了 ${result.affectedRows} 条记录\n`);

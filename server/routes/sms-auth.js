@@ -8,10 +8,7 @@ const { Op } = require('sequelize');
 const { User } = require('../models');
 const SmsCode = require('../models/SmsCode');
 const smsService = require('../services/sms.service');
-const {
-  generateAccessToken,
-  generateRefreshToken,
-} = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 const router = express.Router();
 
@@ -66,7 +63,8 @@ router.post('/send-code', async (req, res) => {
 
     if (recentCode) {
       const waitSeconds = Math.ceil(
-        (SEND_INTERVAL_SECONDS * 1000 - (Date.now() - new Date(recentCode.created_at).getTime())) / 1000
+        (SEND_INTERVAL_SECONDS * 1000 - (Date.now() - new Date(recentCode.created_at).getTime())) /
+          1000,
       );
       return res.status(429).json({
         success: false,
@@ -136,7 +134,7 @@ router.post('/send-code', async (req, res) => {
     // 保存验证码记录（使用阿里云返回的验证码）
     await SmsCode.create({
       phone,
-      code: sendResult.code,  // 使用阿里云生成的验证码
+      code: sendResult.code, // 使用阿里云生成的验证码
       biz_id: sendResult.bizId,
       type,
       status: 'pending',
@@ -144,7 +142,9 @@ router.post('/send-code', async (req, res) => {
       ip_address: ipAddress,
     });
 
-    console.log(`📱 [短信验证码] 已发送 - 手机号: ${phone}, 类型: ${type}, 验证码: ${sendResult.code}`);
+    console.log(
+      `📱 [短信验证码] 已发送 - 手机号: ${phone}, 类型: ${type}, 验证码: ${sendResult.code}`,
+    );
 
     res.json({
       success: true,
@@ -337,7 +337,7 @@ router.post('/register', async (req, res) => {
       where: {
         phone,
         code,
-        type: 'login',  // 登录/注册通用，都查找login类型
+        type: 'login', // 登录/注册通用，都查找login类型
         status: 'pending',
         expires_at: {
           [Op.gt]: new Date(),

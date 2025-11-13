@@ -124,7 +124,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // 短信验证码注册
-    async smsRegister(phone: string, code: string, userData?: { username?: string; real_name?: string; email?: string }) {
+    async smsRegister(
+      phone: string,
+      code: string,
+      userData?: { username?: string; real_name?: string; email?: string },
+    ) {
       this.isAuthenticating = true;
       try {
         const response = await authAPI.smsRegister(phone, code, userData);

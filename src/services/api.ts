@@ -25,7 +25,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor to handle errors
@@ -44,10 +44,10 @@ apiClient.interceptors.response.use(
           const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
-          
+
           localStorage.setItem('accessToken', data.data.accessToken);
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.data.accessToken}`;
-          
+
           return apiClient(originalRequest);
         } catch (refreshError) {
           // Refresh failed, clear tokens and redirect to login
@@ -60,7 +60,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Auth API
@@ -70,7 +70,12 @@ export const authAPI = {
     return data;
   },
 
-  async register(userData: { email: string; password: string; real_name?: string; phone?: string }) {
+  async register(userData: {
+    email: string;
+    password: string;
+    real_name?: string;
+    phone?: string;
+  }) {
     const { data } = await apiClient.post('/auth/register', userData);
     return data;
   },
@@ -101,7 +106,11 @@ export const authAPI = {
     return data;
   },
 
-  async smsRegister(phone: string, code: string, userData?: { username?: string; real_name?: string; email?: string }) {
+  async smsRegister(
+    phone: string,
+    code: string,
+    userData?: { username?: string; real_name?: string; email?: string },
+  ) {
     const { data } = await apiClient.post('/auth/sms/register', { phone, code, ...userData });
     return data;
   },
@@ -181,11 +190,11 @@ export const studyAPI = {
     return data;
   },
 
-  async getStudies(params?: { 
-    page?: number; 
-    limit?: number; 
-    patient_id?: number; 
-    status?: string; 
+  async getStudies(params?: {
+    page?: number;
+    limit?: number;
+    patient_id?: number;
+    status?: string;
     study_type?: string;
     search?: string;
   }) {
@@ -231,12 +240,23 @@ export const studyAPI = {
 
 // Analysis Task API
 export const analysisTaskAPI = {
-  async createTask(taskData: { study_id: number; model_name?: string; model_version?: string; priority?: string }) {
+  async createTask(taskData: {
+    study_id: number;
+    model_name?: string;
+    model_version?: string;
+    priority?: string;
+  }) {
     const { data } = await apiClient.post('/analysis-tasks', taskData);
     return data;
   },
 
-  async getTasks(params?: { page?: number; limit?: number; status?: string; study_id?: number; priority?: string }) {
+  async getTasks(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    study_id?: number;
+    priority?: string;
+  }) {
     const { data } = await apiClient.get('/analysis-tasks', { params });
     return data;
   },
@@ -246,7 +266,10 @@ export const analysisTaskAPI = {
     return data;
   },
 
-  async updateTaskStatus(id: number, statusData: { status?: string; progress?: number; error_message?: string }) {
+  async updateTaskStatus(
+    id: number,
+    statusData: { status?: string; progress?: number; error_message?: string },
+  ) {
     const { data } = await apiClient.put(`/analysis-tasks/${id}/status`, statusData);
     return data;
   },
@@ -274,7 +297,13 @@ export const reportAPI = {
     return data;
   },
 
-  async getReports(params?: { page?: number; limit?: number; study_id?: number; report_type?: string; status?: string }) {
+  async getReports(params?: {
+    page?: number;
+    limit?: number;
+    study_id?: number;
+    report_type?: string;
+    status?: string;
+  }) {
     const { data } = await apiClient.get('/reports', { params });
     return data;
   },

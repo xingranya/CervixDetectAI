@@ -104,7 +104,7 @@ const Study = sequelize.define(
         fields: ['status', 'created_at'],
       },
     ],
-  }
+  },
 );
 
 // Hook：创建病例前自动生成study_id
@@ -112,7 +112,7 @@ Study.beforeCreate(async (study) => {
   if (!study.study_id) {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    
+
     // 查询当天已有的记录数
     const count = await Study.count({
       where: {
@@ -121,7 +121,7 @@ Study.beforeCreate(async (study) => {
         },
       },
     });
-    
+
     const sequence = (count + 1).toString().padStart(6, '0');
     study.study_id = `S${dateStr}${sequence}`;
   }

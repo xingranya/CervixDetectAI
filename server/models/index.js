@@ -55,7 +55,10 @@ AnalysisResult.hasMany(MedicalReport, { foreignKey: 'analysis_result_id', as: 'r
 
 // MedicalReport 关系
 MedicalReport.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
-MedicalReport.belongsTo(AnalysisResult, { foreignKey: 'analysis_result_id', as: 'analysis_result' });
+MedicalReport.belongsTo(AnalysisResult, {
+  foreignKey: 'analysis_result_id',
+  as: 'analysis_result',
+});
 MedicalReport.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 MedicalReport.belongsTo(User, { foreignKey: 'generated_by', as: 'generator' });
 MedicalReport.belongsTo(User, { foreignKey: 'signed_by', as: 'signer' });

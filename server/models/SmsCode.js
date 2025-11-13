@@ -67,7 +67,7 @@ const SmsCode = sequelize.define(
         fields: ['created_at'],
       },
     ],
-  }
+  },
 );
 
 module.exports = SmsCode;

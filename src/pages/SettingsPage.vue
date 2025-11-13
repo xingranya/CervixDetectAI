@@ -21,19 +21,15 @@
                 label="分析完成时的邮件通知"
                 left-label
               />
-              
+
               <q-toggle
                 v-model="notificationForm.pushNotifications"
                 label="紧急情况的推送通知"
                 left-label
               />
-              
-              <q-toggle
-                v-model="notificationForm.weeklyReports"
-                label="周汇总报告"
-                left-label
-              />
-              
+
+              <q-toggle v-model="notificationForm.weeklyReports" label="周汇总报告" left-label />
+
               <div class="row q-mt-lg">
                 <q-space />
                 <q-btn color="primary" label="保存偏好设置" @click="saveNotifications" />
@@ -48,7 +44,7 @@
           <q-card-section class="text-center">
             <q-avatar size="100px" color="primary" text-color="white" class="q-mb-md">
               <template v-if="user?.avatar_url">
-                <img :src="user.avatar_url" alt="用户头像">
+                <img :src="user.avatar_url" alt="用户头像" />
               </template>
               <template v-else>
                 <div class="text-h2">{{ userInitial }}</div>
@@ -57,9 +53,9 @@
             <div class="text-h6">{{ userName }}</div>
             <div class="text-subtitle2">{{ user?.email || user?.phone || '' }}</div>
           </q-card-section>
-          
+
           <q-separator />
-          
+
           <q-card-section>
             <q-list>
               <q-item clickable v-ripple @click="showChangePasswordDialog = true">
@@ -73,7 +69,7 @@
                   <q-icon name="chevron_right" />
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple>
                 <q-item-section avatar>
                   <q-icon color="secondary" name="notifications" />
@@ -85,7 +81,7 @@
                   <q-icon name="chevron_right" />
                 </q-item-section>
               </q-item>
-              
+
               <q-item clickable v-ripple @click="showPrivacyDialog = true">
                 <q-item-section avatar>
                   <q-icon color="accent" name="security" />
@@ -113,10 +109,10 @@
               <div><strong>发布日期:</strong> 2024年11月</div>
               <div><strong>许可证:</strong> 医疗使用</div>
             </div>
-            
-            <q-btn 
-              label="检查更新" 
-              color="primary" 
+
+            <q-btn
+              label="检查更新"
+              color="primary"
               class="full-width q-mt-md"
               flat
               @click="checkForUpdates"
@@ -182,11 +178,7 @@
               label="允许使用分析数据改进服务"
               left-label
             />
-            <q-toggle
-              v-model="privacyForm.twoFactorAuth"
-              label="启用双因素认证"
-              left-label
-            />
+            <q-toggle v-model="privacyForm.twoFactorAuth" label="启用双因素认证" left-label />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
@@ -199,51 +191,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useQuasar } from 'quasar'
-import { useAuthStore } from 'stores/authStore'
+import { ref, computed } from 'vue';
+import { useQuasar } from 'quasar';
+import { useAuthStore } from 'stores/authStore';
 
-const $q = useQuasar()
-const authStore = useAuthStore()
+const $q = useQuasar();
+const authStore = useAuthStore();
 
 // 获取当前用户
-const user = computed(() => authStore.user)
+const user = computed(() => authStore.user);
 
 // 用户名称
 const userName = computed(() => {
-  return user.value?.real_name || user.value?.username || '用户'
-})
+  return user.value?.real_name || user.value?.username || '用户';
+});
 
 // 用户名称首字母（用于默认头像）
 const userInitial = computed(() => {
   if (user.value?.real_name) {
-    return user.value.real_name.charAt(0).toUpperCase()
+    return user.value.real_name.charAt(0).toUpperCase();
   }
   if (user.value?.username) {
-    return user.value.username.charAt(0).toUpperCase()
+    return user.value.username.charAt(0).toUpperCase();
   }
-  return 'U'
-})
+  return 'U';
+});
 
 // Notification preferences
 const notificationForm = ref({
   emailNotifications: true,
   pushNotifications: true,
-  weeklyReports: false
+  weeklyReports: false,
 });
 
 // Password form
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 // Privacy form
 const privacyForm = ref({
   shareData: false,
   allowAnalytics: true,
-  twoFactorAuth: false
+  twoFactorAuth: false,
 });
 
 // Dialog states
@@ -255,42 +247,46 @@ const saveNotifications = () => {
   $q.notify({
     type: 'positive',
     message: '通知偏好设置保存成功！',
-    position: 'top'
+    position: 'top',
   });
 };
 
 // Change password
 const changePassword = () => {
-  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+  if (
+    !passwordForm.value.currentPassword ||
+    !passwordForm.value.newPassword ||
+    !passwordForm.value.confirmPassword
+  ) {
     $q.notify({
       type: 'warning',
       message: '请填写所有密码字段',
-      position: 'top'
+      position: 'top',
     });
     return;
   }
-  
+
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
     $q.notify({
       type: 'negative',
       message: '新密码和确认密码不匹配',
-      position: 'top'
+      position: 'top',
     });
     return;
   }
-  
+
   // In a real app, this would call an API
   showChangePasswordDialog.value = false;
   passwordForm.value = {
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   };
-  
+
   $q.notify({
     type: 'positive',
     message: '密码修改成功！',
-    position: 'top'
+    position: 'top',
   });
 };
 
@@ -300,7 +296,7 @@ const savePrivacySettings = () => {
   $q.notify({
     type: 'positive',
     message: '隐私设置保存成功！',
-    position: 'top'
+    position: 'top',
   });
 };
 
@@ -309,15 +305,15 @@ const checkForUpdates = () => {
   $q.notify({
     type: 'info',
     message: '正在检查更新...',
-    position: 'top'
+    position: 'top',
   });
-  
+
   // Simulate update check
   setTimeout(() => {
     $q.notify({
       type: 'positive',
       message: '您使用的已是最新版本！',
-      position: 'top'
+      position: 'top',
     });
   }, 1500);
 };
