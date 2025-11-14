@@ -536,45 +536,6 @@ ALIYUN_SMS_TEMPLATE_CODE=100001            # 短信模板代码（纯数字，�
 - 移动端APP
 - 微信小程序
 
-## 生产环境部署
-
-详细的服务器部署文档请查看：[DEPLOYMENT.md](./DEPLOYMENT.md)
-
-### 快速部署
-
-```bash
-# 1. 克隆代码
-git clone <your-repo-url> /var/www/cervixdetectai
-cd /var/www/cervixdetectai
-
-# 2. 配置环境变量
-cp .env.production .env
-cp server/.env.production server/.env
-# 编辑环境变量文件，填入实际值
-
-# 3. 初始化数据库
-cd server && npm install && node scripts/init-database.js
-
-# 4. 构建前端
-cd .. && npm install && npm run build
-
-# 5. 启动服务
-pm2 start ecosystem.config.js
-
-# 6. 配置Nginx
-sudo cp nginx.conf /etc/nginx/sites-available/cervixdetectai
-sudo ln -s /etc/nginx/sites-available/cervixdetectai /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl restart nginx
-```
-
-### 部署文件说明
-
-- `.env.production` - 前端生产环境配置模板
-- `server/.env.production` - 后端生产环境配置模板
-- `ecosystem.config.js` - PM2进程管理器配置
-- `nginx.conf` - Nginx配置文件模板
-- `deploy.sh` - 自动部署脚本
-
 ## 许可证
 
 本项目仅供演示和学术研究使用。

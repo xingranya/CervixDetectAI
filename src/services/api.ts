@@ -4,7 +4,7 @@ import axios from 'axios';
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 
 // API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Create axios instance
 const apiClient = axios.create({
