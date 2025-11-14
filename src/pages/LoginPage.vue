@@ -2,6 +2,9 @@
   <q-page class="flex flex-center bg-grey-2">
     <div class="q-pa-md" style="width: 400px; max-width: 400px">
       <div class="text-center q-mb-xl">
+        <div class="flex flex-center q-mb-sm">
+          <img src="/logo.svg" alt="CervixDetectAI" style="width: 80px; height: 80px;" />
+        </div>
         <div class="text-h4 text-weight-bold text-primary q-mb-sm">CervixDetectAI</div>
         <div class="text-subtitle1 text-grey">AI驱动的宫颈癌筛查系统</div>
       </div>

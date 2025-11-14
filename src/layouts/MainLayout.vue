@@ -6,8 +6,8 @@
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title>
-          <q-avatar>
-            <img src="https://placehold.co/60x60/1976D2/FFFFFF?text=CD" alt="CervixDetectAI Logo" />
+          <q-avatar size="40px">
+            <img src="/logo.svg" alt="CervixDetectAI Logo" />
           </q-avatar>
           CervixDetectAI
         </q-toolbar-title>
