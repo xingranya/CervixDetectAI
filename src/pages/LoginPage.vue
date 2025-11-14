@@ -160,8 +160,8 @@ const authStore = useAuthStore();
 const $q = useQuasar();
 
 const loginType = ref<'email' | 'phone'>('email');
-const email = ref('doctor@example.com'); // Demo credential
-const password = ref('password123'); // Demo credential
+const email = ref('');
+const password = ref('');
 const phone = ref('');
 const smsCode = ref('');
 const isPwd = ref(true);
