@@ -28,6 +28,14 @@ const UserAvatar = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    large_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    small_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
     medium_url: {
       type: DataTypes.STRING(500),
       allowNull: true,

@@ -43,8 +43,8 @@
         <q-card flat bordered>
           <q-card-section class="text-center">
             <q-avatar size="100px" color="primary" text-color="white" class="q-mb-md">
-              <template v-if="user?.avatar_url">
-                <img :src="user.avatar_url" alt="用户头像" />
+              <template v-if="avatarUrl">
+                <img :src="avatarUrl" alt="用户头像" />
               </template>
               <template v-else>
                 <div class="text-h2">{{ userInitial }}</div>
@@ -154,8 +154,8 @@
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="确认" color="primary" @click="changePassword" />
+          <q-btn flat label="取消" color="primary" v-close-popup :disable="changingPassword" />
+          <q-btn flat label="确认" color="primary" @click="changePassword" :loading="changingPassword" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -194,19 +194,32 @@
 import { ref, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/authStore';
+import { userAPI } from 'src/services/api';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 
-// 获取当前用户
 const user = computed(() => authStore.user);
 
-// 用户名称
 const userName = computed(() => {
   return user.value?.real_name || user.value?.username || '用户';
 });
 
-// 用户名称首字母（用于默认头像）
+// 处理头像URL
+const avatarUrl = computed(() => {
+  if (!user.value?.avatar_url) return '';
+  const url = user.value.avatar_url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  if (baseURL.startsWith('/')) {
+    return `http://localhost:3000${url}`;
+  }
+  const serverURL = baseURL.replace('/api', '');
+  return `${serverURL}${url}`;
+});
+
 const userInitial = computed(() => {
   if (user.value?.real_name) {
     return user.value.real_name.charAt(0).toUpperCase();
@@ -217,32 +230,28 @@ const userInitial = computed(() => {
   return 'U';
 });
 
-// Notification preferences
 const notificationForm = ref({
   emailNotifications: true,
   pushNotifications: true,
   weeklyReports: false,
 });
 
-// Password form
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
 });
 
-// Privacy form
 const privacyForm = ref({
   shareData: false,
   allowAnalytics: true,
   twoFactorAuth: false,
 });
 
-// Dialog states
 const showChangePasswordDialog = ref(false);
 const showPrivacyDialog = ref(false);
+const changingPassword = ref(false);
 
-// Save notification preferences
 const saveNotifications = () => {
   $q.notify({
     type: 'positive',
@@ -251,8 +260,7 @@ const saveNotifications = () => {
   });
 };
 
-// Change password
-const changePassword = () => {
+const changePassword = async () => {
   if (
     !passwordForm.value.currentPassword ||
     !passwordForm.value.newPassword ||
@@ -275,22 +283,48 @@ const changePassword = () => {
     return;
   }
 
-  // In a real app, this would call an API
-  showChangePasswordDialog.value = false;
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  };
+  if (passwordForm.value.newPassword.length < 6) {
+    $q.notify({
+      type: 'negative',
+      message: '新密码长度至少6位',
+      position: 'top',
+    });
+    return;
+  }
 
-  $q.notify({
-    type: 'positive',
-    message: '密码修改成功！',
-    position: 'top',
-  });
+  changingPassword.value = true;
+  try {
+    const response = await userAPI.updatePassword({
+      current_password: passwordForm.value.currentPassword,
+      new_password: passwordForm.value.newPassword,
+    });
+
+    if (response.success) {
+      showChangePasswordDialog.value = false;
+      passwordForm.value = {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      };
+
+      $q.notify({
+        type: 'positive',
+        message: '密码修改成功！',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || '密码修改失败',
+      position: 'top',
+    });
+  } finally {
+    changingPassword.value = false;
+  }
 };
 
-// Save privacy settings
 const savePrivacySettings = () => {
   showPrivacyDialog.value = false;
   $q.notify({
@@ -300,7 +334,6 @@ const savePrivacySettings = () => {
   });
 };
 
-// Check for updates
 const checkForUpdates = () => {
   $q.notify({
     type: 'info',
@@ -308,7 +341,6 @@ const checkForUpdates = () => {
     position: 'top',
   });
 
-  // Simulate update check
   setTimeout(() => {
     $q.notify({
       type: 'positive',

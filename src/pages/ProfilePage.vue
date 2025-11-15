@@ -13,8 +13,8 @@
         <q-card flat bordered>
           <q-card-section class="text-center">
             <q-avatar size="120px" class="q-mb-md" color="primary" text-color="white">
-              <template v-if="user?.avatar_url">
-                <img :src="user.avatar_url" alt="用户头像" />
+              <template v-if="avatarUrl">
+                <img :src="avatarUrl" alt="用户头像" />
               </template>
               <template v-else>
                 <div class="text-h3">{{ userInitial }}</div>
@@ -126,8 +126,8 @@
 
               <div class="row q-mt-lg">
                 <q-space />
-                <q-btn color="grey" label="取消" flat @click="resetForm" class="q-mr-sm" />
-                <q-btn color="primary" label="保存更改" @click="saveProfile" />
+                <q-btn color="grey" label="取消" flat @click="resetForm" class="q-mr-sm" :disable="loading" />
+                <q-btn color="primary" label="保存更改" @click="saveProfile" :loading="loading" />
               </div>
             </q-form>
           </q-card-section>
@@ -171,14 +171,32 @@
 import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/authStore';
+import { userAPI } from 'src/services/api';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 
-// 获取当前用户
 const user = computed(() => authStore.user);
 
-// 用户名称首字母（用于默认头像）
+// 处理头像URL，确保是完整的URL
+const avatarUrl = computed(() => {
+  if (!user.value?.avatar_url) return '';
+  const url = user.value.avatar_url;
+  // 如果已经是完整URL，直接返回
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // 否则拼接服务器地址
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  if (baseURL.startsWith('/')) {
+    // 相对路径，开发环境下使用 localhost:3000
+    return `http://localhost:3000${url}`;
+  }
+  // 完整URL，移除/api后缀
+  const serverURL = baseURL.replace('/api', '');
+  return `${serverURL}${url}`;
+});
+
 const userInitial = computed(() => {
   if (user.value?.real_name) {
     return user.value.real_name.charAt(0).toUpperCase();
@@ -189,7 +207,6 @@ const userInitial = computed(() => {
   return 'U';
 });
 
-// Profile data
 const profileData = ref({
   firstName: '',
   lastName: '',
@@ -209,35 +226,62 @@ const profileData = ref({
   certifications: [] as Array<{ name: string; issuer: string; year: string }>,
 });
 
-// 初始化用户数据
+const loading = ref(false);
+
 onMounted(() => {
+  loadUserData();
+});
+
+const loadUserData = () => {
   if (user.value) {
     profileData.value.email = user.value.email || '';
     profileData.value.phone = user.value.phone || '';
     profileData.value.firstName = user.value.real_name?.split(' ')[0] || '';
     profileData.value.lastName = user.value.real_name?.split(' ')[1] || '';
-    // 注意：User模型没有created_at字段，使用last_login_at作为替代
     profileData.value.registeredDate = user.value.last_login_at || new Date().toISOString();
   }
-});
-
-// Create a backup for reset
-const originalData = ref(JSON.parse(JSON.stringify(profileData.value)));
-
-// Save profile changes
-const saveProfile = () => {
-  // In a real app, this would save to the backend
-  originalData.value = JSON.parse(JSON.stringify(profileData.value));
-  $q.notify({
-    type: 'positive',
-    message: '个人资料保存成功！',
-    position: 'top',
-  });
 };
 
-// Reset form to original values
+const originalData = ref(JSON.parse(JSON.stringify(profileData.value)));
+
+const saveProfile = async () => {
+  loading.value = true;
+  try {
+    const real_name = `${profileData.value.firstName} ${profileData.value.lastName}`.trim();
+    // 构建更新数据对象，只包含有值的属性
+    const updateData: { real_name?: string; phone?: string } = {};
+    if (real_name) {
+      updateData.real_name = real_name;
+    }
+    if (profileData.value.phone) {
+      updateData.phone = profileData.value.phone;
+    }
+    const response = await userAPI.updateProfile(updateData);
+
+    if (response.success) {
+      authStore.user = response.data.user;
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      originalData.value = JSON.parse(JSON.stringify(profileData.value));
+      $q.notify({
+        type: 'positive',
+        message: '个人资料保存成功！',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || '保存失败',
+      position: 'top',
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
 const resetForm = () => {
-  profileData.value = JSON.parse(JSON.stringify(originalData.value));
+  loadUserData();
   $q.notify({
     type: 'info',
     message: '已恢复原始数据',
@@ -245,16 +289,53 @@ const resetForm = () => {
   });
 };
 
-// Change avatar
 const changeAvatar = () => {
-  $q.notify({
-    type: 'info',
-    message: '头像上传功能将在实际应用中实现',
-    position: 'top',
-  });
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+  input.onchange = async (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+      await uploadAvatar(file);
+    }
+  };
+  input.click();
 };
 
-// Add certification
+const uploadAvatar = async (file: File) => {
+  if (file.size > 5 * 1024 * 1024) {
+    $q.notify({
+      type: 'negative',
+      message: '图片大小不能超过 5MB',
+      position: 'top',
+    });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const response = await userAPI.uploadAvatar(file);
+    if (response.success) {
+      await authStore.fetchCurrentUser();
+      $q.notify({
+        type: 'positive',
+        message: '头像上传成功！',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || '头像上传失败',
+      position: 'top',
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
 const addCertification = () => {
   $q.notify({
     type: 'info',

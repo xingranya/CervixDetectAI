@@ -30,8 +30,8 @@
             <template v-slot:label>
               <div class="row items-center no-wrap">
                 <q-avatar size="32px" color="primary" text-color="white" class="q-mr-sm">
-                  <template v-if="authStore.user?.avatar_url">
-                    <img :src="authStore.user.avatar_url" alt="用户头像" />
+                  <template v-if="avatarUrl">
+                    <img :src="avatarUrl" alt="用户头像" />
                   </template>
                   <template v-else>
                     {{ userInitial }}
@@ -113,6 +113,21 @@ const leftDrawerOpen = ref(true);
 // 用户名称
 const userName = computed(() => {
   return authStore.user?.real_name || authStore.user?.username || '用户';
+});
+
+// 处理头像URL
+const avatarUrl = computed(() => {
+  if (!authStore.user?.avatar_url) return '';
+  const url = authStore.user.avatar_url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  if (baseURL.startsWith('/')) {
+    return `http://localhost:3000${url}`;
+  }
+  const serverURL = baseURL.replace('/api', '');
+  return `${serverURL}${url}`;
 });
 
 // 用户名称首字母（用于默认头像）

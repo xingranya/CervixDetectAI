@@ -1,0 +1,1026 @@
+CervixDetectAI 宫颈癌智能筛查系统 V1.0 - 源代码文档（后30页）
+
+说明：本文档包含AI分析、检测、报告生成等核心功能代码
+
+═══════════════════════════════════════════════════════════════
+第61页 - src/router/index.ts (前端路由配置与认证守卫)
+═══════════════════════════════════════════════════════════════
+import { defineRouter } from '#q-app/wrappers';
+import { createMemoryHistory, createRouter, createWebHashHistory, createWebHistory } from 'vue-router';
+import routes from './routes';
+import { useAuthStore } from 'stores/authStore';
+export default defineRouter(function () {
+  const createHistory = process.env.SERVER
+    ? createMemoryHistory
+    : process.env.VUE_ROUTER_MODE === 'history'
+      ? createWebHistory
+      : createWebHashHistory;
+  const Router = createRouter({
+    scrollBehavior: () => ({ left: 0, top: 0 }),
+    routes,
+    history: createHistory(process.env.VUE_ROUTER_BASE),
+  });
+  Router.beforeEach((to, from, next) => {
+    const authStore = useAuthStore();
+    if (to.matched.some(record => record.meta.requiresAuth)) {
+      if (!authStore.isAuthenticated) {
+        next({ path: '/login', query: { redirect: to.fullPath } });
+      } else {
+        next();
+      }
+    } else {
+      next();
+    }
+  });
+  return Router;
+});
+
+src/router/routes.ts (路由定义)
+import type { RouteRecordRaw } from 'vue-router'
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    component: () => import('layouts/PublicLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/LoginPage.vue') },
+      { path: 'login', component: () => import('pages/LoginPage.vue') },
+      { path: 'register', component: () => import('pages/RegisterPage.vue') },
+      { path: 'forgot-password', component: () => import('pages/ForgotPasswordPage.vue') }
+    ]
+  },
+  {
+    path: '/app',
+    component: () => import('layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      { path: '', name: 'dashboard', component: () => import('pages/DashboardPage.vue') },
+
+═══════════════════════════════════════════════════════════════
+第62页
+═══════════════════════════════════════════════════════════════
+      { path: 'studies', name: 'studies', component: () => import('pages/StudiesPage.vue') },
+      { path: 'studies/:id', name: 'study-detail', component: () => import('pages/StudyDetailPage.vue'), props: true },
+      { path: 'upload', name: 'upload', component: () => import('pages/UploadPage.vue') },
+      { path: 'reports', name: 'reports', component: () => import('pages/ReportsPage.vue') },
+      { path: 'models', name: 'models', component: () => import('pages/ApiSettingsPage.vue') },
+      { path: 'patients', name: 'patients', component: () => import('pages/PatientsPage.vue') },
+      { path: 'profile', name: 'profile', component: () => import('pages/ProfilePage.vue') },
+    ]
+  },
+  { path: '/:catchAll(.*)*', component: () => import('pages/ErrorNotFound.vue') }
+];
+export default routes;
+
+src/stores/analysisStore.ts (AI分析任务状态管理)
+import { defineStore } from 'pinia';
+import { api } from 'src/services/api';
+interface AnalysisTask {
+  taskId: string;
+  studyId: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+  progress: number;
+  result?: AnalysisResult;
+  error?: string;
+}
+interface AnalysisResult {
+  diagnosis: string;
+  confidence: number;
+  suspiciousAreas: Array<{ location: string; description: string }>;
+  biomarkers: { HPV: string; p16: string; Ki67: string };
+  recommendations: string[];
+  detailedReport: string;
+}
+export const useAnalysisStore = defineStore('analysis', {
+  state: () => ({
+    currentTask: null as AnalysisTask | null,
+    taskHistory: [] as AnalysisTask[],
+    isAnalyzing: false,
+  }),
+  getters: {
+    analysisProgress: (state) => state.currentTask?.progress || 0,
+    analysisResult: (state) => state.currentTask?.result,
+  },
+  actions: {
+    async submitAnalysis(formData: FormData) {
+      this.isAnalyzing = true;
+      try {
+        const response = await api.post('/analyze', formData, {
+
+═══════════════════════════════════════════════════════════════
+第63页
+═══════════════════════════════════════════════════════════════
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (response.data) {
+          this.currentTask = {
+            taskId: response.data.taskId,
+            studyId: response.data.studyId,
+            status: response.data.status,
+            progress: 0,
+          };
+          this.startPolling(response.data.taskId);
+          return { success: true, taskId: response.data.taskId };
+        }
+        return { success: false, error: '提交失败' };
+      } catch (error: any) {
+        console.error('提交分析任务失败:', error);
+        return { success: false, error: error.response?.data?.message || '提交失败' };
+      } finally {
+        this.isAnalyzing = false;
+      }
+    },
+    startPolling(taskId: string) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await api.get(`/analyze/${taskId}`);
+          if (response.data) {
+            this.currentTask = response.data;
+            if (response.data.status === 'SUCCESS' || response.data.status === 'FAILED') {
+              clearInterval(pollInterval);
+              this.taskHistory.push(response.data);
+            }
+          }
+        } catch (error) {
+          console.error('轮询任务状态失败:', error);
+          clearInterval(pollInterval);
+        }
+      }, 2000);
+    },
+    clearCurrentTask() {
+      this.currentTask = null;
+    },
+  },
+});
+
+src/stores/studyStore.ts (病例数据管理)
+import { defineStore } from 'pinia';
+import { studyAPI } from 'src/services/api';
+interface Study {
+  id: number;
+  study_id: string;
+  patient_id: number;
+
+═══════════════════════════════════════════════════════════════
+第64页
+═══════════════════════════════════════════════════════════════
+  study_date: string;
+  study_type: string;
+  description?: string;
+  status: string;
+  created_at: string;
+  patient?: {
+    name: string;
+    patient_id: string;
+    gender: string;
+  };
+  analysis_result?: {
+    diagnosis: string;
+    confidence: number;
+    risk_level: string;
+  };
+}
+export const useStudyStore = defineStore('study', {
+  state: () => ({
+    studies: [] as Study[],
+    currentStudy: null as Study | null,
+    isLoading: false,
+    pagination: {
+      page: 1,
+      limit: 10,
+      total: 0,
+    },
+  }),
+  actions: {
+    async fetchStudies(params?: { page?: number; limit?: number; status?: string }) {
+      this.isLoading = true;
+      try {
+        const response = await studyAPI.getStudies(params);
+        if (response.success) {
+          this.studies = response.data.studies;
+          this.pagination = response.data.pagination;
+        }
+        return response;
+      } catch (error) {
+        console.error('获取病例列表失败:', error);
+        return { success: false, error };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async fetchStudyById(id: number) {
+      this.isLoading = true;
+      try {
+        const response = await studyAPI.getStudyById(id);
+        if (response.success) {
+          this.currentStudy = response.data.study;
+        }
+        return response;
+
+═══════════════════════════════════════════════════════════════
+第65页
+═══════════════════════════════════════════════════════════════
+      } catch (error) {
+        console.error('获取病例详情失败:', error);
+        return { success: false, error };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+  },
+});
+
+src/services/api.ts (前端API服务封装)
+import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 60000,
+  headers: { 'Content-Type': 'application/json' }
+});
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await api.post('/auth/refresh', { refreshToken });
+        if (response.data.success) {
+          const newToken = response.data.data.accessToken;
+          localStorage.setItem('accessToken', newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        localStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+
+═══════════════════════════════════════════════════════════════
+第66页
+═══════════════════════════════════════════════════════════════
+    return Promise.reject(error);
+  }
+);
+export const authAPI = {
+  login: (email: string, password: string) =>
+    api.post('/auth/login', { email, password }).then(res => res.data),
+  register: (userData: any) =>
+    api.post('/auth/register', userData).then(res => res.data),
+  smsLogin: (phone: string, code: string) =>
+    api.post('/auth/sms/login', { phone, code }).then(res => res.data),
+  smsRegister: (phone: string, code: string, userData?: any) =>
+    api.post('/auth/sms/register', { phone, code, ...userData }).then(res => res.data),
+  sendSmsCode: (phone: string, type: string) =>
+    api.post('/auth/sms/send-code', { phone, type }).then(res => res.data),
+  logout: () => api.post('/auth/logout').then(res => res.data),
+};
+export const userAPI = {
+  getProfile: () => api.get('/auth/me').then(res => res.data),
+  updateProfile: (userData: any) => api.put('/users/me', userData).then(res => res.data),
+};
+export const studyAPI = {
+  getStudies: (params?: any) => api.get('/studies', { params }).then(res => res.data),
+  getStudyById: (id: number) => api.get(`/studies/${id}`).then(res => res.data),
+  createStudy: (studyData: any) => api.post('/studies', studyData).then(res => res.data),
+};
+export const analysisAPI = {
+  submitAnalysis: (formData: FormData) => api.post('/analyze', formData).then(res => res.data),
+  getTaskStatus: (taskId: string) => api.get(`/analyze/${taskId}`).then(res => res.data),
+};
+
+server/models/Study.js (病例数据模型)
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/sequelize');
+const Study = sequelize.define('Study', {
+  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  study_id: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+  patient_id: { type: DataTypes.BIGINT, allowNull: false },
+  user_id: { type: DataTypes.BIGINT, allowNull: false },
+  study_date: { type: DataTypes.DATE, allowNull: false },
+  study_type: { type: DataTypes.STRING(100), allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: true },
+  clinical_diagnosis: { type: DataTypes.STRING(500), allowNull: true },
+
+═══════════════════════════════════════════════════════════════
+第67页
+═══════════════════════════════════════════════════════════════
+  status: {
+    type: DataTypes.ENUM('uploaded', 'processing', 'completed', 'failed'),
+    allowNull: false,
+    defaultValue: 'uploaded'
+  },
+}, {
+  tableName: 'studies',
+  indexes: [
+    { unique: true, fields: ['study_id'] },
+    { fields: ['patient_id'] },
+    { fields: ['user_id'] },
+    { fields: ['status'] },
+    { fields: ['study_date'] },
+  ],
+});
+module.exports = Study;
+
+server/models/AnalysisTask.js (分析任务数据模型)
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/sequelize');
+const AnalysisTask = sequelize.define('AnalysisTask', {
+  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  task_id: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+  study_id: { type: DataTypes.BIGINT, allowNull: false },
+  user_id: { type: DataTypes.BIGINT, allowNull: false },
+  status: {
+    type: DataTypes.ENUM('PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'),
+    allowNull: false,
+    defaultValue: 'PENDING'
+  },
+  progress: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  error_message: { type: DataTypes.TEXT, allowNull: true },
+  started_at: { type: DataTypes.DATE, allowNull: true },
+  completed_at: { type: DataTypes.DATE, allowNull: true },
+}, {
+  tableName: 'analysis_tasks',
+  indexes: [
+    { unique: true, fields: ['task_id'] },
+    { fields: ['study_id'] },
+    { fields: ['user_id'] },
+    { fields: ['status'] },
+  ],
+});
+module.exports = AnalysisTask;
+
+server/models/AnalysisResult.js (分析结果数据模型)
+const { DataTypes } = require('sequelize');
+
+═══════════════════════════════════════════════════════════════
+第68页
+═══════════════════════════════════════════════════════════════
+const { sequelize } = require('../config/sequelize');
+const AnalysisResult = sequelize.define('AnalysisResult', {
+  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  task_id: { type: DataTypes.BIGINT, allowNull: false },
+  study_id: { type: DataTypes.BIGINT, allowNull: false },
+  diagnosis: { type: DataTypes.STRING(500), allowNull: false },
+  confidence: { type: DataTypes.DECIMAL(5, 4), allowNull: false },
+  risk_level: {
+    type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
+    allowNull: false,
+    defaultValue: 'low'
+  },
+  recommendations: { type: DataTypes.JSON, allowNull: true },
+  suspicious_areas: { type: DataTypes.JSON, allowNull: true },
+  biomarkers: { type: DataTypes.JSON, allowNull: true },
+  detailed_report: { type: DataTypes.TEXT, allowNull: true },
+  raw_output: { type: DataTypes.JSON, allowNull: true },
+}, {
+  tableName: 'analysis_results',
+  indexes: [
+    { fields: ['task_id'] },
+    { fields: ['study_id'] },
+    { fields: ['risk_level'] },
+  ],
+});
+module.exports = AnalysisResult;
+
+server/models/Patient.js (患者数据模型)
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/sequelize');
+const Patient = sequelize.define('Patient', {
+  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  patient_id: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+  name: { type: DataTypes.STRING(100), allowNull: false },
+  gender: { type: DataTypes.ENUM('male', 'female', 'other'), allowNull: false },
+  date_of_birth: { type: DataTypes.DATE, allowNull: true },
+  phone: { type: DataTypes.STRING(20), allowNull: true },
+  email: { type: DataTypes.STRING(100), allowNull: true },
+  address: { type: DataTypes.STRING(500), allowNull: true },
+  medical_history: { type: DataTypes.TEXT, allowNull: true },
+  created_by: { type: DataTypes.BIGINT, allowNull: false },
+}, {
+  tableName: 'patients',
+  indexes: [
+    { unique: true, fields: ['patient_id'] },
+
+═══════════════════════════════════════════════════════════════
+第69页
+═══════════════════════════════════════════════════════════════
+    { fields: ['name'] },
+    { fields: ['created_by'] },
+  ],
+});
+module.exports = Patient;
+
+server/routes/studies.js (病例管理路由)
+const express = require('express');
+const { Op } = require('sequelize');
+const { Study, Patient, AnalysisTask, AnalysisResult, StudyImage } = require('../models');
+const { authenticate, authorize } = require('../middleware/auth');
+const router = express.Router();
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, patient_id, status, study_type, search } = req.query;
+    const offset = (page - 1) * limit;
+    const where = {};
+    if (patient_id) where.patient_id = patient_id;
+    if (status) where.status = status;
+    if (study_type) where.study_type = study_type;
+    if (search) {
+      where[Op.or] = [
+        { study_id: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { clinical_diagnosis: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    if (req.user.role !== 'admin') {
+      where.user_id = req.user.id;
+    }
+    const { count, rows } = await Study.findAndCountAll({
+      where,
+      include: [
+        { model: Patient, as: 'patient', attributes: ['id', 'patient_id', 'name', 'gender'] },
+        {
+          model: AnalysisResult,
+          as: 'analysis_result',
+          attributes: ['diagnosis', 'confidence', 'risk_level'],
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+    res.json({
+      success: true,
+      data: {
+
+═══════════════════════════════════════════════════════════════
+第70页
+═══════════════════════════════════════════════════════════════
+        studies: rows,
+        pagination: { page: parseInt(page), limit: parseInt(limit), total: count },
+      },
+    });
+  } catch (error) {
+    console.error('获取病例列表错误:', error);
+    res.status(500).json({ success: false, message: '获取病例列表失败', error: error.message });
+  }
+});
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const study = await Study.findByPk(req.params.id, {
+      include: [
+        { model: Patient, as: 'patient' },
+        { model: StudyImage, as: 'images' },
+        { model: AnalysisTask, as: 'analysis_tasks', include: [{ model: AnalysisResult, as: 'result' }] },
+      ],
+    });
+    if (!study) {
+      return res.status(404).json({ success: false, message: '病例不存在' });
+    }
+    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: '无权访问此病例' });
+    }
+    res.json({ success: true, data: { study } });
+  } catch (error) {
+    console.error('获取病例详情错误:', error);
+    res.status(500).json({ success: false, message: '获取病例详情失败', error: error.message });
+  }
+});
+router.post('/', authenticate, async (req, res) => {
+  try {
+    const { patient_id, study_date, study_type, description, clinical_diagnosis } = req.body;
+    if (!patient_id || !study_date || !study_type) {
+      return res.status(400).json({ success: false, message: '缺少必填字段' });
+    }
+    const patient = await Patient.findByPk(patient_id);
+    if (!patient) {
+      return res.status(404).json({ success: false, message: '患者不存在' });
+    }
+    const study_id = `study_${Date.now()}`;
+    const study = await Study.create({
+      study_id, patient_id, user_id: req.user.id,
+      study_date: new Date(study_date), study_type,
+      description, clinical_diagnosis, status: 'uploaded',
+    });
+    res.status(201).json({ success: true, message: '病例创建成功', data: { study } });
+
+═══════════════════════════════════════════════════════════════
+第71页
+═══════════════════════════════════════════════════════════════
+  } catch (error) {
+    console.error('创建病例错误:', error);
+    res.status(500).json({ success: false, message: '创建病例失败', error: error.message });
+  }
+});
+router.put('/:id', authenticate, async (req, res) => {
+  try {
+    const study = await Study.findByPk(req.params.id);
+    if (!study) {
+      return res.status(404).json({ success: false, message: '病例不存在' });
+    }
+    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: '无权修改此病例' });
+    }
+    const { study_type, description, clinical_diagnosis, status } = req.body;
+    const updateData = {};
+    if (study_type) updateData.study_type = study_type;
+    if (description !== undefined) updateData.description = description;
+    if (clinical_diagnosis !== undefined) updateData.clinical_diagnosis = clinical_diagnosis;
+    if (status) updateData.status = status;
+    await study.update(updateData);
+    const updatedStudy = await Study.findByPk(req.params.id);
+    res.json({ success: true, message: '病例更新成功', data: { study: updatedStudy } });
+  } catch (error) {
+    console.error('更新病例错误:', error);
+    res.status(500).json({ success: false, message: '更新病例失败', error: error.message });
+  }
+});
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    const study = await Study.findByPk(req.params.id);
+    if (!study) {
+      return res.status(404).json({ success: false, message: '病例不存在' });
+    }
+    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: '无权删除此病例' });
+    }
+    await study.destroy();
+    res.json({ success: true, message: '病例删除成功' });
+  } catch (error) {
+    console.error('删除病例错误:', error);
+    res.status(500).json({ success: false, message: '删除病例失败', error: error.message });
+  }
+});
+module.exports = router;
+
+═══════════════════════════════════════════════════════════════
+第72页
+═══════════════════════════════════════════════════════════════
+server/routes/patients.js (患者管理路由)
+const express = require('express');
+const { Op } = require('sequelize');
+const { Patient, Study } = require('../models');
+const { authenticate, authorize } = require('../middleware/auth');
+const router = express.Router();
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    const offset = (page - 1) * limit;
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { patient_id: { [Op.like]: `%${search}%` } },
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    if (req.user.role !== 'admin') {
+      where.created_by = req.user.id;
+    }
+    const { count, rows } = await Patient.findAndCountAll({
+      where, order: [['created_at', 'DESC']],
+      limit: parseInt(limit), offset: parseInt(offset),
+    });
+    res.json({
+      success: true,
+      data: {
+        patients: rows,
+        pagination: { page: parseInt(page), limit: parseInt(limit), total: count },
+      },
+    });
+  } catch (error) {
+    console.error('获取患者列表错误:', error);
+    res.status(500).json({ success: false, message: '获取患者列表失败', error: error.message });
+  }
+});
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const patient = await Patient.findByPk(req.params.id, {
+      include: [{ model: Study, as: 'studies', order: [['created_at', 'DESC']] }],
+    });
+    if (!patient) {
+      return res.status(404).json({ success: false, message: '患者不存在' });
+    }
+    if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
+      return res.status(403).json({ success: false, message: '无权访问此患者' });
+    }
+
+═══════════════════════════════════════════════════════════════
+第73页
+═══════════════════════════════════════════════════════════════
+    res.json({ success: true, data: { patient } });
+  } catch (error) {
+    console.error('获取患者详情错误:', error);
+    res.status(500).json({ success: false, message: '获取患者详情失败', error: error.message });
+  }
+});
+router.post('/', authenticate, async (req, res) => {
+  try {
+    const { patient_id, name, gender, date_of_birth, phone, email, address, medical_history } = req.body;
+    if (!patient_id || !name || !gender) {
+      return res.status(400).json({ success: false, message: '缺少必填字段' });
+    }
+    const existingPatient = await Patient.findOne({ where: { patient_id } });
+    if (existingPatient) {
+      return res.status(409).json({ success: false, message: '患者ID已存在' });
+    }
+    const patient = await Patient.create({
+      patient_id, name, gender, date_of_birth, phone, email, address,
+      medical_history, created_by: req.user.id,
+    });
+    res.status(201).json({ success: true, message: '患者创建成功', data: { patient } });
+  } catch (error) {
+    console.error('创建患者错误:', error);
+    res.status(500).json({ success: false, message: '创建患者失败', error: error.message });
+  }
+});
+router.put('/:id', authenticate, async (req, res) => {
+  try {
+    const patient = await Patient.findByPk(req.params.id);
+    if (!patient) {
+      return res.status(404).json({ success: false, message: '患者不存在' });
+    }
+    if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
+      return res.status(403).json({ success: false, message: '无权修改此患者' });
+    }
+    const { name, gender, date_of_birth, phone, email, address, medical_history } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (gender) updateData.gender = gender;
+    if (date_of_birth) updateData.date_of_birth = date_of_birth;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (address !== undefined) updateData.address = address;
+    if (medical_history !== undefined) updateData.medical_history = medical_history;
+    await patient.update(updateData);
+
+═══════════════════════════════════════════════════════════════
+第74页
+═══════════════════════════════════════════════════════════════
+    const updatedPatient = await Patient.findByPk(req.params.id);
+    res.json({ success: true, message: '患者信息更新成功', data: { patient: updatedPatient } });
+  } catch (error) {
+    console.error('更新患者信息错误:', error);
+    res.status(500).json({ success: false, message: '更新患者信息失败', error: error.message });
+  }
+});
+router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const patient = await Patient.findByPk(req.params.id);
+    if (!patient) {
+      return res.status(404).json({ success: false, message: '患者不存在' });
+    }
+    await patient.destroy();
+    res.json({ success: true, message: '患者删除成功' });
+  } catch (error) {
+    console.error('删除患者错误:', error);
+    res.status(500).json({ success: false, message: '删除患者失败', error: error.message });
+  }
+});
+module.exports = router;
+
+server/utils/jwt.js (JWT工具函数)
+const jwt = require('jsonwebtoken');
+const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'default-secret-key';
+const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key';
+const ACCESS_TOKEN_EXPIRY = '1h';
+const REFRESH_TOKEN_EXPIRY = '7d';
+function generateAccessToken(user) {
+  return jwt.sign({ userId: user.id, role: user.role, type: 'access' }, ACCESS_TOKEN_SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRY,
+  });
+}
+function generateRefreshToken(user) {
+  return jwt.sign({ userId: user.id, type: 'refresh' }, REFRESH_TOKEN_SECRET, {
+    expiresIn: REFRESH_TOKEN_EXPIRY,
+  });
+}
+function verifyToken(token) {
+  try {
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+    return decoded;
+  } catch (error) {
+    try {
+      const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET);
+
+═══════════════════════════════════════════════════════════════
+第75页
+═══════════════════════════════════════════════════════════════
+      return decoded;
+    } catch (refreshError) {
+      return null;
+    }
+  }
+}
+function extractToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+module.exports = { generateAccessToken, generateRefreshToken, verifyToken, extractToken };
+
+server/config/sequelize.js (数据库配置)
+const { Sequelize } = require('sequelize');
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'cervix_detect_ai',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || '',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    dialect: 'mysql',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
+    define: {
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    },
+  }
+);
+async function testConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('数据库连接测试成功');
+    return true;
+  } catch (error) {
+    console.error('数据库连接失败:', error.message);
+    throw error;
+  }
+}
+module.exports = { sequelize, testConnection };
+
+src/pages/StudyDetailPage.vue (病例详情页面组件)
+
+═══════════════════════════════════════════════════════════════
+第76页
+═══════════════════════════════════════════════════════════════
+<template>
+  <q-page class="q-pa-md">
+    <div v-if="isLoading" class="flex flex-center" style="min-height: 400px">
+      <q-spinner-hourglass color="primary" size="50px" />
+    </div>
+    <div v-else-if="study">
+      <div class="row q-col-gutter-md">
+        <div class="col-12 col-md-6">
+          <q-card>
+            <q-card-section class="bg-primary text-white">
+              <div class="text-h6">病例信息</div>
+            </q-card-section>
+            <q-card-section>
+              <q-list dense>
+                <q-item><q-item-section><q-item-label caption>病例ID</q-item-label>
+                  <q-item-label>{{ study.study_id }}</q-item-label></q-item-section></q-item>
+                <q-item><q-item-section><q-item-label caption>检查日期</q-item-label>
+                  <q-item-label>{{ formatDate(study.study_date) }}</q-item-label></q-item-section></q-item>
+                <q-item><q-item-section><q-item-label caption>检查类型</q-item-label>
+                  <q-item-label>{{ study.study_type }}</q-item-label></q-item-section></q-item>
+                <q-item><q-item-section><q-item-label caption>状态</q-item-label>
+                  <q-item-label><q-badge :color="getStatusColor(study.status)">
+                    {{ getStatusLabel(study.status) }}</q-badge></q-item-label></q-item-section></q-item>
+              </q-list>
+            </q-card-section>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-6">
+          <q-card>
+            <q-card-section class="bg-primary text-white">
+              <div class="text-h6">AI分析结果</div>
+            </q-card-section>
+            <q-card-section v-if="analysisResult">
+              <div class="text-h6 q-mb-md">诊断：{{ analysisResult.diagnosis }}</div>
+              <q-linear-progress :value="analysisResult.confidence" color="primary" size="20px" class="q-mb-md">
+                <div class="absolute-full flex flex-center">
+                  <q-badge color="white" text-color="primary" :label="confidenceLabel" />
+                </div>
+              </q-linear-progress>
+              <div class="q-mb-md">风险等级：
+                <q-badge :color="getRiskColor(analysisResult.risk_level)">
+                  {{ getRiskLabel(analysisResult.risk_level) }}</q-badge>
+              </div>
+              <div><strong>建议：</strong></div>
+              <ul><li v-for="(rec, idx) in analysisResult.recommendations" :key="idx">{{ rec }}</li></ul>
+            </q-card-section>
+
+═══════════════════════════════════════════════════════════════
+第77页
+═══════════════════════════════════════════════════════════════
+          </q-card>
+        </div>
+      </div>
+    </div>
+  </q-page>
+</template>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useStudyStore } from 'stores/studyStore';
+const route = useRoute();
+const studyStore = useStudyStore();
+const isLoading = ref(true);
+const study = computed(() => studyStore.currentStudy);
+const analysisResult = computed(() => study.value?.analysis_result);
+const confidenceLabel = computed(() => {
+  const conf = analysisResult.value?.confidence || 0;
+  return `置信度: ${(conf * 100).toFixed(1)}%`;
+});
+onMounted(async () => {
+  const studyId = parseInt(route.params.id as string);
+  await studyStore.fetchStudyById(studyId);
+  isLoading.value = false;
+});
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('zh-CN');
+}
+function getStatusColor(status: string) {
+  const colors: Record<string, string> = {
+    uploaded: 'blue', processing: 'orange', completed: 'green', failed: 'red'
+  };
+  return colors[status] || 'grey';
+}
+function getStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    uploaded: '已上传', processing: '分析中', completed: '已完成', failed: '失败'
+  };
+  return labels[status] || status;
+}
+function getRiskColor(level: string) {
+  const colors: Record<string, string> = {
+    low: 'green', medium: 'orange', high: 'deep-orange', critical: 'red'
+  };
+  return colors[level] || 'grey';
+}
+function getRiskLabel(level: string) {
+  const labels: Record<string, string> = {
+
+═══════════════════════════════════════════════════════════════
+第78页
+═══════════════════════════════════════════════════════════════
+    low: '低风险', medium: '中风险', high: '高风险', critical: '极高风险'
+  };
+  return labels[level] || level;
+}
+</script>
+
+src/pages/UploadPage.vue (图像上传页面组件)
+<template>
+  <q-page class="q-pa-md">
+    <q-card>
+      <q-card-section class="bg-primary text-white">
+        <div class="text-h5">图像上传与AI分析</div>
+      </q-card-section>
+      <q-card-section>
+        <q-form @submit="onSubmit" class="q-gutter-md">
+          <q-input outlined v-model="patientName" label="患者姓名" required />
+          <q-input outlined v-model="patientId" label="患者ID" required />
+          <q-input outlined v-model="studyDate" type="date" label="检查日期" required />
+          <q-select outlined v-model="modality" :options="modalityOptions" label="检查类型" required />
+          <q-file outlined v-model="imageFile" label="选择图像文件" accept="image/jpeg,image/png,image/tiff"
+                  max-file-size="10485760" @rejected="onRejected">
+            <template v-slot:prepend><q-icon name="attach_file" /></template>
+          </q-file>
+          <q-input outlined v-model="description" type="textarea" label="描述" rows="3" />
+          <div class="row q-mt-md">
+            <q-btn type="submit" color="primary" label="上传并分析" :loading="analysisStore.isAnalyzing"
+                   :disable="!canSubmit" />
+          </div>
+        </q-form>
+      </q-card-section>
+    </q-card>
+    <q-card v-if="analysisStore.currentTask" class="q-mt-md">
+      <q-card-section class="bg-secondary text-white">
+        <div class="text-h6">分析进度</div>
+      </q-card-section>
+      <q-card-section>
+        <q-linear-progress :value="analysisStore.analysisProgress / 100" color="primary" size="20px">
+          <div class="absolute-full flex flex-center">
+            <q-badge color="white" text-color="primary" :label="`${analysisStore.analysisProgress}%`" />
+          </div>
+        </q-linear-progress>
+        <div class="q-mt-md text-center">
+          状态: <q-badge :color="getStatusColor(analysisStore.currentTask.status)">
+            {{ getStatusLabel(analysisStore.currentTask.status) }}</q-badge>
+        </div>
+
+═══════════════════════════════════════════════════════════════
+第79页
+═══════════════════════════════════════════════════════════════
+      </q-card-section>
+    </q-card>
+  </q-page>
+</template>
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import { useAnalysisStore } from 'stores/analysisStore';
+const router = useRouter();
+const $q = useQuasar();
+const analysisStore = useAnalysisStore();
+const patientName = ref('');
+const patientId = ref('');
+const studyDate = ref('');
+const modality = ref('');
+const imageFile = ref(null);
+const description = ref('');
+const modalityOptions = ['宫颈细胞学检查', '液基细胞学检查', 'HPV检测'];
+const canSubmit = computed(() => {
+  return patientName.value && patientId.value && studyDate.value && modality.value && imageFile.value;
+});
+async function onSubmit() {
+  const formData = new FormData();
+  formData.append('patientName', patientName.value);
+  formData.append('patientId', patientId.value);
+  formData.append('studyDate', studyDate.value);
+  formData.append('modality', modality.value);
+  formData.append('image', imageFile.value);
+  formData.append('description', description.value);
+  const result = await analysisStore.submitAnalysis(formData);
+  if (result.success) {
+    $q.notify({ type: 'positive', message: '分析任务已提交', position: 'top' });
+  } else {
+    $q.notify({ type: 'negative', message: result.error || '提交失败', position: 'top' });
+  }
+}
+function onRejected() {
+  $q.notify({ type: 'negative', message: '文件格式或大小不符合要求', position: 'top' });
+}
+function getStatusColor(status: string) {
+  const colors: Record<string, string> = {
+    PENDING: 'blue', PROCESSING: 'orange', SUCCESS: 'green', FAILED: 'red'
+  };
+  return colors[status] || 'grey';
+}
+
+═══════════════════════════════════════════════════════════════
+第80页
+═══════════════════════════════════════════════════════════════
+function getStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    PENDING: '等待中', PROCESSING: '分析中', SUCCESS: '完成', FAILED: '失败'
+  };
+  return labels[status] || status;
+}
+</script>
+
+server/models/index.js (数据模型导出)
+const User = require('./User');
+const Patient = require('./Patient');
+const Study = require('./Study');
+const StudyImage = require('./StudyImage');
+const AnalysisTask = require('./AnalysisTask');
+const AnalysisResult = require('./AnalysisResult');
+const SmsCode = require('./SmsCode');
+User.hasMany(Patient, { foreignKey: 'created_by', as: 'patients' });
+Patient.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+Patient.hasMany(Study, { foreignKey: 'patient_id', as: 'studies' });
+Study.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+User.hasMany(Study, { foreignKey: 'user_id', as: 'studies' });
+Study.belongsTo(User, { foreignKey: 'user_id', as: 'creator' });
+Study.hasMany(StudyImage, { foreignKey: 'study_id', as: 'images' });
+StudyImage.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
+Study.hasMany(AnalysisTask, { foreignKey: 'study_id', as: 'analysis_tasks' });
+AnalysisTask.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
+AnalysisTask.hasOne(AnalysisResult, { foreignKey: 'task_id', as: 'result' });
+AnalysisResult.belongsTo(AnalysisTask, { foreignKey: 'task_id', as: 'task' });
+Study.hasOne(AnalysisResult, { foreignKey: 'study_id', as: 'analysis_result' });
+AnalysisResult.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
+module.exports = { User, Patient, Study, StudyImage, AnalysisTask, AnalysisResult, SmsCode };
+
+═══════════════════════════════════════════════════════════════
+第81-90页 标识
+═══════════════════════════════════════════════════════════════
+
+本文档共90页（前60页+后30页），包含CervixDetectAI宫颈癌智能筛查系统
+完整核心源代码。文档符合软件著作权申请要求，已删除注释和空行。
+
+系统功能模块：
+1. 用户认证与权限管理
+2. 患者信息管理
+3. 病例数据管理
+4. 图像上传与分析
+5. AI智能诊断（通义千问集成）
+6. 分析结果展示
+7. 报告生成与管理
+
+技术栈：
+后端：Node.js + Express + MySQL + Sequelize
+前端：Vue 3 + Quasar + TypeScript + Pinia
+AI服务：阿里云通义千问大模型

@@ -51,7 +51,7 @@ router.get('/me', authenticate, async (req, res) => {
       include: [
         {
           model: UserAvatar,
-          as: 'avatar',
+          as: 'avatars',
           required: false,
         },
       ],
@@ -197,6 +197,9 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
       avatarPaths[`${size.name}_url`] = `/uploads/avatars/${path.basename(outputPath)}`;
     }
 
+    // 获取图片元数据
+    const metadata = await sharp(originalPath).metadata();
+
     // 删除原始文件
     fs.unlinkSync(originalPath);
 
@@ -209,6 +212,9 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
       small_url: avatarPaths.small_url,
       thumbnail_url: avatarPaths.thumbnail_url,
       file_size: req.file.size,
+      mime_type: req.file.mimetype || 'image/jpeg',
+      width: metadata.width || 500,
+      height: metadata.height || 500,
     });
 
     // 更新用户表的avatar_url
@@ -294,7 +300,7 @@ router.get('/:id', authenticate, authorize('admin'), async (req, res) => {
       include: [
         {
           model: UserAvatar,
-          as: 'avatar',
+          as: 'avatars',
           required: false,
         },
       ],
