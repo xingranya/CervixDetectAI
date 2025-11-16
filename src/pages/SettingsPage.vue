@@ -155,7 +155,13 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="取消" color="primary" v-close-popup :disable="changingPassword" />
-          <q-btn flat label="确认" color="primary" @click="changePassword" :loading="changingPassword" />
+          <q-btn
+            flat
+            label="确认"
+            color="primary"
+            @click="changePassword"
+            :loading="changingPassword"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>

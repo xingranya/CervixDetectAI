@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const { User } = require('../models');
-const {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyToken,
-} = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();

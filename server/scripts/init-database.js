@@ -19,11 +19,11 @@ async function initDatabase() {
 
     // 3. 添加 user_avatars 表缺失的字段（如果需要）
     console.log('🔧 检查并更新 user_avatars 表结构...');
-    
+
     // 检查并添加 large_url 字段
     try {
       await sequelize.query(`
-        ALTER TABLE user_avatars 
+        ALTER TABLE user_avatars
         ADD COLUMN large_url VARCHAR(500) NULL AFTER thumbnail_url;
       `);
       console.log('✅ large_url 字段添加成功');
@@ -39,7 +39,7 @@ async function initDatabase() {
     // 检查并添加 small_url 字段
     try {
       await sequelize.query(`
-        ALTER TABLE user_avatars 
+        ALTER TABLE user_avatars
         ADD COLUMN small_url VARCHAR(500) NULL AFTER large_url;
       `);
       console.log('✅ small_url 字段添加成功');

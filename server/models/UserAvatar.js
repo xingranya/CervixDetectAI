@@ -75,7 +75,7 @@ const UserAvatar = sequelize.define(
         fields: ['user_id', 'is_current'],
       },
     ],
-  }
+  },
 );
 
 module.exports = UserAvatar;
