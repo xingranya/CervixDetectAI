@@ -122,12 +122,10 @@ const avatarUrl = computed(() => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-  if (baseURL.startsWith('/')) {
+  if (import.meta.env.DEV) {
     return `http://localhost:3000${url}`;
   }
-  const serverURL = baseURL.replace('/api', '');
-  return `${serverURL}${url}`;
+  return url;
 });
 
 // 用户名称首字母（用于默认头像）

@@ -84,50 +84,190 @@
 
       <!-- 详细信息卡片 -->
       <div class="col-md-8 col-xs-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">基本信息</div>
+        <q-card flat bordered class="profile-form-card">
+          <q-card-section class="bg-grey-1">
+            <div class="row items-center">
+              <q-icon name="person" size="sm" color="primary" class="q-mr-sm" />
+              <div class="text-h6 text-weight-medium">基本信息</div>
+            </div>
+            <div class="text-caption text-grey-7 q-mt-xs">更新您的个人信息和联系方式</div>
           </q-card-section>
           <q-separator />
-          <q-card-section>
-            <q-form class="q-gutter-md">
+          <q-card-section class="q-pa-lg">
+            <q-form class="q-gutter-lg">
+              <!-- 姓名 -->
               <div class="row q-col-gutter-md">
-                <div class="col-md-6">
-                  <q-input v-model="profileData.firstName" outlined label="名字" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.firstName"
+                    outlined
+                    label="名字"
+                    stack-label
+                    placeholder="请输入名字"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="badge" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
-                <div class="col-md-6">
-                  <q-input v-model="profileData.lastName" outlined label="姓氏" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.lastName"
+                    outlined
+                    label="姓氏"
+                    stack-label
+                    placeholder="请输入姓氏"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="badge" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
               </div>
 
-              <q-input v-model="profileData.email" outlined label="邮箱" type="email" />
+              <!-- 邮箱 -->
+              <q-input
+                v-model="profileData.email"
+                outlined
+                label="邮箱"
+                stack-label
+                type="email"
+                placeholder="example@email.com"
+                bg-color="white"
+                class="modern-input"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="email" color="grey-6" />
+                </template>
+              </q-input>
 
-              <q-input v-model="profileData.phone" outlined label="电话" type="tel" />
+              <!-- 电话 -->
+              <q-input
+                v-model="profileData.phone"
+                outlined
+                label="电话"
+                stack-label
+                type="tel"
+                placeholder="请输入手机号码"
+                bg-color="white"
+                class="modern-input"
+                maxlength="11"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="phone" color="grey-6" />
+                </template>
+              </q-input>
 
+              <!-- 医疗机构与科室 -->
               <div class="row q-col-gutter-md">
-                <div class="col-md-6">
-                  <q-input v-model="profileData.institution" outlined label="医疗机构" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.institution"
+                    outlined
+                    label="医疗机构"
+                    stack-label
+                    placeholder="请输入医疗机构名称"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="domain" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
-                <div class="col-md-6">
-                  <q-input v-model="profileData.department" outlined label="科室" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.department"
+                    outlined
+                    label="科室"
+                    stack-label
+                    placeholder="请输入科室"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="medical_services" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
               </div>
 
+              <!-- 职称与职务 -->
               <div class="row q-col-gutter-md">
-                <div class="col-md-6">
-                  <q-input v-model="profileData.position" outlined label="职称" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.position"
+                    outlined
+                    label="职称"
+                    stack-label
+                    placeholder="请输入职称"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="workspace_premium" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
-                <div class="col-md-6">
-                  <q-input v-model="profileData.title" outlined label="职务" />
+                <div class="col-md-6 col-12">
+                  <q-input
+                    v-model="profileData.title"
+                    outlined
+                    label="职务"
+                    stack-label
+                    placeholder="请输入职务"
+                    bg-color="white"
+                    class="modern-input"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="work" color="grey-6" />
+                    </template>
+                  </q-input>
                 </div>
               </div>
 
-              <q-input v-model="profileData.address" outlined label="地址" />
+              <!-- 地址 -->
+              <q-input
+                v-model="profileData.address"
+                outlined
+                label="地址"
+                stack-label
+                placeholder="请输入详细地址"
+                bg-color="white"
+                class="modern-input"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="location_on" color="grey-6" />
+                </template>
+              </q-input>
 
-              <div class="row q-mt-lg">
+              <!-- 按钮组 -->
+              <div class="row q-mt-xl q-pt-md" style="border-top: 1px solid #e0e0e0">
                 <q-space />
-                <q-btn color="grey" label="取消" flat @click="resetForm" class="q-mr-sm" :disable="loading" />
-                <q-btn color="primary" label="保存更改" @click="saveProfile" :loading="loading" />
+                <q-btn
+                  color="grey-7"
+                  label="取消"
+                  outline
+                  rounded
+                  unelevated
+                  @click="resetForm"
+                  class="q-mr-sm q-px-lg"
+                  :disable="loading"
+                />
+                <q-btn
+                  color="primary"
+                  label="保存更改"
+                  rounded
+                  unelevated
+                  @click="saveProfile"
+                  :loading="loading"
+                  class="q-px-lg"
+                  icon-right="check"
+                />
               </div>
             </q-form>
           </q-card-section>
@@ -186,15 +326,12 @@ const avatarUrl = computed(() => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  // 否则拼接服务器地址
-  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-  if (baseURL.startsWith('/')) {
-    // 相对路径，开发环境下使用 localhost:3000
+  // 开发环境：拼接 localhost:3000
+  if (import.meta.env.DEV) {
     return `http://localhost:3000${url}`;
   }
-  // 完整URL，移除/api后缀
-  const serverURL = baseURL.replace('/api', '');
-  return `${serverURL}${url}`;
+  // 生产环境：直接使用相对路径
+  return url;
 });
 
 const userInitial = computed(() => {
@@ -348,5 +485,60 @@ const addCertification = () => {
 <style scoped>
 .q-avatar img {
   object-fit: cover;
+}
+
+/* 表单卡片样式 */
+.profile-form-card {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.profile-form-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 现代化输入框样式 */
+.modern-input :deep(.q-field__control) {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.modern-input :deep(.q-field__control):hover {
+  background-color: #f5f5f5;
+}
+
+.modern-input :deep(.q-field--focused .q-field__control) {
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+/* 输入框聚焦状态 */
+.modern-input :deep(.q-field--outlined .q-field__control:before) {
+  border-color: #e0e0e0;
+  transition: border-color 0.3s ease;
+}
+
+.modern-input :deep(.q-field--outlined:hover .q-field__control:before) {
+  border-color: #bdbdbd;
+}
+
+.modern-input :deep(.q-field--outlined.q-field--focused .q-field__control:before) {
+  border-color: var(--q-primary);
+  border-width: 2px;
+}
+
+/* 图标样式 */
+.modern-input :deep(.q-field__prepend) {
+  padding-right: 8px;
+}
+
+/* 按钮悬停效果 */
+.q-btn {
+  transition: all 0.3s ease;
+}
+
+.q-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 </style>
