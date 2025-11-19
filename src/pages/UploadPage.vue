@@ -383,6 +383,10 @@ const uploadAndAnalyze = async () => {
 
     console.log('✅ 上传成功，任务ID:', response.taskId);
     console.log('🏯 病例ID:', response.studyId);
+    console.log('📊 数据库ID:', response.studyDbId);
+
+    // 使用数据库 ID（如果有），否则使用字符串 ID
+    const studyIdForRoute = response.studyDbId || response.studyId;
 
     $q.notify({
       type: 'positive',
@@ -390,20 +394,11 @@ const uploadAndAnalyze = async () => {
       position: 'top',
       timeout: 4000,
       icon: 'check_circle',
-      actions: [
-        {
-          label: '查看详情',
-          color: 'white',
-          handler: () => {
-            void router.push(`/app/studies/${response.studyId}`);
-          },
-        },
-      ],
     });
 
     // 跳转到病例详情页面
-    console.log(`🚀 跳转到病例详情: /app/studies/${response.studyId}`);
-    void router.push(`/app/studies/${response.studyId}`);
+    console.log(`🚀 跳转到病例详情: /app/studies/${studyIdForRoute}`);
+    void router.push(`/app/studies/${studyIdForRoute}`);
 
     // 开始轮询任务状态，分析完成后显示通知
     console.log(`🔄 开始轮询任务状态: ${response.taskId}`);

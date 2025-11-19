@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { pollTaskStatus, getStudyAnalysis } from 'src/services/apiService';
+import { pollTaskStatus, getStudyAnalysis, getTaskStatus } from 'src/services/apiService';
 import type { TaskStatusResponse } from 'src/services/apiService';
 
 export interface AnalysisResult {
@@ -46,6 +46,19 @@ export const useAnalysisStore = defineStore('analysis', {
   },
 
   actions: {
+    /**
+     * 获取任务状态（单次查询）
+     */
+    async getTaskStatus(taskId: string): Promise<TaskStatusResponse> {
+      try {
+        const response = await getTaskStatus(taskId);
+        return response;
+      } catch (error) {
+        console.error('获取任务状态失败:', error);
+        throw error;
+      }
+    },
+
     /**
      * 根据studyId获取分析结果（从后端查询）
      */

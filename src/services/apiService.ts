@@ -50,6 +50,7 @@ export interface UploadImageRequest {
 export interface UploadImageResponse {
   taskId: string;
   studyId: string;
+  studyDbId?: number; // 数据库中的数字 ID
   status: string;
   estimatedTime: number;
 }
@@ -57,6 +58,7 @@ export interface UploadImageResponse {
 export interface TaskStatusResponse {
   taskId: string;
   studyId: string;
+  studyDbId?: number; // 数据库中的数字 ID
   status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
   progress: number;
   result?: {

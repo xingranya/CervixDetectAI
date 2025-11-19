@@ -98,25 +98,46 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
     console.log(`👤 患者: ${patientName} (${patientId})`);
     console.log(`📸 图像: ${req.file.originalname} (${(req.file.size / 1024).toFixed(2)} KB)`);
 
-    // 立即返回任务ID
-    res.status(200).json({
-      taskId,
-      studyId,
-      status: 'PENDING',
-      estimatedTime: 30,
-    });
+    try {
+      // 等待数据库保存完成，然后返回
+      const userId = req.user?.id || null; // 获取登录用户ID，未登录则为null
+      await saveToDatabase(task, req.file, userId);
 
-    // 异步保存到数据库并执行分析
-    const userId = req.user?.id || null; // 获取登录用户ID，未登录则为null
-    saveToDatabase(task, req.file, userId)
-      .then(() => {
-        return processAnalysisTask(taskId);
-      })
-      .catch((error) => {
-        console.error(`❌ 任务 ${taskId} 保存或执行失败:`, error);
+      // 数据库保存成功，返回数据库 ID
+      const finalStudyId = task.dbIds?.studyId || null;
+      console.log(`✅ 数据库保存成功，病例 ID: ${finalStudyId}`);
+
+      // 返回任务ID和数据库ID
+      res.status(200).json({
+        taskId,
+        studyId, // 字符串 ID（兼容）
+        studyDbId: finalStudyId, // 数据库数字 ID
+        status: 'PENDING',
+        estimatedTime: 30,
+      });
+
+      // 异步执行分析
+      processAnalysisTask(taskId).catch((error) => {
+        console.error(`❌ 任务 ${taskId} 执行失败:`, error);
         task.status = 'FAILED';
         task.error = error.message;
       });
+    } catch (dbError) {
+      console.error(`❌ 数据库保存失败:`, dbError);
+      
+      // 删除已上传的文件
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('删除文件失败:', unlinkError);
+      }
+
+      return res.status(500).json({
+        error: '数据库保存失败',
+        details: dbError.message,
+        message: '请检查数据库连接和表结构是否正确',
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -141,6 +162,7 @@ router.get('/:taskId', (req, res) => {
   const response = {
     taskId: task.taskId,
     studyId: task.studyId,
+    studyDbId: task.studyDbId || task.dbIds?.studyId, // 添加数据库 ID
     status: task.status,
     progress: task.progress,
   };
@@ -343,6 +365,7 @@ async function processAnalysisTask(taskId) {
 /**
  * GET /api/analyze/study/:studyId
  * 根据studyId查询分析结果（优先从数据库查询，内存次之）
+ * studyId 可以是数据库 ID (数字) 或 study_id (字符串)
  */
 router.get('/study/:studyId', async (req, res) => {
   const { studyId } = req.params;
@@ -352,7 +375,26 @@ router.get('/study/:studyId', async (req, res) => {
     // 1. 先从数据库查询分析结果
     const { Study, Patient, StudyImage, AnalysisTask, AnalysisResult } = require('../models');
 
-    const study = await Study.findByPk(studyId, {
+    // 判断 studyId 是数字ID还是字符串study_id
+    const isNumericId = /^\d+$/.test(studyId);
+    const study = isNumericId
+      ? await Study.findByPk(studyId, {
+      include: [
+        {
+          model: Patient,
+          as: 'patient',
+          attributes: ['id', 'patient_id', 'name'],
+        },
+        {
+          model: StudyImage,
+          as: 'images',
+          attributes: ['id', 'file_path', 'original_filename'],
+          limit: 1,
+        },
+      ],
+    })
+      : await Study.findOne({
+      where: { study_id: studyId },
       include: [
         {
           model: Patient,
@@ -378,9 +420,9 @@ router.get('/study/:studyId', async (req, res) => {
 
     console.log(`✅ [查询病例分析] 找到病例: ${study.id}, 状态: ${study.status}`);
 
-    // 2. 查找该病例的最新分析任务
+    // 2. 查找该病例的最新分析任务（使用数据库 ID）
     const latestTask = await AnalysisTask.findOne({
-      where: { study_id: studyId },
+      where: { study_id: study.id },
       include: [
         {
           model: AnalysisResult,
@@ -396,8 +438,8 @@ router.get('/study/:studyId', async (req, res) => {
       // 3. 如果数据库中没有，尝试从内存中查找（正在处理的任务）
       let foundTask = null;
       for (const [, task] of tasks) {
-        // 比较数据库 ID，而不是字符串 studyId
-        if (task.dbIds?.studyId === parseInt(studyId)) {
+        // 使用数据库 ID 或 study_id 比较
+        if (task.dbIds?.studyId === study.id || task.studyId === study.study_id) {
           foundTask = task;
           break;
         }
