@@ -3,11 +3,6 @@
 
 import type jsPDF from 'jspdf';
 
-interface PDFTextOptions {
-  fontSize?: number;
-  maxWidth?: number;
-  align?: 'left' | 'center' | 'right' | 'justify';
-}
 
 /**
  * 完整的中文PDF支持解决方案
@@ -91,68 +86,3 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-/**
- * 适用于中文的PDF文本添加工具
- */
-export const ChinesePDFFix = {
-  /**
-   * 添加文本的增强版本
-   */
-  addText: (doc: jsPDF, text: string, x: number, y: number, options: PDFTextOptions = {}) => {
-    try {
-      const fontSize = options.fontSize || 12;
-      const maxWidth = options.maxWidth;
-      
-      doc.setFontSize(fontSize);
-      
-      if (maxWidth) {
-        // 使用文本分割功能
-        doc.text(text, x, y, {
-          maxWidth: maxWidth,
-          align: options.align || 'left'
-        });
-      } else {
-        doc.text(text, x, y);
-      }
-    } catch (error) {
-      console.warn('⚠️ 文本添加警告:', error);
-      try {
-        doc.text(String(text || ' '), x, y);
-      } catch (e) {
-        console.error('❌ 文本添加失败:', e);
-      }
-    }
-  },
-  
-  /**
-   * 添加标题
-   */
-  addTitle: (doc: jsPDF, title: string, x: number, y: number, fontSize = 14) => {
-    doc.setFontSize(fontSize);
-    doc.setTextColor(25, 118, 210); // 蓝色
-    ChinesePDFFix.addText(doc, title, x, y);
-    doc.setTextColor(0, 0, 0); // 重置颜色
-  },
-  
-  /**
-   * 添加内容
-   */
-  addContent: (doc: jsPDF, text: string, x: number, y: number, fontSize = 10) => {
-    doc.setFontSize(fontSize);
-    ChinesePDFFix.addText(doc, text, x, y);
-  }
-};
-
-// 保持向后兼容的导出
-export const addTextWithChineseSupport = (doc: jsPDF, text: string, x: number, y: number, fontSize = 12) => {
-  ChinesePDFFix.addText(doc, text, x, y, { fontSize });
-};
-
-export const splitChineseText = (doc: jsPDF, text: string, maxWidth: number): string[] => {
-  return doc.splitTextToSize(String(text || ''), maxWidth);
-};
-
-// 默认的中文支持设置函数
-export async function setupChineseFont(doc: jsPDF) {
-  return await setupChineseFontAdvanced(doc);
-}

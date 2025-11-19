@@ -46,6 +46,7 @@ import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
+import { getStudyAnalysis } from 'src/services/apiService';
 
 console.log('📦 [ReportsPage] 组件已初始化');
 
@@ -91,22 +92,60 @@ const viewReport = (id: string) => {
 };
 
 // Function to download a report
-const downloadReport = (id: string) => {
-  // In a real app, this would download the actual report
-  $q.notify({
-    type: 'info',
-    message: `正在生成报告 PDF...`,
-    position: 'top',
-  });
+const downloadReport = async (id: string) => {
+  try {
+    $q.loading.show({
+      message: `正在获取病例 ${id} 的数据...`,
+      spinnerColor: 'primary',
+    });
 
-  // Simulate report generation and download
-  setTimeout(() => {
+    // 获取病例和分析数据
+    const studyData = await getStudyAnalysis(String(id));
+
+    if (!studyData.result) {
+      $q.notify({
+        type: 'warning',
+        message: '该病例暂无分析结果，无法生成报告',
+        position: 'top',
+      });
+      return;
+    }
+
+    $q.loading.show({
+      message: '正在生成PDF报告...',
+      spinnerColor: 'primary',
+    });
+
+    // 使用统一的 PDF 生成工具
+    const { generatePDFReport } = await import('../utils/pdfGenerator');
+    
+    await generatePDFReport({
+      study: {
+        id: id,
+        patientName: studyData.studyInfo.patientName,
+        patientId: studyData.studyInfo.patientId,
+        studyDate: studyData.studyInfo.studyDate,
+        modality: studyData.studyInfo.modality,
+      },
+      result: studyData.result,
+    });
+
     $q.notify({
       type: 'positive',
-      message: `病例 ${id} 的报告下载成功！`,
+      message: '报告已成功下载！',
+      position: 'top',
+      icon: 'download',
+    });
+  } catch (error) {
+    console.error('生成 PDF 报告失败:', error);
+    $q.notify({
+      type: 'negative',
+      message: '生成报告失败，请稍后重试',
       position: 'top',
     });
-  }, 1500);
+  } finally {
+    $q.loading.hide();
+  }
 };
 
 // Load studies when component mounts
