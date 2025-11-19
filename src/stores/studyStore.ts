@@ -4,6 +4,22 @@ import { studyAPI, analysisTaskAPI } from 'src/services/api';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const SERVER_BASE_URL = API_BASE_URL.replace('/api', '');
+
+/**
+ * 将相对路径转换为完整URL
+ */
+function getImageUrl(filePath: string | undefined): string | undefined {
+  if (!filePath) return undefined;
+  // 如果已经是完整URL，直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  // 否则拼接服务器地址
+  return `${SERVER_BASE_URL}${filePath}`;
+}
+
 export interface Study {
   id: number;
   study_id: string;
@@ -64,23 +80,26 @@ export const useStudyStore = defineStore('study', {
 
         if (response.success) {
           // Map backend data to frontend format
-          this.studies = response.data.studies.map((study: any) => ({
-            id: study.id,
-            study_id: study.study_id,
-            patient_id: study.patient_id,
-            patientName: study.patient?.name || '',
-            patientId: study.patient?.patient_id || '',
-            studyDate: study.study_date,
-            status: study.status,
-            study_type: study.study_type,
-            modality: study.study_type,
-            bodyPart: '宫颈',
-            description: study.description,
-            images: study.images,
-            imageUrl: study.images?.[0]?.file_path,
-            uploadedAt: study.created_at,
-            created_at: study.created_at,
-          }));
+          this.studies = response.data.studies.map((study: any) => {
+            const imageUrl = getImageUrl(study.images?.[0]?.file_path);
+            return {
+              id: study.id,
+              study_id: study.study_id,
+              patient_id: study.patient_id,
+              patientName: study.patient?.name || '',
+              patientId: study.patient?.patient_id || '',
+              studyDate: study.study_date,
+              status: study.status,
+              study_type: study.study_type,
+              modality: study.study_type,
+              bodyPart: '宫颈',
+              description: study.description,
+              images: study.images,
+              ...(imageUrl ? { imageUrl } : {}),
+              uploadedAt: study.created_at,
+              created_at: study.created_at,
+            };
+          });
           console.log('✅ [fetchStudies] 已映射病例数据，共', this.studies.length, '条');
           console.log('📊 [fetchStudies] 病例列表:', this.studies);
           return this.studies;
@@ -111,6 +130,7 @@ export const useStudyStore = defineStore('study', {
       try {
         const response = await studyAPI.getStudy(id);
         if (response.success) {
+          const imageUrl = getImageUrl(response.data.study.images?.[0]?.file_path);
           const study = {
             id: response.data.study.id,
             study_id: response.data.study.study_id,
@@ -124,7 +144,7 @@ export const useStudyStore = defineStore('study', {
             bodyPart: '宫颈',
             description: response.data.study.description,
             images: response.data.study.images,
-            imageUrl: response.data.study.images?.[0]?.file_path,
+            ...(imageUrl ? { imageUrl } : {}),
             uploadedAt: response.data.study.created_at,
             created_at: response.data.study.created_at,
           };
@@ -180,7 +200,10 @@ export const useStudyStore = defineStore('study', {
             const imagesResponse = await studyAPI.uploadImages(newStudy.id, studyData.images);
             if (imagesResponse.success) {
               newStudy.images = imagesResponse.data.images;
-              newStudy.imageUrl = imagesResponse.data.images[0]?.file_path;
+              const imageUrl = getImageUrl(imagesResponse.data.images[0]?.file_path);
+              if (imageUrl) {
+                newStudy.imageUrl = imageUrl;
+              }
             }
           }
 

@@ -184,7 +184,10 @@
                 class="q-mb-sm"
               >
                 <q-item-section avatar>
-                  <q-icon color="positive" name="check_circle" />
+                  <q-icon
+                    :color="getRecommendationIconColor(analysisResult.diagnosis)"
+                    :name="getRecommendationIconName(analysisResult.diagnosis)"
+                  />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>{{ rec }}</q-item-label>
@@ -252,6 +255,10 @@ import { useAnalysisStore } from 'stores/analysisStore';
 import { useQuasar } from 'quasar';
 import { getStudyAnalysis } from 'src/services/apiService';
 import type { StudyAnalysisResponse } from 'src/services/apiService';
+// jsPDF 将在需要时动态导入
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const SERVER_BASE_URL = API_BASE_URL.replace('/api', '');
 
 const route = useRoute();
 const studyStore = useStudyStore();
@@ -280,7 +287,7 @@ const study = computed(() => {
       modality: studyData.value.studyInfo.modality,
       bodyPart: '宫颈',
       description: studyData.value.studyInfo.description,
-      imageUrl: `http://localhost:3000${studyData.value.studyInfo.imageUrl}`,
+      imageUrl: `${SERVER_BASE_URL}${studyData.value.studyInfo.imageUrl}`,
       status:
         studyData.value.status === 'SUCCESS'
           ? 'completed'
@@ -352,6 +359,22 @@ const getDiagnosisColor = (diagnosis: string) => {
   }
 };
 
+// Function to get recommendation icon color based on diagnosis
+const getRecommendationIconColor = (diagnosis: string) => {
+  if (!diagnosis || diagnosis === '无法诊断' || diagnosis === '未知') {
+    return 'warning'; // 警告色 (橙色)
+  }
+  return 'positive'; // 绿色
+};
+
+// Function to get recommendation icon name based on diagnosis
+const getRecommendationIconName = (diagnosis: string) => {
+  if (!diagnosis || diagnosis === '无法诊断' || diagnosis === '未知') {
+    return 'info'; // 信息图标
+  }
+  return 'check_circle'; // 勾选图标
+};
+
 // Function to format date
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return '';
@@ -359,10 +382,53 @@ const formatDate = (dateString: string | undefined) => {
 };
 
 // Function to download report
-const downloadReport = () => {
-  // In a real app, this would download the actual report
-  console.log('下载病例', studyId.value, '的报告');
-  alert(`下载功能将在实际应用中实现，病例 ${studyId.value}`);
+const downloadReport = async () => {
+  if (!study.value || !analysisResult.value) {
+    $q.notify({
+      type: 'warning',
+      message: '无法生成报告：缺少分析结果',
+      position: 'top',
+    });
+    return;
+  }
+
+  try {
+    $q.loading.show({
+      message: '正在生成PDF报告...',
+      spinnerColor: 'primary',
+    });
+
+    // 使用统一的 PDF 生成工具
+    const { generatePDFReport } = await import('../utils/pdfGenerator');
+    
+    await generatePDFReport({
+      study: {
+        id: study.value.id,
+        patientName: study.value.patientName,
+        patientId: study.value.patientId,
+        studyDate: study.value.studyDate,
+        modality: study.value.modality,
+        bodyPart: study.value.bodyPart,
+      },
+      result: analysisResult.value,
+    });
+
+    $q.notify({
+      type: 'positive',
+      message: '报告已成功下载！',
+      position: 'top',
+      icon: 'download',
+    });
+  } catch (error) {
+    console.error('生成 PDF 报告失败:', error);
+    $q.notify({
+      type: 'negative',
+      message: '生成报告失败，请稍后重试',
+      position: 'top',
+    });
+  } finally {
+    $q.loading.hide();
+  }
 };
 
 // Load study when component mounts

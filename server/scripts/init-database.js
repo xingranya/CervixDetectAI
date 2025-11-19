@@ -1,14 +1,48 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-require('dotenv').config();
-const { sequelize, User } = require('../models');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { Sequelize } = require('sequelize');
 const bcrypt = require('bcrypt');
 
 async function initDatabase() {
   try {
     console.log('\n🚀 开始初始化数据库...\n');
 
-    // 1. 测试数据库连接
-    console.log('📡 测试数据库连接...');
+    // 1. 首先连接到MySQL服务器（不指定数据库）来创建数据库
+    console.log('📡 连接到MySQL服务器...');
+    const mysqlConnection = new Sequelize(
+      null, // 不指定数据库
+      process.env.DB_USER || 'root',
+      process.env.DB_PASSWORD || '',
+      {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        dialect: 'mysql',
+        logging: false,
+      },
+    );
+
+    await mysqlConnection.authenticate();
+    console.log('✅ MySQL服务器连接成功!\n');
+
+    // 2. 创建数据库（如果不存在）
+    console.log('🔨 创建数据库（如果不存在）...');
+    const dbName = process.env.DB_NAME || 'cervix_detect_ai';
+    try {
+      await mysqlConnection.query(
+        `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+      );
+      console.log('✅ 数据库创建或已存在!\n');
+    } catch (error) {
+      console.error('❌ 创建数据库失败:', error.message);
+      throw error;
+    } finally {
+      await mysqlConnection.close();
+    }
+
+    // 3. 现在连接到具体的数据库
+    console.log('📡 连接到数据库...');
+    const { sequelize } = require('../models');
     await sequelize.authenticate();
     console.log('✅ 数据库连接成功!\n');
 
@@ -75,7 +109,10 @@ async function initDatabase() {
     }
     console.log('\n');
 
-    // 5. 检查是否已存在管理员账号
+    // 5. 导入模型（在数据库连接之后）
+    const { User } = require('../models');
+
+    // 6. 检查是否已存在管理员账号
     console.log('👤 检查管理员账号...');
     const adminExists = await User.findOne({ where: { role: 'admin' } });
 

@@ -27,13 +27,13 @@ const Study = sequelize.define(
     },
     user_id: {
       type: DataTypes.BIGINT,
-      allowNull: false,
+      allowNull: true, // 允许为null，支持匿名创建
       references: {
         model: 'users',
         key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT',
+      onDelete: 'SET NULL', // 用户删除后设置为null
     },
     study_date: {
       type: DataTypes.DATE,

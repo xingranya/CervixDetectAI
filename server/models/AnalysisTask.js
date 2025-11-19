@@ -27,13 +27,13 @@ const AnalysisTask = sequelize.define(
     },
     user_id: {
       type: DataTypes.BIGINT,
-      allowNull: false,
+      allowNull: true, // 允许为null，支持匿名创建
       references: {
         model: 'users',
         key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT',
+      onDelete: 'SET NULL', // 用户删除后设置为null
     },
     status: {
       type: DataTypes.ENUM('PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'),
@@ -93,7 +93,7 @@ const AnalysisTask = sequelize.define(
         fields: ['status', 'created_at'],
       },
     ],
-  }
+  },
 );
 
 // Hook：创建任务前自动生成task_id

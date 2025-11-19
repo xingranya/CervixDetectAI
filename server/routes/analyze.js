@@ -6,13 +6,14 @@ const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const qwenService = require('../services/qwenService');
 const { Patient, Study, StudyImage, AnalysisTask, AnalysisResult } = require('../models');
+const { optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 // 配置multer存储
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
+    const uploadDir = path.join(__dirname, '..', 'uploads');
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -48,7 +49,7 @@ const tasks = new Map();
  * POST /api/analyze
  * 上传图像并创建分析任务
  */
-router.post('/', upload.single('image'), async (req, res, next) => {
+router.post('/', optionalAuth, upload.single('image'), async (req, res, next) => {
   try {
     // 验证文件
     if (!req.file) {
@@ -106,7 +107,8 @@ router.post('/', upload.single('image'), async (req, res, next) => {
     });
 
     // 异步保存到数据库并执行分析
-    saveToDatabase(task, req.file)
+    const userId = req.user?.id || null; // 获取登录用户ID，未登录则为null
+    saveToDatabase(task, req.file, userId)
       .then(() => {
         return processAnalysisTask(taskId);
       })
@@ -158,8 +160,9 @@ router.get('/:taskId', (req, res) => {
  * 保存任务到数据库
  * @param {Object} task - 任务对象
  * @param {Object} file - 上传的文件对象
+ * @param {number|null} userId - 当前登录用户ID
  */
-async function saveToDatabase(task, file) {
+async function saveToDatabase(task, file, userId = null) {
   try {
     console.log(`💾 开始保存任务到数据库: ${task.taskId}`);
 
@@ -173,8 +176,8 @@ async function saveToDatabase(task, file) {
       patient = await Patient.create({
         patient_id: task.studyInfo.patientId,
         name: task.studyInfo.patientName,
-        gender: 'female', // 宫颈癖查默认女性
-        created_by: 1, // TODO: 使用实际登录用户ID
+        gender: 'female', // 宫颈检查默认女性
+        created_by: userId, // 使用实际登录用户ID，未登录时为null
       });
     }
 
@@ -183,7 +186,7 @@ async function saveToDatabase(task, file) {
     const study = await Study.create({
       study_id: task.studyId,
       patient_id: patient.id,
-      user_id: 1, // TODO: 使用实际登录用户ID
+      user_id: userId, // 使用实际登录用户ID，未登录时为null
       study_date: new Date(task.studyInfo.studyDate),
       study_type: task.studyInfo.modality || '宫颈细胞学检查',
       description: task.studyInfo.description,
@@ -214,7 +217,7 @@ async function saveToDatabase(task, file) {
     const analysisTask = await AnalysisTask.create({
       task_id: task.taskId,
       study_id: study.id,
-      user_id: 1, // TODO: 使用实际登录用户ID
+      user_id: userId, // 使用实际登录用户ID，未登录时为null
       status: 'PENDING',
       progress: 0,
     });
@@ -339,39 +342,175 @@ async function processAnalysisTask(taskId) {
 
 /**
  * GET /api/analyze/study/:studyId
- * 根据studyId查询分析结果
+ * 根据studyId查询分析结果（优先从数据库查询，内存次之）
  */
-router.get('/study/:studyId', (req, res) => {
+router.get('/study/:studyId', async (req, res) => {
   const { studyId } = req.params;
+  console.log(`🔍 [查询病例分析] studyId: ${studyId}`);
 
-  // 查找对应的任务
-  let foundTask = null;
-  for (const [, task] of tasks) {
-    if (task.studyId === studyId) {
-      foundTask = task;
-      break;
+  try {
+    // 1. 先从数据库查询分析结果
+    const { Study, Patient, StudyImage, AnalysisTask, AnalysisResult } = require('../models');
+
+    const study = await Study.findByPk(studyId, {
+      include: [
+        {
+          model: Patient,
+          as: 'patient',
+          attributes: ['id', 'patient_id', 'name'],
+        },
+        {
+          model: StudyImage,
+          as: 'images',
+          attributes: ['id', 'file_path', 'original_filename'],
+          limit: 1,
+        },
+      ],
+    });
+
+    if (!study) {
+      console.log(`❌ [查询病例分析] 未找到病例: ${studyId}`);
+      return res.status(404).json({
+        error: '未找到该病例',
+        studyId,
+      });
     }
-  }
 
-  if (!foundTask) {
-    return res.status(404).json({
-      error: '未找到该病例的分析任务',
-      studyId,
+    console.log(`✅ [查询病例分析] 找到病例: ${study.id}, 状态: ${study.status}`);
+
+    // 2. 查找该病例的最新分析任务
+    const latestTask = await AnalysisTask.findOne({
+      where: { study_id: studyId },
+      include: [
+        {
+          model: AnalysisResult,
+          as: 'result',
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    if (!latestTask) {
+      console.log(`⚠️ [查询病例分析] 数据库中没有任务，查找内存...`);
+
+      // 3. 如果数据库中没有，尝试从内存中查找（正在处理的任务）
+      let foundTask = null;
+      for (const [, task] of tasks) {
+        // 比较数据库 ID，而不是字符串 studyId
+        if (task.dbIds?.studyId === parseInt(studyId)) {
+          foundTask = task;
+          break;
+        }
+      }
+
+      if (foundTask) {
+        console.log(`✅ [查询病例分析] 从内存返回任务: ${foundTask.taskId}`);
+        // 返回内存中的任务信息
+        return res.json({
+          taskId: foundTask.taskId,
+          studyId: String(foundTask.dbIds?.studyId || studyId), // 使用数据库ID
+          status: foundTask.status,
+          progress: foundTask.progress,
+          studyInfo: foundTask.studyInfo,
+          result: foundTask.result,
+          error: foundTask.error,
+          createdAt: foundTask.createdAt,
+          completedAt: foundTask.completedAt,
+        });
+      }
+
+      // 4. 如果内存中也没有，且病例状态为 pending 或 uploaded，返回默认响应
+      if (study.status === 'pending' || study.status === 'uploaded') {
+        console.log(`🔄 [查询病例分析] 病例处于 ${study.status} 状态，返回 PENDING`);
+        const studyInfo = {
+          patientName: study.patient?.name || '',
+          patientId: study.patient?.patient_id || '',
+          studyDate: study.study_date,
+          modality: study.study_type,
+          description: study.description || '',
+          imageUrl: study.images?.[0]?.file_path || '',
+        };
+
+        return res.json({
+          taskId: `temp_${studyId}`,
+          studyId: String(studyId),
+          status: 'PENDING',
+          progress: 0,
+          studyInfo,
+          createdAt: study.created_at,
+        });
+      }
+
+      console.log(`❌ [查询病例分析] 内存中也没有任务，且病例状态为 ${study.status}`);
+      return res.status(404).json({
+        error: '未找到该病例的分析任务',
+        studyId,
+        studyStatus: study.status,
+      });
+    }
+
+    console.log(`✅ [查询病例分析] 找到任务: ${latestTask.id}, 状态: ${latestTask.status}`);
+    console.log(`📊 [查询病例分析] 是否有结果: ${!!latestTask.result}`);
+
+    // 4. 从数据库构造返回数据
+    const studyInfo = {
+      patientName: study.patient?.name || '',
+      patientId: study.patient?.patient_id || '',
+      studyDate: study.study_date,
+      modality: study.study_type,
+      description: study.description || '',
+      imageUrl: study.images?.[0]?.file_path || '',
+    };
+
+    const response = {
+      taskId: String(latestTask.id),
+      studyId: String(study.id),
+      status:
+        latestTask.status === 'SUCCESS'
+          ? 'SUCCESS'
+          : latestTask.status === 'FAILED'
+            ? 'FAILED'
+            : latestTask.status === 'PROCESSING'
+              ? 'PROCESSING'
+              : 'PENDING',
+      progress: latestTask.progress,
+      studyInfo,
+      createdAt: latestTask.created_at,
+    };
+
+    // 添加分析结果（如果存在）
+    if (latestTask.result) {
+      console.log(`✅ [查询病例分析] 添加分析结果: ${latestTask.result.diagnosis}`);
+      response.result = {
+        diagnosis: latestTask.result.diagnosis,
+        confidence: latestTask.result.confidence,
+        suspiciousAreas: latestTask.result.suspicious_areas || [],
+        biomarkers: latestTask.result.biomarkers || {
+          HPV: '未检测',
+          p16: '未检测',
+          Ki67: '未检测',
+        },
+        recommendations: latestTask.result.recommendations || [],
+        detailedReport: latestTask.result.detailed_report || '',
+      };
+      response.completedAt = latestTask.completed_at;
+    }
+
+    // 添加错误信息（如果存在）
+    if (latestTask.error_message) {
+      response.error = latestTask.error_message;
+      response.completedAt = latestTask.completed_at;
+    }
+
+    console.log(`✅ [查询病例分析] 返回数据，状态: ${response.status}`);
+    res.json(response);
+  } catch (error) {
+    console.error('❌ [查询病例分析] 失败:', error);
+    res.status(500).json({
+      error: '查询失败',
+      message: error.message,
     });
   }
-
-  // 返回完整信息
-  res.json({
-    taskId: foundTask.taskId,
-    studyId: foundTask.studyId,
-    status: foundTask.status,
-    progress: foundTask.progress,
-    studyInfo: foundTask.studyInfo,
-    result: foundTask.result,
-    error: foundTask.error,
-    createdAt: foundTask.createdAt,
-    completedAt: foundTask.completedAt,
-  });
 });
 
 module.exports = router;

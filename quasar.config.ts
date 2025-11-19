@@ -88,6 +88,16 @@ export default defineConfig((/* ctx */) => {
           changeOrigin: true,
           ws: true,
         },
+        // 代理上传文件访问
+        '/uploads': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        // 代理报告文件访问
+        '/reports': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
       },
     },
 
@@ -106,7 +116,7 @@ export default defineConfig((/* ctx */) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ['Notify'],
+      plugins: ['Notify', 'Loading'],
     },
 
     // animations: 'all', // --- includes all animations

@@ -40,6 +40,12 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
     
+    location /fonts/ {
+        root /path/to/dist/spa;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
     # 前端路由
     location / {
         root /www/wwwroot/36.50.226.32_9001;
