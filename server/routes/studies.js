@@ -237,10 +237,13 @@ router.get('/', authenticate, async (req, res) => {
       ];
     }
 
-    // 非管理员只能看到自己创建的病例
+    // 非管理员可以看到自己创建的病例 + 未分配用户的病例（匿名上传）
     if (req.user.role !== 'admin') {
-      where.user_id = req.user.id;
-      console.log('🔒 [GET /api/studies] 非管理员，只查询自己的病例');
+      where[Op.or] = [
+        { user_id: req.user.id },
+        { user_id: null }
+      ];
+      console.log('🔒 [GET /api/studies] 非管理员，查询自己的病例和未分配用户的病例');
     } else {
       console.log('🔓 [GET /api/studies] 管理员，查询所有病例');
     }
@@ -334,8 +337,8 @@ router.get('/:id', authenticate, async (req, res) => {
       });
     }
 
-    // 非管理员只能查看自己创建的病例
-    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+    // 非管理员可以查看自己创建的病例 + 未分配用户的病例（匿名上传）
+    if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: '无权访问该病例',
@@ -371,8 +374,8 @@ router.put('/:id', authenticate, async (req, res) => {
       });
     }
 
-    // 非管理员只能更新自己创建的病例
-    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+    // 非管理员可以更新自己创建的病例 + 未分配用户的病例（匿名上传）
+    if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: '无权更新该病例',
@@ -446,8 +449,8 @@ router.delete('/:id', authenticate, async (req, res) => {
       });
     }
 
-    // 非管理员只能删除自己创建的病例
-    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+    // 非管理员可以删除自己创建的病例 + 未分配用户的病例（匿名上传）
+    if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: '无权删除该病例',

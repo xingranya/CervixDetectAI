@@ -49,7 +49,16 @@
                   icon="download"
                   label="下载报告"
                   no-caps
+                  class="q-mr-sm"
                   @click="downloadReport"
+                />
+                <q-btn
+                  color="negative"
+                  icon="delete"
+                  label="删除病例"
+                  outline
+                  no-caps
+                  @click="confirmDelete"
                 />
               </div>
             </div>
@@ -249,7 +258,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
 import { useQuasar } from 'quasar';
@@ -261,6 +270,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 const SERVER_BASE_URL = API_BASE_URL.replace('/api', '');
 
 const route = useRoute();
+const router = useRouter();
 const studyStore = useStudyStore();
 const analysisStore = useAnalysisStore();
 const $q = useQuasar();
@@ -424,6 +434,61 @@ const downloadReport = async () => {
     $q.notify({
       type: 'negative',
       message: '生成报告失败，请稍后重试',
+      position: 'top',
+    });
+  } finally {
+    $q.loading.hide();
+  }
+};
+
+// Function to confirm and delete the current study
+const confirmDelete = () => {
+  if (!study.value) return;
+
+  $q.dialog({
+    title: '确认删除',
+    message: `确定要删除患者 "${study.value.patientName}" 的病例（ID: ${study.value.id}）吗？此操作不可恢复。`,
+    cancel: {
+      label: '取消',
+      color: 'grey',
+      flat: true,
+    },
+    ok: {
+      label: '删除',
+      color: 'negative',
+    },
+    persistent: true,
+  }).onOk(() => {
+    void deleteStudy();
+  });
+};
+
+// Function to delete the current study
+const deleteStudy = async () => {
+  if (!study.value) return;
+
+  try {
+    $q.loading.show({
+      message: '正在删除病例...',
+      spinnerColor: 'negative',
+    });
+
+    await studyStore.deleteStudy(Number(study.value.id));
+
+    $q.notify({
+      type: 'positive',
+      message: '病例已成功删除',
+      position: 'top',
+      icon: 'check_circle',
+    });
+
+    // 跳转回病例列表页面
+    void router.push('/app/studies');
+  } catch (error) {
+    console.error('删除病例失败:', error);
+    $q.notify({
+      type: 'negative',
+      message: '删除病例失败，请稍后重试',
       position: 'top',
     });
   } finally {

@@ -58,6 +58,15 @@
                   props.row.status === 'completed' ? '下载报告' : '等待分析完成'
                 }}</q-tooltip>
               </q-btn>
+              <q-btn
+                flat
+                size="sm"
+                icon="delete"
+                color="negative"
+                @click="confirmDelete(props.row.id, props.row.patientName)"
+              >
+                <q-tooltip>删除病例</q-tooltip>
+              </q-btn>
             </q-td>
           </template>
         </q-table>
@@ -190,6 +199,57 @@ const downloadReport = async (id: string) => {
     $q.notify({
       type: 'negative',
       message: '生成报告失败，请稍后重试',
+      position: 'top',
+    });
+  } finally {
+    $q.loading.hide();
+  }
+};
+
+// Function to confirm and delete a study
+const confirmDelete = (id: string, patientName: string) => {
+  $q.dialog({
+    title: '确认删除',
+    message: `确定要删除患者 "${patientName}" 的病例（ID: ${id}）吗？此操作不可恢复。`,
+    cancel: {
+      label: '取消',
+      color: 'grey',
+      flat: true,
+    },
+    ok: {
+      label: '删除',
+      color: 'negative',
+    },
+    persistent: true,
+  }).onOk(() => {
+    void deleteStudy(id);
+  });
+};
+
+// Function to delete a study
+const deleteStudy = async (id: string) => {
+  try {
+    $q.loading.show({
+      message: '正在删除病例...',
+      spinnerColor: 'negative',
+    });
+
+    await studyStore.deleteStudy(Number(id));
+
+    $q.notify({
+      type: 'positive',
+      message: '病例已成功删除',
+      position: 'top',
+      icon: 'check_circle',
+    });
+
+    // 刷新病例列表
+    await studyStore.fetchStudies();
+  } catch (error) {
+    console.error('删除病例失败:', error);
+    $q.notify({
+      type: 'negative',
+      message: '删除病例失败，请稍后重试',
       position: 'top',
     });
   } finally {
