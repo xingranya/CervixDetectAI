@@ -1,4 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+const fs = require('fs');
+const path = require('path');
+
+const content = `/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -25,7 +29,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
-    const filename = `${uuidv4()}${ext}`;
+    const filename = \`\${uuidv4()}\${ext}\`;
     cb(null, filename);
   },
 });
@@ -79,12 +83,12 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
     }
 
     // 生成ID
-    const taskId = `task_${uuidv4()}`;
-    const studyId = `study_${uuidv4()}`;
+    const taskId = \`task_\${uuidv4()}\`;
+    const studyId = \`study_\${uuidv4()}\`;
     const userId = req.user?.id || null;
 
-    console.log(`📝 创建分析任务: ${taskId}`);
-    console.log(`👤 患者: ${patientName} (${patientId})`);
+    console.log(\`📝 创建分析任务: \${taskId}\`);
+    console.log(\`👤 患者: \${patientName} (\${patientId})\`);
 
     // 开启事务
     transaction = await sequelize.transaction();
@@ -139,7 +143,7 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
           study_id: study.id,
           original_filename: req.file.originalname,
           stored_filename: path.basename(req.file.filename),
-          file_path: `/uploads/${path.basename(req.file.path)}`,
+          file_path: \`/uploads/\${path.basename(req.file.path)}\`,
           file_size: req.file.size,
           mime_type: req.file.mimetype,
           file_format: fileFormat,
@@ -178,7 +182,7 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
 
       // 异步执行分析 (传入数据库ID)
       processAnalysisTask(analysisTask.id, req.file.path, study.id).catch((err) => {
-        console.error(`❌ 任务后台执行失败:`, err);
+        console.error(\`❌ 任务后台执行失败:\`, err);
       });
     } catch (dbError) {
       console.error('❌ 数据库操作失败:', dbError);
@@ -272,7 +276,7 @@ router.get('/study/:studyId', async (req, res) => {
   const { studyId } = req.params;
 
   try {
-    const isNumericId = /^\d+$/.test(studyId);
+    const isNumericId = /^\\d+$/.test(studyId);
     const whereClause = isNumericId ? { id: studyId } : { study_id: studyId };
 
     const study = await Study.findOne({
@@ -305,7 +309,7 @@ router.get('/study/:studyId', async (req, res) => {
     if (!latestTask) {
       // 无任务记录
       return res.json({
-        taskId: `temp_${study.id}`,
+        taskId: \`temp_\${study.id}\`,
         studyId: String(study.id),
         status: 'PENDING',
         progress: 0,
@@ -348,7 +352,7 @@ router.get('/study/:studyId', async (req, res) => {
  */
 async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
   try {
-    console.log(`🔄 开始处理任务 (DB ID: ${analysisTaskId})`);
+    console.log(\`🔄 开始处理任务 (DB ID: \${analysisTaskId})\`);
 
     // 更新状态: PROCESSING
     await AnalysisTask.update(
@@ -361,7 +365,7 @@ async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
     await AnalysisTask.update({ progress: 30 }, { where: { id: analysisTaskId } });
     const result = await qwenService.analyzeImage(imagePath);
 
-    console.log(`✅ 任务完成, 诊断: ${result.diagnosis}`);
+    console.log(\`✅ 任务完成, 诊断: \${result.diagnosis}\`);
 
     // 保存结果
     let riskLevel = 'low';
@@ -402,7 +406,7 @@ async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
       );
     });
   } catch (error) {
-    console.error(`❌ 任务失败:`, error.message);
+    console.error(\`❌ 任务失败:\`, error.message);
     await AnalysisTask.update(
       {
         status: 'FAILED',
@@ -420,3 +424,9 @@ async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
 }
 
 module.exports = router;
+`;
+
+const filePath = path.join(__dirname, '..', 'routes', 'analyze.js');
+fs.writeFileSync(filePath, content);
+fs.writeFileSync(filePath, content);
+console.log('✅ server/routes/analyze.js has been overwritten successfully.');

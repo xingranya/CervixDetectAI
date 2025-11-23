@@ -28,7 +28,7 @@ module.exports = {
       acquire: 30000,
       idle: 10000,
     },
-    logging: console.log,
+    logging: process.env.NODE_ENV === 'production' ? false : console.log,
   },
   production: {
     username: process.env.DB_USER,

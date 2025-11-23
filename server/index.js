@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 
@@ -37,14 +38,13 @@ app.use(
     credentials: true,
   }),
 );
+app.use(compression()); // 启用Gzip压缩
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 静态文件服务
-app.use('/uploads', express.static(uploadDir));
 app.use('/reports', express.static(reportsDir));
+app.use('/uploads', express.static(uploadDir));
 
-// 路由
 app.use('/api/auth', authRouter);
 app.use('/api/auth/sms', smsAuthRouter);
 app.use('/api/users', usersRouter);
