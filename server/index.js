@@ -34,7 +34,7 @@ if (!fs.existsSync(reportsDir)) {
 // 中间件
 app.use(
   cors({
-    origin: ['http://localhost:9000', 'http://localhost:9001', 'http://localhost:9002'],
+    origin: ['http://localhost:9000', 'http://localhost:9001', 'http://localhost:9002', 'http://182.140.180.9:9001', 'http://182.140.180.9:26140'],
     credentials: true,
   }),
 );
