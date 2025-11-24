@@ -1,7 +1,7 @@
 # 病例API
 
 <cite>
-**本文档中引用的文件**  
+**本文档引用的文件**  
 - [api.ts](file://src\services\api.ts)
 - [studies.js](file://server\routes\studies.js)
 - [Study.js](file://server\models\Study.js)
@@ -488,7 +488,7 @@ DELETE
 - `500 Internal Server Error` - 服务器内部错误
 
 **业务规则**  
-- 非管理员用户可以删除自己创建的病例以及未分配用户的匿名病例
+- 非管理员用户只能删除自己创建的病例
 - 采用软删除，数据不会从数据库中物理删除
 - 删除病例时会级联删除关联的影像文件和分析任务
 

@@ -12,6 +12,12 @@
 - [index.js](file://server/models/index.js)
 </cite>
 
+## 更新摘要
+**变更内容**  
+- 更新了病例列表查询、详情获取、更新和删除操作的权限控制逻辑，以反映非管理员用户现在可以管理自己创建的病例以及匿名上传的病例（user_id为null）。
+- 在相关章节中添加了对Op.or条件的说明，以体现更灵活的访问控制实现方式。
+- 更新了数据过滤逻辑的流程图，以准确反映新的权限判断逻辑。
+
 ## 目录
 1. [简介](#简介)
 2. [项目结构](#项目结构)
@@ -114,7 +120,7 @@ Route-->>Client : 201 Created + 病例数据
 - [server/models/Study.js](file://server/models/Study.js#L20-L80)
 
 ### 病例列表查询 (GET /api/studies)
-支持分页、搜索与多条件筛选，管理员可查看所有数据，普通用户仅限本人创建的病例。
+支持分页、搜索与多条件筛选，管理员可查看所有数据，普通用户可查看自己创建的病例以及匿名上传的病例（user_id为null）。
 
 #### 数据过滤逻辑
 ```mermaid
@@ -122,7 +128,9 @@ flowchart TD
 Start([开始]) --> AuthCheck["验证用户身份"]
 AuthCheck --> IsAdmin{"是否为管理员?"}
 IsAdmin --> |是| FetchAll["查询所有病例"]
-IsAdmin --> |否| FetchByUser["查询用户本人病例"]
+IsAdmin --> |否| CheckUserId["检查user_id"]
+CheckUserId --> |user_id匹配或为null| FetchByUser["查询用户本人及匿名病例"]
+CheckUserId --> |不匹配| ReturnForbidden["返回403"]
 FetchAll --> ApplyFilter["应用搜索与筛选条件"]
 FetchByUser --> ApplyFilter
 ApplyFilter --> Paginate["执行分页"]
@@ -187,13 +195,13 @@ Study --> AnalysisTask : hasMany
 - [server/routes/studies.js](file://server/routes/studies.js#L125-L150)
 
 ### 病例更新 (PUT /api/studies/:id)
-支持字段部分更新，仅修改请求中提供的字段，保留其他原有值。
+支持字段部分更新，仅修改请求中提供的字段，保留其他原有值。非管理员用户可以更新自己创建的病例以及匿名上传的病例（user_id为null）。
 
 **Section sources**  
 - [server/routes/studies.js](file://server/routes/studies.js#L155-L180)
 
 ### 病例删除 (DELETE /api/studies/:id)
-实现软删除机制，将`deletedAt`字段设置为当前时间戳，而非物理删除记录。
+实现软删除机制，将`deletedAt`字段设置为当前时间戳，而非物理删除记录。非管理员用户可以删除自己创建的病例以及匿名上传的病例（user_id为null）。
 
 #### 删除流程
 ```mermaid

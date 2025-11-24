@@ -1,14 +1,22 @@
 # AI分析API
 
 <cite>
-**本文档引用文件**  
-- [analyze.js](file://server/routes/analyze.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [apiService.ts](file://src/services/apiService.ts)
-- [analysisStore.ts](file://src/stores/analysisStore.ts)
+**本文档引用的文件**  
+- [analyze.js](file://server/routes/analyze.js) - *已重构以先保存数据库再返回响应*
+- [AnalysisTask.js](file://server/models/AnalysisTask.js) - *分析任务数据模型*
+- [Study.js](file://server/models/Study.js) - *病例数据模型*
+- [AnalysisResult.js](file://server/models/AnalysisResult.js) - *分析结果数据模型*
+- [apiService.ts](file://src/services/apiService.ts) - *前端API服务*
+- [analysisStore.ts](file://src/stores/analysisStore.ts) - *前端状态管理*
 </cite>
+
+## 更新摘要
+**变更内容**  
+- 更新了`/api/analyze`端点的响应结构，新增`studyDbId`字段以返回数据库中的数字ID
+- 重构了`analyze.js`文件中的任务创建流程，确保先将任务数据同步保存到数据库后再返回响应
+- 更新了异步任务处理流程图，反映新的同步创建机制
+- 更新了查询任务状态和根据studyId查询结果的响应示例
+- 增加了对数据库同步机制的详细说明
 
 ## 目录
 1. [简介](#简介)
@@ -48,6 +56,7 @@ CervixDetectAI系统提供了一套完整的AI图像分析API，用于宫颈细�
 {
   "taskId": "task_123e4567-e89b-12d3-a456-426614174000",
   "studyId": "study_123e4567-e89b-12d3-a456-426614174001",
+  "studyDbId": 12345,
   "status": "PENDING",
   "estimatedTime": 30
 }
@@ -69,6 +78,7 @@ CervixDetectAI系统提供了一套完整的AI图像分析API，用于宫颈细�
 {
   "taskId": "string",
   "studyId": "string",
+  "studyDbId": "number",
   "status": "PENDING|PROCESSING|SUCCESS|FAILED",
   "progress": 0-100,
   "result": { /* 诊断结果 */ },
@@ -104,15 +114,16 @@ flowchart TD
 A[上传图像] --> B{验证文件<br/>和参数}
 B --> |失败| C[返回400错误]
 B --> |成功| D[生成任务ID<br/>和病例ID]
-D --> E[保存至内存Map]
-E --> F[立即返回任务ID]
-F --> G[异步保存至数据库]
-G --> H[调用AI模型分析]
-H --> I{分析成功?}
-I --> |是| J[更新状态为SUCCESS]
-I --> |否| K[更新状态为FAILED]
-J --> L[保存结果至数据库]
-K --> M[记录错误信息]
+D --> E[开启数据库事务]
+E --> F[创建患者、病例、图像、任务记录]
+F --> G[提交事务并持久化]
+G --> H[返回任务ID和数据库ID]
+H --> I[异步调用AI模型分析]
+I --> J{分析成功?}
+J --> |是| K[更新状态为SUCCESS]
+J --> |否| L[更新状态为FAILED]
+K --> M[保存结果至数据库]
+L --> N[记录错误信息]
 ```
 
 **Diagram sources**
@@ -129,7 +140,8 @@ participant 前端
 participant 后端
 participant QwenAPI
 前端->>后端 : POST /api/analyze (上传图像)
-后端->>后端 : 创建任务并返回taskId
+后端->>后端 : 创建任务并保存到数据库
+后端->>后端 : 返回taskId和studyDbId
 后端->>QwenAPI : 调用analyzeImage接口
 QwenAPI-->>后端 : 返回JSON分析结果
 后端->>后端 : 解析并标准化结果
@@ -148,8 +160,8 @@ QwenAPI-->>后端 : 返回JSON分析结果
 ### 内存与数据库双层存储
 系统采用内存Map与数据库相结合的方式管理任务状态：
 
-1. **内存Map**：用于快速查询，提高响应速度
-2. **数据库**：用于持久化存储，保证数据可靠性
+1. **内存Map**: 用于快速查询，提高响应速度
+2. **数据库**: 用于持久化存储，保证数据可靠性
 
 ```javascript
 // 内存存储示例
@@ -157,9 +169,15 @@ const tasks = new Map();
 tasks.set(taskId, {
   taskId,
   studyId,
+  studyDbId: 12345,
   status: 'PENDING',
   progress: 0,
-  createdAt: new Date().toISOString()
+  createdAt: new Date().toISOString(),
+  dbIds: {
+    patientId: 1001,
+    studyId: 12345,
+    analysisTaskId: 5001
+  }
 });
 ```
 

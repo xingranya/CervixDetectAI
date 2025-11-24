@@ -2,10 +2,10 @@
 
 <cite>
 **本文档引用文件**  
-- [users.js](file://server/routes/users.js)
+- [users.js](file://server/routes/users.js) - *已更新头像关联别名和上传逻辑*
 - [auth.js](file://server/middleware/auth.js)
 - [User.js](file://server/models/User.js)
-- [UserAvatar.js](file://server/models/UserAvatar.js)
+- [UserAvatar.js](file://server/models/UserAvatar.js) - *新增large_url和small_url字段*
 - [jwt.js](file://server/utils/jwt.js)
 </cite>
 
@@ -106,6 +106,7 @@ M --> N[返回成功响应]
   - thumbnail：50×50
 - 所有图片转换为JPG格式存储
 - 原始文件上传后立即删除
+- 新增图片元数据捕获（尺寸、MIME类型）
 
 ## 普通用户端点
 
@@ -316,6 +317,8 @@ multipart/form-data 格式，包含avatar文件字段
       "original_url": "/uploads/avatars/avatar-123-large.jpg",
       "thumbnail_url": "/uploads/avatars/avatar-123-thumbnail.jpg",
       "medium_url": "/uploads/avatars/avatar-123-medium.jpg",
+      "large_url": "/uploads/avatars/avatar-123-large.jpg",
+      "small_url": "/uploads/avatars/avatar-123-small.jpg",
       "file_size": 123456,
       "mime_type": "image/jpeg",
       "width": 500,

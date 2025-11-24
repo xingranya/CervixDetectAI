@@ -1,11 +1,20 @@
 # 用户头像表 (user_avatars)
 
 <cite>
-**Referenced Files in This Document**  
-- [UserAvatar.js](file://server/models/UserAvatar.js)
-- [users.js](file://server/routes/users.js)
-- [User.js](file://server/models/User.js)
+**本文档引用的文件**  
+- [UserAvatar.js](file://server/models/UserAvatar.js) - *更新了字段定义，新增large_url和small_url*
+- [users.js](file://server/routes/users.js) - *更新了头像上传流程，增加图片元数据存储*
+- [User.js](file://server/models/User.js) - *用户模型，与头像表存在外键关系*
+- [init-database.js](file://server/scripts/init-database.js) - *数据库初始化脚本，包含表结构更新逻辑*
 </cite>
+
+## 更新摘要
+**变更内容**   
+- 更新了 `UserAvatar` 模型的字段定义，新增 `large_url` 和 `small_url` 字段
+- 在头像上传流程中增加了图片元数据（宽度、高度、MIME类型）的存储功能
+- 更新了字段定义表格，反映新增字段和元数据存储
+- 更新了头像上传流程图和相关代码示例
+- 增强了源码引用追踪，明确标注了所有变更的源文件
 
 ## 目录
 1. [简介](#简介)
@@ -41,18 +50,18 @@ Routes --> Models
 Models --> Services
 ```
 
-**Diagram sources**
+**图示来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L4-L70)
 - [users.js](file://server/routes/users.js#L14-L41)
 
-**Section sources**
+**本节来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L1-L74)
 - [users.js](file://server/routes/users.js#L1-L409)
 
 ## 核心组件
 核心组件包括 `UserAvatar` 模型，定义了头像数据的结构和约束，以及 `users.js` 路由文件，处理头像上传和管理的API请求。这些组件协同工作，实现了完整的头像管理功能。
 
-**Section sources**
+**本节来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L4-L70)
 - [users.js](file://server/routes/users.js#L164-L233)
 
@@ -77,7 +86,7 @@ participant 数据库
 前端-->>用户 : 显示上传成功
 ```
 
-**Diagram sources**
+**图示来源**
 - [users.js](file://server/routes/users.js#L164-L233)
 - [UserAvatar.js](file://server/models/UserAvatar.js#L4-L70)
 
@@ -94,14 +103,18 @@ participant 数据库
 | original_url | STRING(500) | 非空 | 原始图路径 |
 | thumbnail_url | STRING(500) | 可为空 | 缩略图路径 |
 | medium_url | STRING(500) | 可为空 | 中等尺寸路径 |
+| large_url | STRING(500) | 可为空 | 大尺寸路径 |
+| small_url | STRING(500) | 可为空 | 小尺寸路径 |
 | file_size | BIGINT | 非空 | 文件大小(字节) |
 | mime_type | STRING(50) | 非空 | MIME类型 |
-| width/height | INTEGER | 非空 | 图像尺寸 |
+| width | INTEGER | 非空 | 图像原始宽度 |
+| height | INTEGER | 非空 | 图像原始高度 |
 | is_current | BOOLEAN | 非空, 默认true | 当前头像标记 |
 | created_at | DATETIME | 时间戳 | 上传时间 |
 
-**Section sources**
+**本节来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L8-L55)
+- [init-database.js](file://server/scripts/init-database.js#L22-L49) - *数据库迁移脚本*
 
 ### 头像上传流程分析
 头像上传流程涉及文件验证、图像处理和数据持久化等多个步骤。
@@ -116,16 +129,17 @@ D --> |否| C
 D --> |是| E{格式合法?}
 E --> |否| C
 E --> |是| F[生成多尺寸版本]
-F --> G[保存到数据库]
-G --> H[更新用户头像]
-H --> I[返回成功]
-C --> J[返回失败]
+F --> G[获取图片元数据]
+G --> H[保存到数据库]
+H --> I[更新用户头像]
+I --> J[返回成功]
+C --> K[返回失败]
 ```
 
-**Diagram sources**
+**图示来源**
 - [users.js](file://server/routes/users.js#L164-L233)
 
-**Section sources**
+**本节来源**
 - [users.js](file://server/routes/users.js#L164-L233)
 
 ## 依赖分析
@@ -143,19 +157,25 @@ user_avatars {
 BIGINT id PK
 BIGINT user_id FK
 STRING original_url
+STRING large_url
 STRING medium_url
+STRING small_url
 STRING thumbnail_url
 BOOLEAN is_current
 DATETIME created_at
+INTEGER width
+INTEGER height
+BIGINT file_size
+STRING mime_type
 }
 users ||--o{ user_avatars : "1:N"
 ```
 
-**Diagram sources**
+**图示来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L13-L22)
 - [User.js](file://server/models/User.js#L9-L12)
 
-**Section sources**
+**本节来源**
 - [UserAvatar.js](file://server/models/UserAvatar.js#L13-L22)
 - [User.js](file://server/models/User.js#L9-L12)
 
@@ -165,6 +185,7 @@ users ||--o{ user_avatars : "1:N"
 - 生成预定义尺寸的版本避免实时缩放
 - 在 `user_id` 和 `is_current` 字段上创建复合索引以加快查询
 - 限制文件大小为5MB以控制存储和传输开销
+- 新增 `large_url` 和 `small_url` 字段，提供更灵活的尺寸选择，减少不必要的图像处理
 
 ## 故障排除指南
 常见问题及解决方案：
@@ -172,9 +193,10 @@ users ||--o{ user_avatars : "1:N"
 - **头像不显示**: 确认文件路径是否正确，检查服务器文件权限
 - **数据库错误**: 验证外键约束，确保关联用户存在
 - **内存不足**: 调整图像处理的并发数或增加服务器内存
+- **字段缺失错误**: 检查数据库是否已通过 `init-database.js` 脚本更新，确保 `large_url` 和 `small_url` 字段已添加
 
-**Section sources**
+**本节来源**
 - [users.js](file://server/routes/users.js#L223-L232)
 
 ## 结论
-`user_avatars` 表的设计充分考虑了实际使用场景，通过多尺寸版本生成、原子更新和级联删除等机制，提供了稳定可靠的头像管理功能。系统在性能、安全性和用户体验之间取得了良好平衡，能够满足医疗AI应用的需求。
+`user_avatars` 表的设计充分考虑了实际使用场景，通过多尺寸版本生成、原子更新和级联删除等机制，提供了稳定可靠的头像管理功能。系统在性能、安全性和用户体验之间取得了良好平衡，能够满足医疗AI应用的需求。新增的 `large_url`、`small_url` 字段和图片元数据存储功能，进一步增强了系统的灵活性和功能性。
