@@ -2,12 +2,19 @@
 
 <cite>
 **本文档引用文件**  
-- [users.js](file://server/routes/users.js) - *已更新头像关联别名和上传逻辑*
-- [auth.js](file://server/middleware/auth.js)
-- [User.js](file://server/models/User.js)
-- [UserAvatar.js](file://server/models/UserAvatar.js) - *新增large_url和small_url字段*
-- [jwt.js](file://server/utils/jwt.js)
+- [users.js](file://server/routes/users.js) - *使用sharp处理图像并生成多个尺寸*
+- [auth.js](file://server/middleware/auth.js) - *权限验证机制*
+- [User.js](file://server/models/User.js) - *用户模型定义*
+- [UserAvatar.js](file://server/models/UserAvatar.js) - *头像多尺寸版本存储*
+- [jwt.js](file://server/utils/jwt.js) - *JWT令牌处理*
 </cite>
+
+## 更新摘要
+**变更内容**  
+- 更新了头像上传处理逻辑，详细说明使用sharp生成多尺寸版本的流程
+- 修正了头像上传端点的响应体JSON Schema，包含所有尺寸的URL
+- 更新了相关代码文件的引用来源，标注了具体变更内容
+- 保持了文档的整体结构和现有准确信息
 
 ## 目录
 1. [简介](#简介)
@@ -67,7 +74,7 @@ participant 业务逻辑
 - `authorize('admin')`：仅允许admin角色访问
 
 ## 头像上传处理逻辑
-系统支持头像上传并自动生成多尺寸版本，确保在不同场景下的显示效果。
+系统支持头像上传并自动生成多尺寸版本，确保在不同场景下的显示效果。users.js路由已增强以使用sharp处理图像并生成多个尺寸。
 
 ```mermaid
 flowchart TD
@@ -90,11 +97,11 @@ M --> N[返回成功响应]
 ```
 
 **Diagram sources**
-- [users.js](file://server/routes/users.js#L164-L221)
-- [UserAvatar.js](file://server/models/UserAvatar.js#L4-L70)
+- [users.js](file://server/routes/users.js#L164-L221) - *使用sharp生成多尺寸版本*
+- [UserAvatar.js](file://server/models/UserAvatar.js#L4-L70) - *头像多尺寸字段定义*
 
 **Section sources**
-- [users.js](file://server/routes/users.js#L164-L221)
+- [users.js](file://server/routes/users.js#L164-L221) - *头像上传与多尺寸处理*
 
 ### 处理规则
 - 支持格式：JPEG、PNG、GIF、WebP
@@ -106,6 +113,7 @@ M --> N[返回成功响应]
   - thumbnail：50×50
 - 所有图片转换为JPG格式存储
 - 原始文件上传后立即删除
+- 使用sharp库进行高效的图像处理
 - 新增图片元数据捕获（尺寸、MIME类型）
 
 ## 普通用户端点
@@ -345,7 +353,7 @@ multipart/form-data 格式，包含avatar文件字段
 ```
 
 **Section sources**
-- [users.js](file://server/routes/users.js#L164-L233)
+- [users.js](file://server/routes/users.js#L164-L233) - *使用sharp生成多尺寸头像*
 
 ## 管理员端点
 
