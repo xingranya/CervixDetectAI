@@ -1,8 +1,8 @@
 <template>
   <q-card flat bordered>
     <q-card-section>
-      <div class="text-h6">上传宫颈图像</div>
-      <p>上传高分辨率宫颈图像进行AI分析。支持格式：JPG, PNG, TIFF</p>
+      <div class="text-h6">上传宫颈刷片细胞学图像</div>
+      <p>上传高分辨率宫颈刷片细胞学图像进行AI分析。支持格式：JPG, PNG, TIFF</p>
     </q-card-section>
 
     <q-separator />
@@ -21,7 +21,7 @@
           <div class="row no-wrap items-center q-pa-sm q-gutter-xs">
             <q-spinner v-if="scope.isUploading" class="q-uploader__spinner" />
             <div class="col">
-              <div class="q-uploader__title">选择或拖拽宫颈图像</div>
+              <div class="q-uploader__title">选择或拖拽宫颈细胞学图像</div>
               <div class="q-uploader__subtitle">
                 {{ scope.uploadSizeLabel }} / {{ scope.uploadProgressLabel }}
               </div>

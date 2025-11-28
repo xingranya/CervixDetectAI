@@ -84,18 +84,18 @@ export default defineConfig((/* ctx */) => {
       proxy: {
         // 代理 API 请求到后端服务器
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:4000',
           changeOrigin: true,
           ws: true,
         },
         // 代理上传文件访问
         '/uploads': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:4000',
           changeOrigin: true,
         },
         // 代理报告文件访问
         '/reports': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:4000',
           changeOrigin: true,
         },
       },

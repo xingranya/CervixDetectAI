@@ -39,7 +39,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label caption class="text-orange-9">
-                    请确保医学影像清晰、质量良好
+                    请确保细胞学图像清晰、质量良好
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -101,7 +101,7 @@ const studyInfo = ref<StudyInfo>({
   patientName: '',
   patientId: '',
   description: '',
-  modality: 'MRI（磁共振成像）',
+  modality: '巴氏染色涂片（Pap Smear）',
   studyDate: new Date().toISOString().split('T')[0] as string,
 });
 

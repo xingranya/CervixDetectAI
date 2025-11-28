@@ -96,38 +96,19 @@
           <q-card-section class="q-pa-lg">
             <q-form class="q-gutter-lg">
               <!-- 姓名 -->
-              <div class="row q-col-gutter-md">
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.firstName"
-                    outlined
-                    label="名字"
-                    stack-label
-                    placeholder="请输入名字"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="badge" color="grey-6" />
-                    </template>
-                  </q-input>
-                </div>
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.lastName"
-                    outlined
-                    label="姓氏"
-                    stack-label
-                    placeholder="请输入姓氏"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="badge" color="grey-6" />
-                    </template>
-                  </q-input>
-                </div>
-              </div>
+              <q-input
+                v-model="profileData.firstName"
+                outlined
+                label="姓名"
+                stack-label
+                placeholder="请输入姓名"
+                bg-color="white"
+                class="modern-input"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="badge" color="grey-6" />
+                </template>
+              </q-input>
 
               <!-- 邮箱 -->
               <q-input
@@ -230,21 +211,6 @@
                 </div>
               </div>
 
-              <!-- 地址 -->
-              <q-input
-                v-model="profileData.address"
-                outlined
-                label="地址"
-                stack-label
-                placeholder="请输入详细地址"
-                bg-color="white"
-                class="modern-input"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="location_on" color="grey-6" />
-                </template>
-              </q-input>
-
               <!-- 按钮组 -->
               <div class="row q-mt-xl q-pt-md" style="border-top: 1px solid #e0e0e0">
                 <q-space />
@@ -346,15 +312,12 @@ const userInitial = computed(() => {
 
 const profileData = ref({
   firstName: '',
-  lastName: '',
   email: '',
   phone: '',
   institution: '',
   department: '',
   position: '',
   title: '',
-  address: '',
-  doctorId: '',
   registeredDate: '',
   stats: {
     totalCases: 0,
@@ -365,40 +328,53 @@ const profileData = ref({
 
 const loading = ref(false);
 
-onMounted(() => {
-  loadUserData();
+onMounted(async () => {
+  // 确保先从localStorage恢复authStore状态
+  authStore.initializeAuth();
+  // 然后加载用户数据到表单
+  await loadUserData();
 });
 
-const loadUserData = () => {
+const loadUserData = async () => {
+  try {
+    // 尝试从服务器获取最新数据
+    await authStore.fetchCurrentUser();
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+  }
+  
+  // 从authStore加载数据到表单
   if (user.value) {
     profileData.value.email = user.value.email || '';
     profileData.value.phone = user.value.phone || '';
-    profileData.value.firstName = user.value.real_name?.split(' ')[0] || '';
-    profileData.value.lastName = user.value.real_name?.split(' ')[1] || '';
+    profileData.value.firstName = user.value.real_name || '';
     profileData.value.registeredDate = user.value.last_login_at || new Date().toISOString();
   }
 };
 
-const originalData = ref(JSON.parse(JSON.stringify(profileData.value)));
-
 const saveProfile = async () => {
   loading.value = true;
   try {
-    const real_name = `${profileData.value.firstName} ${profileData.value.lastName}`.trim();
-    // 构建更新数据对象，只包含有值的属性
+    // 构建更新数据对象
     const updateData: { real_name?: string; phone?: string } = {};
-    if (real_name) {
-      updateData.real_name = real_name;
+    
+    if (profileData.value.firstName) {
+      updateData.real_name = profileData.value.firstName.trim();
     }
     if (profileData.value.phone) {
       updateData.phone = profileData.value.phone;
     }
+    
     const response = await userAPI.updateProfile(updateData);
 
     if (response.success) {
+      // 更新authStore和localStorage
       authStore.user = response.data.user;
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      originalData.value = JSON.parse(JSON.stringify(profileData.value));
+      
+      // 重新加载表单数据
+      await loadUserData();
+      
       $q.notify({
         type: 'positive',
         message: '个人资料保存成功！',
@@ -417,8 +393,8 @@ const saveProfile = async () => {
   }
 };
 
-const resetForm = () => {
-  loadUserData();
+const resetForm = async () => {
+  await loadUserData();
   $q.notify({
     type: 'info',
     message: '已恢复原始数据',

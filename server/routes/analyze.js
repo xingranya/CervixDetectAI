@@ -350,6 +350,11 @@ async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
   try {
     console.log(`🔄 开始处理任务 (DB ID: ${analysisTaskId})`);
 
+    // 获取病例信息，以获取检查方式
+    const study = await Study.findByPk(studyId);
+    const modality = study?.study_type || '巴氏染色涂片（Pap Smear）';
+    console.log(`🔬 检查方式: ${modality}`);
+
     // 更新状态: PROCESSING
     await AnalysisTask.update(
       { status: 'PROCESSING', progress: 10, started_at: new Date() },
@@ -357,9 +362,9 @@ async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
     );
     await Study.update({ status: 'processing' }, { where: { id: studyId } });
 
-    // AI 分析
+    // AI 分析（传入检查方式）
     await AnalysisTask.update({ progress: 30 }, { where: { id: analysisTaskId } });
-    const result = await qwenService.analyzeImage(imagePath);
+    const result = await qwenService.analyzeImage(imagePath, modality);
 
     console.log(`✅ 任务完成, 诊断: ${result.diagnosis}`);
 

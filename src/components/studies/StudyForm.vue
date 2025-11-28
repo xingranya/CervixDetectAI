@@ -107,13 +107,13 @@ const emit = defineEmits(['update:modelValue']);
 const internalInfo = ref<StudyInfo>({ ...props.modelValue });
 
 const modalities = [
-  'MRI（磁共振成像）',
-  'CT（计算机断层扫描）',
-  'PET-CT（正电子发射断层扫描）',
-  '超声检查',
+  '巴氏染色涂片（Pap Smear）',
+  '液基细胞学（TCT/LCT）',
+  '宫颈活检切片（HE染色）',
+  'HPV分型检测图像',
+  'p16/Ki67双染图像',
   '阴道镜检查',
-  'X线造影',
-  '其他',
+  '其他细胞学检查',
 ];
 
 watch(
