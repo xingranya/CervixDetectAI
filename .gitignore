@@ -2,6 +2,7 @@
 .thumbs.db
 node_modules
 src-capacitor
+另外一个项目
 
 # Quasar core related directories
 .quasar
