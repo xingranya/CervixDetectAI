@@ -1,197 +1,238 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-col-gutter-md">
-      <!-- Welcome Banner -->
-      <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section class="bg-primary text-white">
-            <div class="text-h5">仪表盘</div>
-            <div class="text-subtitle2">
-              欢迎回来，{{
-                authStore.currentUser?.real_name || authStore.currentUser?.username || '用户'
-              }}
-            </div>
-          </q-card-section>
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col-8">
-                <p class="q-my-none">AI驱动的宫颈癌筛查仪表盘。上传患者图像以进行即时分析。</p>
-              </div>
-              <div class="col-4 flex justify-end">
-                <q-btn color="primary" icon="upload" label="新分析" no-caps to="/app/upload" />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- Stats Cards -->
-      <div class="col-12">
-        <div class="row q-col-gutter-md">
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-card flat bordered class="text-center">
-              <q-card-section class="bg-blue-1">
-                <q-icon name="folder" size="3rem" color="blue" />
-              </q-card-section>
-              <q-card-section>
-                <div class="text-h6 text-weight-bold">{{ studyStore.allStudies.length }}</div>
-                <div class="text-caption text-grey">研究总数</div>
-              </q-card-section>
-            </q-card>
+  <q-page class="dashboard-page">
+    <!-- Page Header -->
+    <div class="page-header q-mb-md">
+      <div class="row items-center">
+        <div class="col">
+          <div class="text-h4 text-weight-bold q-mb-xs">
+            <q-icon name="dashboard" class="q-mr-sm" color="primary" />
+            工作台
           </div>
-
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-card flat bordered class="text-center">
-              <q-card-section class="bg-green-1">
-                <q-icon name="check_circle" size="3rem" color="green" />
-              </q-card-section>
-              <q-card-section>
-                <div class="text-h6 text-weight-bold">{{ studyStore.completedStudies.length }}</div>
-                <div class="text-caption text-grey">已完成</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-card flat bordered class="text-center">
-              <q-card-section class="bg-orange-1">
-                <q-icon name="schedule" size="3rem" color="orange" />
-              </q-card-section>
-              <q-card-section>
-                <div class="text-h6 text-weight-bold">
-                  {{ studyStore.processingStudies.length }}
-                </div>
-                <div class="text-caption text-grey">处理中</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-card flat bordered class="text-center">
-              <q-card-section class="bg-purple-1">
-                <q-icon name="notifications" size="3rem" color="purple" />
-              </q-card-section>
-              <q-card-section>
-                <div class="text-h6 text-weight-bold">3</div>
-                <div class="text-caption text-grey">提醒</div>
-              </q-card-section>
-            </q-card>
-          </div>
+          <div class="text-subtitle2 text-grey-7">{{ currentDate }} | 系统概览与快速入口</div>
         </div>
       </div>
+    </div>
 
-      <!-- Recent Studies and Quick Actions -->
+    <!-- Welcome Banner -->
+    <q-card class="welcome-banner q-mb-md" flat>
+      <q-card-section>
+        <div class="row items-center justify-between">
+          <div class="col-auto">
+            <div class="text-h5 text-weight-medium q-mb-xs">欢迎回来，{{ userName }}</div>
+            <div class="text-body2">
+              您有{{ pendingTasksCount }}项待处理任务，今日已完成{{
+                completedTodayCount
+              }}例影像分析。
+            </div>
+          </div>
+          <div class="col-auto">
+            <q-chip color="positive" text-color="white" icon="check_circle" class="status-chip">
+              系统运行正常
+            </q-chip>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <div class="row q-col-gutter-md">
+      <!-- Left Column: Tasks and Stats -->
       <div class="col-lg-8 col-md-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col">
-                <div class="text-h6">近期研究</div>
+        <!-- Pending Tasks -->
+        <q-card flat bordered class="modern-card q-mb-md">
+          <q-card-section class="card-header">
+            <div class="row items-center justify-between">
+              <div class="col-auto">
+                <div class="text-h6 text-weight-bold">
+                  <q-icon name="history" class="q-mr-sm" />
+                  历史任务
+                </div>
               </div>
               <div class="col-auto">
-                <q-btn flat no-caps color="primary" to="/app/studies" label="查看全部" />
+                <q-btn flat dense no-caps color="primary" label="查看全部" to="/app/studies" />
+              </div>
+            </div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pa-md">
+            <div v-if="pendingTasks.length > 0" class="task-list">
+              <div v-for="task in pendingTasks" :key="task.id" class="task-item">
+                <div class="task-info">
+                  <q-avatar size="48px" class="task-icon">
+                    <q-icon :name="task.icon" size="24px" color="primary" />
+                  </q-avatar>
+                  <div class="task-details">
+                    <div class="text-subtitle1 text-weight-medium">{{ task.title }}</div>
+                    <div class="text-caption text-grey-7">{{ task.description }}</div>
+                  </div>
+                </div>
+                <div class="task-meta">
+                  <q-chip
+                    :color="task.priority === 'high' ? 'red-1' : 'orange-1'"
+                    :text-color="task.priority === 'high' ? 'red-9' : 'orange-9'"
+                    dense
+                    class="q-mr-sm"
+                  >
+                    {{ task.priority === 'high' ? '高优先级' : '中优先级' }}
+                  </q-chip>
+                  <span class="text-caption text-grey-7 q-mr-md">{{ task.estimatedTime }}</span>
+                  <q-btn
+                    color="primary"
+                    unelevated
+                    dense
+                    no-caps
+                    label="查看详情"
+                    @click="handleTask(task)"
+                  />
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center q-pa-lg text-grey-6">
+              <q-icon name="inbox" size="48px" class="q-mb-md" />
+              <div>暂无历史任务</div>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- Analysis Stats -->
+        <q-card flat bordered class="modern-card">
+          <q-card-section class="card-header">
+            <div class="row items-center justify-between">
+              <div class="col-auto">
+                <div class="text-h6 text-weight-bold">
+                  <q-icon name="bar_chart" class="q-mr-sm" />
+                  分析统计概览
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-btn-group flat dense>
+                  <q-btn
+                    :flat="activeStatsPeriod !== 'today'"
+                    :unelevated="activeStatsPeriod === 'today'"
+                    no-caps
+                    label="今日"
+                    @click="activeStatsPeriod = 'today'"
+                    :color="activeStatsPeriod === 'today' ? 'primary' : 'grey-7'"
+                  />
+                  <q-btn
+                    :flat="activeStatsPeriod !== 'week'"
+                    :unelevated="activeStatsPeriod === 'week'"
+                    no-caps
+                    label="本周"
+                    @click="activeStatsPeriod = 'week'"
+                    :color="activeStatsPeriod === 'week' ? 'primary' : 'grey-7'"
+                  />
+                  <q-btn
+                    :flat="activeStatsPeriod !== 'month'"
+                    :unelevated="activeStatsPeriod === 'month'"
+                    no-caps
+                    label="本月"
+                    @click="activeStatsPeriod = 'month'"
+                    :color="activeStatsPeriod === 'month' ? 'primary' : 'grey-7'"
+                  />
+                </q-btn-group>
               </div>
             </div>
           </q-card-section>
           <q-separator />
           <q-card-section>
-            <q-table
-              :rows="studyStore.recentStudies"
-              :columns="studyColumns"
-              :loading="studyStore.loading"
-              row-key="id"
-              hide-bottom
-              :pagination="{ rowsPerPage: 5 }"
-            >
-              <template v-slot:body-cell-status="props">
-                <q-td :props="props">
-                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" dense>
-                    {{ props.row.status }}
-                  </q-chip>
-                </q-td>
-              </template>
+            <!-- Stats Cards -->
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col-md-4 col-sm-6 col-xs-12">
+                <div class="stat-card">
+                  <div class="stat-header">
+                    <span class="stat-title">今日分析总数</span>
+                    <q-icon name="trending_up" color="positive" size="20px" />
+                  </div>
+                  <div class="stat-value">100</div>
+                  <div class="stat-trend positive">
+                    <q-icon name="arrow_upward" size="14px" />
+                    较昨日 +20%
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 col-sm-6 col-xs-12">
+                <div class="stat-card">
+                  <div class="stat-header">
+                    <span class="stat-title">高风险病例</span>
+                    <q-icon name="warning" color="negative" size="20px" />
+                  </div>
+                  <div class="stat-value">15</div>
+                  <div class="stat-trend neutral">占比 15%</div>
+                </div>
+              </div>
+              <div class="col-md-4 col-sm-6 col-xs-12">
+                <div class="stat-card">
+                  <div class="stat-header">
+                    <span class="stat-title">平均处理时长</span>
+                    <q-icon name="schedule" color="grey-6" size="20px" />
+                  </div>
+                  <div class="stat-value">
+                    1.8
+                    <span class="stat-unit">分钟</span>
+                  </div>
+                  <div class="stat-trend positive">
+                    <q-icon name="arrow_downward" size="14px" />
+                    较上周 -1.2分钟
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              <template v-slot:body-cell-actions="props">
-                <q-td :props="props">
-                  <q-btn
-                    flat
-                    size="sm"
-                    icon="remove_red_eye"
-                    @click="viewStudy(props.row.id)"
-                    v-if="props.row.status === 'completed'"
-                  >
-                    <q-tooltip>查看结果</q-tooltip>
-                  </q-btn>
-                  <q-btn flat size="sm" icon="schedule" v-else>
-                    <q-tooltip>分析中</q-tooltip>
-                  </q-btn>
-                </q-td>
-              </template>
-            </q-table>
+            <!-- Chart -->
+            <div ref="chartContainer" class="chart-container"></div>
           </q-card-section>
         </q-card>
       </div>
 
+      <!-- Right Column: Quick Actions and Notices -->
       <div class="col-lg-4 col-md-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">快捷操作</div>
+        <!-- Quick Actions -->
+        <q-card flat bordered class="modern-card q-mb-md">
+          <q-card-section class="card-header">
+            <div class="text-h6 text-weight-bold">
+              <q-icon name="bolt" class="q-mr-sm" />
+              快速操作
+            </div>
           </q-card-section>
           <q-separator />
-          <q-card-section class="q-pa-none">
-            <q-list>
-              <q-item clickable v-ripple to="/app/upload">
-                <q-item-section avatar>
-                  <q-icon color="primary" name="upload" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>上传新研究</q-item-label>
-                  <q-item-label caption>上传宫颈图像进行分析</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon name="chevron_right" />
-                </q-item-section>
-              </q-item>
+          <q-card-section class="q-pa-md">
+            <div class="quick-actions-grid">
+              <div
+                v-for="action in quickActions"
+                :key="action.id"
+                class="action-card"
+                @click="handleQuickAction(action)"
+              >
+                <q-avatar size="56px" :color="action.color" text-color="white" class="q-mb-md">
+                  <q-icon :name="action.icon" size="28px" />
+                </q-avatar>
+                <div class="text-subtitle2 text-weight-medium q-mb-xs">{{ action.title }}</div>
+                <div class="text-caption text-grey-7">{{ action.description }}</div>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
 
-              <q-item clickable v-ripple to="/app/studies">
-                <q-item-section avatar>
-                  <q-icon color="secondary" name="folder" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>查看所有研究</q-item-label>
-                  <q-item-label caption>浏览所有患者研究</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon name="chevron_right" />
-                </q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple to="/app/reports">
-                <q-item-section avatar>
-                  <q-icon color="accent" name="description" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>查看报告</q-item-label>
-                  <q-item-label caption>访问分析报告</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon name="chevron_right" />
-                </q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple to="/app/models">
-                <q-item-section avatar>
-                  <q-icon color="teal" name="smart_toy" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>AI模型状态</q-item-label>
-                  <q-item-label caption>检查模型性能</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon name="chevron_right" />
-                </q-item-section>
-              </q-item>
-            </q-list>
+        <!-- System Notices -->
+        <q-card flat bordered class="modern-card">
+          <q-card-section class="card-header">
+            <div class="text-h6 text-weight-bold">
+              <q-icon name="campaign" class="q-mr-sm" />
+              系统公告
+            </div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pa-md">
+            <div class="notice-list">
+              <div v-for="notice in systemNotices" :key="notice.id" class="notice-item">
+                <div class="text-subtitle2 text-weight-medium q-mb-xs">{{ notice.title }}</div>
+                <div class="text-body2 q-mb-sm">{{ notice.content }}</div>
+                <div class="notice-meta">
+                  <span class="text-caption text-grey-7">{{ notice.publisher }}</span>
+                  <span class="text-caption text-grey-7">{{ notice.date }}</span>
+                </div>
+              </div>
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -200,60 +241,562 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { useStudyStore } from 'stores/studyStore';
+import { dashboardAPI } from 'src/services/api';
+import * as echarts from 'echarts';
+import { Notify } from 'quasar';
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  priority: 'high' | 'medium';
+  estimatedTime: string;
+  studyId?: number; // 添加可选字段
+  taskId?: number; // 添加可选字段
+}
+
+interface QuickAction {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  route: string;
+}
+
+interface SystemNotice {
+  id: string;
+  title: string;
+  content: string;
+  publisher: string;
+  date: string;
+}
 
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
 
-// Define table columns
-const studyColumns = [
-  {
-    name: 'patientName',
-    label: '患者',
-    field: 'patientName',
-    align: 'left' as const,
-    sortable: true,
-  },
-  {
-    name: 'studyDate',
-    label: '日期',
-    field: 'studyDate',
-    align: 'left' as const,
-    sortable: true,
-    format: (val: string) => new Date(val).toLocaleDateString(),
-  },
-  { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
-  { name: 'status', label: '状态', field: 'status', align: 'left' as const },
-  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
-];
+const chartContainer = ref<HTMLElement>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let chartInstance: any = null;
+const activeStatsPeriod = ref<'today' | 'week' | 'month'>('today');
 
-// Function to get status color based on status
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return 'green';
-    case 'processing':
-      return 'orange';
-    case 'failed':
-      return 'red';
-    default:
-      return 'grey';
+// Computed properties
+const userName = computed(() => {
+  return authStore.currentUser?.real_name || authStore.currentUser?.username || '用户';
+});
+
+const currentDate = computed(() => {
+  const now = new Date();
+  return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+});
+
+const pendingTasksCount = computed(() => pendingTasks.value.length);
+
+const completedTodayCount = computed(() => {
+  return statsData.value.completedToday || 0;
+});
+
+// 数据加载状态
+const loading = ref(false);
+
+// Mock data - 待处理任务 (将被API数据替换)
+const pendingTasks = ref<Task[]>([]);
+
+// Stats data (从API获取)
+const statsData = ref({
+  todayTotal: 0,
+  todayGrowth: 0,
+  highRiskCount: 0,
+  highRiskPercent: 0,
+  avgProcessTime: 0,
+  timeImprovement: 0,
+  completedToday: 0,
+  diagnosisStats: {} as Record<string, number>,
+});
+
+// Quick actions
+const quickActions = ref<QuickAction[]>([
+  {
+    id: '1',
+    title: '新建分析',
+    description: '上传新影像开始智能分析',
+    icon: 'add_circle',
+    color: 'primary',
+    route: '/app/upload',
+  },
+  {
+    id: '2',
+    title: '患者管理',
+    description: '查看和管理患者档案信息',
+    icon: 'people',
+    color: 'secondary',
+    route: '/app/patients',
+  },
+  {
+    id: '3',
+    title: '生成报告',
+    description: '基于分析结果快速生成诊断报告',
+    icon: 'assessment',
+    color: 'accent',
+    route: '/app/reports',
+  },
+  {
+    id: '4',
+    title: '病例列表',
+    description: '浏览所有已上传的病例记录',
+    icon: 'folder_open',
+    color: 'teal',
+    route: '/app/studies',
+  },
+]);
+
+// System notices (从API获取)
+const systemNotices = ref<SystemNotice[]>([]);
+
+// 获取工作台统计数据
+const fetchDashboardStats = async () => {
+  try {
+    loading.value = true;
+    const response = await dashboardAPI.getStats(activeStatsPeriod.value);
+    if (response.success) {
+      statsData.value = response.data;
+      // 更新图表数据
+      updateChartData();
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error);
+    Notify.create({
+      type: 'negative',
+      message: '获取统计数据失败',
+      position: 'top',
+    });
+  } finally {
+    loading.value = false;
   }
 };
 
-// Function to view a study
-const viewStudy = (id: string) => {
-  void router.push(`/app/studies/${id}`);
+// 获取待处理任务
+const fetchPendingTasks = async () => {
+  try {
+    const response = await dashboardAPI.getPendingTasks();
+    if (response.success) {
+      pendingTasks.value = response.data.tasks;
+    }
+  } catch (error) {
+    console.error('获取待处理任务失败:', error);
+  }
 };
 
-// Load studies when component mounts
+// 获取系统公告
+const fetchSystemNotices = async () => {
+  try {
+    const response = await dashboardAPI.getNotices();
+    if (response.success) {
+      systemNotices.value = response.data.notices;
+    }
+  } catch (error) {
+    console.error('获取系统公告失败:', error);
+  }
+};
+
+// Event handlers
+const handleTask = (task: Task) => {
+  // Navigate to studies page to view task details
+  if (task.studyId) {
+    void router.push(`/app/studies/${task.studyId}`);
+  } else {
+    void router.push('/app/studies');
+  }
+};
+
+const handleQuickAction = (action: QuickAction) => {
+  void router.push(action.route);
+};
+
+// Initialize chart
+const initChart = () => {
+  if (!chartContainer.value) return;
+
+  chartInstance = echarts.init(chartContainer.value);
+  updateChartData();
+
+  // Handle resize
+  const handleResize = () => {
+    chartInstance?.resize();
+  };
+  window.addEventListener('resize', handleResize);
+};
+
+// 更新图表数据
+const updateChartData = () => {
+  if (!chartInstance) return;
+
+  const diagnosisStats = statsData.value.diagnosisStats || {};
+
+  // 将诊断统计数据转换为图表数据格式
+  const chartData = Object.entries(diagnosisStats).map(([name, value]) => {
+    let color = '#86efac'; // 默认颜色
+
+    // 根据诊断类型设置颜色
+    if (name.includes('阴性') || name.includes('Normal') || name.includes('正常')) {
+      color = '#86efac';
+    } else if (name.includes('ASC-US') || name.includes('ASCUS')) {
+      color = '#fde047';
+    } else if (name.includes('LSIL') || name.includes('低度')) {
+      color = '#fdba74';
+    } else if (name.includes('HSIL') || name.includes('高度')) {
+      color = '#f87171';
+    } else if (name.includes('癌') || name.includes('SCC')) {
+      color = '#dc2626';
+    }
+
+    return {
+      value,
+      name,
+      itemStyle: { color },
+    };
+  });
+
+  // 如果没有数据，使用默认数据
+  const finalChartData =
+    chartData.length > 0
+      ? chartData
+      : [
+          { value: 45, name: '阴性/Normal', itemStyle: { color: '#86efac' } },
+          { value: 25, name: 'ASC-US', itemStyle: { color: '#fde047' } },
+          { value: 15, name: 'LSIL', itemStyle: { color: '#fdba74' } },
+          { value: 10, name: 'HSIL', itemStyle: { color: '#f87171' } },
+          { value: 5, name: '可疑癌/SCC', itemStyle: { color: '#dc2626' } },
+        ];
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c}例 ({d}%)',
+    },
+    legend: {
+      orient: 'horizontal',
+      bottom: 0,
+      data: finalChartData.map((item) => item.name),
+    },
+    series: [
+      {
+        name: '风险分布',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#fff',
+          borderWidth: 2,
+        },
+        label: {
+          show: true,
+          formatter: '{b}: {d}%',
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold',
+          },
+        },
+        labelLine: {
+          show: true,
+        },
+        data: finalChartData,
+      },
+    ],
+  };
+
+  chartInstance.setOption(option);
+};
+
+// 监听时间周期变化，重新获取数据
+watch(activeStatsPeriod, () => {
+  void fetchDashboardStats();
+});
+
+// Lifecycle hooks
 onMounted(async () => {
   if (authStore.isAuthenticated) {
-    await studyStore.fetchStudies();
+    // 并行加载所有数据
+    await Promise.all([
+      studyStore.fetchStudies(),
+      fetchDashboardStats(),
+      fetchPendingTasks(),
+      fetchSystemNotices(),
+    ]);
+  }
+
+  // Initialize chart after a short delay to ensure DOM is ready
+  setTimeout(() => {
+    initChart();
+  }, 100);
+});
+
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.dispose();
+    chartInstance = null;
   }
 });
 </script>
+
+<style scoped lang="scss">
+.dashboard-page {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  min-height: calc(100vh - 64px);
+  padding: 24px 32px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+// Welcome Banner
+.welcome-banner {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  color: #0c4a6e;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .status-chip {
+    font-weight: 500;
+  }
+}
+
+// Modern Card Style
+.modern-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.08),
+      0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}
+
+// Task List
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #f8fafc;
+
+  &:hover {
+    border-color: #94a3b8;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-icon {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.task-details {
+  flex: 1;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+// Stats Cards
+.stat-card {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.stat-title {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.stat-unit {
+  font-size: 16px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.stat-trend {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &.positive {
+    color: #166534;
+  }
+
+  &.negative {
+    color: #991b1b;
+  }
+
+  &.neutral {
+    color: #64748b;
+  }
+}
+
+// Chart Container
+.chart-container {
+  height: 300px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+// Quick Actions Grid
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.action-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background-color: #f8fafc;
+
+  &:hover {
+    border-color: var(--q-primary);
+    background-color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+// Notice List
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notice-item {
+  padding: 16px;
+  border-left: 4px solid var(--q-primary);
+  background-color: #f8fafc;
+  border-radius: 0 8px 8px 0;
+  border-top: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.notice-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .dashboard-page {
+    padding: 16px;
+  }
+
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .task-meta {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

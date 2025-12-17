@@ -14,6 +14,7 @@ const patientsRouter = require('./routes/patients');
 const studiesRouter = require('./routes/studies');
 const analysisTasksRouter = require('./routes/analysis-tasks');
 const reportsRouter = require('./routes/reports');
+const dashboardRouter = require('./routes/dashboard');
 const { testConnection } = require('./config/sequelize');
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/studies', studiesRouter);
 app.use('/api/analysis-tasks', analysisTasksRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/analyze', analyzeRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // 健康检查
 app.get('/health', (req, res) => {

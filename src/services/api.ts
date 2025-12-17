@@ -331,4 +331,22 @@ export const reportAPI = {
   },
 };
 
+// Dashboard API
+export const dashboardAPI = {
+  async getStats(period?: 'today' | 'week' | 'month') {
+    const { data } = await apiClient.get('/dashboard/stats', { params: { period } });
+    return data;
+  },
+
+  async getPendingTasks() {
+    const { data } = await apiClient.get('/dashboard/pending-tasks');
+    return data;
+  },
+
+  async getNotices() {
+    const { data } = await apiClient.get('/dashboard/notices');
+    return data;
+  },
+};
+
 export default apiClient;
