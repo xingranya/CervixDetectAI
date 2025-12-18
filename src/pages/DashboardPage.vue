@@ -250,14 +250,19 @@ import * as echarts from 'echarts';
 import { Notify } from 'quasar';
 
 interface Task {
-  id: string;
+  id: number;  // 数据库主键ID
+  taskId: string;  // 任务唯一标识符
+  studyId: number;  // 病例数据库ID
+  studyUniqueId: string;  // 病例唯一标识符
   title: string;
   description: string;
   icon: string;
   priority: 'high' | 'medium';
   estimatedTime: string;
-  studyId?: number; // 添加可选字段
-  taskId?: number; // 添加可选字段
+  status: string;
+  patientName: string;
+  patientId: string;
+  createdAt: string;
 }
 
 interface QuickAction {
@@ -296,7 +301,12 @@ const currentDate = computed(() => {
   return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 });
 
-const pendingTasksCount = computed(() => pendingTasks.value.length);
+const pendingTasksCount = computed(() => {
+  // 统计实际的待处理任务数（PENDING和PROCESSING状态）
+  return pendingTasks.value.filter(
+    (task) => task.status === 'PENDING' || task.status === 'PROCESSING'
+  ).length;
+});
 
 const completedTodayCount = computed(() => {
   return statsData.value.completedToday || 0;
@@ -340,16 +350,16 @@ const quickActions = ref<QuickAction[]>([
   },
   {
     id: '3',
-    title: '生成报告',
-    description: '基于分析结果快速生成诊断报告',
-    icon: 'assessment',
+    title: '报告中心',
+    description: '查看历史报告并管理下载记录',
+    icon: 'description',
     color: 'accent',
     route: '/app/reports',
   },
   {
     id: '4',
     title: '病例列表',
-    description: '浏览所有已上传的病例记录',
+    description: '管理病例数据和分析任务',
     icon: 'folder_open',
     color: 'teal',
     route: '/app/studies',
@@ -384,12 +394,36 @@ const fetchDashboardStats = async () => {
 // 获取待处理任务
 const fetchPendingTasks = async () => {
   try {
+    console.log('【前端】开始获取历史任务...');
     const response = await dashboardAPI.getPendingTasks();
+    console.log('【前端】API响应:', response);
+    
     if (response.success) {
       pendingTasks.value = response.data.tasks;
+      console.log('【前端】历史任务数量:', pendingTasks.value.length);
+      if (pendingTasks.value.length > 0) {
+        console.log('【前端】第一条任务:', pendingTasks.value[0]);
+      } else {
+        console.warn('【前端】历史任务列表为空');
+        if (response.error) {
+          console.error('【前端】后端错误信息:', response.error);
+          Notify.create({
+            type: 'warning',
+            message: `获取历史任务失败: ${response.error}`,
+            position: 'top',
+          });
+        }
+      }
+    } else {
+      console.error('【前端】API返回失败:', response);
     }
   } catch (error) {
-    console.error('获取待处理任务失败:', error);
+    console.error('【前端】获取待处理任务失败:', error);
+    Notify.create({
+      type: 'negative',
+      message: '获取历史任务失败，请检查网络连接',
+      position: 'top',
+    });
   }
 };
 
@@ -407,12 +441,14 @@ const fetchSystemNotices = async () => {
 
 // Event handlers
 const handleTask = (task: Task) => {
-  // Navigate to studies page to view task details
-  if (task.studyId) {
-    void router.push(`/app/studies/${task.studyId}`);
-  } else {
-    void router.push('/app/studies');
-  }
+  // 使用studyId跳转到病例详情页
+  console.log('点击任务:', {
+    taskId: task.id,
+    studyId: task.studyId,
+    studyUniqueId: task.studyUniqueId,
+    patientName: task.patientName,
+  });
+  void router.push(`/app/studies/${task.studyId}`);
 };
 
 const handleQuickAction = (action: QuickAction) => {

@@ -77,7 +77,7 @@
     </q-header>
 
     <!-- Left Sidebar Navigation -->
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-2">
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-2" :width="200">
       <q-list>
         <q-item-label header class="text-weight-bold">CervixDetectAI</q-item-label>
 
@@ -153,7 +153,7 @@ const essentialLinks = [
   },
   {
     title: '病例管理',
-    caption: '患者记录',
+    caption: '数据管理',  // 更新描述，强调数据操作
     icon: 'folder',
     route: '/app/studies',
   },
@@ -165,7 +165,7 @@ const essentialLinks = [
   },
   {
     title: '报告中心',
-    caption: '分析报告',
+    caption: '报告归档',  // 更新描述，强调是归档查询
     icon: 'description',
     route: '/app/reports',
   },
@@ -219,5 +219,8 @@ const logout = async () => {
 </script>
 
 <style scoped>
-/* Add any layout-specific styles here if needed */
+/* 侧边栏样式优化 */
+:deep(.q-drawer) {
+  max-width: 200px;
+}
 </style>

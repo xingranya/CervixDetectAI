@@ -3,7 +3,7 @@
     <div class="row">
       <div class="col-12">
         <div class="text-h5 q-mb-md">报告中心</div>
-        <p>访问和下载已完成病例的分析报告。</p>
+        <p>查看历史报告并管理下载记录</p>
       </div>
     </div>
 
@@ -33,15 +33,6 @@
               <q-btn flat size="sm" icon="file_download" @click="downloadReport(props.row.id)">
                 <q-tooltip>下载报告</q-tooltip>
               </q-btn>
-              <q-btn
-                flat
-                size="sm"
-                icon="delete"
-                color="negative"
-                @click="confirmDelete(props.row.id, props.row.patientName)"
-              >
-                <q-tooltip>删除病例</q-tooltip>
-              </q-btn>
             </q-td>
           </template>
         </q-table>
@@ -57,17 +48,13 @@ import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
 import { getStudyAnalysis } from 'src/services/apiService';
 
-console.log('📦 [ReportsPage] 组件已初始化');
+console.log('【ReportsPage】 组件已初始化');
 
 const router = useRouter();
 const studyStore = useStudyStore();
 const $q = useQuasar();
 
-console.log('🔍 [ReportsPage] studyStore 已初始化');
-console.log('📊 [ReportsPage] 所有病例数:', studyStore.allStudies.length);
-console.log('📊 [ReportsPage] 已完成病例数:', studyStore.completedStudies.length);
-
-// Define table columns for reports
+// 报告表格列定义
 const reportColumns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' as const, sortable: true },
   {
@@ -95,12 +82,12 @@ const reportColumns = [
   { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
-// Function to view a report
+// 查看报告
 const viewReport = (id: string) => {
   void router.push(`/app/studies/${id}`);
 };
 
-// Function to download a report
+// 下载报告
 const downloadReport = async (id: string) => {
   try {
     $q.loading.show({
@@ -108,7 +95,6 @@ const downloadReport = async (id: string) => {
       spinnerColor: 'primary',
     });
 
-    // 获取病例和分析数据
     const studyData = await getStudyAnalysis(String(id));
 
     if (!studyData.result) {
@@ -125,9 +111,8 @@ const downloadReport = async (id: string) => {
       spinnerColor: 'primary',
     });
 
-    // 使用统一的 PDF 生成工具
     const { generatePDFReport } = await import('../utils/pdfGenerator');
-    
+
     await generatePDFReport({
       study: {
         id: id,
@@ -157,69 +142,15 @@ const downloadReport = async (id: string) => {
   }
 };
 
-// Function to confirm and delete a study
-const confirmDelete = (id: string, patientName: string) => {
-  $q.dialog({
-    title: '确认删除',
-    message: `确定要删除患者 "${patientName}" 的病例（ID: ${id}）吗？此操作不可恢复。`,
-    cancel: {
-      label: '取消',
-      color: 'grey',
-      flat: true,
-    },
-    ok: {
-      label: '删除',
-      color: 'negative',
-    },
-    persistent: true,
-  }).onOk(() => {
-    void deleteStudy(id);
-  });
-};
-
-// Function to delete a study
-const deleteStudy = async (id: string) => {
-  try {
-    $q.loading.show({
-      message: '正在删除病例...',
-      spinnerColor: 'negative',
-    });
-
-    await studyStore.deleteStudy(Number(id));
-
-    $q.notify({
-      type: 'positive',
-      message: '病例已成功删除',
-      position: 'top',
-      icon: 'check_circle',
-    });
-
-    // 刷新病例列表
-    await studyStore.fetchStudies();
-  } catch (error) {
-    console.error('删除病例失败:', error);
-    $q.notify({
-      type: 'negative',
-      message: '删除病例失败，请稍后重试',
-      position: 'top',
-    });
-  } finally {
-    $q.loading.hide();
-  }
-};
-
-// Load studies when component mounts
+// 组件挂载时加载数据
 onMounted(async () => {
-  console.log('🔥 [ReportsPage] 组件已挂载，开始加载病例数据');
+  console.log('【ReportsPage】 组件已挂载，开始加载病例数据');
 
   try {
     await studyStore.fetchStudies();
-    console.log('✅ [ReportsPage] 病例数据加载完成');
-    console.log('📊 [ReportsPage] 所有病例数:', studyStore.allStudies.length);
-    console.log('📊 [ReportsPage] 已完成病例数:', studyStore.completedStudies.length);
-    console.log('📊 [ReportsPage] 已完成病例列表:', studyStore.completedStudies);
+    console.log('【ReportsPage】 病例数据加载完成');
   } catch (error) {
-    console.error('❌ [ReportsPage] 加载病例数据失败:', error);
+    console.error('【ReportsPage】 加载病例数据失败:', error);
   }
 });
 </script>

@@ -145,7 +145,8 @@ const getStatusColor = (status: string) => {
 };
 
 // Function to view a study
-const viewStudy = (id: string) => {
+const viewStudy = (id: number) => {
+  console.log('【StudiesPage】点击查看详情，ID:', id, '类型:', typeof id);
   void router.push(`/app/studies/${id}`);
 };
 

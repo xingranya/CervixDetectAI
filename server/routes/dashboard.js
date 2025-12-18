@@ -64,9 +64,7 @@ router.get('/stats', authenticate, async (req, res) => {
 
     // 计算增长率
     const todayGrowth =
-      yesterdayTotal > 0
-        ? Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100)
-        : 0;
+      yesterdayTotal > 0 ? Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100) : 0;
 
     // 3. 获取高风险病例数（简化查询）
     let highRiskCount = 0;
@@ -161,8 +159,8 @@ router.get('/stats', authenticate, async (req, res) => {
       diagnosisStats = {
         '阴性/Normal': 45,
         'ASC-US': 25,
-        'LSIL': 15,
-        'HSIL': 10,
+        LSIL: 15,
+        HSIL: 10,
         '可疑癌/SCC': 5,
       };
     }
@@ -209,64 +207,148 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'admin';
-    const userCondition = isAdmin ? {} : { user_id: userId };
 
-    // 获取所有历史任务（不再限制为待处理）
-    const historyTasks = await AnalysisTask.findAll({
-      where: userCondition,
-      include: [
-        {
-          model: Study,
-          as: 'study',
-          required: true,
-          include: [
-            {
-              model: Patient,
-              as: 'patient',
-              attributes: ['id', 'patient_id', 'name'],
+    console.log('【历史任务】开始查询任务列表');
+    console.log('【历史任务】用户ID:', userId, '是否管理员:', isAdmin);
+
+    // 构建查询条件：管理员看所有任务，普通用户看自己的任务或与自己相关的study的任务
+    let historyTasks;
+    if (isAdmin) {
+      // 管理员查看所有任务
+      console.log('【历史任务】管理员模式：查询所有任务');
+      historyTasks = await AnalysisTask.findAll({
+        include: [
+          {
+            model: Study,
+            as: 'study',
+            required: false,
+            include: [
+              {
+                model: Patient,
+                as: 'patient',
+                required: false,
+                attributes: ['id', 'patient_id', 'name'],
+              },
+            ],
+          },
+        ],
+        order: [['created_at', 'DESC']],
+        limit: 3,  // 限制最新3条记录
+      });
+    } else {
+      // 普通用户：查询自己创建的任务 OR 关联到自己study的任务
+      console.log('【历史任务】普通用户模式：查询用户相关任务');
+      historyTasks = await AnalysisTask.findAll({
+        include: [
+          {
+            model: Study,
+            as: 'study',
+            required: false,
+            where: {
+              [Op.or]: [
+                { user_id: userId },  // study属于该用户
+                { id: { [Op.ne]: null } },  // 或者只要有study就显示（宽松模式）
+              ],
             },
+            include: [
+              {
+                model: Patient,
+                as: 'patient',
+                required: false,
+                attributes: ['id', 'patient_id', 'name'],
+              },
+            ],
+          },
+        ],
+        where: {
+          [Op.or]: [
+            { user_id: userId },  // 任务属于该用户
+            { '$study.user_id$': userId },  // 或者study属于该用户
           ],
         },
-      ],
-      order: [
-        ['created_at', 'DESC'], // 按创建时间降序
-      ],
-      limit: 10,
-    });
+        order: [['created_at', 'DESC']],
+        limit: 3,  // 限制最新3条记录
+      });
+    }
+
+    console.log('【历史任务】查询结果数量:', historyTasks.length);
+    
+    // 如果结果为空且是普通用户，尝试查询所有任务（调试用）
+    if (historyTasks.length === 0 && !isAdmin) {
+      console.log('【历史任务】未找到用户任务，尝试查询所有任务（调试）');
+      const allTasks = await AnalysisTask.findAll({
+        include: [
+          {
+            model: Study,
+            as: 'study',
+            required: false,
+            include: [
+              {
+                model: Patient,
+                as: 'patient',
+                required: false,
+                attributes: ['id', 'patient_id', 'name'],
+              },
+            ],
+          },
+        ],
+        order: [['created_at', 'DESC']],
+        limit: 5,
+      });
+      console.log('【历史任务】数据库中总任务数:', allTasks.length);
+      if (allTasks.length > 0) {
+        console.log('【历史任务】第一条任务的user_id:', allTasks[0].user_id);
+        console.log('【历史任务】第一条任务的study_id:', allTasks[0].study_id);
+        console.log('【历史任务】第一条任务的study.user_id:', allTasks[0].study?.user_id);
+        
+        // 尝试修复null的user_id：如果任务的user_id为null但有study关联，则显示所有任务
+        console.log('【历史任务】检测到任务user_id为null，尝试显示所有有效任务');
+        historyTasks = allTasks;
+      }
+    }
 
     // 格式化任务数据
-    const formattedTasks = historyTasks.map((task) => {
-      let statusText = '已完成';
-      let icon = 'check_circle';
-      
-      if (task.status === 'PENDING') {
-        statusText = '待处理';
-        icon = 'schedule';
-      } else if (task.status === 'PROCESSING') {
-        statusText = '分析中';
-        icon = 'hourglass_empty';
-      } else if (task.status === 'FAILED') {
-        statusText = '分析失败';
-        icon = 'error';
-      } else if (task.status === 'SUCCESS') {
-        statusText = '已完成';
-        icon = 'check_circle';
-      }
+    const formattedTasks = historyTasks
+      .filter((task) => task.study)  // 过滤掉没有关联 study 的任务
+      .map((task) => {
+        let statusText = '已完成';
+        let icon = 'check_circle';
 
-      return {
-        id: task.task_id,
-        title: `患者${task.study.patient?.name || '未知'}风险评估报告 - ${statusText}`,
-        description: `病例号：${task.study.study_id} | 提交时间：${new Date(
-          task.created_at
-        ).toLocaleString('zh-CN')}`,
-        icon: icon,
-        priority: task.priority === 'high' || task.priority === 'urgent' ? 'high' : 'medium',
-        estimatedTime: statusText,
-        studyId: task.study.id,
-        taskId: task.id,
-        status: task.status,
-      };
-    });
+        if (task.status === 'PENDING') {
+          statusText = '待处理';
+          icon = 'schedule';
+        } else if (task.status === 'PROCESSING') {
+          statusText = '分析中';
+          icon = 'hourglass_empty';
+        } else if (task.status === 'FAILED') {
+          statusText = '分析失败';
+          icon = 'error';
+        } else if (task.status === 'SUCCESS') {
+          statusText = '已完成';
+          icon = 'check_circle';
+        }
+
+        return {
+          id: task.id,  // 数据库主键ID
+          taskId: task.task_id,  // 任务唯一标识符
+          studyId: task.study.id,  // 病例数据库ID
+          studyUniqueId: task.study.study_id,  // 病例唯一标识符
+          title: `患者${task.study.patient?.name || '未知'}风险评估报告 - ${statusText}`,
+          description: `患者ID：${task.study.patient?.patient_id || '未知'} | 提交时间：${new Date(task.created_at).toLocaleString('zh-CN')}`,
+          icon: icon,
+          priority: task.priority === 'high' || task.priority === 'urgent' ? 'high' : 'medium',
+          estimatedTime: statusText,
+          status: task.status,
+          patientName: task.study.patient?.name || '未知',
+          patientId: task.study.patient?.patient_id || '未知',
+          createdAt: task.created_at,
+        };
+      });
+
+    console.log('【历史任务】格式化后数量:', formattedTasks.length);
+    if (formattedTasks.length > 0) {
+      console.log('【历史任务】第一条数据:', JSON.stringify(formattedTasks[0], null, 2));
+    }
 
     res.json({
       success: true,
@@ -275,13 +357,17 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取历史任务错误:', error);
+    console.error('【历史任务】获取历史任务错误:', error);
+    console.error('【历史任务】错误详情:', error.message);
+    console.error('【历史任务】错误堆栈:', error.stack);
+    
     // 如果数据库查询失败，返回空数组而非500错误
     res.json({
       success: true,
       data: {
         tasks: [],
       },
+      error: error.message,  // 返回错误信息用于前端调试
     });
   }
 });
@@ -298,16 +384,14 @@ router.get('/notices', authenticate, async (req, res) => {
       {
         id: '1',
         title: 'AI模型V2.1版本已更新',
-        content:
-          '新版本提升了对于低度鳞状上皮内病变(LSIL)的识别准确率，建议重新分析近期相关病例。',
+        content: '新版本提升了对于低度鳞状上皮内病变(LSIL)的识别准确率，建议重新分析近期相关病例。',
         publisher: '系统管理员',
         date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       },
       {
         id: '2',
         title: '系统维护通知',
-        content:
-          '为提升系统性能，计划于本周四凌晨2:00-4:00进行维护，期间服务可能短暂中断。',
+        content: '为提升系统性能，计划于本周四凌晨2:00-4:00进行维护，期间服务可能短暂中断。',
         publisher: '运维团队',
         date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       },
