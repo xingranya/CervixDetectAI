@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
-const { Study, Patient, StudyImage, User, AnalysisTask } = require('../models');
+const { Study, Patient, StudyImage, User, AnalysisTask, AnalysisResult } = require('../models');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -268,6 +268,13 @@ router.get('/', authenticate, async (req, res) => {
           as: 'images',
           attributes: ['id', 'file_path', 'original_filename', 'created_at'],
         },
+        {
+          model: AnalysisResult,
+          as: 'analysis_results',
+          attributes: ['id', 'diagnosis', 'risk_level', 'confidence'],
+          limit: 1,
+          order: [['created_at', 'DESC']],
+        },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -326,6 +333,12 @@ router.get('/:id', authenticate, async (req, res) => {
         {
           model: AnalysisTask,
           as: 'analysis_tasks',
+        },
+        {
+          model: AnalysisResult,
+          as: 'analysis_results',
+          limit: 1,
+          order: [['created_at', 'DESC']],
         },
       ],
     });
@@ -524,6 +537,52 @@ router.delete('/:id/images/:imageId', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '删除影像失败',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * PATCH /api/studies/:id/mark-downloaded
+ * 标记报告已下载
+ */
+router.patch('/:id/mark-downloaded', authenticate, async (req, res) => {
+  try {
+    const study = await Study.findByPk(req.params.id);
+
+    if (!study) {
+      return res.status(404).json({
+        success: false,
+        message: '病例不存在',
+      });
+    }
+
+    // 非管理员可以标记自己创建的病例 + 未分配用户的病例（匿名上传）
+    if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: '无权标记该病例',
+      });
+    }
+
+    // 如果已经标记过，不重复更新时间
+    const updateData = { downloaded: true };
+    if (!study.downloaded) {
+      updateData.downloaded_at = new Date();
+    }
+
+    await study.update(updateData);
+
+    res.json({
+      success: true,
+      message: '标记成功',
+      data: { study },
+    });
+  } catch (error) {
+    console.error('标记下载状态错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '标记下载状态失败',
       error: error.message,
     });
   }

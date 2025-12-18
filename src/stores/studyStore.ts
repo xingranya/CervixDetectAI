@@ -38,6 +38,11 @@ export interface Study {
   uploadedAt: string; // ISO date string
   created_at: string;
   taskId?: number; // Backend task ID for tracking
+  // 新增字段：报告中心所需
+  downloaded?: boolean; // 报告是否已下载
+  downloaded_at?: string; // 首次下载时间
+  diagnosis?: string; // 诊断结果（来自 analysisResult）
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical'; // 风险等级（来自 analysisResult）
 }
 
 export const useStudyStore = defineStore('study', {
@@ -98,6 +103,11 @@ export const useStudyStore = defineStore('study', {
               ...(imageUrl ? { imageUrl } : {}),
               uploadedAt: study.created_at,
               created_at: study.created_at,
+              // 新增字段
+              downloaded: study.downloaded || false,
+              downloaded_at: study.downloaded_at,
+              diagnosis: study.analysis_results?.[0]?.diagnosis,
+              riskLevel: study.analysis_results?.[0]?.risk_level,
             };
           });
           console.log('✅ [fetchStudies] 已映射病例数据，共', this.studies.length, '条');
@@ -147,6 +157,11 @@ export const useStudyStore = defineStore('study', {
             ...(imageUrl ? { imageUrl } : {}),
             uploadedAt: response.data.study.created_at,
             created_at: response.data.study.created_at,
+            // 新增字段
+            downloaded: response.data.study.downloaded || false,
+            downloaded_at: response.data.study.downloaded_at,
+            diagnosis: response.data.study.analysis_results?.[0]?.diagnosis,
+            riskLevel: response.data.study.analysis_results?.[0]?.risk_level,
           };
           this.currentStudy = study;
           return study;

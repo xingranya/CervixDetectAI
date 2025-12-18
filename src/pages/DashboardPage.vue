@@ -475,8 +475,41 @@ const updateChartData = () => {
 
   const diagnosisStats = statsData.value.diagnosisStats || {};
 
-  // 将诊断统计数据转换为图表数据格式
-  const chartData = Object.entries(diagnosisStats).map(([name, value]) => {
+  // 标准化诊断名称函数
+  const normalizeDiagnosisName = (name: string): string => {
+    // 阴性/正常
+    if (name.includes('阴性') || name.includes('Normal') || name.includes('NILM') || name.includes('正常')) {
+      return '阴性/Normal';
+    }
+    // ASC-US
+    if (name.includes('ASC-US') || name.includes('ASCUS') || name.includes('意义不明确的不典型')) {
+      return 'ASC-US';
+    }
+    // LSIL
+    if (name.includes('LSIL') || name.includes('低度鳞状上皮内病变') || name.includes('低度病变')) {
+      return 'LSIL';
+    }
+    // HSIL
+    if (name.includes('HSIL') || name.includes('高度鳞状上皮内病变') || name.includes('高度病变')) {
+      return 'HSIL';
+    }
+    // 可疑癌/SCC
+    if (name.includes('SCC') || name.includes('癌') || name.includes('鳞状细胞癌') || name.includes('浸润性')) {
+      return '可疑癌/SCC';
+    }
+    // 其他情况返回原始名称
+    return name;
+  };
+
+  // 先标准化诊断名称，然后合并相同类型的数据
+  const normalizedStats: Record<string, number> = {};
+  Object.entries(diagnosisStats).forEach(([name, value]) => {
+    const normalizedName = normalizeDiagnosisName(name);
+    normalizedStats[normalizedName] = (normalizedStats[normalizedName] || 0) + Number(value);
+  });
+
+  // 将标准化后的诊断统计数据转换为图表数据格式
+  const chartData = Object.entries(normalizedStats).map(([name, value]) => {
     let color = '#86efac'; // 默认颜色
 
     // 根据诊断类型设置颜色
