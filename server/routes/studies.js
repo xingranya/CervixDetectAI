@@ -239,10 +239,7 @@ router.get('/', authenticate, async (req, res) => {
 
     // 非管理员可以看到自己创建的病例 + 未分配用户的病例（匿名上传）
     if (req.user.role !== 'admin') {
-      where[Op.or] = [
-        { user_id: req.user.id },
-        { user_id: null }
-      ];
+      where[Op.or] = [{ user_id: req.user.id }, { user_id: null }];
       console.log('🔒 [GET /api/studies] 非管理员，查询自己的病例和未分配用户的病例');
     } else {
       console.log('🔓 [GET /api/studies] 管理员，查询所有病例');
@@ -546,6 +543,7 @@ router.delete('/:id/images/:imageId', authenticate, async (req, res) => {
  * PATCH /api/studies/:id/mark-downloaded
  * 标记报告已下载
  */
+/*
 router.patch('/:id/mark-downloaded', authenticate, async (req, res) => {
   try {
     const study = await Study.findByPk(req.params.id);
@@ -587,5 +585,6 @@ router.patch('/:id/mark-downloaded', authenticate, async (req, res) => {
     });
   }
 });
+*/
 
 module.exports = router;

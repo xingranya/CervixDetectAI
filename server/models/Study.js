@@ -73,17 +73,7 @@ const Study = sequelize.define(
       allowNull: false,
       defaultValue: 'pending',
     },
-    downloaded: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-      comment: '报告是否已下载',
-    },
-    downloaded_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      comment: '首次下载报告的时间',
-    },
+    // downloaded and downloaded_at removed to match DB schema
     priority: {
       type: DataTypes.ENUM('normal', 'urgent', 'emergency'),
       allowNull: false,

@@ -257,44 +257,93 @@
           </q-card-section>
         </q-card>
 
-        <!-- AI分析进度卡片（分析中时显示） -->
-        <q-card v-if="isAnalyzing" flat bordered class="q-mb-md bg-light-blue-1">
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-bold q-mb-sm">
-              <q-icon name="hourglass_empty" class="q-mr-sm" color="primary" />
-              AI分析进行中...
-            </div>
-            <q-linear-progress :value="progress / 100" color="primary" size="15px" class="q-mb-sm">
-              <div class="absolute-full flex flex-center">
-                <q-badge color="white" text-color="primary" :label="`${progress}%`" />
-              </div>
-            </q-linear-progress>
-            <div class="text-body2 text-grey-8 q-mb-xs">
-              {{ progressStatus }}
-            </div>
-
-            <!-- 分析日志 -->
-            <q-expansion-item
-              v-if="logs.length > 0"
-              dense
-              dense-toggle
-              label="详细日志"
-              header-class="text-caption text-grey-7"
-            >
-              <div class="q-pa-sm bg-white" style="max-height: 200px; overflow-y: auto">
-                <div v-for="(log, index) in logs" :key="index" class="text-caption q-mb-xs">
-                  <q-icon
-                    :name="log.confidence > 90 ? 'check_circle' : 'radio_button_unchecked'"
-                    :color="log.confidence > 90 ? 'positive' : 'grey'"
-                    size="xs"
-                    class="q-mr-xs"
-                  />
-                  {{ log.message }}
+        <!-- AI分析进度卡片（分析中时显示） - 置顶固定显示 -->
+        <transition name="slide-down">
+          <div v-if="isAnalyzing" class="analysis-progress-overlay">
+            <q-card class="analysis-progress-card">
+              <q-card-section class="q-pa-lg">
+                <!-- 标题区域 -->
+                <div class="row items-center q-mb-md">
+                  <div class="analysis-icon-container q-mr-md">
+                    <q-spinner-orbit color="white" size="28px" />
+                  </div>
+                  <div class="col">
+                    <div class="text-h6 text-white text-weight-bold">AI 智能分析中</div>
+                    <div class="text-caption text-light-blue-2">{{ progressStatus }}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="progress-percentage">
+                      {{ Math.round(progress) }}<span class="percent-sign">%</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </q-expansion-item>
-          </q-card-section>
-        </q-card>
+
+                <!-- 进度条 -->
+                <div class="progress-bar-container">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" :style="{ width: `${progress}%` }"></div>
+                    <div class="progress-bar-glow" :style="{ left: `${progress}%` }"></div>
+                  </div>
+                  <!-- 进度阶段指示器 -->
+                  <div class="progress-stages">
+                    <div
+                      class="stage"
+                      :class="{ active: progress >= 0, completed: progress >= 20 }"
+                    >
+                      <q-icon :name="progress >= 20 ? 'check_circle' : 'upload_file'" size="18px" />
+                      <span>上传</span>
+                    </div>
+                    <div
+                      class="stage"
+                      :class="{ active: progress >= 20, completed: progress >= 50 }"
+                    >
+                      <q-icon
+                        :name="progress >= 50 ? 'check_circle' : 'image_search'"
+                        size="18px"
+                      />
+                      <span>预处理</span>
+                    </div>
+                    <div
+                      class="stage"
+                      :class="{ active: progress >= 50, completed: progress >= 80 }"
+                    >
+                      <q-icon :name="progress >= 80 ? 'check_circle' : 'psychology'" size="18px" />
+                      <span>AI分析</span>
+                    </div>
+                    <div
+                      class="stage"
+                      :class="{ active: progress >= 80, completed: progress >= 100 }"
+                    >
+                      <q-icon :name="progress >= 100 ? 'check_circle' : 'summarize'" size="18px" />
+                      <span>生成报告</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 预计时间 -->
+                <div
+                  class="row justify-between items-center q-mt-md text-light-blue-2 text-caption"
+                >
+                  <div>
+                    <q-icon name="schedule" size="16px" class="q-mr-xs" />
+                    预计剩余时间: {{ estimatedTimeRemaining }}
+                  </div>
+                  <q-btn
+                    flat
+                    dense
+                    color="white"
+                    label="取消"
+                    icon="close"
+                    size="sm"
+                    @click="stopAnalysis"
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </transition>
+
+        <!-- 分析日志（移到右侧列） -->
 
         <!-- AI Control Panel -->
         <q-card flat bordered class="q-mb-md">
@@ -517,6 +566,8 @@ const advancedOptions = ref({
   multiSpectral: false,
   boundarySmoothing: true,
 });
+const fileInput = ref<HTMLInputElement | null>(null);
+const isUploading = ref(false);
 
 interface LogEntry {
   time: string;
@@ -534,11 +585,7 @@ const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
 
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
-const imageTypeOptions = [
-  '细胞学涂片 (Cytology)',
-  '阴道镜图像 (Colposcopy)',
-  '组织病理切片 (Histopathology)',
-];
+const imageTypeOptions = ['细胞学涂片', '阴道镜图像', '组织病理切片'];
 const modelOptions = [
   '宫颈病变分割模型 v3.2 (高精度)',
   '快速筛查模型 v2.1',
@@ -549,6 +596,21 @@ const modelOptions = [
 const study = computed(() => studyStore.currentStudy);
 
 const analysisResult = computed(() => studyStore.currentStudy?.analysisResult || null);
+
+// 预计剩余时间计算
+const estimatedTimeRemaining = computed(() => {
+  if (progress.value >= 100) return '完成';
+  if (progress.value <= 0) return '计算中...';
+  // 假设总时间约40秒
+  const totalSeconds = 40;
+  const remainingSeconds = Math.round((totalSeconds * (100 - progress.value)) / 100);
+  if (remainingSeconds > 60) {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    return `${minutes}分${seconds}秒`;
+  }
+  return `约${remainingSeconds}秒`;
+});
 
 // Annotations from AI result
 interface Annotation {
@@ -600,12 +662,46 @@ const aiAnnotations = computed<Annotation[]>(() => {
 
 // Methods
 const triggerFileUpload = () => {
-  // ref fileInput click
+  fileInput.value?.click();
 };
 
-const handleFileUpload = () => {
-  // Handle file
-  $q.notify({ message: '文件已选择', color: 'positive' });
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) return;
+
+  if (!study.value?.id) {
+    $q.notify({
+      type: 'warning',
+      message: '无法上传：病例数据未加载',
+      position: 'top',
+    });
+    return;
+  }
+
+  isUploading.value = true;
+  try {
+    const success = await studyStore.uploadImage(study.value.id, file);
+    if (success) {
+      $q.notify({
+        type: 'positive',
+        message: '影像上传成功',
+        position: 'top',
+      });
+      // Clear input
+      if (fileInput.value) fileInput.value.value = '';
+    }
+  } catch (error) {
+    console.error('上传失败:', error);
+    $q.notify({
+      type: 'negative',
+      message: '上传失败，请重试',
+      position: 'top',
+    });
+  } finally {
+    isUploading.value = false;
+  }
 };
 
 const zoomIn = () => {
@@ -718,10 +814,22 @@ const startPollingTaskStatus = (taskId: string) => {
       } else if (task.status === 'SUCCESS') {
         clearInterval(pollingIntervalId!);
         pollingIntervalId = null;
-        isAnalyzing.value = false;
-        progress.value = 100;
         progressStatus.value = '分析完成';
-        addLog('分析完成，生成报告中...', 99);
+        addLog('分析完成，正在加载结果...', 99);
+
+        // 平滑过渡到100%
+        const animateToComplete = async () => {
+          while (progress.value < 100) {
+            progress.value = Math.min(progress.value + 2, 100);
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+        };
+
+        await animateToComplete();
+
+        // 短暂延迟后关闭进度条
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        isAnalyzing.value = false;
 
         // 重新加载病例数据以获取最新的分析结果
         await refreshStudyData();
@@ -783,8 +891,16 @@ const refreshStudyData = async () => {
     try {
       console.log('🔄 刷新病例数据...');
       // 强制从服务器重新加载
-      await studyStore.loadStudyById(parseInt(studyId as string), true);
-      console.log('✅ 病例数据已刷新');
+      const updatedStudy = await studyStore.loadStudyById(parseInt(studyId as string), true);
+      console.log('✅ 病例数据已刷新', updatedStudy);
+
+      // 检查是否有正在进行的任务，如果有则自动开始轮询
+      if (updatedStudy?.status === 'processing' && updatedStudy.taskId) {
+        console.log('🔄 检测到正在进行的任务，恢复轮询:', updatedStudy.taskId);
+        isAnalyzing.value = true;
+        currentTaskId.value = updatedStudy.taskId;
+        startPollingTaskStatus(updatedStudy.taskId);
+      }
 
       // 强制更新图表
       setTimeout(() => {
@@ -795,6 +911,10 @@ const refreshStudyData = async () => {
     }
   }
 };
+
+onMounted(async () => {
+  await refreshStudyData();
+});
 
 const addLog = (message: string, confidence?: number) => {
   logs.value.unshift({
@@ -948,12 +1068,22 @@ onMounted(async () => {
             addLog('检测到进行中的分析任务，继续轮询...', 95);
             startPollingTaskStatus(activeTask.id);
           } else {
-            // 没有进行中的任务，查找最新任务
+            // 没有进行中的任务，查找最新任务（包括刚刚创建的 PENDING 任务）
             const latestTask = analysisStore.getTaskByStudyId(study.value.id.toString());
             console.log('🔍 最新任务:', latestTask);
 
             if (latestTask) {
-              if (latestTask.status === 'FAILED') {
+              if (latestTask.status === 'PENDING' || latestTask.status === 'PROCESSING') {
+                // 找到 PENDING 或 PROCESSING 状态的任务，开始轮询（可能是刚从 UploadPage 跳转过来）
+                console.log('✅ 找到待处理/处理中的任务，开始轮询:', latestTask);
+                currentTaskId.value = latestTask.id;
+                isAnalyzing.value = true;
+                progress.value = latestTask.progress;
+                progressStatus.value =
+                  latestTask.status === 'PENDING' ? '等待开始...' : '分析中...';
+                addLog('检测到分析任务，开始监控进度...', 95);
+                startPollingTaskStatus(latestTask.id);
+              } else if (latestTask.status === 'FAILED') {
                 // 任务失败，显示失败信息
                 console.log('❌ 最新任务已失败:', latestTask);
                 lastFailedTask.value = {
@@ -985,18 +1115,14 @@ onMounted(async () => {
                 await refreshStudyData();
               }
             } else {
-              // 没有任何任务，可能需要自动开始分析
-              console.log('⚠️ 未找到任何分析任务，自动开始分析...');
+              // 没有任何任务，提示用户手动启动
+              console.log('⚠️ 未找到任何分析任务');
               $q.notify({
                 type: 'info',
-                message: '正在自动启动AI分析...',
+                message: '未找到分析任务，请点击"启动"按钮开始分析',
                 position: 'top',
-                timeout: 2000,
+                timeout: 3000,
               });
-              // 稍后自动开始分析
-              setTimeout(() => {
-                void startAnalysis();
-              }, 1000);
             }
           }
         } catch (fetchError) {
@@ -1091,5 +1217,170 @@ onUnmounted(() => {
 .upload-area:hover {
   background-color: #e0f2f1;
   border-color: #375a64;
+}
+
+/* 进度条置顶样式 */
+.analysis-progress-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 16px;
+  padding-top: 80px; /* 给顶部导航栏留空间 */
+  pointer-events: none;
+}
+
+.analysis-progress-card {
+  max-width: 700px;
+  margin: 0 auto;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 50%, #01579b 100%) !important;
+  box-shadow:
+    0 20px 60px rgba(21, 101, 192, 0.4),
+    0 0 40px rgba(33, 150, 243, 0.2);
+  pointer-events: auto;
+  animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-down-enter-active {
+  animation: slideDown 0.4s ease-out;
+}
+
+.slide-down-leave-active {
+  animation: slideDown 0.3s ease-in reverse;
+}
+
+.analysis-icon-container {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.progress-percentage {
+  font-size: 42px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.percent-sign {
+  font-size: 20px;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+.progress-bar-container {
+  margin-top: 8px;
+}
+
+.progress-bar-bg {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4fc3f7, #81d4fa, #b3e5fc);
+  border-radius: 10px;
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-bar-glow {
+  position: absolute;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px 8px rgba(129, 212, 250, 0.6);
+  transform: translateX(-50%);
+  transition: left 0.5s ease-out;
+}
+
+.progress-stages {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.stage span {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.stage.active {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stage.completed {
+  color: #b3e5fc;
+}
+
+.stage.completed .q-icon {
+  animation: checkBounce 0.4s ease-out;
+}
+
+@keyframes checkBounce {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 </style>

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
-const { AnalysisTask, AnalysisResult, Study, User } = require('../models');
+const { AnalysisTask, AnalysisResult, Study, User, StudyImage } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const analysisService = require('../services/analysisService');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
 router.post('/', authenticate, async (req, res) => {
   try {
     const { study_id, model_name, model_version, priority = 'normal' } = req.body;
-    
+
     console.log('🔵 [POST /analysis-tasks] 收到请求');
     console.log('📊 请求参数:', { study_id, model_name, model_version, priority });
     console.log('👤 当前用户:', { id: req.user.id, role: req.user.role });
@@ -34,7 +35,7 @@ router.post('/', authenticate, async (req, res) => {
         message: '病例不存在',
       });
     }
-    
+
     console.log('📋 病例信息:', { id: study.id, user_id: study.user_id, status: study.status });
 
     // 非管理员只能为自己的病例创建任务，但允许为user_id为null的病例（匿名上传）创建任务
@@ -53,10 +54,9 @@ router.post('/', authenticate, async (req, res) => {
     const task = await AnalysisTask.create({
       study_id,
       user_id: req.user.id,
-      model_name,
-      model_version,
-      priority,
-      status: 'pending',
+      ai_model_version: model_version,
+      // model_name and priority are not in the model
+      status: 'PENDING',
       progress: 0,
     });
 
@@ -80,8 +80,46 @@ router.post('/', authenticate, async (req, res) => {
       message: '分析任务创建成功',
       data: { task: createdTask },
     });
+
+    // 异步触发分析流程
+    (async () => {
+      try {
+        // 获取病例的原始图像
+        const studyImage = await StudyImage.findOne({
+          where: { study_id: study.id, is_primary: true },
+        });
+
+        if (studyImage && studyImage.file_path) {
+          // 构建绝对路径
+          const path = require('path');
+          const imagePath = path.join(__dirname, '..', studyImage.file_path);
+
+          console.log(
+            `🚀 [POST /analysis-tasks] 触发后台分析: TaskID=${task.id}, Image=${imagePath}`,
+          );
+          await analysisService.processTask(task.id, imagePath, study.id);
+        } else {
+          console.error(
+            `❌ [POST /analysis-tasks] 无法触发分析: 未找到病例图像 (StudyID=${study.id})`,
+          );
+          await task.update({
+            status: 'FAILED',
+            error_message: '未找到病例图像，无法开始分析',
+            completed_at: new Date(),
+          });
+        }
+      } catch (err) {
+        console.error(`❌ [POST /analysis-tasks] 触发分析失败:`, err);
+      }
+    })();
   } catch (error) {
     console.error('创建分析任务错误:', error);
+    // Log error to file for debugging
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(__dirname, '..', 'error.log');
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Create Task Error: ${error.stack}\n`);
+
     res.status(500).json({
       success: false,
       message: '创建分析任务失败',

@@ -215,7 +215,9 @@ ${diagnosisOptions}
   5. **异常区域定位**：描述图像中可疑或异常区域的具体位置和特征，并尽可能提供 box_2d 坐标（基于1000x1000的归一化坐标）。
   6. **生物标志物推测**：结合细胞学特征，推测HPV、p16、Ki67的可能状态（如适用）。
   7. **临床建议**：根据诊断结果，提供具体的后续检查或治疗建议。
-  8. **生成报告**：整合所有分析结果，生成完整的、结构化的病理分析报告。`;
+  8. **生成报告**：整合所有分析结果，生成完整的、结构化的病理分析报告。
+
+  **IMPORTANT**: All output must be in Simplified Chinese (简体中文).`;
 }
 
 /**
@@ -358,12 +360,12 @@ class QwenService {
         confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
         qualityAssessment: result.qualityAssessment || {
           score: 3,
-          clarity: 'Unknown',
-          adequacy: 'Unknown',
+          clarity: '未知',
+          adequacy: '未知',
           details: '未提供质量评估',
         },
         riskAssessment: result.riskAssessment || {
-          level: 'Unknown',
+          level: '未知',
           score: 0,
           rationale: '未提供风险评估',
         },

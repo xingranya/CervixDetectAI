@@ -37,7 +37,7 @@ export interface Study {
   analysisResult?: AnalysisResult; // Result from AI analysis
   uploadedAt: string; // ISO date string
   created_at: string;
-  taskId?: number; // Backend task ID for tracking
+  taskId?: string; // Backend task ID for tracking
   // 新增字段：报告中心所需
   downloaded?: boolean; // 报告是否已下载
   downloaded_at?: string; // 首次下载时间
@@ -128,15 +128,12 @@ export const useStudyStore = defineStore('study', {
     },
 
     async loadStudyById(id: number, forceRefresh = false) {
-      // 如果不强制刷新，且缓存中存在，则返回缓存
       const existingStudy = this.studies.find((study) => study.id === id);
       if (existingStudy && !forceRefresh) {
-        console.log('💾 使用缓存的病例数据');
         this.currentStudy = existingStudy;
         return existingStudy;
       }
 
-      console.log('🔄 从服务器加载病例数据...');
       this.loading = true;
       this.error = null;
 
@@ -146,30 +143,21 @@ export const useStudyStore = defineStore('study', {
           const imageUrl = getImageUrl(response.data.study.images?.[0]?.file_path);
 
           // 获取最新的分析结果
-          let analysisResult: AnalysisResult | undefined = undefined;
-          if (response.data.study.analysis_results?.[0]) {
-            const apiResult = response.data.study.analysis_results[0];
-            console.log('🧪 获取到分析结果:', apiResult);
+          const latestResult = response.data.study.analysis_results?.[0];
+          let analysisResult: AnalysisResult | undefined;
+
+          if (latestResult) {
             analysisResult = {
-              diagnosis: apiResult.diagnosis || '',
-              confidence: apiResult.confidence || 0,
-              recommendations: Array.isArray(apiResult.recommendations)
-                ? apiResult.recommendations
-                : [],
-              suspiciousAreas: Array.isArray(apiResult.suspicious_areas)
-                ? apiResult.suspicious_areas.map((item: any) => {
-                    if (typeof item === 'string') {
-                      return { description: item };
-                    }
-                    return item;
-                  })
-                : undefined,
-              biomarkers: apiResult.biomarkers,
-              detailedReport: apiResult.detailed_report,
+              diagnosis: latestResult.diagnosis || '',
+              confidence: latestResult.confidence || 0,
+              recommendations: latestResult.recommendations || [],
+              suspiciousAreas: latestResult.suspicious_areas || [],
+              biomarkers: latestResult.biomarkers || undefined,
+              detailedReport: latestResult.detailed_report || undefined,
             };
           }
 
-          const study = {
+          const study: Study = {
             id: response.data.study.id,
             study_id: response.data.study.study_id,
             patient_id: response.data.study.patient_id,
@@ -183,17 +171,34 @@ export const useStudyStore = defineStore('study', {
             description: response.data.study.description,
             images: response.data.study.images,
             ...(imageUrl ? { imageUrl } : {}),
-            ...(analysisResult ? { analysisResult } : {}),
             uploadedAt: response.data.study.created_at,
             created_at: response.data.study.created_at,
+            // 分析结果
+            ...(analysisResult ? { analysisResult } : {}),
             // 新增字段
             downloaded: response.data.study.downloaded || false,
             downloaded_at: response.data.study.downloaded_at,
-            diagnosis: response.data.study.analysis_results?.[0]?.diagnosis,
-            riskLevel: response.data.study.analysis_results?.[0]?.risk_level,
+            diagnosis: latestResult?.diagnosis,
+            riskLevel: latestResult?.risk_level,
           };
 
-          // 更新缓存
+          // Check for active tasks
+          if (response.data.study.analysis_tasks?.length > 0) {
+            // Sort by created_at desc
+            const tasks = response.data.study.analysis_tasks.sort(
+              (a: any, b: any) =>
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            );
+            const latestTask = tasks[0];
+            if (latestTask && ['PENDING', 'PROCESSING'].includes(latestTask.status)) {
+              study.taskId = latestTask.task_id; // Use the string task_id
+              study.status = 'processing'; // Ensure status is processing
+            }
+          }
+
+          this.currentStudy = study;
+
+          // 更新 studies 列表中的数据
           const existingIndex = this.studies.findIndex((s) => s.id === id);
           if (existingIndex >= 0) {
             this.studies[existingIndex] = study;
@@ -201,12 +206,9 @@ export const useStudyStore = defineStore('study', {
             this.studies.push(study);
           }
 
-          this.currentStudy = study;
-          console.log('✅ 病例数据加载完成:', study);
           return study;
         }
       } catch (error: any) {
-        console.error('❌ 加载病例数据失败:', error);
         this.error = error.response?.data?.message || '获取病例详情失败';
         throw error;
       } finally {
@@ -338,6 +340,39 @@ export const useStudyStore = defineStore('study', {
       } catch (error: any) {
         this.error = error.response?.data?.message || '删除病例失败';
         throw error;
+      }
+    },
+
+    async uploadImage(studyId: number, file: File) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await studyAPI.uploadImages(studyId, [file]);
+        if (response.success) {
+          // Update local study data with new image
+          if (this.currentStudy && this.currentStudy.id === studyId) {
+            const newImages = response.data.images;
+            this.currentStudy.images = newImages;
+            const imageUrl = getImageUrl(newImages[0]?.file_path);
+            if (imageUrl) {
+              this.currentStudy.imageUrl = imageUrl;
+            }
+
+            // Update in list as well
+            const listIndex = this.studies.findIndex((s) => s.id === studyId);
+            if (listIndex !== -1) {
+              this.studies[listIndex] = { ...this.currentStudy };
+            }
+          }
+          return true;
+        }
+        return false;
+      } catch (error: any) {
+        this.error = error.response?.data?.message || '上传影像失败';
+        throw error;
+      } finally {
+        this.loading = false;
       }
     },
   },

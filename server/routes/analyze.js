@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
-const qwenService = require('../services/qwenService');
+const analysisService = require('../services/analysisService');
 const {
   Patient,
   Study,
@@ -123,7 +123,7 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
           study_date: new Date(studyDate),
           study_type: modality,
           description: req.body.description || '',
-          status: 'uploaded',
+          status: 'processing',
         },
         { transaction },
       );
@@ -177,7 +177,7 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
       });
 
       // 异步执行分析 (传入数据库ID)
-      processAnalysisTask(analysisTask.id, req.file.path, study.id).catch((err) => {
+      analysisService.processTask(analysisTask.id, req.file.path, study.id).catch((err) => {
         console.error(`❌ 任务后台执行失败:`, err);
       });
     } catch (dbError) {
@@ -342,86 +342,5 @@ router.get('/study/:studyId', async (req, res) => {
     res.status(500).json({ error: '查询失败' });
   }
 });
-
-/**
- * 异步处理分析任务
- */
-async function processAnalysisTask(analysisTaskId, imagePath, studyId) {
-  try {
-    console.log(`🔄 开始处理任务 (DB ID: ${analysisTaskId})`);
-
-    // 获取病例信息，以获取检查方式
-    const study = await Study.findByPk(studyId);
-    const modality = study?.study_type || '巴氏染色涂片（Pap Smear）';
-    console.log(`🔬 检查方式: ${modality}`);
-
-    // 更新状态: PROCESSING
-    await AnalysisTask.update(
-      { status: 'PROCESSING', progress: 10, started_at: new Date() },
-      { where: { id: analysisTaskId } },
-    );
-    await Study.update({ status: 'processing' }, { where: { id: studyId } });
-
-    // AI 分析（传入检查方式）
-    await AnalysisTask.update({ progress: 30 }, { where: { id: analysisTaskId } });
-    const result = await qwenService.analyzeImage(imagePath, modality);
-
-    console.log(`✅ 任务完成, 诊断: ${result.diagnosis}`);
-
-    // 保存结果
-    let riskLevel = 'low';
-    if (result.diagnosis.includes('浸润性癌') || result.diagnosis.includes('HSIL')) {
-      riskLevel = 'critical';
-    } else if (result.diagnosis.includes('LSIL') || result.diagnosis.includes('ASC-H')) {
-      riskLevel = 'high';
-    } else if (result.diagnosis.includes('ASC-US')) {
-      riskLevel = 'medium';
-    }
-
-    // 事务保存结果并更新状态
-    await sequelize.transaction(async (t) => {
-      await AnalysisResult.create(
-        {
-          task_id: analysisTaskId,
-          study_id: studyId,
-          diagnosis: result.diagnosis,
-          confidence: result.confidence,
-          risk_level: riskLevel,
-          recommendations: result.recommendations || [],
-          suspicious_areas: result.suspiciousAreas || [],
-          biomarkers: result.biomarkers || {},
-          detailed_report: result.detailedReport,
-          raw_output: result.rawResponse ? { rawResponse: result.rawResponse } : null,
-        },
-        { transaction: t },
-      );
-
-      await AnalysisTask.update(
-        { status: 'SUCCESS', progress: 100, completed_at: new Date() },
-        { where: { id: analysisTaskId }, transaction: t },
-      );
-
-      await Study.update(
-        { status: 'completed' },
-        { where: { id: studyId }, transaction: t },
-      );
-    });
-  } catch (error) {
-    console.error(`❌ 任务失败:`, error.message);
-    await AnalysisTask.update(
-      {
-        status: 'FAILED',
-        progress: 0,
-        error_message: error.message,
-        completed_at: new Date(),
-      },
-      { where: { id: analysisTaskId } },
-    ).catch((e) => console.error('状态更新失败:', e));
-
-    await Study.update({ status: 'failed' }, { where: { id: studyId } }).catch((e) =>
-      console.error('状态更新失败:', e),
-    );
-  }
-}
 
 module.exports = router;

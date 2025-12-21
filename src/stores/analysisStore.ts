@@ -37,7 +37,7 @@ export interface AnalysisTask {
 interface ApiTaskResponse {
   task_id: string;
   study_id: number;
-  status: 'pending' | 'processing' | 'success' | 'failed';
+  status: string; // 可能是大写或小写：PENDING/pending, PROCESSING/processing 等
   progress: number;
   created_at: string;
   completed_at?: string;
@@ -61,22 +61,26 @@ export const useAnalysisStore = defineStore('analysis', {
       const matchingTasks = state.tasks.filter((task) => task.studyId === studyId);
       if (matchingTasks.length === 0) return null;
       // 按创建时间倒序排序，返回最新的任务
-      return matchingTasks.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )[0] || null;
+      return (
+        matchingTasks.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )[0] || null
+      );
     },
     /**
      * 获取指定 studyId 的最新进行中的任务
      */
     getActiveTaskByStudyId: (state) => (studyId: string) => {
       const matchingTasks = state.tasks.filter(
-        (task) => task.studyId === studyId && 
-          (task.status === 'PENDING' || task.status === 'PROCESSING')
+        (task) =>
+          task.studyId === studyId && (task.status === 'PENDING' || task.status === 'PROCESSING'),
       );
       if (matchingTasks.length === 0) return null;
-      return matchingTasks.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )[0] || null;
+      return (
+        matchingTasks.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )[0] || null
+      );
     },
     getActiveTasks: (state) =>
       state.tasks.filter((task) => task.status === 'PENDING' || task.status === 'PROCESSING'),
@@ -96,22 +100,35 @@ export const useAnalysisStore = defineStore('analysis', {
 
         if (response.success && response.data.tasks) {
           // 更新任务列表
-          const tasks: AnalysisTask[] = response.data.tasks.map((task: ApiTaskResponse) => ({
-            id: task.task_id,
-            studyId: task.study_id.toString(),
-            status:
-              task.status === 'pending'
-                ? 'PENDING'
-                : task.status === 'processing'
-                  ? 'PROCESSING'
-                  : task.status === 'success'
-                    ? 'SUCCESS'
-                    : 'FAILED',
-            progress: task.progress || 0,
-            createdAt: task.created_at,
-            ...(task.completed_at && { completedAt: task.completed_at }),
-            ...(task.error && { error: task.error }),
-          }));
+          const tasks: AnalysisTask[] = response.data.tasks.map((task: ApiTaskResponse) => {
+            // 标准化状态为大写（后端可能返回大写或小写）
+            const normalizedStatus = (task.status || '').toUpperCase();
+            let status: AnalysisTask['status'];
+            switch (normalizedStatus) {
+              case 'PENDING':
+                status = 'PENDING';
+                break;
+              case 'PROCESSING':
+                status = 'PROCESSING';
+                break;
+              case 'SUCCESS':
+              case 'COMPLETED':
+                status = 'SUCCESS';
+                break;
+              default:
+                status = 'FAILED';
+            }
+
+            return {
+              id: task.task_id,
+              studyId: task.study_id.toString(),
+              status,
+              progress: task.progress || 0,
+              createdAt: task.created_at,
+              ...(task.completed_at && { completedAt: task.completed_at }),
+              ...(task.error && { error: task.error }),
+            };
+          });
 
           // 合并到现有任务列表
           tasks.forEach((newTask) => {
