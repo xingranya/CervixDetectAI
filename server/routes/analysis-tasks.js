@@ -12,6 +12,10 @@ const router = express.Router();
 router.post('/', authenticate, async (req, res) => {
   try {
     const { study_id, model_name, model_version, priority = 'normal' } = req.body;
+    
+    console.log('🔵 [POST /analysis-tasks] 收到请求');
+    console.log('📊 请求参数:', { study_id, model_name, model_version, priority });
+    console.log('👤 当前用户:', { id: req.user.id, role: req.user.role });
 
     // 验证必填字段
     if (!study_id) {
@@ -24,14 +28,21 @@ router.post('/', authenticate, async (req, res) => {
     // 验证病例是否存在
     const study = await Study.findByPk(study_id);
     if (!study) {
+      console.error('❌ 病例不存在:', study_id);
       return res.status(404).json({
         success: false,
         message: '病例不存在',
       });
     }
+    
+    console.log('📋 病例信息:', { id: study.id, user_id: study.user_id, status: study.status });
 
-    // 非管理员只能为自己的病例创建任务
-    if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+    // 非管理员只能为自己的病例创建任务，但允许为user_id为null的病例（匿名上传）创建任务
+    if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
+      console.error('❌ 权限检查失败:');
+      console.error('   - study.user_id:', study.user_id, typeof study.user_id);
+      console.error('   - req.user.id:', req.user.id, typeof req.user.id);
+      console.error('   - 相等:', study.user_id === req.user.id);
       return res.status(403).json({
         success: false,
         message: '无权为该病例创建分析任务',

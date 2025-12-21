@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影像分析 - 宫颈病变智能风险评估与辅助诊断系统</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <style>
+        /* 全局样式与强制导航样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+            color: #1e293b;
+            background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+
+        /* 顶部导航栏美化 */
+        .topbar {
+            height: 64px;
+            background: linear-gradient(135deg, #375A64 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar-inner {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .brand .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-right: 12px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .brand .app-version {
+            font-size: 12px;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu.horizontal {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            color: #e2e8f0;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .nav-item.active .nav-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            color: #cbd5e1;
+        }
+
+        .nav-item.active .nav-icon {
+            color: #ffffff;
+        }
+
+        .nav-link:hover .nav-icon {
+            color: #ffffff;
+        }
+
+        .main-content {
+            padding: 24px 32px;
+            margin-top: 64px;
+            max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 页面通用样式 */
+        .page-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .page-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header h1 i {
+            color: #375A64;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        /* 卡片美化 */
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: #64748b;
+        }
+
+        /* 按钮美化 */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: #375A64;
+            color: white;
+            border-color: #375A64;
+            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+        }
+
+        .btn-primary:hover {
+            background-color: #2d4a53;
+            box-shadow: 0 4px 6px -1px rgba(55, 90, 100, 0.3);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border-color: #cbd5e1;
+            color: #64748b;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+            color: #1e293b;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 表单控件美化 */
+        .form-control {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: #1e293b;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #375A64;
+            box-shadow: 0 0 0 3px rgba(55, 90, 100, 0.15);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .log-entry {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .log-entry:hover {
+            background-color: #f8fafc;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .log-message {
+            color: #334155;
+            flex-grow: 1;
+            margin: 0 16px;
+        }
+
+        .log-confidence {
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+        }
+
+        .confidence-high {
+            background-color: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .confidence-medium {
+            background-color: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        .confidence-low {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-value {
+            min-width: 48px;
+            text-align: center;
+            font-weight: 600;
+            color: #375A64;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #e2e8f0;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #375A64;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 1), 0 1px 3px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .image-placeholder {
+            background: repeating-linear-gradient(45deg, #f8fafc, #f8fafc 10px, #f1f5f9 10px, #f1f5f9 20px);
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .upload-area {
+            min-height: 220px;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #375A64;
+            background: rgba(55, 90, 100, 0.02);
+        }
+
+        .image-view-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 380px; /* 增加高度以适应图片 */
+        }
+
+        .image-view {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #fff;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-view-header {
+            background-color: #f8fafc;
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .image-view-content {
+            flex-grow: 1;
+            background-color: #0f172a; /* 深色背景模拟看片灯 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .medical-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+        }
+
+        /* 标注框样式 */
+        .annotation-box {
+            position: absolute;
+            border: 2px solid;
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .annotation-box:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .annotation-label {
+            position: absolute;
+            top: -22px;
+            left: -2px;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-container {
+            height: 320px;
+            width: 100%;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-idle {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+
+        .status-processing {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .status-completed {
+            background-color: #ecfdf5;
+            color: #047857;
+        }
+
+        .grid-col-4 {
+            grid-column: span 4;
+        }
+
+        .grid-col-8 {
+            grid-column: span 8;
+        }
+
+        .grid-col-6 {
+            grid-column: span 6;
+        }
+
+        .grid-col-12 {
+            grid-column: span 12;
+        }
+
+        @media (max-width: 1200px) {
+            .grid-col-4, .grid-col-6, .grid-col-8 {
+                grid-column: span 12;
+            }
+
+            .image-view-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .image-view {
+                height: 350px;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+        }
+    </style>
+
+</head>
+<body>
+<nav class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <i data-lucide="microscope" style="vertical-align: middle; margin-right: 8px; color: #67e8f9;"></i>
+            <span class="app-title">宫颈病变智能风险评估系统</span>
+            <span class="app-version">V1.0.0</span>
+        </div>
+        <ul class="nav-menu horizontal">
+            <li class="nav-item">
+                <a href="#main_dashboard" class="nav-link">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span>工作台</span>
+                </a>
+            </li>
+            <li class="nav-item active">
+                <a href="#image_analysis" class="nav-link">
+                    <i data-lucide="scan-line" class="nav-icon"></i>
+                    <span>影像分析</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#risk_assessment" class="nav-link">
+                    <i data-lucide="bar-chart-2" class="nav-icon"></i>
+                    <span>风险评估</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#report_center" class="nav-link">
+                    <i data-lucide="file-text" class="nav-icon"></i>
+                    <span>报告中心</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#system_settings" class="nav-link">
+                    <i data-lucide="settings-2" class="nav-icon"></i>
+                    <span>系统设置</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1><i data-lucide="image-plus"></i>影像分析</h1>
+    </div>
+
+    <div class="card-grid">
+        <section class="card grid-col-4" data-xh-card="image_upload">
+            <span data-xh-card-anchor="image_upload" style="display:none"></span>
+            <div class="card-header">
+                <h2 class="card-title"><i data-lucide="upload"></i>影像上传</h2>
+                <span class="status-badge status-idle"><i data-lucide="circle" width="10" height="10"></i> 等待中</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">选择患者</label>
+                <select class="form-control">
+                    <option>请选择患者...</option>
+                    <option selected>张丽 (ID: P20251212001)</option>
+                    <option>王芳 (ID: P20251211045)</option>
+                    <option>李娜 (ID: P20251210032)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">影像类型</label>
+                <select class="form-control">
+                    <option selected>细胞学涂片 (Cytology)</option>
+                    <option>阴道镜图像 (Colposcopy)</option>
+                    <option>组织病理切片 (Histopathology)</option>
+                </select>
+            </div>
+            <div class="image-placeholder upload-area" onclick="document.getElementById('fileInput').click()">
+                <i data-lucide="folder-up" width="48" height="48" style="margin-bottom: 12px; color: #94a3b8;"></i>
+                <p><strong>拖放影像文件至此</strong></p>
+                <p style="font-size: 12px; margin-top: 6px;">或点击选择文件</p>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">支持 JPG, PNG, DICOM 格式</p>
+            </div>
+            <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.dcm" style="display: none;">
+            <div style="margin-top: 16px; display: flex; gap: 8px;">
+                <button class="btn btn-primary" style="flex-grow: 1;"><i data-lucide="folder-open"></i>浏览文件</button>
+                <button class="btn btn-outline"><i data-lucide="database"></i>从库中选取</button>
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; color: #64748b; padding: 12px; background-color: #f8fafc; border-radius: 6px; border: 1px solid #f1f5f9;">
+                <i data-lucide="info" width="14" height="14"
+                   style="vertical-align: text-bottom; margin-right: 6px; color: #375A64;"></i>
+                已选择: <strong>2025-12-10_Colpo_P20251212001.dcm</strong> (12.4 MB)
+            </div>
+        </section>
+
+        <section class="card grid-col-8" data-xh-card="image_preview">
+            <span data-xh-card-anchor="image_preview" style="display:none"></span>
+            <div class="card-header">
+                <h2 class="card-title"><i data-lucide="columns"></i>影像预览与对比</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline btn-sm"><i data-lucide="zoom-in"></i>放大</button>
+                    <button class="btn btn-outline btn-sm"><i data-lucide="zoom-out"></i>缩小</button>
+                    <button class="btn btn-outline btn-sm"><i data-lucide="maximize"></i>全屏</button>
+                </div>
+            </div>
+            <div class="image-view-container">
+                <div class="image-view">
+                    <div class="image-view-header">原始影像</div>
+                    <div class="image-view-content">
+                        <img src="1.jpeg"
+                             class="medical-image" alt="Original Scan">
+                    </div>
+                </div>
+                <div class="image-view">
+                    <div class="image-view-header">AI增强与标注视图</div>
+                    <div class="image-view-content">
+                        <img src="1.jpeg"
+                             class="medical-image" alt="AI Scan">
+
+                        <div class="annotation-box"
+                             style="top: 25%; left: 30%; width: 22%; height: 28%; border-color: #ef4444;">
+                            <span class="annotation-label" style="background: #ef4444;">HSIL 92%</span>
+                        </div>
+
+                        <div class="annotation-box"
+                             style="top: 55%; left: 45%; width: 18%; height: 20%; border-color: #f59e0b;">
+                            <span class="annotation-label" style="background: #f59e0b; color: black;">LSIL 78%</span>
+                        </div>
+
+                        <div class="annotation-box"
+                             style="top: 35%; left: 60%; width: 15%; height: 15%; border-color: #375A64;">
+                            <span class="annotation-label" style="background: #375A64;">White Epith. 85%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #475569;">
+                <div><i data-lucide="tag" width="14" height="14"
+                        style="vertical-align: text-bottom; margin-right: 4px;"></i> 标签: <span
+                        style="color:#ef4444; font-weight:600">CIN2+ 疑似区域</span></div>
+                <div><i data-lucide="ruler" width="14" height="14"
+                        style="vertical-align: text-bottom; margin-right: 4px;"></i> 标尺: 1cm = 240px
+                </div>
+                <div><i data-lucide="palette" width="14" height="14"
+                        style="vertical-align: text-bottom; margin-right: 4px;"></i> 色彩模式: sRGB (Enhanced)
+                </div>
+            </div>
+        </section>
+
+        <section class="card grid-col-6" data-xh-card="ai_control">
+            <span data-xh-card-anchor="ai_control" style="display:none"></span>
+            <div class="card-header">
+                <h2 class="card-title"><i data-lucide="cpu"></i>AI分析控制面板</h2>
+                <div class="btn-group">
+                    <button class="btn btn-success btn-sm" id="btnStart"><i data-lucide="play"></i>启动分析</button>
+                    <button class="btn btn-warning btn-sm" id="btnPause" disabled><i data-lucide="pause"></i>暂停
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="btnStop" disabled><i data-lucide="square"></i>停止
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">分析模型</label>
+                <select class="form-control">
+                    <option selected>宫颈病变分割模型 v3.2 (高精度)</option>
+                    <option>快速筛查模型 v2.1 (平衡速度与精度)</option>
+                    <option>高级特征识别模型 v4.0 (研究用)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="slider-container">
+                    <label class="form-label" style="margin-bottom: 0; flex-shrink: 0;">分割敏感度</label>
+                    <input type="range" min="1" max="100" value="65" class="form-range" id="sensitivitySlider">
+                    <span class="slider-value" id="sensitivityValue">65</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="slider-container">
+                    <label class="form-label" style="margin-bottom: 0; flex-shrink: 0;">置信度阈值</label>
+                    <input type="range" min="50" max="99" value="85" class="form-range" id="confidenceSlider">
+                    <span class="slider-value" id="confidenceValue">85%</span>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                <div>
+                    <label class="form-label">高级选项</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" checked style="accent-color: #375A64;"> <span>血管结构增强</span>
+                        </label>
+                        <label style="font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" style="accent-color: #375A64;"> <span>多光谱融合</span>
+                        </label>
+                        <label style="font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" checked style="accent-color: #375A64;"> <span>边界平滑处理</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">进度</label>
+                    <div style="background-color: #e2e8f0; height: 10px; border-radius: 5px; margin-top: 8px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
+                        <div id="progressBar"
+                             style="width: 45%; height: 100%; background: linear-gradient(90deg, #375A64, #4b7b8a); border-radius: 5px; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-top: 8px;">
+                        <span style="font-weight: 600;">45%</span>
+                        <span>特征提取阶段</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card grid-col-6" data-xh-card="lesion_visualization">
+            <span data-xh-card-anchor="lesion_visualization" style="display:none"></span>
+            <div class="card-header">
+                <h2 class="card-title"><i data-lucide="scan"></i>病变特征识别结果</h2>
+                <button class="btn btn-outline btn-sm"><i data-lucide="download"></i>导出结果</button>
+            </div>
+
+            <div id="chart-container" class="chart-container"></div>
+
+            <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                <div style="text-align: center; padding: 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 24px; font-weight: 700; color: #375A64; line-height: 1.2;">3</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">疑似病变区域</div>
+                </div>
+                <div style="text-align: center; padding: 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 24px; font-weight: 700; color: #10b981; line-height: 1.2;">12.4</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">最大面积 (mm²)</div>
+                </div>
+                <div style="text-align: center; padding: 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 24px; font-weight: 700; color: #f59e0b; line-height: 1.2;">86%</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">平均置信度</div>
+                </div>
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fef3c7;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <div style="width: 12px; height: 12px; background-color: #ef4444; border-radius: 2px; margin-right: 8px;"></div>
+                    <span style="color: #92400e; font-weight: 500;">高级别鳞状上皮内病变 (HSIL) - 高置信度</span>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <div style="width: 12px; height: 12px; background-color: #f59e0b; border-radius: 2px; margin-right: 8px;"></div>
+                    <span style="color: #92400e;">低级别鳞状上皮内病变 (LSIL) - 中置信度</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 12px; height: 12px; background-color: #375A64; border-radius: 2px; margin-right: 8px;"></div>
+                    <span style="color: #92400e;">醋酸白上皮 - 已识别</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card grid-col-12" data-xh-card="analysis_log">
+            <span data-xh-card-anchor="analysis_log" style="display:none"></span>
+            <div class="card-header">
+                <h2 class="card-title"><i data-lucide="clipboard-list"></i>分析日志与置信度</h2>
+                <button class="btn btn-outline btn-sm"><i data-lucide="trash-2"></i>清空日志</button>
+            </div>
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fdfdfd;">
+                <div class="log-entry">
+                    <span class="log-time">14:32:05</span>
+                    <span class="log-message">影像文件加载成功，开始预处理...</span>
+                    <span class="log-confidence confidence-high">99%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:32:12</span>
+                    <span class="log-message">图像标准化完成，开始特征提取...</span>
+                    <span class="log-confidence confidence-high">98%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:32:45</span>
+                    <span class="log-message">识别到3个疑似病变区域，进行深度分析...</span>
+                    <span class="log-confidence confidence-medium">87%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:33:20</span>
+                    <span class="log-message">区域1分析完成: HSIL特征明显，置信度 92%</span>
+                    <span class="log-confidence confidence-high">92%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:33:45</span>
+                    <span class="log-message">区域2分析完成: LSIL特征，置信度 78%</span>
+                    <span class="log-confidence confidence-medium">78%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:34:10</span>
+                    <span class="log-message">区域3分析完成: 醋酸白上皮，置信度 85%</span>
+                    <span class="log-confidence confidence-high">85%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:34:30</span>
+                    <span class="log-message">边界分割与面积计算完成...</span>
+                    <span class="log-confidence confidence-high">94%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">14:34:45</span>
+                    <span class="log-message">生成综合风险评估报告...</span>
+                    <span class="log-confidence confidence-medium">82%</span>
+                </div>
+            </div>
+            <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                <div>
+                    <span style="color: #64748b;">最后更新: </span>
+                    <strong>2025-12-12 14:34:45</strong>
+                </div>
+                <div>
+                    <span style="color: #64748b;">分析状态: </span>
+                    <span class="status-badge status-processing">
+                            <i data-lucide="loader-2" width="12" height="12" class="spin"
+                               style="animation: spin 1s linear infinite; margin-right: 4px;"></i>
+                            进行中 (45%)
+                        </span>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    // 图标初始化
+    lucide.createIcons();
+
+    // 简单的交互逻辑
+    document.addEventListener('DOMContentLoaded', function () {
+        // 滑块交互
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const confidenceSlider = document.getElementById('confidenceSlider');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const progressBar = document.getElementById('progressBar');
+        const btnStart = document.getElementById('btnStart');
+        const btnPause = document.getElementById('btnPause');
+        const btnStop = document.getElementById('btnStop');
+
+        sensitivitySlider.addEventListener('input', function () {
+            sensitivityValue.textContent = this.value;
+        });
+
+        confidenceSlider.addEventListener('input', function () {
+            confidenceValue.textContent = this.value + '%';
+        });
+
+        // 模拟分析进度
+        let progress = 45;
+        let intervalId = null;
+
+        btnStart.addEventListener('click', function () {
+            btnStart.disabled = true;
+            btnPause.disabled = false;
+            btnStop.disabled = false;
+            btnStart.innerHTML = '<i data-lucide="loader-2" class="spin"></i>分析中...';
+            lucide.createIcons();
+
+            intervalId = setInterval(() => {
+                if (progress < 100) {
+                    progress += Math.random() * 5;
+                    if (progress > 100) progress = 100;
+                    progressBar.style.width = progress + '%';
+                    document.querySelector('#analysis_log .status-badge').innerHTML = '<i data-lucide="loader-2" width="12" height="12" class="spin" style="animation: spin 1s linear infinite; margin-right: 4px;"></i> 进行中 (' + Math.round(progress) + '%)';
+                    lucide.createIcons();
+                } else {
+                    clearInterval(intervalId);
+                    btnStart.disabled = false;
+                    btnPause.disabled = true;
+                    btnStop.disabled = true;
+                    btnStart.innerHTML = '<i data-lucide="check"></i>分析完成';
+                    document.querySelector('#analysis_log .status-badge').innerHTML = '<i data-lucide="check-circle" width="12" height="12" style="margin-right: 4px;"></i> 已完成';
+                    document.querySelector('#analysis_log .status-badge').className = 'status-badge status-completed';
+                    lucide.createIcons();
+                }
+            }, 500);
+        });
+
+        btnPause.addEventListener('click', function () {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                btnPause.innerHTML = '<i data-lucide="play"></i>继续';
+                btnStart.disabled = false;
+            } else {
+                btnStart.click(); // 重用开始逻辑
+                btnPause.innerHTML = '<i data-lucide="pause"></i>暂停';
+            }
+            lucide.createIcons();
+        });
+
+        btnStop.addEventListener('click', function () {
+            if (intervalId) clearInterval(intervalId);
+            progress = 45;
+            progressBar.style.width = progress + '%';
+            btnStart.disabled = false;
+            btnPause.disabled = true;
+            btnStop.disabled = true;
+            btnStart.innerHTML = '<i data-lucide="play"></i>启动分析';
+            btnPause.innerHTML = '<i data-lucide="pause"></i>暂停';
+            document.querySelector('#analysis_log .status-badge').innerHTML = '<i data-lucide="circle" width="12" height="12" style="margin-right: 4px;"></i> 已停止';
+            document.querySelector('#analysis_log .status-badge').className = 'status-badge status-idle';
+            lucide.createIcons();
+        });
+
+        // 初始化ECharts图表
+        if (typeof echarts !== 'undefined') {
+            var chartDom = document.getElementById('chart-container');
+            var myChart = echarts.init(chartDom);
+            var option;
+
+            option = {
+                animation: true,
+                color: ['#375A64', '#ef4444', '#f59e0b', '#10b981'],
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: '#e2e8f0',
+                    textStyle: {color: '#1e293b'}
+                },
+                grid: {
+                    top: '15%',
+                    left: '3%',
+                    right: '4%',
+                    bottom: '5%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['病变区域 1', '病变区域 2', '病变区域 3'],
+                    axisLine: {lineStyle: {color: '#cbd5e1'}},
+                    axisLabel: {color: '#64748b'}
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '置信度 (%)',
+                    max: 100,
+                    splitLine: {lineStyle: {type: 'dashed', color: '#e2e8f0'}},
+                    axisLabel: {color: '#64748b'},
+                    nameTextStyle: {color: '#64748b'}
+                },
+                series: [
+                    {
+                        name: '识别置信度',
+                        type: 'bar',
+                        barWidth: '40%',
+                        data: [
+                            {
+                                value: 92,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        {offset: 0, color: '#ef4444'},
+                                        {offset: 1, color: '#f87171'}
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                },
+                                label: {show: true, position: 'top', formatter: 'HSIL\n92%'}
+                            },
+                            {
+                                value: 78,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        {offset: 0, color: '#f59e0b'},
+                                        {offset: 1, color: '#fbbf24'}
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                },
+                                label: {show: true, position: 'top', formatter: 'LSIL\n78%'}
+                            },
+                            {
+                                value: 85,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        {offset: 0, color: '#375A64'},
+                                        {offset: 1, color: '#4b7b8a'}
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                },
+                                label: {show: true, position: 'top', formatter: 'White\n85%'}
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+
+            // 响应式调整
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+        }
+    });
+</script>
+</body>
+</html>

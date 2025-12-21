@@ -11,7 +11,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
   // 根据检查方式提供专门的分析指导
   let modalityGuidance = '';
   let diagnosisOptions = '';
-  
+
   if (modality.includes('巴氏染色') || modality.includes('Pap Smear')) {
     modalityGuidance = `
 本次分析的图像类型为：**巴氏染色涂片（Pap Smear）**
@@ -22,7 +22,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - 关注核质比例、核形态、染色质分布
 - 识别鳞状上皮细胞、柱状上皮细胞、化生细胞
 - 注意核异型性、核增大、核浆比增加等病变特征`;
-    
+
     diagnosisOptions = `
 诊断分类选项（TBS系统）：
 - NILM（未见上皮内病变或恶性病变）
@@ -33,7 +33,11 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - SCC（鳞状细胞癌）
 - AGC（不典型腺细胞）
 - 无法诊断（图像质量不佳、非细胞学图像等）`;
-  } else if (modality.includes('液基细胞学') || modality.includes('TCT') || modality.includes('LCT')) {
+  } else if (
+    modality.includes('液基细胞学') ||
+    modality.includes('TCT') ||
+    modality.includes('LCT')
+  ) {
     modalityGuidance = `
 本次分析的图像类型为：**液基细胞学（TCT/LCT）**
 
@@ -43,7 +47,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - 关注细胞核大小、形态、染色质分布
 - 识别异常细胞的核质比、核轮廓、核仁
 - 注意细胞簇的排列方式和极性`;
-    
+
     diagnosisOptions = `
 诊断分类选项（TBS系统）：
 - NILM（未见上皮内病变或恶性病变）
@@ -64,7 +68,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - 评估组织结构：上皮层次、基底膜完整性
 - 识别细胞极性丢失、核异型性、病理性核分裂
 - 观察浸润深度、间质反应`;
-    
+
     diagnosisOptions = `
 诊断分类选项（组织病理学）：
 - 正常宫颈组织
@@ -86,7 +90,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - 双核或多核细胞
 - 核异型性、核增大
 - 结合分子标记物表达`;
-    
+
     diagnosisOptions = `
 诊断分类选项：
 - HPV阴性
@@ -103,7 +107,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - Ki67：细胞核呈棕褐色阳性染色
 - 双阳性细胞：同时表达p16和Ki67的细胞
 - 评估阳性细胞比例和分布模式`;
-    
+
     diagnosisOptions = `
 诊断分类选项：
 - 阴性（双染阴性）
@@ -120,7 +124,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 - 异常血管形态
 - 碘染色反应
 - 病变边界的清晰度`;
-    
+
     diagnosisOptions = `
 诊断分类选项：
 - 正常表现
@@ -133,7 +137,7 @@ function generatePrompt(modality = '巴氏染色涂片（Pap Smear）') {
 本次分析的图像类型为：**${modality}**
 
 请根据图像的实际特征进行分析，如果图像不符合宫颈细胞学检查的特征，请在诊断中说明"无法诊断"并给出原因。`;
-    
+
     diagnosisOptions = `
 诊断分类选项：
 - 请根据实际图像类型选择合适的诊断分类
@@ -164,7 +168,7 @@ ${modalityGuidance}
 
 ${diagnosisOptions}
 
-- Constrains: 
+- Constrains:
   - 诊断报告应基于图像分析和现有知识，确保信息的准确性和客观性
   - 诊断分类必须从上述给定选项中选择
   - 置信度应以0到1之间的小数表示（0.0-1.0）
@@ -175,14 +179,32 @@ ${diagnosisOptions}
   {
     "diagnosis": "诊断分类（从上述选项中选择）",
     "confidence": 0.85,
-    "suspiciousAreas": ["异常区域1的描述", "异常区域2的描述"],
+    "qualityAssessment": {
+      "score": 4,
+      "clarity": "High/Medium/Low",
+      "adequacy": "Satisfactory/Limited/Unsatisfactory",
+      "details": "对图像质量的详细评价（1-5级评分理由）"
+    },
+    "riskAssessment": {
+      "level": "Low/Medium/High",
+      "score": 3,
+      "rationale": "风险分级理由（1-5级，1为低风险，5为极高风险）"
+    },
+    "suspiciousAreas": [
+      {
+        "description": "异常区域描述",
+        "location": "大致位置（如：左上象限、中央区域）",
+        "box_2d": [ymin, xmin, ymax, xmax], // 归一化坐标 [0-1000, 0-1000, 0-1000, 0-1000]
+        "features": ["核异型性", "核浆比增高"]
+      }
+    ],
     "biomarkers": {
       "HPV": "阳性/阴性/未检测/不适用",
       "p16": "阳性/阴性/未检测/不适用",
       "Ki67": "阳性/阴性/未检测/不适用"
     },
     "recommendations": ["建议1", "建议2"],
-    "detailedReport": "完整的病理分析报告文字描述"
+    "detailedReport": "完整的病理分析报告文字描述，请使用专业医学术语（如：核深染、染色质粗糙、核膜不规则等）。"
   }
 
 - Workflow:
@@ -190,7 +212,7 @@ ${diagnosisOptions}
   2. **图像质量评估**：评估图像清晰度、染色质量、细胞分布等，如质量过差无法判读，返回"无法诊断"。
   3. **细胞形态学观察**：仔细观察细胞或组织的形态学特征，识别关键病理改变。
   4. **诊断分类**：根据观察到的特征，从给定的诊断选项中选择最合适的分类，并评估诊断置信度。
-  5. **异常区域定位**：描述图像中可疑或异常区域的具体位置和特征。
+  5. **异常区域定位**：描述图像中可疑或异常区域的具体位置和特征，并尽可能提供 box_2d 坐标（基于1000x1000的归一化坐标）。
   6. **生物标志物推测**：结合细胞学特征，推测HPV、p16、Ki67的可能状态（如适用）。
   7. **临床建议**：根据诊断结果，提供具体的后续检查或治疗建议。
   8. **生成报告**：整合所有分析结果，生成完整的、结构化的病理分析报告。`;
@@ -334,6 +356,17 @@ class QwenService {
       return {
         diagnosis: result.diagnosis || '未知',
         confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
+        qualityAssessment: result.qualityAssessment || {
+          score: 3,
+          clarity: 'Unknown',
+          adequacy: 'Unknown',
+          details: '未提供质量评估',
+        },
+        riskAssessment: result.riskAssessment || {
+          level: 'Unknown',
+          score: 0,
+          rationale: '未提供风险评估',
+        },
         suspiciousAreas: Array.isArray(result.suspiciousAreas) ? result.suspiciousAreas : [],
         biomarkers: result.biomarkers || {
           HPV: '未检测',

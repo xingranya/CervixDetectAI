@@ -15,10 +15,49 @@ const studiesRouter = require('./routes/studies');
 const analysisTasksRouter = require('./routes/analysis-tasks');
 const reportsRouter = require('./routes/reports');
 const dashboardRouter = require('./routes/dashboard');
+const systemRouter = require('./routes/system');
+const settingsRouter = require('./routes/settings');
 const { testConnection } = require('./config/sequelize');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
+
+// Swagger 配置
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'CervixDetectAI API 文档',
+      version: '1.0.0',
+      description: '宫颈病变智能风险评估与辅助诊断系统 API 接口文档',
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}/api`,
+        description: '本地开发服务器',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ['./routes/*.js'], // 指定包含注解的路由文件
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // 确保必要的目录存在
 const uploadDir = path.join(__dirname, process.env.UPLOAD_DIR || 'uploads');
@@ -61,6 +100,11 @@ app.use('/api/analysis-tasks', analysisTasksRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/system', systemRouter);
+app.use('/api/settings', settingsRouter);
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 健康检查
 app.get('/health', (req, res) => {

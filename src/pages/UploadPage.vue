@@ -11,11 +11,37 @@
       </div>
     </div>
 
+    <!-- 上传进度显示 -->
+    <div v-if="uploading" class="row q-mb-md">
+      <div class="col-12">
+        <q-card flat bordered>
+          <q-card-section>
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">
+              <q-icon name="cloud_upload" class="q-mr-sm" />
+              上传中...
+            </div>
+            <q-linear-progress
+              :value="uploadProgress / 100"
+              color="primary"
+              size="12px"
+              class="q-mb-sm"
+            >
+              <div class="absolute-full flex flex-center">
+                <q-badge color="white" text-color="primary" :label="`${uploadProgress}%`" />
+              </div>
+            </q-linear-progress>
+            <div class="text-caption text-grey-7">正在上传图像到服务器...</div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+
     <div class="row q-col-gutter-md">
       <!-- 上传区域 -->
       <div class="col-lg-8 col-md-12">
         <ImageUploader
           :uploading="uploading"
+          :upload-progress="uploadProgress"
           @file-selected="onFileSelected"
           @upload="uploadAndAnalyze"
         />
@@ -83,18 +109,18 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { useAnalysisStore } from 'stores/analysisStore';
 import { uploadImage } from 'src/services/apiService';
 import ImageUploader from 'components/studies/ImageUploader.vue';
 import StudyForm from 'components/studies/StudyForm.vue';
 import type { StudyInfo } from 'components/studies/StudyForm.vue';
 
 const router = useRouter();
-const analysisStore = useAnalysisStore();
 const $q = useQuasar();
 
 const selectedFile = ref<File | null>(null);
 const uploading = ref(false);
+const uploadProgress = ref(0);
+const currentStudyId = ref<number | null>(null);
 
 // Study information form
 const studyInfo = ref<StudyInfo>({
@@ -139,18 +165,17 @@ const uploadAndAnalyze = async () => {
   }
 
   uploading.value = true;
+  uploadProgress.value = 0;
 
   try {
     console.log('📝 开始上传图像...');
 
-    // 显示上传开始通知
-    $q.notify({
-      type: 'info',
-      message: '📤 正在上传图像，请稍候...',
-      position: 'top',
-      timeout: 3000,
-      icon: 'cloud_upload',
-    });
+    // 模拟上传进度
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 10;
+      }
+    }, 200);
 
     // 调用后端 API 上传图像并创建分析任务
     const response = await uploadImage({
@@ -162,55 +187,29 @@ const uploadAndAnalyze = async () => {
       description: studyInfo.value.description,
     });
 
-    // 使用数据库 ID（如果有），否则使用字符串 ID
-    const studyIdForRoute = response.studyDbId || response.studyId;
+    clearInterval(progressInterval);
+    uploadProgress.value = 100;
+    uploading.value = false;
+
+    // 保存病例ID（确保类型正确）
+    const studyId = response.studyDbId || parseInt(response.studyId);
+    currentStudyId.value = studyId;
 
     $q.notify({
       type: 'positive',
-      message: `✅ 病例上传成功！AI分析已启动，预计${response.estimatedTime}秒完成`,
+      message: '✅ 上传成功！正在跳转到分析页面...',
       position: 'top',
-      timeout: 4000,
+      timeout: 2000,
       icon: 'check_circle',
     });
 
-    // 跳转到病例详情页面
-    console.log(`🚀 跳转到病例详情: /app/studies/${studyIdForRoute}`);
-    void router.push(`/app/studies/${studyIdForRoute}`);
-
-    // 开始轮询任务状态
-    analysisStore
-      .pollTaskStatus(response.taskId)
-      .then((task) => {
-        if (task.status === 'SUCCESS') {
-          $q.notify({
-            type: 'positive',
-            message: '🎉 AI分析完成！请查看分析结果',
-            position: 'top',
-            timeout: 5000,
-            actions: [
-              {
-                label: '查看结果',
-                color: 'white',
-                handler: () => {
-                  window.location.reload();
-                },
-              },
-            ],
-          });
-        } else if (task.status === 'FAILED') {
-          $q.notify({
-            type: 'negative',
-            message: `❌ 分析失败: ${task.error || '未知错误'}`,
-            position: 'top',
-            timeout: 5000,
-          });
-        }
-      })
-      .catch((error) => {
-        console.error('❓ 轮询失败:', error);
-      });
+    // 立即跳转到病例详情页，让分析页面处理进度显示
+    console.log(`🚀 跳转到病例详情: /app/studies/${studyId}`);
+    await router.push(`/app/studies/${studyId}`);
   } catch (error) {
     console.error('❌ 上传错误:', error);
+
+    uploadProgress.value = 0;
 
     let errorMessage = '上传失败，请重试';
     if (error instanceof Error) {

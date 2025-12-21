@@ -127,13 +127,16 @@ export const useStudyStore = defineStore('study', {
       }
     },
 
-    async loadStudyById(id: number) {
+    async loadStudyById(id: number, forceRefresh = false) {
+      // 如果不强制刷新，且缓存中存在，则返回缓存
       const existingStudy = this.studies.find((study) => study.id === id);
-      if (existingStudy) {
+      if (existingStudy && !forceRefresh) {
+        console.log('💾 使用缓存的病例数据');
         this.currentStudy = existingStudy;
         return existingStudy;
       }
 
+      console.log('🔄 从服务器加载病例数据...');
       this.loading = true;
       this.error = null;
 
@@ -141,6 +144,31 @@ export const useStudyStore = defineStore('study', {
         const response = await studyAPI.getStudy(id);
         if (response.success) {
           const imageUrl = getImageUrl(response.data.study.images?.[0]?.file_path);
+
+          // 获取最新的分析结果
+          let analysisResult: AnalysisResult | undefined = undefined;
+          if (response.data.study.analysis_results?.[0]) {
+            const apiResult = response.data.study.analysis_results[0];
+            console.log('🧪 获取到分析结果:', apiResult);
+            analysisResult = {
+              diagnosis: apiResult.diagnosis || '',
+              confidence: apiResult.confidence || 0,
+              recommendations: Array.isArray(apiResult.recommendations)
+                ? apiResult.recommendations
+                : [],
+              suspiciousAreas: Array.isArray(apiResult.suspicious_areas)
+                ? apiResult.suspicious_areas.map((item: any) => {
+                    if (typeof item === 'string') {
+                      return { description: item };
+                    }
+                    return item;
+                  })
+                : undefined,
+              biomarkers: apiResult.biomarkers,
+              detailedReport: apiResult.detailed_report,
+            };
+          }
+
           const study = {
             id: response.data.study.id,
             study_id: response.data.study.study_id,
@@ -155,6 +183,7 @@ export const useStudyStore = defineStore('study', {
             description: response.data.study.description,
             images: response.data.study.images,
             ...(imageUrl ? { imageUrl } : {}),
+            ...(analysisResult ? { analysisResult } : {}),
             uploadedAt: response.data.study.created_at,
             created_at: response.data.study.created_at,
             // 新增字段
@@ -163,10 +192,21 @@ export const useStudyStore = defineStore('study', {
             diagnosis: response.data.study.analysis_results?.[0]?.diagnosis,
             riskLevel: response.data.study.analysis_results?.[0]?.risk_level,
           };
+
+          // 更新缓存
+          const existingIndex = this.studies.findIndex((s) => s.id === id);
+          if (existingIndex >= 0) {
+            this.studies[existingIndex] = study;
+          } else {
+            this.studies.push(study);
+          }
+
           this.currentStudy = study;
+          console.log('✅ 病例数据加载完成:', study);
           return study;
         }
       } catch (error: any) {
+        console.error('❌ 加载病例数据失败:', error);
         this.error = error.response?.data?.message || '获取病例详情失败';
         throw error;
       } finally {

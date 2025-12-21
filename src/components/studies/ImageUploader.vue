@@ -7,6 +7,19 @@
 
     <q-separator />
 
+    <!-- 上传进度条 -->
+    <q-linear-progress
+      v-if="uploading && uploadProgress < 100"
+      :value="uploadProgress / 100"
+      color="primary"
+      class="q-mt-sm"
+      size="8px"
+    >
+      <div class="absolute-full flex flex-center">
+        <q-badge color="white" text-color="primary" :label="`${uploadProgress}%`" />
+      </div>
+    </q-linear-progress>
+
     <q-card-section>
       <q-uploader
         ref="uploaderRef"
@@ -73,6 +86,10 @@ defineProps({
   uploading: {
     type: Boolean,
     default: false,
+  },
+  uploadProgress: {
+    type: Number,
+    default: 0,
   },
 });
 

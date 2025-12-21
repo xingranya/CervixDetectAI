@@ -2,11 +2,16 @@ import { defineStore } from 'pinia';
 import { pollTaskStatus, getStudyAnalysis, getTaskStatus } from 'src/services/apiService';
 import type { TaskStatusResponse } from 'src/services/apiService';
 
+export interface SuspiciousArea {
+  box_2d?: number[];
+  description?: string;
+}
+
 export interface AnalysisResult {
   diagnosis: string;
   confidence: number;
   recommendations: string[];
-  suspiciousAreas?: string[];
+  suspiciousAreas?: SuspiciousArea[];
   biomarkers?: {
     HPV: string;
     p16: string;
@@ -26,6 +31,19 @@ export interface AnalysisTask {
   completedAt?: string;
 }
 
+/**
+ * 后端API返回的任务数据结构
+ */
+interface ApiTaskResponse {
+  task_id: string;
+  study_id: number;
+  status: 'pending' | 'processing' | 'success' | 'failed';
+  progress: number;
+  created_at: string;
+  completed_at?: string;
+  error?: string;
+}
+
 export const useAnalysisStore = defineStore('analysis', {
   state: () => ({
     tasks: [] as AnalysisTask[],
@@ -36,8 +54,29 @@ export const useAnalysisStore = defineStore('analysis', {
   }),
 
   getters: {
+    /**
+     * 获取指定 studyId 的最新任务（按创建时间倒序）
+     */
     getTaskByStudyId: (state) => (studyId: string) => {
-      return state.tasks.find((task) => task.studyId === studyId) || null;
+      const matchingTasks = state.tasks.filter((task) => task.studyId === studyId);
+      if (matchingTasks.length === 0) return null;
+      // 按创建时间倒序排序，返回最新的任务
+      return matchingTasks.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0] || null;
+    },
+    /**
+     * 获取指定 studyId 的最新进行中的任务
+     */
+    getActiveTaskByStudyId: (state) => (studyId: string) => {
+      const matchingTasks = state.tasks.filter(
+        (task) => task.studyId === studyId && 
+          (task.status === 'PENDING' || task.status === 'PROCESSING')
+      );
+      if (matchingTasks.length === 0) return null;
+      return matchingTasks.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0] || null;
     },
     getActiveTasks: (state) =>
       state.tasks.filter((task) => task.status === 'PENDING' || task.status === 'PROCESSING'),
@@ -46,6 +85,83 @@ export const useAnalysisStore = defineStore('analysis', {
   },
 
   actions: {
+    /**
+     * 从后端获取分析任务列表
+     */
+    async fetchTasks(params?: { study_id?: number; status?: string }) {
+      try {
+        this.loading = true;
+        const { analysisTaskAPI } = await import('src/services/api');
+        const response = await analysisTaskAPI.getTasks(params);
+
+        if (response.success && response.data.tasks) {
+          // 更新任务列表
+          const tasks: AnalysisTask[] = response.data.tasks.map((task: ApiTaskResponse) => ({
+            id: task.task_id,
+            studyId: task.study_id.toString(),
+            status:
+              task.status === 'pending'
+                ? 'PENDING'
+                : task.status === 'processing'
+                  ? 'PROCESSING'
+                  : task.status === 'success'
+                    ? 'SUCCESS'
+                    : 'FAILED',
+            progress: task.progress || 0,
+            createdAt: task.created_at,
+            ...(task.completed_at && { completedAt: task.completed_at }),
+            ...(task.error && { error: task.error }),
+          }));
+
+          // 合并到现有任务列表
+          tasks.forEach((newTask) => {
+            const existingIndex = this.tasks.findIndex((t) => t.id === newTask.id);
+            if (existingIndex >= 0) {
+              this.tasks[existingIndex] = newTask;
+            } else {
+              this.tasks.push(newTask);
+            }
+          });
+
+          console.log('✅ 获取到分析任务列表:', tasks);
+          return tasks;
+        }
+        return [];
+      } catch (error) {
+        console.error('获取任务列表失败:', error);
+        this.error = '获取任务列表失败';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * 将 API 响应的 result 转换为本地 AnalysisResult 类型
+     */
+    convertApiResult(apiResult: TaskStatusResponse['result']): AnalysisResult | undefined {
+      if (!apiResult) return undefined;
+
+      // 将 string[] 转换为 SuspiciousArea[]
+      const suspiciousAreas: SuspiciousArea[] | undefined = apiResult.suspiciousAreas
+        ? apiResult.suspiciousAreas.map((desc: string) => ({
+            description: desc,
+            // API 返回的是描述文本，没有坐标信息
+            // box_2d 将在后端返回实际坐标时添加
+          }))
+        : undefined;
+
+      // 使用展开运算符，只有当值存在时才添加可选属性
+      return {
+        diagnosis: apiResult.diagnosis,
+        confidence: apiResult.confidence,
+        recommendations: apiResult.recommendations,
+        ...(suspiciousAreas && { suspiciousAreas }),
+        ...(apiResult.biomarkers && { biomarkers: apiResult.biomarkers }),
+        ...(apiResult.detailedReport && { detailedReport: apiResult.detailedReport }),
+      };
+    },
+
     /**
      * 获取任务状态（单次查询）
      */
@@ -74,14 +190,15 @@ export const useAnalysisStore = defineStore('analysis', {
       try {
         this.loading = true;
         const response = await getStudyAnalysis(studyId);
-        
+
         // 转换为本地数据结构
+        const convertedResult = this.convertApiResult(response.result);
         const task: AnalysisTask = {
           id: response.taskId,
           studyId: response.studyId,
           status: response.status,
           progress: response.progress,
-          ...(response.result && { result: response.result }),
+          ...(convertedResult && { result: convertedResult }),
           ...(response.error && { error: response.error }),
           createdAt: response.createdAt,
           ...(response.completedAt && { completedAt: response.completedAt }),
@@ -115,18 +232,19 @@ export const useAnalysisStore = defineStore('analysis', {
           taskId,
           (status: TaskStatusResponse) => {
             console.log(`📊 任务状态更新: ${status.status}, 进度: ${status.progress}%`);
-            
+
             // 更新任务状态
+            const convertedResult = this.convertApiResult(status.result);
             const task: AnalysisTask = {
               id: status.taskId,
               studyId: status.studyId,
               status: status.status,
               progress: status.progress,
-              ...(status.result && { result: status.result }),
+              ...(convertedResult && { result: convertedResult }),
               ...(status.error && { error: status.error }),
               createdAt: new Date().toISOString(),
-              ...(status.status === 'SUCCESS' || status.status === 'FAILED' 
-                ? { completedAt: new Date().toISOString() } 
+              ...(status.status === 'SUCCESS' || status.status === 'FAILED'
+                ? { completedAt: new Date().toISOString() }
                 : {}),
             };
 
@@ -140,17 +258,18 @@ export const useAnalysisStore = defineStore('analysis', {
             this.currentTask = task;
           },
           2000,
-          150
+          150,
         )
           .then((finalStatus) => {
             console.log(`✅ 轮询完成! 最终状态: ${finalStatus.status}`);
-            
+
+            const convertedResult = this.convertApiResult(finalStatus.result);
             const task: AnalysisTask = {
               id: finalStatus.taskId,
               studyId: finalStatus.studyId,
               status: finalStatus.status,
               progress: finalStatus.progress,
-              ...(finalStatus.result && { result: finalStatus.result }),
+              ...(convertedResult && { result: convertedResult }),
               ...(finalStatus.error && { error: finalStatus.error }),
               createdAt: new Date().toISOString(),
               completedAt: new Date().toISOString(),
