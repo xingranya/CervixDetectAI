@@ -34,6 +34,40 @@ export interface PDFReportData {
   result: AnalysisResult;
 }
 
+// ==================== PDF 样式配置 ====================
+const PDF_CONFIG = {
+  // 页面设置
+  MARGIN: 20,
+  PAGE_FORMAT: 'a4' as const,
+  FOOTER_MARGIN: 30,
+
+  // 颜色配置 (RGB)
+  COLORS: {
+    PRIMARY: [25, 118, 210] as const, // 主题蓝色
+    WHITE: [255, 255, 255] as const,
+    BLACK: [0, 0, 0] as const,
+    GRAY_LIGHT: [100, 100, 100] as const,
+    GRAY_BORDER: [200, 200, 200] as const,
+    GRAY_BG: [240, 240, 240] as const,
+    GRAY_TEXT: [80, 80, 80] as const,
+    GRAY_FOOTER: [150, 150, 150] as const,
+    GREEN: [0, 150, 0] as const,
+    RED: [200, 0, 0] as const,
+  },
+
+  // 字体大小配置
+  FONT_SIZE: {
+    TITLE: 22,
+    SUBTITLE: 12,
+    SECTION_HEADER: 14,
+    BODY: 10,
+    SMALL: 9,
+    FOOTER: 8,
+    DIAGNOSIS: 16,
+  },
+} as const;
+// =====================================================
+
 /**
  * 生成 PDF 报告
  * @param data 报告数据
@@ -48,13 +82,13 @@ export async function generatePDFReport(data: PDFReportData): Promise<void> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: PDF_CONFIG.PAGE_FORMAT,
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  let yPos = margin;
+  const margin = PDF_CONFIG.MARGIN;
+  let yPos: number = margin;
 
   // 添加中文字体支持
   await setupChineseFontAdvanced(doc);
@@ -141,11 +175,7 @@ export async function generatePDFReport(data: PDFReportData): Promise<void> {
   doc.setTextColor(80, 80, 80);
   doc.text('置信度:', margin + 5, diagnosisBoxY + 25);
   doc.setTextColor(0, 150, 0);
-  doc.text(
-    `${Math.round((data.result.confidence || 0) * 100)}%`,
-    margin + 30,
-    diagnosisBoxY + 25,
-  );
+  doc.text(`${Math.round((data.result.confidence || 0) * 100)}%`, margin + 30, diagnosisBoxY + 25);
 
   yPos = diagnosisBoxY + 38;
 

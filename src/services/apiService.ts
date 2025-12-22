@@ -166,8 +166,9 @@ export async function pollTaskStatus(
           onProgress(status);
         }
 
-        // 检查是否完成
-        if (status.status === 'SUCCESS' || status.status === 'FAILED') {
+        // 检查是否完成（大小写不敏感）
+        const normalizedStatus = status.status?.toUpperCase();
+        if (normalizedStatus === 'SUCCESS' || normalizedStatus === 'FAILED') {
           resolve(status);
           return;
         }

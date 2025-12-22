@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const { AnalysisTask, AnalysisResult, Study, User, StudyImage } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
@@ -50,12 +51,15 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // 创建分析任务（task_id会在beforeCreate hook中自动生成）
+    // 生成任务ID（与上传路由保持一致）
+    const taskId = `task_${uuidv4()}`;
+
+    // 创建分析任务
     const task = await AnalysisTask.create({
+      task_id: taskId,
       study_id,
       user_id: req.user.id,
       ai_model_version: model_version,
-      // model_name and priority are not in the model
       status: 'PENDING',
       progress: 0,
     });

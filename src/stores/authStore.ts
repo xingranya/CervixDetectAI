@@ -33,22 +33,47 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    /**
+     * 内部辅助：保存认证数据到 store 和 localStorage
+     */
+    _saveAuthData(data: { accessToken: string; refreshToken: string; user: User }) {
+      this.token = data.accessToken;
+      this.refreshToken = data.refreshToken;
+      this.user = data.user;
+      this.isAuthenticated = true;
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+    },
+
+    /**
+     * 内部辅助：执行认证操作的通用包装
+     */
+    async _executeAuth<T>(
+      operation: () => Promise<{ success: boolean; data?: T; message?: string }>,
+      errorMsg: string,
+    ): Promise<{ success: boolean; error?: string; data?: T }> {
+      this.isAuthenticating = true;
+      try {
+        const response = await operation();
+        if (response.success && response.data) {
+          return { success: true, data: response.data };
+        }
+        return { success: false, error: response.message || errorMsg };
+      } catch (error: any) {
+        return { success: false, error: error.response?.data?.message || errorMsg };
+      } finally {
+        this.isAuthenticating = false;
+      }
+    },
+
     async login(email: string, password: string) {
       this.isAuthenticating = true;
       try {
         const response = await authAPI.login(email, password);
 
         if (response.success) {
-          // Store tokens
-          this.token = response.data.accessToken;
-          this.refreshToken = response.data.refreshToken;
-          this.user = response.data.user;
-          this.isAuthenticated = true;
-
-          // Persist to localStorage
-          localStorage.setItem('accessToken', response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          this._saveAuthData(response.data);
 
           return { success: true };
         } else {
@@ -74,14 +99,7 @@ export const useAuthStore = defineStore('auth', {
 
         if (response.success) {
           // Auto login after registration
-          this.token = response.data.accessToken;
-          this.refreshToken = response.data.refreshToken;
-          this.user = response.data.user;
-          this.isAuthenticated = true;
-
-          localStorage.setItem('accessToken', response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          this._saveAuthData(response.data);
 
           return { success: true };
         } else {
@@ -102,14 +120,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await authAPI.smsLogin(phone, code);
 
         if (response.success) {
-          this.token = response.data.accessToken;
-          this.refreshToken = response.data.refreshToken;
-          this.user = response.data.user;
-          this.isAuthenticated = true;
-
-          localStorage.setItem('accessToken', response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          this._saveAuthData(response.data);
 
           return { success: true };
         } else {
@@ -134,14 +145,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await authAPI.smsRegister(phone, code, userData);
 
         if (response.success) {
-          this.token = response.data.accessToken;
-          this.refreshToken = response.data.refreshToken;
-          this.user = response.data.user;
-          this.isAuthenticated = true;
-
-          localStorage.setItem('accessToken', response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          this._saveAuthData(response.data);
 
           return { success: true };
         } else {

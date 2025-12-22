@@ -479,7 +479,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import * as echarts from 'echarts';
 
 const activeTab = ref('user_account');
@@ -594,8 +594,7 @@ onMounted(() => {
   }, 100);
 });
 
-// Watch tab change to init chart
-import { watch } from 'vue';
+// 监听 tab 切换初始化图表
 watch(activeTab, (val) => {
   if (val === 'ai_model') {
     setTimeout(initChart, 100);

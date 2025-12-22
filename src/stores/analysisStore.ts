@@ -180,6 +180,28 @@ export const useAnalysisStore = defineStore('analysis', {
     },
 
     /**
+     * 从 API 状态响应创建本地任务对象（复用工厂函数）
+     */
+    createTaskFromStatus(
+      status: TaskStatusResponse,
+      options?: { createdAt?: string; completedAt?: string },
+    ): AnalysisTask {
+      const convertedResult = this.convertApiResult(status.result);
+      const isTerminal = status.status === 'SUCCESS' || status.status === 'FAILED';
+      const now = new Date().toISOString();
+      return {
+        id: status.taskId,
+        studyId: status.studyId,
+        status: status.status,
+        progress: status.progress,
+        ...(convertedResult && { result: convertedResult }),
+        ...(status.error && { error: status.error }),
+        createdAt: options?.createdAt || now,
+        ...(isTerminal && { completedAt: options?.completedAt || now }),
+      };
+    },
+
+    /**
      * 获取任务状态（单次查询）
      */
     async getTaskStatus(taskId: string): Promise<TaskStatusResponse> {
@@ -244,54 +266,32 @@ export const useAnalysisStore = defineStore('analysis', {
      */
     async pollTaskStatus(taskId: string): Promise<AnalysisTask> {
       console.log(`🔄 开始轮询任务: ${taskId}`);
+
+      // 辅助函数：更新或插入任务到列表
+      const upsertTask = (task: AnalysisTask) => {
+        const idx = this.tasks.findIndex((t) => t.id === task.id);
+        if (idx >= 0) {
+          this.tasks.splice(idx, 1, task);
+        } else {
+          this.tasks.push(task);
+        }
+        this.currentTask = task;
+      };
+
       return new Promise((resolve, reject) => {
         pollTaskStatus(
           taskId,
           (status: TaskStatusResponse) => {
             console.log(`📊 任务状态更新: ${status.status}, 进度: ${status.progress}%`);
-
-            // 更新任务状态
-            const convertedResult = this.convertApiResult(status.result);
-            const task: AnalysisTask = {
-              id: status.taskId,
-              studyId: status.studyId,
-              status: status.status,
-              progress: status.progress,
-              ...(convertedResult && { result: convertedResult }),
-              ...(status.error && { error: status.error }),
-              createdAt: new Date().toISOString(),
-              ...(status.status === 'SUCCESS' || status.status === 'FAILED'
-                ? { completedAt: new Date().toISOString() }
-                : {}),
-            };
-
-            const taskIndex = this.tasks.findIndex((t) => t.id === taskId);
-            if (taskIndex >= 0) {
-              this.tasks.splice(taskIndex, 1, task);
-            } else {
-              this.tasks.push(task);
-            }
-
-            this.currentTask = task;
+            const task = this.createTaskFromStatus(status);
+            upsertTask(task);
           },
           2000,
           150,
         )
           .then((finalStatus) => {
             console.log(`✅ 轮询完成! 最终状态: ${finalStatus.status}`);
-
-            const convertedResult = this.convertApiResult(finalStatus.result);
-            const task: AnalysisTask = {
-              id: finalStatus.taskId,
-              studyId: finalStatus.studyId,
-              status: finalStatus.status,
-              progress: finalStatus.progress,
-              ...(convertedResult && { result: convertedResult }),
-              ...(finalStatus.error && { error: finalStatus.error }),
-              createdAt: new Date().toISOString(),
-              completedAt: new Date().toISOString(),
-            };
-
+            const task = this.createTaskFromStatus(finalStatus);
             resolve(task);
           })
           .catch((error: unknown) => {

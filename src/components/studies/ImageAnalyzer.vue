@@ -79,27 +79,48 @@
         />
         <svg class="analyzer-overlay" :width="imageWidth" :height="imageHeight" v-if="imageLoaded">
           <!-- Existing Annotations -->
-          <g v-for="(ann, index) in annotations" :key="index">
+          <g v-for="(ann, index) in annotations" :key="index" class="annotation-group">
             <rect
               v-if="ann.type === 'rect'"
               :x="ann.x"
               :y="ann.y"
               :width="ann.width"
               :height="ann.height"
-              fill="rgba(255, 0, 0, 0.1)"
-              stroke="red"
+              :fill="getAnnotationFill(ann.confidence)"
+              :stroke="getAnnotationColor(ann.confidence)"
               stroke-width="2"
               vector-effect="non-scaling-stroke"
-            />
-            <text
+              style="cursor: pointer; pointer-events: all"
+            >
+              <title>{{ getFullLabel(ann) }}</title>
+            </rect>
+            <!-- 标注标签背景 -->
+            <rect
               v-if="ann.label"
               :x="ann.x"
-              :y="ann.y - 5"
-              fill="red"
-              font-size="14"
-              font-weight="bold"
+              :y="ann.y - 24"
+              :width="getLabelWidth(ann)"
+              height="20"
+              :fill="getAnnotationColor(ann.confidence)"
+              rx="4"
+              ry="4"
+              style="cursor: pointer; pointer-events: all"
             >
-              {{ ann.label }} ({{ Math.round((ann.confidence || 0) * 100) }}%)
+              <title>{{ getFullLabel(ann) }}</title>
+            </rect>
+            <!-- 标注文字 -->
+            <text
+              v-if="ann.label"
+              :x="ann.x + 4"
+              :y="ann.y - 9"
+              fill="white"
+              font-size="12"
+              font-weight="bold"
+              font-family="sans-serif"
+              style="cursor: pointer; pointer-events: all"
+            >
+              {{ formatLabel(ann) }}
+              <title>{{ getFullLabel(ann) }}</title>
             </text>
           </g>
 
@@ -137,6 +158,22 @@ interface Annotation {
   timestamp?: number;
 }
 
+// ==================== 配置常量 ====================
+const ZOOM_CONFIG = {
+  FACTOR: 1.15, // 缩放因子（每次放大/缩小15%）
+  MAX_SCALE: 8, // 最大缩放倍数
+  MIN_SCALE: 0.1, // 最小缩放倍数
+  FIT_RATIO: 0.9, // 适配屏幕时的填充比例
+} as const;
+
+const LABEL_CONFIG = {
+  MAX_LENGTH: 20, // 标签最大字符数
+  CHAR_WIDTH_CN: 12, // 中文字符估算宽度
+  CHAR_WIDTH_EN: 7, // 英文字符估算宽度
+  PADDING: 12, // 标签内边距
+} as const;
+// ==================================================
+
 const props = defineProps<{
   src: string;
   initialAnnotations?: Annotation[];
@@ -162,18 +199,6 @@ const isDrawing = ref(false);
 const drawStart = ref({ x: 0, y: 0 });
 const drawCurrent = ref({ x: 0, y: 0 });
 const detecting = ref(false);
-
-// Annotations
-interface Annotation {
-  type: 'rect';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  label?: string;
-  confidence?: number;
-  timestamp?: number;
-}
 
 const annotations = ref<Annotation[]>(props.initialAnnotations || []);
 
@@ -209,7 +234,7 @@ const fitToScreen = () => {
   const scaleW = viewportW / imageWidth.value;
   const scaleH = viewportH / imageHeight.value;
 
-  scale.value = Math.min(scaleW, scaleH) * 0.9; // 90% fit
+  scale.value = Math.min(scaleW, scaleH) * ZOOM_CONFIG.FIT_RATIO;
 
   // Center image
   translateX.value = (viewportW - imageWidth.value * scale.value) / 2;
@@ -217,13 +242,75 @@ const fitToScreen = () => {
 };
 
 const zoomIn = () => {
-  const newScale = scale.value * 1.5;
-  if (newScale <= 8) scale.value = newScale; // Max 8x
+  const newScale = scale.value * ZOOM_CONFIG.FACTOR;
+  if (newScale <= ZOOM_CONFIG.MAX_SCALE) scale.value = newScale;
 };
 
 const zoomOut = () => {
-  const newScale = scale.value / 1.5;
-  if (newScale >= 0.1) scale.value = newScale;
+  const newScale = scale.value / ZOOM_CONFIG.FACTOR;
+  if (newScale >= ZOOM_CONFIG.MIN_SCALE) scale.value = newScale;
+};
+
+// 风险等级配置（统一管理阈值和样式）
+const RISK_CONFIG = {
+  HIGH: { threshold: 0.8, color: '#ef4444', fill: 'rgba(239, 68, 68, 0.15)', label: '高风险' },
+  MEDIUM_HIGH: {
+    threshold: 0.6,
+    color: '#f97316',
+    fill: 'rgba(249, 115, 22, 0.15)',
+    label: '中高风险',
+  },
+  MEDIUM: { threshold: 0.4, color: '#eab308', fill: 'rgba(234, 179, 8, 0.15)', label: '中风险' },
+  LOW: { threshold: 0, color: '#22c55e', fill: 'rgba(34, 197, 94, 0.15)', label: '低风险' },
+} as const;
+
+// 根据置信度获取风险等级配置
+const getRiskConfig = (confidence?: number) => {
+  const conf = confidence ?? 0.5;
+  if (conf >= RISK_CONFIG.HIGH.threshold) return RISK_CONFIG.HIGH;
+  if (conf >= RISK_CONFIG.MEDIUM_HIGH.threshold) return RISK_CONFIG.MEDIUM_HIGH;
+  if (conf >= RISK_CONFIG.MEDIUM.threshold) return RISK_CONFIG.MEDIUM;
+  return RISK_CONFIG.LOW;
+};
+
+// 根据置信度获取边框颜色
+const getAnnotationColor = (confidence?: number): string => getRiskConfig(confidence).color;
+
+// 根据置信度获取填充颜色
+const getAnnotationFill = (confidence?: number): string => getRiskConfig(confidence).fill;
+
+// 获取风险等级文字
+const getRiskLevel = (confidence?: number): string => getRiskConfig(confidence).label;
+
+// 格式化标签文字（截断过长的标签）
+const formatLabel = (ann: Annotation): string => {
+  const label = ann.label || '';
+  const conf = Math.round((ann.confidence || 0) * 100);
+  const displayLabel =
+    label.length > LABEL_CONFIG.MAX_LENGTH
+      ? label.substring(0, LABEL_CONFIG.MAX_LENGTH) + '...'
+      : label;
+  return `${displayLabel} ${conf}%`;
+};
+
+// 获取完整标签（用于悬停提示）
+const getFullLabel = (ann: Annotation): string => {
+  const label = ann.label || '未知区域';
+  const conf = Math.round((ann.confidence || 0) * 100);
+  const riskLevel = getRiskLevel(ann.confidence);
+  return `${label}\n置信度: ${conf}%\n风险等级: ${riskLevel}`;
+};
+
+// 计算标签宽度
+const getLabelWidth = (ann: Annotation): number => {
+  const text = formatLabel(ann);
+  const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const otherChars = text.length - chineseChars;
+  return (
+    chineseChars * LABEL_CONFIG.CHAR_WIDTH_CN +
+    otherChars * LABEL_CONFIG.CHAR_WIDTH_EN +
+    LABEL_CONFIG.PADDING
+  );
 };
 
 const resetView = () => {
@@ -408,17 +495,7 @@ const exportAnnotations = () => {
   flex: 1;
   overflow: hidden;
   position: relative;
-  background-image:
-    linear-gradient(45deg, #ccc 25%, transparent 25%),
-    linear-gradient(-45deg, #ccc 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #ccc 75%),
-    linear-gradient(-45deg, transparent 75%, #ccc 75%);
-  background-size: 20px 20px;
-  background-position:
-    0 0,
-    0 10px,
-    10px -10px,
-    -10px 0px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
 }
 
 .analyzer-content {

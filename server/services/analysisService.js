@@ -2,6 +2,27 @@
 const qwenService = require('./qwenService');
 const { Study, AnalysisTask, AnalysisResult, sequelize } = require('../models');
 
+// 风险等级配置（关键词 -> 等级映射）
+const RISK_LEVEL_CONFIG = [
+  { keywords: ['浸润性癌', 'HSIL', '高度鳞状上皮内病变'], level: 'critical' },
+  { keywords: ['LSIL', 'ASC-H', '低度鳞状上皮内病变'], level: 'high' },
+  { keywords: ['ASC-US', '意义不明确'], level: 'medium' },
+];
+
+/**
+ * 根据诊断结果判断风险等级
+ * @param {string} diagnosis - 诊断结果文本
+ * @returns {string} 风险等级 (critical/high/medium/low)
+ */
+function getRiskLevel(diagnosis) {
+  for (const config of RISK_LEVEL_CONFIG) {
+    if (config.keywords.some((kw) => diagnosis.includes(kw))) {
+      return config.level;
+    }
+  }
+  return 'low';
+}
+
 /**
  * 异步处理分析任务
  * @param {number} analysisTaskId - 数据库中的任务ID (AnalysisTask.id)
@@ -54,15 +75,8 @@ async function processTask(analysisTaskId, imagePath, studyId) {
       // 更新进度到90%
       await AnalysisTask.update({ progress: 90 }, { where: { id: analysisTaskId } });
 
-      // 保存结果
-      let riskLevel = 'low';
-      if (result.diagnosis.includes('浸润性癌') || result.diagnosis.includes('HSIL')) {
-        riskLevel = 'critical';
-      } else if (result.diagnosis.includes('LSIL') || result.diagnosis.includes('ASC-H')) {
-        riskLevel = 'high';
-      } else if (result.diagnosis.includes('ASC-US')) {
-        riskLevel = 'medium';
-      }
+      // 根据诊断结果确定风险等级
+      const riskLevel = getRiskLevel(result.diagnosis);
 
       // 更新进度到95%
       await AnalysisTask.update({ progress: 95 }, { where: { id: analysisTaskId } });

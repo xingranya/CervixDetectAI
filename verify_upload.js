@@ -1,7 +1,6 @@
-const axios = require('axios');
-const FormData = require('form-data');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import FormData from 'form-data';
+import fs from 'fs';
 
 async function uploadImage() {
   try {

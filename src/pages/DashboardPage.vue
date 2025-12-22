@@ -250,10 +250,10 @@ import * as echarts from 'echarts';
 import { Notify } from 'quasar';
 
 interface Task {
-  id: number;  // 数据库主键ID
-  taskId: string;  // 任务唯一标识符
-  studyId: number;  // 病例数据库ID
-  studyUniqueId: string;  // 病例唯一标识符
+  id: number; // 数据库主键ID
+  taskId: string; // 任务唯一标识符
+  studyId: number; // 病例数据库ID
+  studyUniqueId: string; // 病例唯一标识符
   title: string;
   description: string;
   icon: string;
@@ -304,7 +304,7 @@ const currentDate = computed(() => {
 const pendingTasksCount = computed(() => {
   // 统计实际的待处理任务数（PENDING和PROCESSING状态）
   return pendingTasks.value.filter(
-    (task) => task.status === 'PENDING' || task.status === 'PROCESSING'
+    (task) => task.status === 'PENDING' || task.status === 'PROCESSING',
   ).length;
 });
 
@@ -397,7 +397,7 @@ const fetchPendingTasks = async () => {
     console.log('【前端】开始获取历史任务...');
     const response = await dashboardAPI.getPendingTasks();
     console.log('【前端】API响应:', response);
-    
+
     if (response.success) {
       pendingTasks.value = response.data.tasks;
       console.log('【前端】历史任务数量:', pendingTasks.value.length);
@@ -475,62 +475,47 @@ const updateChartData = () => {
 
   const diagnosisStats = statsData.value.diagnosisStats || {};
 
-  // 标准化诊断名称函数
-  const normalizeDiagnosisName = (name: string): string => {
-    // 阴性/正常
-    if (name.includes('阴性') || name.includes('Normal') || name.includes('NILM') || name.includes('正常')) {
-      return '阴性/Normal';
-    }
-    // ASC-US
-    if (name.includes('ASC-US') || name.includes('ASCUS') || name.includes('意义不明确的不典型')) {
-      return 'ASC-US';
-    }
-    // LSIL
-    if (name.includes('LSIL') || name.includes('低度鳞状上皮内病变') || name.includes('低度病变')) {
-      return 'LSIL';
-    }
-    // HSIL
-    if (name.includes('HSIL') || name.includes('高度鳞状上皮内病变') || name.includes('高度病变')) {
-      return 'HSIL';
-    }
-    // 可疑癌/SCC
-    if (name.includes('SCC') || name.includes('癌') || name.includes('鳞状细胞癌') || name.includes('浸润性')) {
-      return '可疑癌/SCC';
-    }
-    // 其他情况返回原始名称
-    return name;
-  };
+  // 诊断分类配置（统一管理关键词、标准化名称和颜色）
+  const DIAGNOSIS_CONFIG = [
+    { keywords: ['阴性', 'Normal', 'NILM', '正常'], normalized: '阴性/Normal', color: '#86efac' },
+    { keywords: ['ASC-US', 'ASCUS', '意义不明确的不典型'], normalized: 'ASC-US', color: '#fde047' },
+    {
+      keywords: ['LSIL', '低度鳞状上皮内病变', '低度病变', '低度'],
+      normalized: 'LSIL',
+      color: '#fdba74',
+    },
+    {
+      keywords: ['HSIL', '高度鳞状上皮内病变', '高度病变', '高度'],
+      normalized: 'HSIL',
+      color: '#f87171',
+    },
+    { keywords: ['SCC', '癌', '鳞状细胞癌', '浸润性'], normalized: '可疑癌/SCC', color: '#dc2626' },
+  ] as const;
 
-  // 先标准化诊断名称，然后合并相同类型的数据
+  // 查找匹配的诊断配置
+  const findDiagnosisConfig = (name: string) =>
+    DIAGNOSIS_CONFIG.find((config) => config.keywords.some((kw) => name.includes(kw)));
+
+  // 标准化诊断名称
+  const normalizeDiagnosisName = (name: string): string =>
+    findDiagnosisConfig(name)?.normalized || name;
+
+  // 获取诊断颜色
+  const getDiagnosisColor = (name: string): string => findDiagnosisConfig(name)?.color || '#86efac';
+
+  // 标准化并合并诊断统计数据
   const normalizedStats: Record<string, number> = {};
   Object.entries(diagnosisStats).forEach(([name, value]) => {
     const normalizedName = normalizeDiagnosisName(name);
     normalizedStats[normalizedName] = (normalizedStats[normalizedName] || 0) + Number(value);
   });
 
-  // 将标准化后的诊断统计数据转换为图表数据格式
-  const chartData = Object.entries(normalizedStats).map(([name, value]) => {
-    let color = '#86efac'; // 默认颜色
-
-    // 根据诊断类型设置颜色
-    if (name.includes('阴性') || name.includes('Normal') || name.includes('正常')) {
-      color = '#86efac';
-    } else if (name.includes('ASC-US') || name.includes('ASCUS')) {
-      color = '#fde047';
-    } else if (name.includes('LSIL') || name.includes('低度')) {
-      color = '#fdba74';
-    } else if (name.includes('HSIL') || name.includes('高度')) {
-      color = '#f87171';
-    } else if (name.includes('癌') || name.includes('SCC')) {
-      color = '#dc2626';
-    }
-
-    return {
-      value,
-      name,
-      itemStyle: { color },
-    };
-  });
+  // 转换为图表数据格式
+  const chartData = Object.entries(normalizedStats).map(([name, value]) => ({
+    value,
+    name,
+    itemStyle: { color: getDiagnosisColor(name) },
+  }));
 
   // 如果没有数据，使用默认数据
   const finalChartData =

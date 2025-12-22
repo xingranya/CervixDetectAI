@@ -205,11 +205,8 @@
                 >
                   AI增强与标注视图
                 </div>
-                <div
-                  class="image-container bg-black relative-position overflow-hidden"
-                  style="height: 400px"
-                >
-                  <!-- 使用 ImageAnalyzer 组件替换静态图片 -->
+                <div class="annotated-view-container relative-position" style="height: 400px">
+                  <!-- 使用 ImageAnalyzer 组件 -->
                   <ImageAnalyzer
                     v-if="study.imageUrl"
                     :src="study.imageUrl"
@@ -360,15 +357,6 @@
                 label="启动"
                 @click="startAnalysis"
                 :disable="isAnalyzing"
-              />
-              <q-btn size="sm" color="warning" icon="pause" label="暂停" :disable="!isAnalyzing" />
-              <q-btn
-                size="sm"
-                color="negative"
-                icon="stop"
-                label="停止"
-                :disable="!isAnalyzing"
-                @click="stopAnalysis"
               />
             </div>
           </q-card-section>
@@ -582,6 +570,8 @@ let chartInstance: echarts.ECharts | null = null;
 let pollingIntervalId: NodeJS.Timeout | null = null;
 const currentTaskId = ref<string | null>(null);
 const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
+// 用于跟踪当前进度阶段，避免重复添加日志
+let lastProgressPhase = '';
 
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
@@ -731,6 +721,7 @@ const startAnalysis = async () => {
   isAnalyzing.value = true;
   progress.value = 0;
   logs.value = [];
+  lastProgressPhase = ''; // 重置进度阶段
   addLog('分析任务已启动...');
 
   try {
@@ -798,18 +789,33 @@ const startPollingTaskStatus = (taskId: string) => {
 
       if (task.status === 'PROCESSING') {
         progressStatus.value = '分析中...';
-        if (task.progress >= 10 && task.progress < 30) {
+        // 根据进度阶段添加日志，与蓝色进度条同步
+        let currentPhase = '';
+        if (task.progress >= 35 && task.progress < 65) {
           progressStatus.value = '图像预处理中...';
-          addLog('图像预处理进行中', 95);
-        } else if (task.progress >= 30 && task.progress < 60) {
+          currentPhase = 'preprocessing';
+        } else if (task.progress >= 65 && task.progress < 80) {
           progressStatus.value = 'AI模型推理中...';
-          addLog('特征提取中...', 90);
-        } else if (task.progress >= 60 && task.progress < 90) {
+          currentPhase = 'feature_extraction';
+        } else if (task.progress >= 80 && task.progress < 92) {
           progressStatus.value = '生成分析报告...';
-          addLog('风险评估中...', 88);
-        } else if (task.progress >= 90) {
+          currentPhase = 'risk_assessment';
+        } else if (task.progress >= 92) {
           progressStatus.value = '报告生成中...';
-          addLog('正在生成诊断报告...', 92);
+          currentPhase = 'report_generation';
+        }
+        // 只有阶段变化时才添加日志
+        if (currentPhase && currentPhase !== lastProgressPhase) {
+          lastProgressPhase = currentPhase;
+          if (currentPhase === 'preprocessing') {
+            addLog('图像预处理进行中', 35);
+          } else if (currentPhase === 'feature_extraction') {
+            addLog('特征提取中...', 65);
+          } else if (currentPhase === 'risk_assessment') {
+            addLog('风险评估中...', 80);
+          } else if (currentPhase === 'report_generation') {
+            addLog('正在生成诊断报告...', 92);
+          }
         }
       } else if (task.status === 'SUCCESS') {
         clearInterval(pollingIntervalId!);
@@ -1065,7 +1071,6 @@ onMounted(async () => {
             isAnalyzing.value = true;
             progress.value = activeTask.progress;
             progressStatus.value = '分析中...';
-            addLog('检测到进行中的分析任务，继续轮询...', 95);
             startPollingTaskStatus(activeTask.id);
           } else {
             // 没有进行中的任务，查找最新任务（包括刚刚创建的 PENDING 任务）
@@ -1081,7 +1086,6 @@ onMounted(async () => {
                 progress.value = latestTask.progress;
                 progressStatus.value =
                   latestTask.status === 'PENDING' ? '等待开始...' : '分析中...';
-                addLog('检测到分析任务，开始监控进度...', 95);
                 startPollingTaskStatus(latestTask.id);
               } else if (latestTask.status === 'FAILED') {
                 // 任务失败，显示失败信息
@@ -1219,6 +1223,56 @@ onUnmounted(() => {
   border-color: #375a64;
 }
 
+/* 现代化影像预览样式 */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 50%, #0d47a1 100%);
+}
+
+.bg-white-alpha {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.image-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.image-panel:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.image-panel-header {
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #424242;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* 优化图像容器样式 */
+.image-container {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-container img {
+  transition: transform 0.2s ease;
+}
+
+/* AI标注视图容器 */
+.annotated-view-container {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
 /* 进度条置顶样式 */
 .analysis-progress-overlay {
   position: fixed;
@@ -1290,6 +1344,8 @@ onUnmounted(() => {
 
 .progress-bar-container {
   margin-top: 8px;
+  position: relative;
+  padding: 8px 0;
 }
 
 .progress-bar-bg {
@@ -1297,7 +1353,12 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* 标注视图容器背景 */
+.annotated-view-container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
 }
 
 .progress-bar-fill {
