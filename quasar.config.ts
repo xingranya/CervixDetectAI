@@ -59,7 +59,13 @@ export default defineConfig((/* ctx */) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        if (viteConf.build) {
+          viteConf.build.chunkSizeWarningLimit = 1600;
+        } else {
+          viteConf.build = { chunkSizeWarningLimit: 1600 };
+        }
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
