@@ -8,7 +8,6 @@
         </q-btn>
         <q-btn icon="zoom_out" @click="zoomOut" dense flat title="缩小" />
         <q-btn icon="restart_alt" @click="resetView" dense flat title="重置视图" />
-        <div class="q-px-sm text-caption">{{ Math.round(scale * 100) }}%</div>
       </q-btn-group>
 
       <q-separator vertical />
@@ -179,7 +178,7 @@ const props = defineProps<{
   initialAnnotations?: Annotation[];
 }>();
 
-const emit = defineEmits(['update:annotations', 'export']);
+const emit = defineEmits(['update:annotations', 'export', 'zoom']);
 
 const $q = useQuasar();
 
@@ -205,6 +204,7 @@ const annotations = ref<Annotation[]>(props.initialAnnotations || []);
 // Refs
 const viewportRef = ref<HTMLElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
+const initialFitScale = ref(0);
 
 // Watchers
 watch(
@@ -221,8 +221,14 @@ const onImageLoad = () => {
     imageWidth.value = imageRef.value.naturalWidth;
     imageHeight.value = imageRef.value.naturalHeight;
     imageLoaded.value = true;
+    initialFitScale.value = 0; // Reset for new image
     fitToScreen();
   }
+};
+
+const emitZoom = () => {
+  const relative = initialFitScale.value > 0 ? scale.value / initialFitScale.value : 1;
+  emit('zoom', relative);
 };
 
 const fitToScreen = () => {
@@ -239,16 +245,27 @@ const fitToScreen = () => {
   // Center image
   translateX.value = (viewportW - imageWidth.value * scale.value) / 2;
   translateY.value = (viewportH - imageHeight.value * scale.value) / 2;
+
+  if (initialFitScale.value === 0) {
+    initialFitScale.value = scale.value;
+  }
+  emitZoom();
 };
 
 const zoomIn = () => {
   const newScale = scale.value * ZOOM_CONFIG.FACTOR;
-  if (newScale <= ZOOM_CONFIG.MAX_SCALE) scale.value = newScale;
+  if (newScale <= ZOOM_CONFIG.MAX_SCALE) {
+    scale.value = newScale;
+    emitZoom();
+  }
 };
 
 const zoomOut = () => {
   const newScale = scale.value / ZOOM_CONFIG.FACTOR;
-  if (newScale >= ZOOM_CONFIG.MIN_SCALE) scale.value = newScale;
+  if (newScale >= ZOOM_CONFIG.MIN_SCALE) {
+    scale.value = newScale;
+    emitZoom();
+  }
 };
 
 // 风险等级配置（统一管理阈值和样式）
@@ -315,6 +332,7 @@ const getLabelWidth = (ann: Annotation): number => {
 
 const resetView = () => {
   fitToScreen();
+  emitZoom();
 };
 
 const setTool = (tool: 'pan' | 'rect') => {
@@ -333,7 +351,10 @@ const handleWheel = (e: WheelEvent) => {
     // Zoom
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const newScale = scale.value * delta;
-    if (newScale >= 0.1 && newScale <= 8) scale.value = newScale;
+    if (newScale >= 0.1 && newScale <= 8) {
+      scale.value = newScale;
+      emitZoom();
+    }
   } else {
     // Pan
     translateX.value -= e.deltaX;
@@ -485,9 +506,9 @@ const exportAnnotations = () => {
 .image-analyzer-container {
   display: flex;
   flex-direction: column;
-  height: 600px; /* Fixed height or flex */
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  height: 100%; /* Fit parent container */
+  border: none; /* Remove border as parent handles it */
+  border-radius: 0; /* Remove radius as parent handles it */
   background: #f5f5f5;
 }
 
@@ -495,7 +516,7 @@ const exportAnnotations = () => {
   flex: 1;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  /* background handled by parent */
 }
 
 .analyzer-content {

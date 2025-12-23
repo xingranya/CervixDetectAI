@@ -154,78 +154,107 @@
         </q-card>
 
         <!-- Image Preview Section -->
-        <q-card flat bordered class="full-height" v-else>
-          <q-card-section class="row items-center justify-between q-pb-sm border-bottom-light">
-            <div class="text-subtitle1 text-weight-bold flex items-center">
-              <q-icon name="view_column" class="q-mr-sm text-grey-7" />
+        <q-card flat bordered class="full-height shadow-1" v-else>
+          <q-card-section
+            class="row items-center justify-between q-pa-sm bg-grey-1 border-bottom-light"
+          >
+            <div class="text-subtitle1 text-weight-bold flex items-center text-blue-grey-9">
+              <q-icon name="photo_library" class="q-mr-sm text-primary" />
               影像预览与对比
             </div>
-            <div class="q-gutter-sm">
-              <q-btn outline size="sm" icon="zoom_in" label="放大" color="grey-8" @click="zoomIn" />
-              <q-btn
-                outline
-                size="sm"
-                icon="zoom_out"
-                label="缩小"
-                color="grey-8"
-                @click="zoomOut"
-              />
-              <q-btn
-                outline
-                size="sm"
-                icon="fullscreen"
-                label="全屏"
-                color="grey-8"
-                @click="toggleFullscreen"
-              />
+            <div class="q-gutter-xs">
+              <q-btn flat dense round color="grey-7" icon="zoom_in" @click="zoomIn">
+                <q-tooltip>放大</q-tooltip>
+              </q-btn>
+              <q-btn flat dense round color="grey-7" icon="zoom_out" @click="zoomOut">
+                <q-tooltip>缩小</q-tooltip>
+              </q-btn>
+              <q-separator vertical inset class="q-mx-sm" />
+              <q-btn flat dense round color="grey-7" icon="fullscreen" @click="toggleFullscreen">
+                <q-tooltip>全屏</q-tooltip>
+              </q-btn>
             </div>
           </q-card-section>
-          <q-card-section>
+          <q-card-section class="q-pa-md">
             <div class="row q-col-gutter-md">
               <div class="col-md-6 col-12">
-                <div
-                  class="bg-grey-2 q-pa-xs text-caption text-weight-bold text-grey-7 border-bottom-light"
-                >
-                  原始影像
-                </div>
-                <div
-                  class="image-container bg-black relative-position overflow-hidden"
-                  style="height: 400px"
-                >
-                  <img
-                    :src="study.imageUrl"
-                    class="fit object-contain"
-                    :style="{ transform: `scale(${zoomLevel})` }"
-                  />
+                <div class="image-panel-wrapper shadow-1 rounded-borders overflow-hidden">
+                  <div
+                    class="bg-blue-grey-1 q-px-md q-py-sm text-caption text-weight-bold text-blue-grey-8 border-bottom-light flex items-center"
+                  >
+                    <q-icon name="image" class="q-mr-xs" />
+                    原始影像
+                  </div>
+                  <div
+                    class="image-container bg-grey-2 relative-position overflow-hidden"
+                    style="height: 400px"
+                  >
+                    <img
+                      :src="study.imageUrl"
+                      class="fit object-contain"
+                      :style="{
+                        transform: `scale(${zoomLevel})`,
+                        transition: 'transform 0.2s ease',
+                      }"
+                    />
+                  </div>
                 </div>
               </div>
               <div class="col-md-6 col-12">
-                <div
-                  class="bg-grey-2 q-pa-xs text-caption text-weight-bold text-grey-7 border-bottom-light"
-                >
-                  AI增强与标注视图
-                </div>
-                <div class="annotated-view-container relative-position" style="height: 400px">
-                  <!-- 使用 ImageAnalyzer 组件 -->
-                  <ImageAnalyzer
-                    v-if="study.imageUrl"
-                    :src="study.imageUrl"
-                    :initial-annotations="aiAnnotations"
-                  />
-                  <div v-else class="text-center q-pa-md text-grey">暂无图像</div>
+                <div class="image-panel-wrapper shadow-1 rounded-borders overflow-hidden">
+                  <div
+                    class="bg-blue-grey-1 q-px-md q-py-sm text-caption text-weight-bold text-blue-grey-8 border-bottom-light flex items-center justify-between"
+                  >
+                    <div class="flex items-center">
+                      <q-icon name="auto_fix_high" class="q-mr-xs text-primary" />
+                      AI增强与标注视图
+                    </div>
+                    <q-badge color="primary" label="实时" rounded />
+                  </div>
+                  <div
+                    class="annotated-view-container relative-position bg-grey-2"
+                    style="height: 400px"
+                  >
+                    <!-- 使用 ImageAnalyzer 组件 -->
+                    <ImageAnalyzer
+                      v-if="study.imageUrl"
+                      :src="study.imageUrl"
+                      :initial-annotations="aiAnnotations"
+                      @zoom="handleAiZoom"
+                    />
+                    <div v-else class="text-center q-pa-md text-grey flex flex-center full-height">
+                      <div>
+                        <q-icon name="image_not_supported" size="md" color="grey-5" />
+                        <div class="q-mt-xs">暂无图像</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="row justify-between q-mt-md text-caption text-grey-7">
+            <div
+              class="row justify-between items-center q-mt-md q-pa-sm bg-blue-50 rounded-borders text-caption text-blue-grey-8"
+            >
               <div class="flex items-center">
-                <q-icon name="label" class="q-mr-xs" /> 标签:
-                <span class="text-negative text-weight-bold q-ml-xs">CIN2+ 疑似区域</span>
+                <q-icon name="label" class="q-mr-xs text-primary" />
+                标签: <span class="text-negative text-weight-bold q-ml-xs">CIN2+ 疑似区域</span>
               </div>
-              <div class="flex items-center">
-                <q-icon name="straighten" class="q-mr-xs" /> 标尺: 1cm = 240px
-              </div>
-              <div class="flex items-center">
-                <q-icon name="palette" class="q-mr-xs" /> 色彩模式: sRGB (Enhanced)
+              <div class="flex items-center q-gutter-md">
+                <div class="flex items-center">
+                  <q-icon name="straighten" class="q-mr-xs" /> 1cm = 240px
+                </div>
+                <div class="flex items-center">
+                  <q-icon name="palette" class="q-mr-xs" /> sRGB (Enhanced)
+                </div>
+                <div class="flex items-center q-gutter-x-md">
+                  <div class="flex items-center text-grey-8">
+                    <q-icon name="image" class="q-mr-xs" /> 原始: {{ Math.round(zoomLevel * 100) }}%
+                  </div>
+                  <div class="flex items-center text-primary text-weight-bold">
+                    <q-icon name="auto_fix_high" class="q-mr-xs" /> AI:
+                    {{ Math.round(aiZoomLevel * 100) }}%
+                  </div>
+                </div>
               </div>
             </div>
           </q-card-section>
@@ -572,6 +601,7 @@ const currentTaskId = ref<string | null>(null);
 const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
 // 用于跟踪当前进度阶段，避免重复添加日志
 let lastProgressPhase = '';
+const aiZoomLevel = ref(1);
 
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
@@ -695,15 +725,23 @@ const handleFileUpload = async (event: Event) => {
 };
 
 const zoomIn = () => {
-  if (zoomLevel.value < 3) zoomLevel.value += 0.2;
+  if (zoomLevel.value < 3) {
+    zoomLevel.value += 0.2;
+  }
 };
 const zoomOut = () => {
-  if (zoomLevel.value > 0.5) zoomLevel.value -= 0.2;
+  if (zoomLevel.value > 0.5) {
+    zoomLevel.value -= 0.2;
+  }
 };
 const toggleFullscreen = () => {
   if ($q.fullscreen) {
     void $q.fullscreen.toggle();
   }
+};
+
+const handleAiZoom = (scale: number) => {
+  aiZoomLevel.value = scale;
 };
 
 const startAnalysis = async () => {
@@ -1224,34 +1262,15 @@ onUnmounted(() => {
 }
 
 /* 现代化影像预览样式 */
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 50%, #0d47a1 100%);
+.image-panel-wrapper {
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.2s ease;
 }
 
-.bg-white-alpha {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.image-panel {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.3s ease;
-}
-
-.image-panel:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-}
-
-.image-panel-header {
-  padding: 10px 14px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  font-size: 13px;
-  font-weight: 600;
-  color: #424242;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
+.image-panel-wrapper:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-2px);
 }
 
 /* 优化图像容器样式 */
@@ -1263,6 +1282,9 @@ onUnmounted(() => {
 }
 
 .image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   transition: transform 0.2s ease;
 }
 
