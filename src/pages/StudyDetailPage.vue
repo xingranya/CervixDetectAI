@@ -154,40 +154,73 @@
         </q-card>
 
         <!-- Image Preview Section -->
-        <q-card flat bordered class="full-height shadow-1" v-else>
+        <q-card
+          class="full-height shadow-3 rounded-borders"
+          v-else
+          style="border-radius: 16px"
+          ref="previewCardRef"
+        >
+          <!-- Header -->
           <q-card-section
-            class="row items-center justify-between q-pa-sm bg-grey-1 border-bottom-light"
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
-            <div class="text-subtitle1 text-weight-bold flex items-center text-blue-grey-9">
-              <q-icon name="photo_library" class="q-mr-sm text-primary" />
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="photo_library" class="q-mr-sm text-primary" size="20px" />
               影像预览与对比
             </div>
-            <div class="q-gutter-xs">
-              <q-btn flat dense round color="grey-7" icon="zoom_in" @click="zoomIn">
-                <q-tooltip>放大</q-tooltip>
+            <div class="row items-center q-gutter-xs">
+              <q-btn
+                flat
+                dense
+                round
+                color="grey-7"
+                icon="zoom_in"
+                @click="zoomIn"
+                class="hover-bg-grey-2"
+              >
+                <q-tooltip>放大原始影像</q-tooltip>
               </q-btn>
-              <q-btn flat dense round color="grey-7" icon="zoom_out" @click="zoomOut">
-                <q-tooltip>缩小</q-tooltip>
+              <q-btn
+                flat
+                dense
+                round
+                color="grey-7"
+                icon="zoom_out"
+                @click="zoomOut"
+                class="hover-bg-grey-2"
+              >
+                <q-tooltip>缩小原始影像</q-tooltip>
               </q-btn>
               <q-separator vertical inset class="q-mx-sm" />
-              <q-btn flat dense round color="grey-7" icon="fullscreen" @click="toggleFullscreen">
-                <q-tooltip>全屏</q-tooltip>
+              <q-btn
+                flat
+                dense
+                round
+                color="grey-7"
+                icon="fullscreen"
+                @click="toggleFullscreen"
+                class="hover-bg-grey-2"
+              >
+                <q-tooltip>全屏模式</q-tooltip>
               </q-btn>
             </div>
           </q-card-section>
-          <q-card-section class="q-pa-md">
+
+          <!-- Content -->
+          <q-card-section class="q-pa-md bg-grey-1">
             <div class="row q-col-gutter-md">
+              <!-- Original Image Panel -->
               <div class="col-md-6 col-12">
-                <div class="image-panel-wrapper shadow-1 rounded-borders overflow-hidden">
+                <div class="image-panel-wrapper bg-white shadow-1 rounded-borders overflow-hidden">
                   <div
-                    class="bg-blue-grey-1 q-px-md q-py-sm text-caption text-weight-bold text-blue-grey-8 border-bottom-light flex items-center"
+                    class="q-px-md q-py-sm text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center bg-grey-1"
                   >
-                    <q-icon name="image" class="q-mr-xs" />
+                    <q-icon name="image" class="q-mr-xs text-primary" />
                     原始影像
                   </div>
                   <div
                     class="image-container bg-grey-2 relative-position overflow-hidden"
-                    style="height: 400px"
+                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
                   >
                     <img
                       :src="study.imageUrl"
@@ -200,22 +233,23 @@
                   </div>
                 </div>
               </div>
+
+              <!-- AI View Panel -->
               <div class="col-md-6 col-12">
-                <div class="image-panel-wrapper shadow-1 rounded-borders overflow-hidden">
+                <div class="image-panel-wrapper bg-white shadow-1 rounded-borders overflow-hidden">
                   <div
-                    class="bg-blue-grey-1 q-px-md q-py-sm text-caption text-weight-bold text-blue-grey-8 border-bottom-light flex items-center justify-between"
+                    class="q-px-md q-py-sm text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center justify-between bg-grey-1"
                   >
                     <div class="flex items-center">
-                      <q-icon name="auto_fix_high" class="q-mr-xs text-primary" />
+                      <q-icon name="auto_fix_high" class="q-mr-xs text-secondary" />
                       AI增强与标注视图
                     </div>
-                    <q-badge color="primary" label="实时" rounded />
+                    <q-badge color="secondary" label="实时分析" rounded outline class="q-px-sm" />
                   </div>
                   <div
                     class="annotated-view-container relative-position bg-grey-2"
-                    style="height: 400px"
+                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
                   >
-                    <!-- 使用 ImageAnalyzer 组件 -->
                     <ImageAnalyzer
                       v-if="study.imageUrl"
                       :src="study.imageUrl"
@@ -223,36 +257,58 @@
                       @zoom="handleAiZoom"
                     />
                     <div v-else class="text-center q-pa-md text-grey flex flex-center full-height">
-                      <div>
-                        <q-icon name="image_not_supported" size="md" color="grey-5" />
-                        <div class="q-mt-xs">暂无图像</div>
+                      <div class="column flex-center">
+                        <q-icon name="image_not_supported" size="40px" color="grey-4" />
+                        <div class="q-mt-sm text-grey-6">暂无图像数据</div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <!-- Footer Info Bar -->
             <div
-              class="row justify-between items-center q-mt-md q-pa-sm bg-blue-50 rounded-borders text-caption text-blue-grey-8"
+              class="row justify-between items-center q-mt-md q-px-md q-py-sm bg-white shadow-1 rounded-borders text-caption text-grey-8"
             >
               <div class="flex items-center">
-                <q-icon name="label" class="q-mr-xs text-primary" />
-                标签: <span class="text-negative text-weight-bold q-ml-xs">CIN2+ 疑似区域</span>
+                <q-chip
+                  dense
+                  color="red-1"
+                  text-color="negative"
+                  icon="warning"
+                  class="text-weight-bold q-ma-none"
+                >
+                  CIN2+ 疑似区域
+                </q-chip>
               </div>
-              <div class="flex items-center q-gutter-md">
-                <div class="flex items-center">
+
+              <div class="flex items-center q-gutter-x-lg">
+                <div class="flex items-center text-grey-7">
                   <q-icon name="straighten" class="q-mr-xs" /> 1cm = 240px
                 </div>
-                <div class="flex items-center">
+                <div class="flex items-center text-grey-7">
                   <q-icon name="palette" class="q-mr-xs" /> sRGB (Enhanced)
                 </div>
+
+                <q-separator vertical inset />
+
                 <div class="flex items-center q-gutter-x-md">
-                  <div class="flex items-center text-grey-8">
-                    <q-icon name="image" class="q-mr-xs" /> 原始: {{ Math.round(zoomLevel * 100) }}%
+                  <div
+                    class="flex items-center text-grey-9 bg-grey-2 q-px-sm q-py-xs rounded-borders"
+                  >
+                    <q-icon name="image" class="q-mr-xs text-primary" />
+                    原始:
+                    <span class="text-weight-bold q-ml-xs">{{ Math.round(zoomLevel * 100) }}%</span>
                   </div>
-                  <div class="flex items-center text-primary text-weight-bold">
-                    <q-icon name="auto_fix_high" class="q-mr-xs" /> AI:
-                    {{ Math.round(aiZoomLevel * 100) }}%
+                  <div
+                    class="flex items-center text-grey-9 bg-grey-2 q-px-sm q-py-xs rounded-borders"
+                  >
+                    <q-icon name="auto_fix_high" class="q-mr-xs text-secondary" />
+                    AI:
+                    <span class="text-weight-bold q-ml-xs"
+                      >{{ Math.round(aiZoomLevel * 100) }}%</span
+                    >
                   </div>
                 </div>
               </div>
@@ -372,74 +428,173 @@
         <!-- 分析日志（移到右侧列） -->
 
         <!-- AI Control Panel -->
-        <q-card flat bordered class="q-mb-md">
-          <q-card-section class="row items-center justify-between q-pb-sm border-bottom-light">
-            <div class="text-subtitle1 text-weight-bold flex items-center">
-              <q-icon name="memory" class="q-mr-sm text-grey-7" />
-              AI分析控制面板
+        <q-card class="q-mb-md shadow-3 rounded-borders" style="border-radius: 16px">
+          <q-card-section
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+          >
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="tune" class="q-mr-sm text-primary" size="20px" />
+              分析参数配置
             </div>
-            <div class="q-gutter-xs">
-              <q-btn
-                size="sm"
-                color="positive"
-                icon="play_arrow"
-                label="启动"
-                @click="startAnalysis"
-                :disable="isAnalyzing"
-              />
-            </div>
+            <q-btn
+              unelevated
+              rounded
+              color="primary"
+              icon="play_arrow"
+              label="开始分析"
+              @click="startAnalysis"
+              :disable="isAnalyzing"
+              class="q-px-md"
+            />
           </q-card-section>
-          <q-card-section>
+
+          <q-card-section class="q-pa-md bg-grey-1">
+            <!-- Model Selection -->
             <div class="q-mb-md">
-              <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">分析模型</div>
-              <q-select outlined dense v-model="selectedModel" :options="modelOptions" />
-            </div>
-            <div class="q-mb-md">
-              <div class="row justify-between text-caption text-grey-7">
-                <span>分割敏感度</span>
-                <span class="text-weight-bold text-primary">{{ sensitivity }}</span>
+              <div class="text-caption text-weight-bold text-grey-8 q-mb-sm flex items-center">
+                <q-icon name="psychology" class="q-mr-xs text-secondary" />
+                分析模型
               </div>
-              <q-slider v-model="sensitivity" :min="1" :max="100" color="primary" />
-            </div>
-            <div class="q-mb-md">
-              <div class="row justify-between text-caption text-grey-7">
-                <span>置信度阈值</span>
-                <span class="text-weight-bold text-primary">{{ confidenceThreshold }}%</span>
-              </div>
-              <q-slider v-model="confidenceThreshold" :min="50" :max="99" color="primary" />
+              <q-select
+                v-model="selectedModel"
+                :options="[
+                  '宫颈病变分割模型 v3.2 (高精度)',
+                  '宫颈病变分割模型 v2.1 (快速)',
+                  '细胞学分类模型 v4.0',
+                ]"
+                outlined
+                dense
+                bg-color="white"
+                class="rounded-borders"
+                behavior="menu"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="model_training" color="primary" />
+                </template>
+              </q-select>
             </div>
 
-            <q-expansion-item
-              dense
-              dense-toggle
-              expand-separator
-              label="高级选项"
-              header-class="text-grey-8 text-weight-medium"
-            >
-              <div class="q-pa-sm">
-                <q-checkbox
-                  v-model="advancedOptions.vesselEnhancement"
-                  label="血管结构增强"
-                  dense
-                  size="sm"
-                  class="full-width q-mb-sm"
-                />
-                <q-checkbox
-                  v-model="advancedOptions.multiSpectral"
-                  label="多光谱融合"
-                  dense
-                  size="sm"
-                  class="full-width q-mb-sm"
-                />
-                <q-checkbox
-                  v-model="advancedOptions.boundarySmoothing"
-                  label="边界平滑处理"
-                  dense
-                  size="sm"
-                  class="full-width"
-                />
+            <!-- Sliders -->
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col-12 col-md-6">
+                <div class="bg-white q-pa-sm rounded-borders shadow-1">
+                  <div class="row justify-between items-center q-mb-xs">
+                    <div class="text-caption text-grey-8">分割敏感度</div>
+                    <q-badge color="primary" rounded :label="sensitivity" />
+                  </div>
+                  <q-slider
+                    v-model="sensitivity"
+                    :min="0"
+                    :max="100"
+                    color="primary"
+                    label
+                    dense
+                    class="q-mt-xs"
+                  />
+                </div>
               </div>
-            </q-expansion-item>
+              <div class="col-12 col-md-6">
+                <div class="bg-white q-pa-sm rounded-borders shadow-1">
+                  <div class="row justify-between items-center q-mb-xs">
+                    <div class="text-caption text-grey-8">置信度阈值</div>
+                    <q-badge color="secondary" rounded :label="confidenceThreshold + '%'" />
+                  </div>
+                  <q-slider
+                    v-model="confidenceThreshold"
+                    :min="0"
+                    :max="100"
+                    color="secondary"
+                    label
+                    dense
+                    class="q-mt-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced Options (Toggle Cards) -->
+            <div>
+              <div class="text-caption text-weight-bold text-grey-8 q-mb-sm flex items-center">
+                <q-icon name="settings_suggest" class="q-mr-xs text-orange" />
+                高级增强选项
+              </div>
+              <div class="row q-col-gutter-sm">
+                <!-- Vessel Enhancement -->
+                <div class="col-4">
+                  <div
+                    class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
+                    :class="
+                      advancedOptions.vesselEnhancement
+                        ? 'bg-primary text-white shadow-2'
+                        : 'bg-white text-grey-7 hover-bg-grey-2'
+                    "
+                    @click="advancedOptions.vesselEnhancement = !advancedOptions.vesselEnhancement"
+                    v-ripple
+                  >
+                    <q-icon name="bloodtype" size="sm" class="q-mb-xs" />
+                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                      血管增强
+                    </div>
+                    <q-icon
+                      name="check_circle"
+                      class="absolute-top-right q-ma-xs"
+                      size="14px"
+                      v-if="advancedOptions.vesselEnhancement"
+                    />
+                  </div>
+                </div>
+
+                <!-- Multi-Spectral -->
+                <div class="col-4">
+                  <div
+                    class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
+                    :class="
+                      advancedOptions.multiSpectral
+                        ? 'bg-primary text-white shadow-2'
+                        : 'bg-white text-grey-7 hover-bg-grey-2'
+                    "
+                    @click="advancedOptions.multiSpectral = !advancedOptions.multiSpectral"
+                    v-ripple
+                  >
+                    <q-icon name="gradient" size="sm" class="q-mb-xs" />
+                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                      多光谱融合
+                    </div>
+                    <q-icon
+                      name="check_circle"
+                      class="absolute-top-right q-ma-xs"
+                      size="14px"
+                      v-if="advancedOptions.multiSpectral"
+                    />
+                  </div>
+                </div>
+
+                <!-- Boundary Smoothing -->
+                <div class="col-4">
+                  <div
+                    class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
+                    :class="
+                      advancedOptions.boundarySmoothing
+                        ? 'bg-primary text-white shadow-2'
+                        : 'bg-white text-grey-7 hover-bg-grey-2'
+                    "
+                    @click="advancedOptions.boundarySmoothing = !advancedOptions.boundarySmoothing"
+                    v-ripple
+                  >
+                    <q-icon name="blur_on" size="sm" class="q-mb-xs" />
+                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                      边界平滑
+                    </div>
+                    <q-icon
+                      name="check_circle"
+                      class="absolute-top-right q-ma-xs"
+                      size="14px"
+                      v-if="advancedOptions.boundarySmoothing"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div class="q-mt-md">
               <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">进度</div>
@@ -459,51 +614,84 @@
         </q-card>
 
         <!-- Lesion Visualization -->
-        <q-card flat bordered class="q-mb-md">
-          <q-card-section class="row items-center justify-between q-pb-sm border-bottom-light">
-            <div class="text-subtitle1 text-weight-bold flex items-center">
-              <q-icon name="scanner" class="q-mr-sm text-grey-7" />
+        <!-- Lesion Visualization -->
+        <q-card class="q-mb-md shadow-3 rounded-borders" style="border-radius: 16px">
+          <q-card-section
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+          >
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="scanner" class="q-mr-sm text-primary" size="20px" />
               病变特征识别结果
             </div>
-            <q-btn flat size="sm" icon="download" color="grey-7" />
+            <q-btn flat round dense icon="download" color="grey-7" size="sm">
+              <q-tooltip>导出图表</q-tooltip>
+            </q-btn>
           </q-card-section>
-          <q-card-section>
-            <div ref="chartRef" style="height: 200px"></div>
 
-            <div class="row q-col-gutter-sm q-mt-sm">
-              <div class="col-4 text-center bg-grey-1 q-pa-sm rounded-borders border-light">
-                <div class="text-h6 text-primary text-weight-bold">
-                  {{ analysisResult?.suspiciousAreas?.length || 0 }}
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="bg-white q-pa-sm rounded-borders shadow-1 q-mb-md">
+              <div ref="chartRef" style="height: 200px"></div>
+            </div>
+
+            <div class="row q-col-gutter-sm">
+              <div class="col-4">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div class="text-h5 text-primary text-weight-bold q-mb-xs">
+                    {{ analysisResult?.suspiciousAreas?.length || 0 }}
+                  </div>
+                  <div class="text-caption text-grey-7">疑似区域</div>
                 </div>
-                <div class="text-caption text-grey-7">疑似区域</div>
               </div>
-              <div class="col-4 text-center bg-grey-1 q-pa-sm rounded-borders border-light">
-                <div class="text-h6 text-positive text-weight-bold">
-                  {{
-                    analysisResult?.confidence ? Math.round(analysisResult.confidence * 100) : 0
-                  }}%
+              <div class="col-4">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div class="text-h5 text-secondary text-weight-bold q-mb-xs">
+                    {{ analysisResult?.confidence ? Math.round(analysisResult.confidence * 100) : 0
+                    }}<span class="text-caption">%</span>
+                  </div>
+                  <div class="text-caption text-grey-7">置信度</div>
                 </div>
-                <div class="text-caption text-grey-7">置信度</div>
               </div>
-              <div class="col-4 text-center bg-grey-1 q-pa-sm rounded-borders border-light">
-                <div class="text-h6 text-warning text-weight-bold">
-                  {{ analysisResult ? getRiskLevelText(analysisResult.diagnosis) : '-' }}
+              <div class="col-4">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div
+                    class="text-h6 text-weight-bold q-mb-xs"
+                    :class="getRiskColorClass(analysisResult?.diagnosis)"
+                  >
+                    {{ analysisResult ? getRiskLevelText(analysisResult.diagnosis) : '-' }}
+                  </div>
+                  <div class="text-caption text-grey-7">风险等级</div>
                 </div>
-                <div class="text-caption text-grey-7">风险等级</div>
               </div>
             </div>
 
-            <div class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-caption">
+            <div
+              class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-caption shadow-1"
+            >
               <div class="flex items-center q-mb-xs">
-                <div class="q-mr-sm bg-negative" style="width: 8px; height: 8px"></div>
+                <div
+                  class="q-mr-sm bg-negative rounded-circle"
+                  style="width: 8px; height: 8px"
+                ></div>
                 <span class="text-brown-9 text-weight-bold">HSIL - 高置信度</span>
               </div>
               <div class="flex items-center q-mb-xs">
-                <div class="q-mr-sm bg-warning" style="width: 8px; height: 8px"></div>
+                <div
+                  class="q-mr-sm bg-warning rounded-circle"
+                  style="width: 8px; height: 8px"
+                ></div>
                 <span class="text-brown-9">LSIL - 中置信度</span>
               </div>
               <div class="flex items-center">
-                <div class="q-mr-sm bg-primary" style="width: 8px; height: 8px"></div>
+                <div
+                  class="q-mr-sm bg-primary rounded-circle"
+                  style="width: 8px; height: 8px"
+                ></div>
                 <span class="text-brown-9">醋酸白上皮 - 已识别</span>
               </div>
             </div>
@@ -511,41 +699,89 @@
         </q-card>
 
         <!-- Analysis Log -->
-        <q-card flat bordered>
-          <q-card-section class="row items-center justify-between q-pb-sm border-bottom-light">
-            <div class="text-subtitle1 text-weight-bold flex items-center">
-              <q-icon name="assignment" class="q-mr-sm text-grey-7" />
+        <!-- Analysis Log -->
+        <q-card class="shadow-3 rounded-borders" style="border-radius: 16px">
+          <q-card-section
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+          >
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="assignment" class="q-mr-sm text-primary" size="20px" />
               分析日志
             </div>
-            <q-btn flat size="sm" icon="delete" color="grey-7" label="清空" @click="logs = []" />
+            <q-btn
+              flat
+              round
+              dense
+              icon="delete_outline"
+              color="grey-7"
+              size="sm"
+              @click="logs = []"
+            >
+              <q-tooltip>清空日志</q-tooltip>
+            </q-btn>
           </q-card-section>
-          <q-card-section class="q-pa-none">
-            <q-scroll-area style="height: 200px">
-              <q-list separator>
-                <q-item v-for="(log, index) in logs" :key="index" class="q-py-sm">
+
+          <q-card-section class="q-pa-none bg-grey-1">
+            <q-scroll-area style="height: 200px" class="bg-white">
+              <q-list separator class="q-py-xs">
+                <q-item v-for="(log, index) in logs" :key="index" class="q-py-sm hover-bg-grey-1">
+                  <q-item-section avatar style="min-width: 40px">
+                    <q-icon
+                      :name="log.message.includes('完成') ? 'check_circle' : 'info'"
+                      :color="log.message.includes('完成') ? 'positive' : 'primary'"
+                      size="sm"
+                    />
+                  </q-item-section>
                   <q-item-section>
                     <div class="row items-center justify-between">
-                      <div class="text-caption text-grey-6 font-mono">{{ log.time }}</div>
+                      <div
+                        class="text-caption text-grey-5 font-mono bg-grey-1 q-px-xs rounded-borders"
+                      >
+                        {{ log.time }}
+                      </div>
                       <q-badge
                         :color="getConfidenceColor(log.confidence)"
                         :label="log.confidence + '%'"
+                        rounded
                         size="sm"
                       />
                     </div>
                     <div class="text-body2 text-grey-9 q-mt-xs">{{ log.message }}</div>
                   </q-item-section>
                 </q-item>
+                <div
+                  v-if="logs.length === 0"
+                  class="text-center text-grey-5 q-pa-md flex flex-center"
+                  style="height: 100%"
+                >
+                  <div class="column flex-center">
+                    <q-icon name="history" size="md" class="q-mb-sm" />
+                    暂无日志记录
+                  </div>
+                </div>
               </q-list>
             </q-scroll-area>
           </q-card-section>
+
           <q-card-section
-            class="row justify-between items-center text-caption border-top-light bg-grey-1"
+            class="row justify-between items-center text-caption border-top-light bg-white q-px-md q-py-sm"
           >
-            <div class="text-grey-7">最后更新: {{ lastUpdated }}</div>
+            <div class="text-grey-6 flex items-center">
+              <q-icon name="update" class="q-mr-xs" />
+              最后更新: {{ lastUpdated }}
+            </div>
             <q-badge
-              :color="isAnalyzing ? 'primary' : 'grey'"
+              :color="isAnalyzing ? 'primary' : 'grey-5'"
               :label="isAnalyzing ? '进行中' : '已停止'"
-            />
+              rounded
+              outline
+            >
+              <q-icon
+                :name="isAnalyzing ? 'sync' : 'stop'"
+                class="q-ml-xs"
+                :class="{ 'fa-spin': isAnalyzing }"
+              />
+            </q-badge>
           </q-card-section>
         </q-card>
       </div>
@@ -595,6 +831,7 @@ interface LogEntry {
 const logs = ref<LogEntry[]>([]);
 const lastUpdated = ref(new Date().toLocaleString());
 const chartRef = ref<HTMLElement | null>(null);
+const previewCardRef = ref<{ $el: HTMLElement } | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 let pollingIntervalId: NodeJS.Timeout | null = null;
 const currentTaskId = ref<string | null>(null);
@@ -606,11 +843,6 @@ const aiZoomLevel = ref(1);
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
 const imageTypeOptions = ['细胞学涂片', '阴道镜图像', '组织病理切片'];
-const modelOptions = [
-  '宫颈病变分割模型 v3.2 (高精度)',
-  '快速筛查模型 v2.1',
-  '高级特征识别模型 v4.0',
-];
 
 // Computed
 const study = computed(() => studyStore.currentStudy);
@@ -735,9 +967,15 @@ const zoomOut = () => {
   }
 };
 const toggleFullscreen = () => {
-  if ($q.fullscreen) {
-    void $q.fullscreen.toggle();
+  if (!$q.fullscreen.isCapable) {
+    $q.notify({ type: 'warning', message: '您的浏览器不支持全屏模式' });
+    return;
   }
+  const target = previewCardRef.value?.$el || undefined;
+  $q.fullscreen.toggle(target).catch((err) => {
+    console.error('Fullscreen toggle failed:', err);
+    $q.notify({ type: 'negative', message: '切换全屏失败' });
+  });
 };
 
 const handleAiZoom = (scale: number) => {
@@ -983,12 +1221,20 @@ const getConfidenceBadgeColor = (confidence: number) => {
   return 'orange';
 };
 
-const getRiskLevelText = (diagnosis: string) => {
+const getRiskLevelText = (diagnosis: string | undefined | null) => {
   if (!diagnosis) return '-';
   if (diagnosis.includes('浸润性癌') || diagnosis.includes('HSIL')) return '高风险';
   if (diagnosis.includes('LSIL') || diagnosis.includes('ASC-H')) return '中风险';
   if (diagnosis.includes('ASC-US')) return '低风险';
   return '正常';
+};
+
+const getRiskColorClass = (diagnosis: string | undefined | null) => {
+  if (!diagnosis) return 'text-grey';
+  if (diagnosis.includes('浸润性癌') || diagnosis.includes('HSIL')) return 'text-negative';
+  if (diagnosis.includes('LSIL') || diagnosis.includes('ASC-H')) return 'text-warning';
+  if (diagnosis.includes('ASC-US')) return 'text-info';
+  return 'text-positive';
 };
 
 const initChart = () => {

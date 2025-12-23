@@ -1,25 +1,30 @@
 <template>
   <div class="image-analyzer-container">
     <!-- Toolbar -->
-    <div class="analyzer-toolbar q-pa-sm row items-center q-gutter-sm bg-grey-2">
-      <q-btn-group flat>
-        <q-btn icon="zoom_in" @click="zoomIn" dense flat title="放大">
+    <div class="analyzer-toolbar q-pa-sm row items-center q-gutter-sm bg-white border-bottom-light">
+      <q-btn-group flat class="shadow-1 rounded-borders bg-grey-1">
+        <q-btn icon="zoom_in" @click="zoomIn" dense flat color="grey-8">
           <q-tooltip>放大 (2x/4x/8x)</q-tooltip>
         </q-btn>
-        <q-btn icon="zoom_out" @click="zoomOut" dense flat title="缩小" />
-        <q-btn icon="restart_alt" @click="resetView" dense flat title="重置视图" />
+        <q-btn icon="zoom_out" @click="zoomOut" dense flat color="grey-8">
+          <q-tooltip>缩小</q-tooltip>
+        </q-btn>
+        <q-separator vertical inset />
+        <q-btn icon="restart_alt" @click="resetView" dense flat color="grey-8">
+          <q-tooltip>重置视图</q-tooltip>
+        </q-btn>
       </q-btn-group>
 
-      <q-separator vertical />
+      <q-separator vertical inset class="q-mx-sm" />
 
-      <q-btn-group flat>
+      <q-btn-group flat class="shadow-1 rounded-borders bg-grey-1">
         <q-btn
           icon="crop_square"
           :color="currentTool === 'rect' ? 'primary' : 'grey-7'"
+          :class="{ 'bg-blue-1': currentTool === 'rect' }"
           @click="setTool('rect')"
           dense
           flat
-          title="矩形框选"
         >
           <q-tooltip>矩形框选工具</q-tooltip>
         </q-btn>
@@ -29,12 +34,13 @@
           @click="autoDetect"
           dense
           flat
-          title="自动区域检测"
           :loading="detecting"
         >
           <q-tooltip>AI自动区域检测</q-tooltip>
         </q-btn>
-        <q-btn icon="delete_outline" @click="clearAnnotations" dense flat title="清除所有标注" />
+        <q-btn icon="delete_outline" @click="clearAnnotations" dense flat color="negative">
+          <q-tooltip>清除所有标注</q-tooltip>
+        </q-btn>
       </q-btn-group>
 
       <q-space />
@@ -46,6 +52,8 @@
         flat
         no-caps
         size="sm"
+        color="primary"
+        class="bg-blue-50"
         @click="exportAnnotations"
         :disable="annotations.length === 0"
       />
@@ -166,9 +174,9 @@ const ZOOM_CONFIG = {
 } as const;
 
 const LABEL_CONFIG = {
-  MAX_LENGTH: 20, // 标签最大字符数
-  CHAR_WIDTH_CN: 12, // 中文字符估算宽度
-  CHAR_WIDTH_EN: 7, // 英文字符估算宽度
+  MAX_LENGTH: 30, // 标签最大字符数
+  CHAR_WIDTH_CN: 16, // 中文字符估算宽度
+  CHAR_WIDTH_EN: 12, // 英文字符估算宽度
   PADDING: 12, // 标签内边距
 } as const;
 // ==================================================
