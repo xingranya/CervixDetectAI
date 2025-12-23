@@ -14,7 +14,9 @@
     <div v-if="analysisResult" class="row q-mb-md">
       <div class="col-12">
         <q-card class="ai-result-card shadow-3 rounded-borders" style="border-radius: 16px">
-          <q-card-section class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light">
+          <q-card-section
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+          >
             <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
               <q-icon name="psychology" class="q-mr-sm text-primary" size="20px" />
               AI诊断结果
@@ -26,12 +28,17 @@
             <div class="row q-col-gutter-md">
               <!-- Diagnosis Conclusion -->
               <div class="col-md-4 col-12">
-                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full relative-position overflow-hidden">
+                <div
+                  class="bg-white q-pa-md rounded-borders shadow-1 h-full relative-position overflow-hidden"
+                >
                   <div class="text-subtitle2 text-grey-7 q-mb-sm flex items-center">
                     <q-icon name="health_and_safety" class="q-mr-xs" />
                     诊断结论
                   </div>
-                  <div class="text-h4 text-weight-bold q-mb-sm" :class="getRiskColorClass(analysisResult.diagnosis)">
+                  <div
+                    class="text-h4 text-weight-bold q-mb-sm"
+                    :class="getRiskColorClass(analysisResult.diagnosis)"
+                  >
                     {{ analysisResult.diagnosis }}
                   </div>
                   <q-badge
@@ -45,7 +52,7 @@
                   <q-icon
                     name="medical_services"
                     class="absolute-bottom-right text-grey-2"
-                    style="font-size: 80px; margin: -10px -10px;"
+                    style="font-size: 80px; margin: -10px -10px"
                   />
                 </div>
               </div>
@@ -58,15 +65,26 @@
                     生物标志物
                   </div>
                   <div class="q-gutter-y-sm">
-                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                    <div
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                    >
                       <span class="text-weight-medium text-grey-8">HPV</span>
-                      <q-badge :color="analysisResult.biomarkers.HPV === '阳性' ? 'negative' : 'positive'" rounded outline :label="analysisResult.biomarkers.HPV" />
+                      <q-badge
+                        :color="analysisResult.biomarkers.HPV === '阳性' ? 'negative' : 'positive'"
+                        rounded
+                        outline
+                        :label="analysisResult.biomarkers.HPV"
+                      />
                     </div>
-                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                    <div
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                    >
                       <span class="text-weight-medium text-grey-8">p16</span>
                       <span class="text-grey-7">{{ analysisResult.biomarkers.p16 }}</span>
                     </div>
-                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                    <div
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                    >
                       <span class="text-weight-medium text-grey-8">Ki67</span>
                       <span class="text-grey-7">{{ analysisResult.biomarkers.Ki67 }}</span>
                     </div>
@@ -88,8 +106,17 @@
                     <div class="text-grey-7">个高风险区域</div>
                   </div>
                   <q-scroll-area style="height: 80px" v-if="analysisResult.suspiciousAreas">
-                    <div v-for="(area, idx) in analysisResult.suspiciousAreas" :key="idx" class="text-caption text-grey-8 q-mb-xs">
-                      <q-icon name="fiber_manual_record" size="6px" color="negative" class="q-mr-xs" />
+                    <div
+                      v-for="(area, idx) in analysisResult.suspiciousAreas"
+                      :key="idx"
+                      class="text-caption text-grey-8 q-mb-xs"
+                    >
+                      <q-icon
+                        name="fiber_manual_record"
+                        size="6px"
+                        color="negative"
+                        class="q-mr-xs"
+                      />
                       {{ idx + 1 }}. {{ area.description }}
                     </div>
                   </q-scroll-area>
@@ -99,7 +126,10 @@
           </q-card-section>
 
           <!-- Recommendations -->
-          <q-card-section v-if="analysisResult.recommendations?.length" class="bg-white border-top-light">
+          <q-card-section
+            v-if="analysisResult.recommendations?.length"
+            class="bg-white border-top-light"
+          >
             <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-md flex items-center">
               <q-icon name="recommend" class="q-mr-sm text-primary" />
               临床建议
@@ -115,7 +145,10 @@
           </q-card-section>
 
           <!-- Detailed Report -->
-          <q-card-section v-if="analysisResult.detailedReport" class="bg-grey-1 border-top-light q-pa-none">
+          <q-card-section
+            v-if="analysisResult.detailedReport"
+            class="bg-grey-1 border-top-light q-pa-none"
+          >
             <q-expansion-item
               dense
               expand-separator
@@ -126,7 +159,10 @@
             >
               <q-card flat class="bg-grey-1">
                 <q-card-section>
-                  <div class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1" style="white-space: pre-wrap; line-height: 1.6;">
+                  <div
+                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1"
+                    style="white-space: pre-wrap; line-height: 1.6"
+                  >
                     {{ analysisResult.detailedReport }}
                   </div>
                 </q-card-section>
@@ -551,77 +587,79 @@
                 高级增强选项
               </div>
               <div class="row q-col-gutter-sm">
-                <!-- Vessel Enhancement -->
+                <!-- Nucleus Enhancement -->
                 <div class="col-4">
                   <div
                     class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
                     :class="
-                      advancedOptions.vesselEnhancement
+                      advancedOptions.nucleusEnhancement
                         ? 'bg-primary text-white shadow-2'
                         : 'bg-white text-grey-7 hover-bg-grey-2'
                     "
-                    @click="advancedOptions.vesselEnhancement = !advancedOptions.vesselEnhancement"
+                    @click="
+                      advancedOptions.nucleusEnhancement = !advancedOptions.nucleusEnhancement
+                    "
                     v-ripple
                   >
-                    <q-icon name="bloodtype" size="sm" class="q-mb-xs" />
+                    <q-icon name="grain" size="sm" class="q-mb-xs" />
                     <div class="text-caption text-weight-bold" style="font-size: 11px">
-                      血管增强
+                      核质增强
                     </div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
                       size="14px"
-                      v-if="advancedOptions.vesselEnhancement"
+                      v-if="advancedOptions.nucleusEnhancement"
                     />
                   </div>
                 </div>
 
-                <!-- Multi-Spectral -->
+                <!-- Overlap Separation -->
                 <div class="col-4">
                   <div
                     class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
                     :class="
-                      advancedOptions.multiSpectral
+                      advancedOptions.overlapSeparation
                         ? 'bg-primary text-white shadow-2'
                         : 'bg-white text-grey-7 hover-bg-grey-2'
                     "
-                    @click="advancedOptions.multiSpectral = !advancedOptions.multiSpectral"
+                    @click="advancedOptions.overlapSeparation = !advancedOptions.overlapSeparation"
                     v-ripple
                   >
-                    <q-icon name="gradient" size="sm" class="q-mb-xs" />
+                    <q-icon name="layers_clear" size="sm" class="q-mb-xs" />
                     <div class="text-caption text-weight-bold" style="font-size: 11px">
-                      多光谱融合
+                      重叠分离
                     </div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
                       size="14px"
-                      v-if="advancedOptions.multiSpectral"
+                      v-if="advancedOptions.overlapSeparation"
                     />
                   </div>
                 </div>
 
-                <!-- Boundary Smoothing -->
+                <!-- Debris Filter -->
                 <div class="col-4">
                   <div
                     class="q-pa-sm rounded-borders cursor-pointer transition-all text-center border-light relative-position overflow-hidden"
                     :class="
-                      advancedOptions.boundarySmoothing
+                      advancedOptions.debrisFilter
                         ? 'bg-primary text-white shadow-2'
                         : 'bg-white text-grey-7 hover-bg-grey-2'
                     "
-                    @click="advancedOptions.boundarySmoothing = !advancedOptions.boundarySmoothing"
+                    @click="advancedOptions.debrisFilter = !advancedOptions.debrisFilter"
                     v-ripple
                   >
-                    <q-icon name="blur_on" size="sm" class="q-mb-xs" />
+                    <q-icon name="filter_alt_off" size="sm" class="q-mb-xs" />
                     <div class="text-caption text-weight-bold" style="font-size: 11px">
-                      边界平滑
+                      杂质过滤
                     </div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
                       size="14px"
-                      v-if="advancedOptions.boundarySmoothing"
+                      v-if="advancedOptions.debrisFilter"
                     />
                   </div>
                 </div>
@@ -847,9 +885,9 @@ const selectedModel = ref('宫颈病变分割模型 v3.2 (高精度)');
 const sensitivity = ref(65);
 const confidenceThreshold = ref(85);
 const advancedOptions = ref({
-  vesselEnhancement: true,
-  multiSpectral: false,
-  boundarySmoothing: true,
+  nucleusEnhancement: true,
+  overlapSeparation: false,
+  debrisFilter: true,
 });
 const fileInput = ref<HTMLInputElement | null>(null);
 const isUploading = ref(false);
@@ -1040,7 +1078,7 @@ const startAnalysis = async () => {
     if (response.success && response.data.task) {
       const taskId = response.data.task.task_id;
       currentTaskId.value = taskId;
-      addLog(`任务已创建: ${taskId}`, 95);
+      // addLog(`任务已创建: ${taskId}`, 95);
 
       // 开始轮询任务状态
       startPollingTaskStatus(taskId);
