@@ -13,88 +13,120 @@
     <!-- AI分析结果卡片 - 优先显示 -->
     <div v-if="analysisResult" class="row q-mb-md">
       <div class="col-12">
-        <q-card flat bordered class="ai-result-card">
-          <q-card-section class="bg-primary text-white">
-            <div class="text-h6">
-              <q-icon name="psychology" class="q-mr-sm" />
+        <q-card class="ai-result-card shadow-3 rounded-borders" style="border-radius: 16px">
+          <q-card-section class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light">
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="psychology" class="q-mr-sm text-primary" size="20px" />
               AI诊断结果
             </div>
+            <q-badge color="primary" rounded label="已完成" v-if="analysisResult" />
           </q-card-section>
-          <q-card-section>
+
+          <q-card-section class="q-pa-md bg-grey-1">
             <div class="row q-col-gutter-md">
-              <!-- 诊断结论 -->
+              <!-- Diagnosis Conclusion -->
               <div class="col-md-4 col-12">
-                <div class="text-subtitle2 text-grey-7 q-mb-xs">诊断结论</div>
-                <div class="text-h6 text-primary text-weight-bold">
-                  {{ analysisResult.diagnosis }}
-                </div>
-                <div class="q-mt-sm">
+                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full relative-position overflow-hidden">
+                  <div class="text-subtitle2 text-grey-7 q-mb-sm flex items-center">
+                    <q-icon name="health_and_safety" class="q-mr-xs" />
+                    诊断结论
+                  </div>
+                  <div class="text-h4 text-weight-bold q-mb-sm" :class="getRiskColorClass(analysisResult.diagnosis)">
+                    {{ analysisResult.diagnosis }}
+                  </div>
                   <q-badge
                     :color="getConfidenceBadgeColor(analysisResult.confidence)"
-                    :label="`置信度: ${Math.round(analysisResult.confidence * 100)}%`"
+                    rounded
+                    class="q-py-xs q-px-sm"
+                  >
+                    置信度: {{ Math.round(analysisResult.confidence * 100) }}%
+                  </q-badge>
+                  <!-- Decorative Background Icon -->
+                  <q-icon
+                    name="medical_services"
+                    class="absolute-bottom-right text-grey-2"
+                    style="font-size: 80px; margin: -10px -10px;"
                   />
                 </div>
               </div>
 
-              <!-- 生物标志物 -->
-              <div v-if="analysisResult.biomarkers" class="col-md-4 col-12">
-                <div class="text-subtitle2 text-grey-7 q-mb-xs">生物标志物</div>
-                <div class="q-gutter-xs">
-                  <div class="text-body2">
-                    <strong>HPV:</strong> {{ analysisResult.biomarkers.HPV }}
+              <!-- Biomarkers -->
+              <div class="col-md-4 col-12" v-if="analysisResult.biomarkers">
+                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full">
+                  <div class="text-subtitle2 text-grey-7 q-mb-md flex items-center">
+                    <q-icon name="biotech" class="q-mr-xs" />
+                    生物标志物
                   </div>
-                  <div class="text-body2">
-                    <strong>p16:</strong> {{ analysisResult.biomarkers.p16 }}
-                  </div>
-                  <div class="text-body2">
-                    <strong>Ki67:</strong> {{ analysisResult.biomarkers.Ki67 }}
+                  <div class="q-gutter-y-sm">
+                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                      <span class="text-weight-medium text-grey-8">HPV</span>
+                      <q-badge :color="analysisResult.biomarkers.HPV === '阳性' ? 'negative' : 'positive'" rounded outline :label="analysisResult.biomarkers.HPV" />
+                    </div>
+                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                      <span class="text-weight-medium text-grey-8">p16</span>
+                      <span class="text-grey-7">{{ analysisResult.biomarkers.p16 }}</span>
+                    </div>
+                    <div class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders">
+                      <span class="text-weight-medium text-grey-8">Ki67</span>
+                      <span class="text-grey-7">{{ analysisResult.biomarkers.Ki67 }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- 可疑区域统计 -->
+              <!-- Suspicious Areas -->
               <div class="col-md-4 col-12">
-                <div class="text-subtitle2 text-grey-7 q-mb-xs">可疑区域</div>
-                <div class="text-h6 text-negative text-weight-bold">
-                  {{ analysisResult.suspiciousAreas?.length || 0 }} 个
-                </div>
-                <div v-if="analysisResult.suspiciousAreas" class="q-mt-sm text-caption">
-                  <div v-for="(area, idx) in analysisResult.suspiciousAreas.slice(0, 3)" :key="idx">
-                    {{ idx + 1 }}. {{ area.description }}
+                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full">
+                  <div class="text-subtitle2 text-grey-7 q-mb-sm flex items-center">
+                    <q-icon name="warning_amber" class="q-mr-xs" />
+                    可疑区域
                   </div>
+                  <div class="row items-baseline q-mb-sm">
+                    <div class="text-h4 text-negative text-weight-bold q-mr-sm">
+                      {{ analysisResult.suspiciousAreas?.length || 0 }}
+                    </div>
+                    <div class="text-grey-7">个高风险区域</div>
+                  </div>
+                  <q-scroll-area style="height: 80px" v-if="analysisResult.suspiciousAreas">
+                    <div v-for="(area, idx) in analysisResult.suspiciousAreas" :key="idx" class="text-caption text-grey-8 q-mb-xs">
+                      <q-icon name="fiber_manual_record" size="6px" color="negative" class="q-mr-xs" />
+                      {{ idx + 1 }}. {{ area.description }}
+                    </div>
+                  </q-scroll-area>
                 </div>
               </div>
             </div>
           </q-card-section>
 
-          <!-- 建议 -->
-          <q-card-section v-if="analysisResult.recommendations?.length">
-            <div class="text-subtitle2 text-grey-7 q-mb-sm">临床建议</div>
-            <q-list dense bordered separator>
-              <q-item v-for="(rec, idx) in analysisResult.recommendations" :key="idx">
-                <q-item-section avatar>
-                  <q-icon name="check_circle" color="positive" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ rec }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
+          <!-- Recommendations -->
+          <q-card-section v-if="analysisResult.recommendations?.length" class="bg-white border-top-light">
+            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-md flex items-center">
+              <q-icon name="recommend" class="q-mr-sm text-primary" />
+              临床建议
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-12" v-for="(rec, idx) in analysisResult.recommendations" :key="idx">
+                <div class="bg-blue-50 q-pa-sm rounded-borders flex items-center text-blue-10">
+                  <q-icon name="check_circle" color="primary" class="q-mr-sm" size="sm" />
+                  {{ rec }}
+                </div>
+              </div>
+            </div>
           </q-card-section>
 
-          <!-- 详细报告 -->
-          <q-card-section v-if="analysisResult.detailedReport">
+          <!-- Detailed Report -->
+          <q-card-section v-if="analysisResult.detailedReport" class="bg-grey-1 border-top-light q-pa-none">
             <q-expansion-item
-              default-opened
               dense
               expand-separator
               icon="description"
-              label="查看详细报告"
-              header-class="text-primary text-weight-medium"
+              label="查看详细病理报告"
+              header-class="text-grey-8 bg-white"
+              class="bg-white"
             >
-              <q-card>
-                <q-card-section class="bg-grey-1">
-                  <div class="text-body2" style="white-space: pre-wrap">
+              <q-card flat class="bg-grey-1">
+                <q-card-section>
+                  <div class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1" style="white-space: pre-wrap; line-height: 1.6;">
                     {{ analysisResult.detailedReport }}
                   </div>
                 </q-card-section>

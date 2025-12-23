@@ -86,13 +86,13 @@
         />
         <svg class="analyzer-overlay" :width="imageWidth" :height="imageHeight" v-if="imageLoaded">
           <!-- Existing Annotations -->
-          <g v-for="(ann, index) in annotations" :key="index" class="annotation-group">
+          <g v-for="(ann, index) in clampedAnnotations" :key="index" class="annotation-group">
             <rect
               v-if="ann.type === 'rect'"
-              :x="ann.x"
-              :y="ann.y"
-              :width="ann.width"
-              :height="ann.height"
+              :x="ann.displayX"
+              :y="ann.displayY"
+              :width="ann.displayWidth"
+              :height="ann.displayHeight"
               :fill="getAnnotationFill(ann.confidence)"
               :stroke="getAnnotationColor(ann.confidence)"
               stroke-width="2"
@@ -104,8 +104,8 @@
             <!-- 标注标签背景 -->
             <rect
               v-if="ann.label"
-              :x="ann.x"
-              :y="ann.y - 24"
+              :x="ann.labelX"
+              :y="ann.labelY"
               :width="getLabelWidth(ann)"
               height="20"
               :fill="getAnnotationColor(ann.confidence)"
@@ -118,8 +118,8 @@
             <!-- 标注文字 -->
             <text
               v-if="ann.label"
-              :x="ann.x + 4"
-              :y="ann.y - 9"
+              :x="ann.labelX + 4"
+              :y="ann.labelY + 15"
               fill="white"
               font-size="12"
               font-weight="bold"
@@ -151,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useQuasar } from 'quasar';
 
 interface Annotation {
@@ -174,9 +174,9 @@ const ZOOM_CONFIG = {
 } as const;
 
 const LABEL_CONFIG = {
-  MAX_LENGTH: 30, // 标签最大字符数
-  CHAR_WIDTH_CN: 16, // 中文字符估算宽度
-  CHAR_WIDTH_EN: 12, // 英文字符估算宽度
+  MAX_LENGTH: 50, // 标签最大字符数
+  CHAR_WIDTH_CN: 12, // 中文字符估算宽度
+  CHAR_WIDTH_EN: 9, // 英文字符估算宽度
   PADDING: 12, // 标签内边距
 } as const;
 // ==================================================
@@ -337,6 +337,52 @@ const getLabelWidth = (ann: Annotation): number => {
     LABEL_CONFIG.PADDING
   );
 };
+
+const clampedAnnotations = computed(() => {
+  if (!imageLoaded.value || !imageWidth.value || !imageHeight.value) return [];
+
+  return annotations.value.map((ann) => {
+    // 1. Clamp coordinates
+    const x = Math.max(0, Math.min(ann.x, imageWidth.value));
+    const y = Math.max(0, Math.min(ann.y, imageHeight.value));
+    // Ensure width/height don't exceed image bounds from x/y
+    const width = Math.min(ann.width, imageWidth.value - x);
+    const height = Math.min(ann.height, imageHeight.value - y);
+
+    // 2. Smart Label Positioning
+    const labelWidth = getLabelWidth(ann);
+    const labelHeight = 24; // Height of rect + padding
+
+    // Horizontal: Align left, shift left if overflow
+    let labelX = x;
+    if (labelX + labelWidth > imageWidth.value) {
+      labelX = Math.max(0, imageWidth.value - labelWidth);
+    }
+
+    // Vertical: Top > Bottom > Inside Top
+    let labelY = y - 24;
+    // If top overflow
+    if (labelY < 0) {
+      // Try bottom
+      labelY = y + height + 4;
+      // If bottom overflow
+      if (labelY + labelHeight > imageHeight.value) {
+        // Inside top
+        labelY = y;
+      }
+    }
+
+    return {
+      ...ann,
+      displayX: x,
+      displayY: y,
+      displayWidth: width,
+      displayHeight: height,
+      labelX,
+      labelY,
+    };
+  });
+});
 
 const resetView = () => {
   fitToScreen();
