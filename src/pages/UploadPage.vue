@@ -12,89 +12,208 @@
     </div>
 
     <!-- 上传进度显示 -->
-    <div v-if="uploading" class="row q-mb-md">
-      <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-bold q-mb-sm">
-              <q-icon name="cloud_upload" class="q-mr-sm" />
-              上传中...
-            </div>
-            <q-linear-progress
-              :value="uploadProgress / 100"
-              color="primary"
-              size="12px"
-              class="q-mb-sm"
-            >
-              <div class="absolute-full flex flex-center">
-                <q-badge color="white" text-color="primary" :label="`${uploadProgress}%`" />
+    <transition name="fade">
+      <div v-if="uploading" class="row q-mb-md">
+        <div class="col-12">
+          <q-card flat bordered>
+            <q-card-section class="row items-center q-gutter-md">
+              <q-spinner-orbit color="primary" size="32px" />
+              <div class="col">
+                <div class="text-subtitle1 text-weight-bold q-mb-xs">
+                  <q-icon name="cloud_upload" class="q-mr-sm" />
+                  正在上传...
+                </div>
+                <q-linear-progress
+                  :value="uploadProgress / 100"
+                  color="primary"
+                  size="10px"
+                  rounded
+                  class="q-mb-xs"
+                >
+                  <div class="absolute-full flex flex-center">
+                    <q-badge color="white" text-color="primary" :label="`${uploadProgress}%`" />
+                  </div>
+                </q-linear-progress>
+                <div class="text-caption text-grey-7">正在上传图像到服务器，请勿关闭页面...</div>
               </div>
-            </q-linear-progress>
-            <div class="text-caption text-grey-7">正在上传图像到服务器...</div>
-          </q-card-section>
-        </q-card>
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
-    </div>
+    </transition>
 
     <div class="row q-col-gutter-md">
       <!-- 上传区域 -->
       <div class="col-lg-8 col-md-12">
-        <ImageUploader
-          :uploading="uploading"
-          :upload-progress="uploadProgress"
-          @file-selected="onFileSelected"
-          @upload="uploadAndAnalyze"
-        />
+        <q-card flat bordered class="upload-card">
+          <q-card-section>
+            <div class="row items-center q-mb-md">
+              <q-icon name="image" size="28px" color="primary" class="q-mr-sm" />
+              <div>
+                <div class="text-h6">上传宫颈刷片细胞学图像</div>
+                <div class="text-caption text-grey-6">支持 JPG、PNG、TIFF 格式，最大 20MB</div>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-separator />
+
+          <!-- 拖拽上传区域 -->
+          <q-card-section>
+            <div
+              class="upload-zone"
+              :class="{
+                'upload-zone--active': isDragging,
+                'upload-zone--has-file': selectedFile,
+              }"
+              @dragover.prevent="isDragging = true"
+              @dragleave.prevent="isDragging = false"
+              @drop.prevent="onDrop"
+              @click="triggerFileInput"
+            >
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept=".jpg,.jpeg,.png,.tiff"
+                class="hidden"
+                @change="onFileChange"
+              />
+
+              <transition name="fade" mode="out-in">
+                <div v-if="!selectedFile" key="empty" class="upload-zone__content">
+                  <q-icon name="cloud_upload" size="56px" color="primary" class="q-mb-md" />
+                  <div class="text-subtitle1 text-grey-8 q-mb-xs">拖拽图像到此处</div>
+                  <div class="text-body2 text-grey-6 q-mb-md">或点击选择文件</div>
+                  <q-btn
+                    color="primary"
+                    outline
+                    label="选择图像"
+                    icon="add_photo_alternate"
+                    @click.stop="triggerFileInput"
+                  />
+                </div>
+
+                <div v-else key="preview" class="upload-zone__preview">
+                  <q-img :src="imagePreviewUrl" spinner-color="primary" class="preview-image" />
+                  <div class="preview-info q-mt-md">
+                    <q-chip icon="check_circle" color="positive" text-color="white">
+                      {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
+                    </q-chip>
+                  </div>
+                </div>
+              </transition>
+            </div>
+          </q-card-section>
+
+          <q-separator v-if="selectedFile" />
+
+          <q-card-actions v-if="selectedFile" align="right" class="q-pa-md">
+            <q-btn flat label="清除" icon="delete_outline" @click="clearFile" />
+            <q-btn
+              color="primary"
+              label="上传并分析"
+              icon="rocket_launch"
+              :loading="uploading"
+              @click="uploadAndAnalyze"
+            >
+              <template v-slot:loading>
+                <q-spinner-hourglass class="on-left" />
+                处理中...
+              </template>
+            </q-btn>
+          </q-card-actions>
+        </q-card>
       </div>
 
       <!-- 信息表单区域 -->
       <div class="col-lg-4 col-md-12">
-        <StudyForm v-model="studyInfo" />
+        <!-- 病例信息表单 -->
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="bg-blue-1">
+            <div class="text-h6">
+              <q-icon name="assignment_ind" color="primary" class="q-mr-sm" />
+              病例信息
+            </div>
+            <div class="text-caption text-grey-7 q-mt-xs">
+              请填写完整的患者信息，带 * 的为必填项
+            </div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-gutter-md q-pa-lg">
+            <q-input
+              v-model="studyInfo.patientName"
+              outlined
+              label="患者姓名 *"
+              :rules="[(val) => (val && val.length > 0) || '请输入患者姓名']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="person" color="primary" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="studyInfo.patientId"
+              outlined
+              label="患者ID *"
+              :rules="[(val) => (val && val.length > 0) || '请输入患者ID']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="badge" color="primary" />
+              </template>
+            </q-input>
+
+            <q-select
+              v-model="studyInfo.modality"
+              outlined
+              label="检查方式 *"
+              :options="modalities"
+              :rules="[(val) => (val && val.length > 0) || '请选择检查方式']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="medical_services" color="primary" />
+              </template>
+            </q-select>
+
+            <q-input
+              v-model="studyInfo.studyDate"
+              outlined
+              label="检查日期 *"
+              type="date"
+              :rules="[(val) => (val && val.length > 0) || '请选择检查日期']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="event" color="primary" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="studyInfo.description"
+              outlined
+              label="病例描述（可选）"
+              type="textarea"
+              rows="3"
+            >
+              <template v-slot:prepend>
+                <q-icon name="description" color="primary" />
+              </template>
+            </q-input>
+          </q-card-section>
+        </q-card>
 
         <!-- 注意事项 -->
-        <q-card flat bordered class="q-mt-md bg-orange-1">
+        <q-card flat bordered class="bg-orange-1">
           <q-card-section>
             <div class="text-subtitle2 text-weight-bold text-orange-9">
-              <q-icon name="warning" class="q-mr-sm" />
-              注意事项
+              <q-icon name="tips_and_updates" class="q-mr-sm" />
+              上传须知
             </div>
             <q-list dense class="q-mt-sm">
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="check_circle" color="orange" size="xs" />
+              <q-item v-for="(tip, index) in tips" :key="index" class="q-pa-none q-mb-xs">
+                <q-item-section avatar style="min-width: 32px">
+                  <q-icon :name="tip.icon" :color="tip.color" size="xs" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption class="text-orange-9">
-                    请确保细胞学图像清晰、质量良好
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="check_circle" color="orange" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label caption class="text-orange-9">
-                    支持格式：JPG, PNG, TIFF
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="check_circle" color="orange" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label caption class="text-orange-9"> 文件大小不超过20MB </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="check_circle" color="orange" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label caption class="text-orange-9">
-                    AI分析需要约30-60秒左右
-                  </q-item-label>
+                  <q-item-label caption class="text-orange-9">{{ tip.text }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -106,24 +225,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { uploadImage } from 'src/services/apiService';
-import ImageUploader from 'components/studies/ImageUploader.vue';
-import StudyForm from 'components/studies/StudyForm.vue';
-import type { StudyInfo } from 'components/studies/StudyForm.vue';
 
 const router = useRouter();
 const $q = useQuasar();
 
+// 文件相关
+const fileInputRef = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
+const isDragging = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref(0);
-const currentStudyId = ref<number | null>(null);
 
-// Study information form
-const studyInfo = ref<StudyInfo>({
+// 检查方式选项
+const modalities = [
+  '巴氏染色涂片（Pap Smear）',
+  '液基细胞学（TCT/LCT）',
+  '宫颈活检切片（HE染色）',
+  'HPV分型检测图像',
+  'p16/Ki67双染图像',
+  '阴道镜检查',
+  '其他细胞学检查',
+];
+
+// 注意事项列表
+const tips = [
+  { icon: 'check_circle', color: 'orange', text: '请确保图像清晰、质量良好' },
+  { icon: 'check_circle', color: 'orange', text: '支持格式：JPG, PNG, TIFF' },
+  { icon: 'check_circle', color: 'orange', text: '文件大小不超过 20MB' },
+  { icon: 'check_circle', color: 'orange', text: 'AI 分析约需 30-60 秒' },
+];
+
+// 病例信息
+const studyInfo = ref({
   patientName: '',
   patientId: '',
   description: '',
@@ -131,16 +268,81 @@ const studyInfo = ref<StudyInfo>({
   studyDate: new Date().toISOString().split('T')[0] as string,
 });
 
-const onFileSelected = (file: File | null) => {
+// 图像预览 URL
+const imagePreviewUrl = computed(() => {
+  if (selectedFile.value) {
+    return URL.createObjectURL(selectedFile.value);
+  }
+  return '';
+});
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInputRef.value?.click();
+};
+
+// 文件选择变化
+const onFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (file) {
+    validateAndSetFile(file);
+  }
+};
+
+// 拖放处理
+const onDrop = (event: DragEvent) => {
+  isDragging.value = false;
+  const file = event.dataTransfer?.files[0];
+  if (file) {
+    validateAndSetFile(file);
+  }
+};
+
+// 验证并设置文件
+const validateAndSetFile = (file: File) => {
+  const validTypes = ['image/jpeg', 'image/png', 'image/tiff'];
+  const maxSize = 20 * 1024 * 1024; // 20MB
+
+  if (!validTypes.includes(file.type)) {
+    $q.notify({
+      type: 'warning',
+      message: '不支持的文件格式，请选择 JPG、PNG 或 TIFF 图像',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (file.size > maxSize) {
+    $q.notify({
+      type: 'warning',
+      message: '文件过大，请选择小于 20MB 的图像',
+      position: 'top',
+    });
+    return;
+  }
+
   selectedFile.value = file;
 };
 
-// Upload and analyze the image
-const uploadAndAnalyze = async () => {
-  console.log('🔵 uploadAndAnalyze 函数被调用');
+// 清除文件
+const clearFile = () => {
+  selectedFile.value = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+};
 
+// 上传并分析
+const uploadAndAnalyze = async () => {
   if (!selectedFile.value) {
-    console.warn('⚠️ 未选择文件');
     $q.notify({
       type: 'warning',
       message: '请先选择图像文件',
@@ -155,7 +357,6 @@ const uploadAndAnalyze = async () => {
     !studyInfo.value.modality ||
     !studyInfo.value.studyDate
   ) {
-    console.warn('⚠️ 缺少必填字段');
     $q.notify({
       type: 'warning',
       message: '请填写所有必填字段',
@@ -168,8 +369,6 @@ const uploadAndAnalyze = async () => {
   uploadProgress.value = 0;
 
   try {
-    console.log('📝 开始上传图像...');
-
     // 模拟上传进度
     const progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
@@ -191,9 +390,7 @@ const uploadAndAnalyze = async () => {
     uploadProgress.value = 100;
     uploading.value = false;
 
-    // 保存病例ID（确保类型正确）
     const studyId = response.studyDbId || parseInt(response.studyId);
-    currentStudyId.value = studyId;
 
     $q.notify({
       type: 'positive',
@@ -203,12 +400,8 @@ const uploadAndAnalyze = async () => {
       icon: 'check_circle',
     });
 
-    // 立即跳转到病例详情页，让分析页面处理进度显示
-    console.log(`🚀 跳转到病例详情: /app/studies/${studyId}`);
     await router.push(`/app/studies/${studyId}`);
   } catch (error) {
-    console.error('❌ 上传错误:', error);
-
     uploadProgress.value = 0;
 
     let errorMessage = '上传失败，请重试';
@@ -232,3 +425,72 @@ const uploadAndAnalyze = async () => {
   }
 };
 </script>
+
+<style scoped lang="scss">
+.upload-card {
+  min-height: 400px;
+}
+
+.upload-zone {
+  border: 2px dashed #d0d7de;
+  border-radius: 12px;
+  background: #fafbfc;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--q-primary);
+    background: #f0f7ff;
+  }
+
+  &--active {
+    border-color: var(--q-primary);
+    background: #e3f2fd;
+    border-style: solid;
+  }
+
+  &--has-file {
+    border-style: solid;
+    border-color: var(--q-positive);
+    background: #f9fafb;
+    cursor: default;
+  }
+
+  &__content {
+    text-align: center;
+    padding: 32px;
+  }
+
+  &__preview {
+    width: 100%;
+    padding: 16px;
+    text-align: center;
+  }
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.preview-info {
+  display: flex;
+  justify-content: center;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
