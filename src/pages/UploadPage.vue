@@ -178,11 +178,28 @@
               v-model="studyInfo.studyDate"
               outlined
               label="检查日期 *"
-              type="date"
+              readonly
               :rules="[(val) => (val && val.length > 0) || '请选择检查日期']"
             >
               <template v-slot:prepend>
                 <q-icon name="event" color="primary" />
+              </template>
+              <template v-slot:append>
+                <q-icon name="edit_calendar" class="cursor-pointer">
+                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                    <q-date
+                      v-model="studyInfo.studyDate"
+                      mask="YYYY-MM-DD"
+                      :locale="dateLocale"
+                      today-btn
+                    >
+                      <div class="row items-center justify-end q-gutter-sm">
+                        <q-btn label="取消" color="primary" flat v-close-popup />
+                        <q-btn label="确定" color="primary" flat v-close-popup />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-icon>
               </template>
             </q-input>
 
@@ -258,6 +275,27 @@ const tips = [
   { icon: 'check_circle', color: 'orange', text: '文件大小不超过 20MB' },
   { icon: 'check_circle', color: 'orange', text: 'AI 分析约需 30-60 秒' },
 ];
+
+// 日期选择器中文配置
+const dateLocale = {
+  days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+  daysShort: ['日', '一', '二', '三', '四', '五', '六'],
+  months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+  monthsShort: [
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
+  ],
+};
 
 // 病例信息
 const studyInfo = ref({
