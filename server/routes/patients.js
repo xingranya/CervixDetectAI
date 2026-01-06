@@ -109,10 +109,10 @@ router.get('/', authenticate, async (req, res) => {
       where.gender = gender;
     }
 
-    // 非管理员只能看到自己创建的患者
-    if (req.user.role !== 'admin') {
-      where.created_by = req.user.id;
-    }
+    // 权限调整：允许所有用户查看所有患者
+    // if (req.user.role !== 'admin') {
+    //   where.created_by = req.user.id;
+    // }
 
     const { count, rows } = await Patient.findAndCountAll({
       where,
@@ -173,13 +173,13 @@ router.get('/:id', authenticate, async (req, res) => {
       });
     }
 
-    // 非管理员只能查看自己创建的患者
-    if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: '无权访问该患者信息',
-      });
-    }
+    // 权限调整：允许所有用户查看所有患者
+    // if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: '无权访问该患者信息',
+    //   });
+    // }
 
     res.json({
       success: true,
@@ -346,13 +346,13 @@ router.get('/:id/studies', authenticate, async (req, res) => {
       });
     }
 
-    // 非管理员只能查看自己创建的患者
-    if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: '无权访问该患者信息',
-      });
-    }
+    // 权限调整：允许所有用户查看所有患者
+    // if (req.user.role !== 'admin' && patient.created_by !== req.user.id) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: '无权访问该患者信息',
+    //   });
+    // }
 
     const { Study } = require('../models');
     const studies = await Study.findAll({
