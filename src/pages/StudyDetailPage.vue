@@ -151,6 +151,7 @@
           >
             <q-expansion-item
               dense
+              default-opened
               expand-separator
               icon="description"
               label="查看详细病理报告"

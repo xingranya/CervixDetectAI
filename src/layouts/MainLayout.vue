@@ -152,22 +152,22 @@ const essentialLinks = [
     route: '/app',
   },
   {
-    title: '病例管理',
-    caption: '数据管理',  // 更新描述，强调数据操作
-    icon: 'folder',
+    title: '数据报表',
+    caption: '病例与报告',
+    icon: 'analytics',
     route: '/app/studies',
+  },
+  {
+    title: '患者管理',
+    caption: '患者信息',
+    icon: 'people',
+    route: '/app/patients',
   },
   {
     title: '上传分析',
     caption: '新分析',
     icon: 'upload',
     route: '/app/upload',
-  },
-  {
-    title: '报告中心',
-    caption: '报告归档',  // 更新描述，强调是归档查询
-    icon: 'description',
-    route: '/app/reports',
   },
 ];
 

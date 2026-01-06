@@ -1,56 +1,122 @@
 <template>
   <q-page class="q-pa-md">
+    <!-- 页面标题 -->
     <div class="row items-center q-mb-md">
       <div class="col">
-        <div class="text-h5">病例管理</div>
-        <div class="text-subtitle2">管理所有宫颈筛查病例</div>
+        <div class="text-h5">数据报表</div>
+        <div class="text-subtitle2 text-grey-7">管理所有病例与报告</div>
       </div>
       <div class="col-auto">
         <q-btn color="primary" icon="upload" label="新病例" no-caps to="/app/upload" />
       </div>
     </div>
 
-    <q-card flat bordered>
-      <q-card-section>
-        <q-table
-          :rows="studyStore.allStudies"
-          :columns="studyColumns"
-          :loading="studyStore.loading"
-          row-key="id"
-          :filter="filter"
-          :pagination="{ rowsPerPage: 10 }"
-        >
-          <template v-slot:top-right>
-            <q-input borderless dense debounce="300" v-model="filter" placeholder="搜索">
-              <template v-slot:append>
+    <!-- Tab 切换 -->
+    <q-card flat bordered class="q-mb-md">
+      <q-tabs
+        v-model="activeTab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+      >
+        <q-tab name="all" label="全部病例" icon="list" />
+        <q-tab name="completed" label="已完成" icon="check_circle">
+          <q-badge color="green" floating>{{ completedCount }}</q-badge>
+        </q-tab>
+        <q-tab name="processing" label="处理中" icon="hourglass_empty">
+          <q-badge color="orange" floating v-if="processingCount > 0">{{
+            processingCount
+          }}</q-badge>
+        </q-tab>
+        <q-tab name="failed" label="失败" icon="error">
+          <q-badge color="red" floating v-if="failedCount > 0">{{ failedCount }}</q-badge>
+        </q-tab>
+      </q-tabs>
+    </q-card>
+
+    <!-- 搜索和筛选 -->
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section class="q-py-sm">
+        <div class="row q-gutter-md items-center">
+          <div class="col-md-4 col-sm-6 col-xs-12">
+            <q-input
+              v-model="filter"
+              outlined
+              dense
+              placeholder="搜索患者姓名、ID..."
+              clearable
+              debounce="300"
+            >
+              <template v-slot:prepend>
                 <q-icon name="search" />
               </template>
             </q-input>
-          </template>
+          </div>
+          <div class="col-md-3 col-sm-6 col-xs-12" v-if="patientOptions.length > 0">
+            <q-select
+              v-model="selectedPatientId"
+              outlined
+              dense
+              :options="patientOptions"
+              label="按患者筛选"
+              emit-value
+              map-options
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="person" />
+              </template>
+            </q-select>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
 
+    <!-- 数据表格 -->
+    <q-card flat bordered>
+      <q-card-section class="q-pa-none">
+        <q-table
+          :rows="filteredStudies"
+          :columns="studyColumns"
+          :loading="studyStore.loading"
+          row-key="id"
+          :pagination="{ rowsPerPage: 10 }"
+        >
+          <!-- 检查日期列 -->
           <template v-slot:body-cell-studyDate="props">
             <q-td :props="props">
-              {{ new Date(props.row.studyDate).toLocaleDateString() }}
+              {{ formatDate(props.row.studyDate) }}
             </q-td>
           </template>
 
+          <!-- 状态列 -->
           <template v-slot:body-cell-status="props">
             <q-td :props="props">
-              <q-chip :color="getStatusColor(props.row.status)" text-color="white" dense>
-                {{ props.row.status }}
+              <q-chip :color="getStatusColor(props.row.status)" text-color="white" size="sm" dense>
+                {{ getStatusLabel(props.row.status) }}
               </q-chip>
             </q-td>
           </template>
 
+          <!-- 操作列 -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <q-btn flat size="sm" icon="remove_red_eye" @click="viewStudy(props.row.id)">
+              <q-btn
+                flat
+                size="sm"
+                icon="visibility"
+                color="primary"
+                @click="viewStudy(props.row.id)"
+              >
                 <q-tooltip>查看详情</q-tooltip>
               </q-btn>
               <q-btn
                 flat
                 size="sm"
-                icon="file_download"
+                icon="picture_as_pdf"
+                color="secondary"
                 @click="downloadReport(props.row.id)"
                 :disable="props.row.status !== 'completed'"
               >
@@ -69,6 +135,15 @@
               </q-btn>
             </q-td>
           </template>
+
+          <!-- 空状态 -->
+          <template v-slot:no-data>
+            <div class="full-width column flex-center q-pa-lg text-grey-6">
+              <q-icon name="folder_open" size="64px" class="q-mb-md" />
+              <div class="text-h6">暂无病例数据</div>
+              <div class="text-body2">点击右上角"新病例"上传第一个病例</div>
+            </div>
+          </template>
         </q-table>
       </q-card-section>
     </q-card>
@@ -76,25 +151,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
 import { getStudyAnalysis } from 'src/services/apiService';
 
-console.log('📦 [StudiesPage] 组件已初始化');
-
 const router = useRouter();
+const route = useRoute();
 const studyStore = useStudyStore();
 const $q = useQuasar();
+
+// Tab 状态
+const activeTab = ref('all');
 const filter = ref('');
+const selectedPatientId = ref<number | null>(null);
 
-console.log(
-  '🔍 [StudiesPage] studyStore 已初始化，当前 studies 数量:',
-  studyStore.allStudies.length,
-);
-
-// Define table columns
+// 表格列定义
 const studyColumns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' as const, sortable: true },
   {
@@ -104,13 +177,7 @@ const studyColumns = [
     align: 'left' as const,
     sortable: true,
   },
-  {
-    name: 'patientId',
-    label: '患者ID',
-    field: 'patientId',
-    align: 'left' as const,
-    sortable: true,
-  },
+  { name: 'patientId', label: '患者ID', field: 'patientId', align: 'left' as const },
   {
     name: 'studyDate',
     label: '检查日期',
@@ -118,20 +185,72 @@ const studyColumns = [
     align: 'left' as const,
     sortable: true,
   },
-  {
-    name: 'modality',
-    label: '检查方式',
-    field: 'modality',
-    align: 'left' as const,
-    sortable: true,
-  },
-  { name: 'bodyPart', label: '检查部位', field: 'bodyPart', align: 'left' as const },
+  { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
   { name: 'status', label: '状态', field: 'status', align: 'center' as const, sortable: true },
   { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
-// Function to get status color based on status
-const getStatusColor = (status: string) => {
+// 患者筛选选项
+const patientOptions = computed(() => {
+  const patients = new Map<number, string>();
+  studyStore.allStudies.forEach((s) => {
+    if (s.patient_id && s.patientName) {
+      patients.set(s.patient_id, s.patientName);
+    }
+  });
+  return Array.from(patients.entries()).map(([id, name]) => ({
+    value: id,
+    label: name,
+  }));
+});
+
+// 统计数量
+const completedCount = computed(
+  () => studyStore.allStudies.filter((s) => s.status === 'completed').length,
+);
+const processingCount = computed(
+  () => studyStore.allStudies.filter((s) => s.status === 'processing').length,
+);
+const failedCount = computed(
+  () => studyStore.allStudies.filter((s) => s.status === 'failed').length,
+);
+
+// 根据 Tab 和筛选条件过滤数据
+const filteredStudies = computed(() => {
+  let result = studyStore.allStudies;
+
+  // Tab 筛选
+  if (activeTab.value !== 'all') {
+    result = result.filter((s) => s.status === activeTab.value);
+  }
+
+  // 患者筛选
+  if (selectedPatientId.value) {
+    result = result.filter((s) => s.patient_id === selectedPatientId.value);
+  }
+
+  // 搜索筛选
+  if (filter.value) {
+    const keyword = filter.value.toLowerCase();
+    result = result.filter(
+      (s) =>
+        s.patientName?.toLowerCase().includes(keyword) ||
+        s.patientId?.toLowerCase().includes(keyword) ||
+        s.modality?.toLowerCase().includes(keyword),
+    );
+  }
+
+  return result;
+});
+
+// 格式化日期
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleDateString('zh-CN');
+};
+
+// 获取状态颜色
+const getStatusColor = (status: string): string => {
   switch (status) {
     case 'completed':
       return 'green';
@@ -144,43 +263,46 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Function to view a study
+// 获取状态标签
+const getStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'completed':
+      return '已完成';
+    case 'processing':
+      return '处理中';
+    case 'failed':
+      return '失败';
+    case 'pending':
+      return '待处理';
+    default:
+      return status;
+  }
+};
+
+// 查看病例详情
 const viewStudy = (id: number) => {
-  console.log('【StudiesPage】点击查看详情，ID:', id, '类型:', typeof id);
   void router.push(`/app/studies/${id}`);
 };
 
-// Function to download report
-const downloadReport = async (id: string) => {
+// 下载报告
+const downloadReport = async (id: number) => {
   try {
-    $q.loading.show({
-      message: `正在获取病例 ${id} 的数据...`,
-      spinnerColor: 'primary',
-    });
+    $q.loading.show({ message: '正在获取病例数据...', spinnerColor: 'primary' });
 
-    // 获取病例和分析数据
     const studyData = await getStudyAnalysis(String(id));
 
     if (!studyData.result) {
-      $q.notify({
-        type: 'warning',
-        message: '该病例暂无分析结果，无法生成报告',
-        position: 'top',
-      });
+      $q.notify({ type: 'warning', message: '该病例暂无分析结果，无法生成报告', position: 'top' });
       return;
     }
 
-    $q.loading.show({
-      message: '正在生成PDF报告...',
-      spinnerColor: 'primary',
-    });
+    $q.loading.show({ message: '正在生成PDF报告...', spinnerColor: 'primary' });
 
-    // 使用统一的 PDF 生成工具
     const { generatePDFReport } = await import('../utils/pdfGenerator');
-    
+
     await generatePDFReport({
       study: {
-        id: id,
+        id: String(id),
         patientName: studyData.studyInfo.patientName,
         patientId: studyData.studyInfo.patientId,
         studyDate: studyData.studyInfo.studyDate,
@@ -189,86 +311,62 @@ const downloadReport = async (id: string) => {
       result: studyData.result,
     });
 
-    $q.notify({
-      type: 'positive',
-      message: '报告已成功下载！',
-      position: 'top',
-      icon: 'download',
-    });
+    $q.notify({ type: 'positive', message: '报告已成功下载！', position: 'top', icon: 'download' });
   } catch (error) {
     console.error('生成 PDF 报告失败:', error);
-    $q.notify({
-      type: 'negative',
-      message: '生成报告失败，请稍后重试',
-      position: 'top',
-    });
+    $q.notify({ type: 'negative', message: '生成报告失败，请稍后重试', position: 'top' });
   } finally {
     $q.loading.hide();
   }
 };
 
-// Function to confirm and delete a study
-const confirmDelete = (id: string, patientName: string) => {
+// 确认删除
+const confirmDelete = (id: number, patientName: string) => {
   $q.dialog({
     title: '确认删除',
-    message: `确定要删除患者 "${patientName}" 的病例（ID: ${id}）吗？此操作不可恢复。`,
-    cancel: {
-      label: '取消',
-      color: 'grey',
-      flat: true,
-    },
-    ok: {
-      label: '删除',
-      color: 'negative',
-    },
+    message: `确定要删除患者"${patientName}"的病例（ID: ${id}）吗？此操作不可恢复。`,
+    cancel: { label: '取消', color: 'grey', flat: true },
+    ok: { label: '删除', color: 'negative' },
     persistent: true,
   }).onOk(() => {
-    void deleteStudy(id);
+    void (async () => {
+      try {
+        $q.loading.show({ message: '正在删除病例...', spinnerColor: 'negative' });
+        await studyStore.deleteStudy(id);
+        $q.notify({
+          type: 'positive',
+          message: '病例已成功删除',
+          position: 'top',
+          icon: 'check_circle',
+        });
+        await studyStore.fetchStudies();
+      } catch (error) {
+        console.error('删除病例失败:', error);
+        $q.notify({ type: 'negative', message: '删除病例失败，请稍后重试', position: 'top' });
+      } finally {
+        $q.loading.hide();
+      }
+    })();
   });
 };
 
-// Function to delete a study
-const deleteStudy = async (id: string) => {
-  try {
-    $q.loading.show({
-      message: '正在删除病例...',
-      spinnerColor: 'negative',
-    });
+// 监听路由参数（支持从患者页面跳转）
+watch(
+  () => route.query.patient_id,
+  (newVal) => {
+    if (newVal) {
+      selectedPatientId.value = Number(newVal);
+    }
+  },
+  { immediate: true },
+);
 
-    await studyStore.deleteStudy(Number(id));
-
-    $q.notify({
-      type: 'positive',
-      message: '病例已成功删除',
-      position: 'top',
-      icon: 'check_circle',
-    });
-
-    // 刷新病例列表
-    await studyStore.fetchStudies();
-  } catch (error) {
-    console.error('删除病例失败:', error);
-    $q.notify({
-      type: 'negative',
-      message: '删除病例失败，请稍后重试',
-      position: 'top',
-    });
-  } finally {
-    $q.loading.hide();
-  }
-};
-
-// Load studies when component mounts
+// 组件挂载时加载数据
 onMounted(async () => {
-  console.log('🔥 [StudiesPage] 组件已挂载，开始加载病例数据');
-  console.log('📋 [StudiesPage] 当前 studyStore.studies 长度:', studyStore.allStudies.length);
-
   try {
     await studyStore.fetchStudies();
-    console.log('✅ [StudiesPage] 病例数据加载完成');
-    console.log('📊 [StudiesPage] 最终 studyStore.studies 长度:', studyStore.allStudies.length);
   } catch (error) {
-    console.error('❌ [StudiesPage] 加载病例数据失败:', error);
+    console.error('加载病例数据失败:', error);
   }
 });
 </script>

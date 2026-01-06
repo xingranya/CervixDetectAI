@@ -31,10 +31,28 @@ const Patient = sequelize.define(
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+    sexual_history: {
+      type: DataTypes.ENUM(
+        'none',
+        'regular',
+        'irregular',
+        'multiple_partners',
+        'early_sexual_activity',
+        'other',
+      ),
+      allowNull: true,
+      defaultValue: 'none',
+      comment: '性生活史',
+    },
     id_card: {
       type: DataTypes.STRING(50),
       allowNull: true,
       comment: '身份证号（加密存储）',
+    },
+    medical_card_no: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: '医保卡号',
     },
     address: {
       type: DataTypes.STRING(500),
@@ -48,24 +66,39 @@ const Patient = sequelize.define(
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+    emergency_relation: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: '紧急联系人关系',
+    },
+    allergy_history: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '过敏史',
+    },
     medical_history: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    allergies: {
+    family_history: {
       type: DataTypes.TEXT,
       allowNull: true,
-      comment: '过敏信息',
+      comment: '家族病史',
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '备注',
     },
     created_by: {
       type: DataTypes.BIGINT,
-      allowNull: true, // 允许为null，支持匿名创建
+      allowNull: true,
       references: {
         model: 'users',
         key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'SET NULL', // 用户删除后设置为null
+      onDelete: 'SET NULL',
     },
   },
   {
@@ -88,8 +121,8 @@ const Patient = sequelize.define(
   },
 );
 
-// Hook：创建患者前自动生成patient_id
-Patient.beforeCreate(async (patient) => {
+// Hook：验证前自动生成 patient_id
+Patient.beforeValidate(async (patient) => {
   if (!patient.patient_id) {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000)

@@ -16,13 +16,18 @@ router.post('/', authenticate, async (req, res) => {
       name,
       gender,
       birth_date,
-      id_card,
       phone,
+      sexual_history,
+      id_card,
+      medical_card_no,
       address,
       emergency_contact,
       emergency_phone,
+      emergency_relation,
+      allergy_history,
       medical_history,
-      allergies,
+      family_history,
+      notes,
     } = req.body;
 
     // 验证必填字段
@@ -49,13 +54,18 @@ router.post('/', authenticate, async (req, res) => {
       name,
       gender,
       birth_date,
-      id_card,
       phone,
+      sexual_history: sexual_history || 'none',
+      id_card,
+      medical_card_no,
       address,
       emergency_contact,
       emergency_phone,
+      emergency_relation,
+      allergy_history,
       medical_history,
-      allergies,
+      family_history,
+      notes,
       created_by: req.user.id,
     });
 
@@ -212,26 +222,36 @@ router.put('/:id', authenticate, async (req, res) => {
       name,
       gender,
       birth_date,
-      id_card,
       phone,
+      sexual_history,
+      id_card,
+      medical_card_no,
       address,
       emergency_contact,
       emergency_phone,
+      emergency_relation,
+      allergy_history,
       medical_history,
-      allergies,
+      family_history,
+      notes,
     } = req.body;
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (gender !== undefined) updateData.gender = gender;
     if (birth_date !== undefined) updateData.birth_date = birth_date;
-    if (id_card !== undefined) updateData.id_card = id_card;
     if (phone !== undefined) updateData.phone = phone;
+    if (sexual_history !== undefined) updateData.sexual_history = sexual_history;
+    if (id_card !== undefined) updateData.id_card = id_card;
+    if (medical_card_no !== undefined) updateData.medical_card_no = medical_card_no;
     if (address !== undefined) updateData.address = address;
     if (emergency_contact !== undefined) updateData.emergency_contact = emergency_contact;
     if (emergency_phone !== undefined) updateData.emergency_phone = emergency_phone;
+    if (emergency_relation !== undefined) updateData.emergency_relation = emergency_relation;
+    if (allergy_history !== undefined) updateData.allergy_history = allergy_history;
     if (medical_history !== undefined) updateData.medical_history = medical_history;
-    if (allergies !== undefined) updateData.allergies = allergies;
+    if (family_history !== undefined) updateData.family_history = family_history;
+    if (notes !== undefined) updateData.notes = notes;
 
     // 如果更新身份证号,检查是否重复
     if (id_card && id_card !== patient.id_card) {

@@ -127,41 +127,67 @@
 
       <!-- 信息表单区域 -->
       <div class="col-lg-4 col-md-12">
-        <!-- 病例信息表单 -->
+        <!-- 患者选择卡片 -->
         <q-card flat bordered class="q-mb-md">
           <q-card-section class="bg-blue-1">
             <div class="text-h6">
-              <q-icon name="assignment_ind" color="primary" class="q-mr-sm" />
-              病例信息
+              <q-icon name="person_search" color="primary" class="q-mr-sm" />
+              选择患者
             </div>
-            <div class="text-caption text-grey-7 q-mt-xs">
-              请填写完整的患者信息，带 * 的为必填项
+            <div class="text-caption text-grey-7 q-mt-xs">搜索已有患者或新增患者信息</div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pa-lg">
+            <PatientSelector
+              v-model="selectedPatient"
+              label="搜索或选择患者 *"
+              :show-add-button="true"
+              @add-new="showAddPatientDialog = true"
+            />
+
+            <!-- 已选患者信息展示 -->
+            <transition name="fade">
+              <div v-if="selectedPatient" class="q-mt-md">
+                <q-card flat bordered class="bg-green-1">
+                  <q-card-section class="q-py-sm">
+                    <div class="row items-center">
+                      <q-avatar
+                        :color="selectedPatient.gender === 'female' ? 'pink-3' : 'blue-3'"
+                        text-color="white"
+                        size="40px"
+                        class="q-mr-md"
+                      >
+                        {{ selectedPatient.name?.charAt(0) }}
+                      </q-avatar>
+                      <div class="col">
+                        <div class="text-subtitle1 text-weight-bold">
+                          {{ selectedPatient.name }}
+                        </div>
+                        <div class="text-caption text-grey-7">
+                          {{ selectedPatient.gender === 'female' ? '女' : '男' }} ·
+                          {{ selectedPatient.phone }} · ID: {{ selectedPatient.id }}
+                        </div>
+                      </div>
+                      <q-btn flat round icon="close" size="sm" @click="selectedPatient = null" />
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </transition>
+          </q-card-section>
+        </q-card>
+
+        <!-- 检查信息表单 -->
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="bg-blue-1">
+            <div class="text-h6">
+              <q-icon name="assignment" color="primary" class="q-mr-sm" />
+              检查信息
             </div>
+            <div class="text-caption text-grey-7 q-mt-xs">填写本次检查的相关信息</div>
           </q-card-section>
           <q-separator />
           <q-card-section class="q-gutter-md q-pa-lg">
-            <q-input
-              v-model="studyInfo.patientName"
-              outlined
-              label="患者姓名 *"
-              :rules="[(val) => (val && val.length > 0) || '请输入患者姓名']"
-            >
-              <template v-slot:prepend>
-                <q-icon name="person" color="primary" />
-              </template>
-            </q-input>
-
-            <q-input
-              v-model="studyInfo.patientId"
-              outlined
-              label="患者ID *"
-              :rules="[(val) => (val && val.length > 0) || '请输入患者ID']"
-            >
-              <template v-slot:prepend>
-                <q-icon name="badge" color="primary" />
-              </template>
-            </q-input>
-
             <q-select
               v-model="studyInfo.modality"
               outlined
@@ -184,23 +210,19 @@
               <template v-slot:prepend>
                 <q-icon name="event" color="primary" />
               </template>
-              <template v-slot:append>
-                <q-icon name="edit_calendar" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date
-                      v-model="studyInfo.studyDate"
-                      mask="YYYY-MM-DD"
-                      :locale="dateLocale"
-                      today-btn
-                    >
-                      <div class="row items-center justify-end q-gutter-sm">
-                        <q-btn label="取消" color="primary" flat v-close-popup />
-                        <q-btn label="确定" color="primary" flat v-close-popup />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
+              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                <q-date
+                  v-model="studyInfo.studyDate"
+                  mask="YYYY-MM-DD"
+                  :locale="dateLocale"
+                  today-btn
+                >
+                  <div class="row items-center justify-end q-gutter-sm">
+                    <q-btn label="取消" color="primary" flat v-close-popup />
+                    <q-btn label="确定" color="primary" flat v-close-popup />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
             </q-input>
 
             <q-input
@@ -238,17 +260,53 @@
         </q-card>
       </div>
     </div>
+
+    <!-- 新增患者对话框 -->
+    <q-dialog v-model="showAddPatientDialog" persistent>
+      <q-card style="min-width: 500px; max-width: 600px">
+        <q-card-section class="row items-center bg-primary text-white">
+          <q-icon name="person_add" size="sm" class="q-mr-sm" />
+          <div class="text-h6">新增患者</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md q-px-lg" style="max-height: 70vh; overflow-y: auto">
+          <PatientForm
+            v-model="newPatientData"
+            @submit="handleAddPatient"
+            @cancel="showAddPatientDialog = false"
+          />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { uploadImage } from 'src/services/apiService';
+import { usePatientStore } from 'stores/patientStore';
+import type { Patient, CreatePatientRequest } from 'src/services/patientService';
+import PatientSelector from 'src/components/patients/PatientSelector.vue';
+import PatientForm from 'src/components/patients/PatientForm.vue';
 
 const router = useRouter();
 const $q = useQuasar();
+const patientStore = usePatientStore();
+
+// 患者选择相关
+const selectedPatient = ref<Patient | null>(null);
+const showAddPatientDialog = ref(false);
+const newPatientData = ref<CreatePatientRequest>({
+  name: '',
+  gender: 'female',
+  birthDate: '',
+  phone: '',
+  sexualHistory: 'none',
+});
 
 // 文件相关
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -297,13 +355,16 @@ const dateLocale = {
   ],
 };
 
-// 病例信息
+// 检查信息
 const studyInfo = ref({
-  patientName: '',
-  patientId: '',
   description: '',
   modality: '巴氏染色涂片（Pap Smear）',
   studyDate: new Date().toISOString().split('T')[0] as string,
+});
+
+// 初始化加载患者列表
+onMounted(async () => {
+  await patientStore.fetchPatients();
 });
 
 // 图像预览 URL
@@ -389,12 +450,17 @@ const uploadAndAnalyze = async () => {
     return;
   }
 
-  if (
-    !studyInfo.value.patientName ||
-    !studyInfo.value.patientId ||
-    !studyInfo.value.modality ||
-    !studyInfo.value.studyDate
-  ) {
+  // 验证患者选择
+  if (!selectedPatient.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请先选择患者',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (!studyInfo.value.modality || !studyInfo.value.studyDate) {
     $q.notify({
       type: 'warning',
       message: '请填写所有必填字段',
@@ -417,8 +483,8 @@ const uploadAndAnalyze = async () => {
     // 调用后端 API 上传图像并创建分析任务
     const response = await uploadImage({
       image: selectedFile.value,
-      patientName: studyInfo.value.patientName,
-      patientId: studyInfo.value.patientId,
+      patientName: selectedPatient.value.name,
+      patientId: String(selectedPatient.value.id),
       studyDate: studyInfo.value.studyDate,
       modality: studyInfo.value.modality,
       description: studyInfo.value.description,
@@ -460,6 +526,38 @@ const uploadAndAnalyze = async () => {
     });
   } finally {
     uploading.value = false;
+  }
+};
+
+/**
+ * 处理新增患者
+ */
+const handleAddPatient = async (data: CreatePatientRequest) => {
+  try {
+    const newPatient = await patientStore.addPatient(data);
+    selectedPatient.value = newPatient;
+    showAddPatientDialog.value = false;
+
+    // 重置表单
+    newPatientData.value = {
+      name: '',
+      gender: 'female',
+      birthDate: '',
+      phone: '',
+      sexualHistory: 'none',
+    };
+
+    $q.notify({
+      type: 'positive',
+      message: `患者「${newPatient.name}」添加成功`,
+      position: 'top',
+    });
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: '添加患者失败，请重试',
+      position: 'top',
+    });
   }
 };
 </script>
