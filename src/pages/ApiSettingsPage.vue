@@ -7,9 +7,7 @@
           <q-icon name="workspace_premium" class="q-mr-sm" color="primary" />
           订阅与AI设置
         </div>
-        <div class="text-subtitle2 text-grey-7">
-          选择适合您的AI辅助筛查订阅计划，配置AI引擎参数
-        </div>
+        <div class="text-subtitle2 text-grey-7">选择适合您的AI辅助筛查订阅计划，配置AI引擎参数</div>
       </div>
     </div>
 
@@ -33,15 +31,28 @@
                   <q-card-section class="text-center">
                     <q-icon name="payments" size="48px" color="primary" class="q-mb-sm" />
                     <div class="text-h6 q-mb-xs">按次付费</div>
-                    <div class="text-h4 text-primary q-my-sm">¥19<span class="text-body2">/次</span></div>
+                    <div class="text-h4 text-primary q-my-sm">
+                      ¥19<span class="text-body2">/次</span>
+                    </div>
                     <div class="text-caption text-grey-7">灵活支付，按需使用</div>
                   </q-card-section>
                   <q-separator />
                   <q-card-section>
                     <div class="q-gutter-xs">
-                      <div v-for="feature in payPerUseFeatures" :key="feature.text" class="row items-center no-wrap">
-                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
-                        <span class="text-body2" :class="feature.enabled ? '' : 'text-grey-5'">{{ feature.text }}</span>
+                      <div
+                        v-for="feature in payPerUseFeatures"
+                        :key="feature.text"
+                        class="row items-center no-wrap"
+                      >
+                        <q-icon
+                          :name="feature.icon"
+                          :color="feature.color"
+                          size="xs"
+                          class="q-mr-xs"
+                        />
+                        <span class="text-body2" :class="feature.enabled ? '' : 'text-grey-5'">{{
+                          feature.text
+                        }}</span>
                       </div>
                     </div>
                   </q-card-section>
@@ -63,7 +74,7 @@
                 <q-card
                   flat
                   bordered
-                  class="cursor-pointer"
+                  class="cursor-pointer subscription-card"
                   :class="{ 'bg-blue-1': selectedPlan === 'monthly' }"
                   @click="selectedPlan = 'monthly'"
                 >
@@ -74,14 +85,35 @@
                   <q-card-section class="text-center">
                     <q-icon name="calendar_month" size="48px" color="primary" class="q-mb-sm" />
                     <div class="text-h6 q-mb-xs">月度订阅</div>
-                    <div class="text-h4 text-primary q-my-sm">¥299<span class="text-body2">/月</span></div>
+                    
+                    <!-- 价格显示优化 -->
+                    <div class="price-container q-my-sm">
+                      <div class="original-price text-caption text-grey-6 text-strike">¥299</div>
+                      <div class="current-price">
+                        <span class="text-h4 text-primary text-weight-bold">¥270</span>
+                        <span class="text-body2 text-grey-7">/月</span>
+                      </div>
+                      <div class="discount-tag q-mt-xs">
+                        首月立减29元
+                      </div>
+                    </div>
+                    
                     <div class="text-caption text-grey-7">包含20次AI分析</div>
                   </q-card-section>
                   <q-separator />
                   <q-card-section>
                     <div class="q-gutter-xs">
-                      <div v-for="feature in monthlyFeatures" :key="feature.text" class="row items-center no-wrap">
-                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
+                      <div
+                        v-for="feature in monthlyFeatures"
+                        :key="feature.text"
+                        class="row items-center no-wrap"
+                      >
+                        <q-icon
+                          :name="feature.icon"
+                          :color="feature.color"
+                          size="xs"
+                          class="q-mr-xs"
+                        />
                         <span class="text-body2">{{ feature.text }}</span>
                       </div>
                     </div>
@@ -104,7 +136,7 @@
                 <q-card
                   flat
                   bordered
-                  class="cursor-pointer"
+                  class="cursor-pointer subscription-card"
                   :class="{ 'bg-blue-1': selectedPlan === 'yearly' }"
                   @click="selectedPlan = 'yearly'"
                 >
@@ -115,16 +147,35 @@
                   <q-card-section class="text-center">
                     <q-icon name="workspace_premium" size="48px" color="positive" class="q-mb-sm" />
                     <div class="text-h6 q-mb-xs">年度订阅</div>
-                    <div class="text-h4 text-positive q-my-sm">¥2,999<span class="text-body2">/年</span></div>
-                    <q-chip dense color="positive" text-color="white" size="sm">
-                      立省590元
-                    </q-chip>
+                    
+                    <!-- 价格显示优化 -->
+                    <div class="price-container q-my-sm">
+                      <div class="original-price text-caption text-grey-6 text-strike">¥2,999</div>
+                      <div class="current-price">
+                        <span class="text-h4 text-positive text-weight-bold">¥2,700</span>
+                        <span class="text-body2 text-grey-7">/年</span>
+                      </div>
+                      <div class="discount-tag q-mt-xs">
+                        年度特惠299元
+                      </div>
+                    </div>
+                    
+                    <div class="text-caption text-positive text-weight-medium">相当于¥225/月</div>
                   </q-card-section>
                   <q-separator />
                   <q-card-section>
                     <div class="q-gutter-xs">
-                      <div v-for="feature in yearlyFeatures" :key="feature.text" class="row items-center no-wrap">
-                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
+                      <div
+                        v-for="feature in yearlyFeatures"
+                        :key="feature.text"
+                        class="row items-center no-wrap"
+                      >
+                        <q-icon
+                          :name="feature.icon"
+                          :color="feature.color"
+                          size="xs"
+                          class="q-mr-xs"
+                        />
                         <span class="text-body2">{{ feature.text }}</span>
                       </div>
                     </div>
@@ -190,9 +241,7 @@
                 color="orange"
                 class="q-mt-lg"
               />
-              <div class="text-caption text-grey-6 q-mt-sm">
-                调整AI对异常细胞的检测敏感度
-              </div>
+              <div class="text-caption text-grey-6 q-mt-sm">调整AI对异常细胞的检测敏感度</div>
 
               <div class="row q-mt-md">
                 <q-space />
@@ -218,7 +267,11 @@
               </div>
 
               <div class="q-gutter-sm q-mt-md">
-                <q-toggle v-model="preferences.enableReportHistory" label="启用报告历史保存" left-label>
+                <q-toggle
+                  v-model="preferences.enableReportHistory"
+                  label="启用报告历史保存"
+                  left-label
+                >
                   <q-tooltip>永久保存所有分析报告</q-tooltip>
                 </q-toggle>
                 <div class="text-caption text-grey-6 q-ml-md">
@@ -251,7 +304,13 @@
 
               <div class="row q-mt-md">
                 <q-space />
-                <q-btn unelevated color="primary" label="保存偏好" no-caps @click="savePreferences" />
+                <q-btn
+                  unelevated
+                  color="primary"
+                  label="保存偏好"
+                  no-caps
+                  @click="savePreferences"
+                />
               </div>
             </q-form>
           </q-card-section>
@@ -263,11 +322,7 @@
         <!-- 订阅状态 -->
         <q-card flat bordered>
           <q-card-section class="text-center">
-            <q-icon
-              :name="subscriptionStatus.icon"
-              :color="subscriptionStatus.color"
-              size="3rem"
-            />
+            <q-icon :name="subscriptionStatus.icon" :color="subscriptionStatus.color" size="3rem" />
             <div class="text-h6 q-mt-md">
               {{ subscriptionStatus.title }}
             </div>
@@ -579,25 +634,31 @@
         </q-card-section>
         <q-card-section>
           <div class="row q-col-gutter-md">
-            <div
-              v-for="pkg in packageOptions"
-              :key="pkg.type"
-              class="col-12"
-            >
+            <div v-for="pkg in packageOptions" :key="pkg.type" class="col-12">
               <q-card
                 flat
                 bordered
-                class="cursor-pointer"
+                class="cursor-pointer package-card"
                 @click="handlePackagePurchase(pkg.type, pkg.amount)"
               >
                 <q-card-section class="row items-center q-pa-md">
                   <div class="col">
                     <div class="text-h6 text-weight-medium">{{ pkg.name }}</div>
                     <div class="text-caption text-grey-7 q-mt-xs">{{ pkg.credits }}</div>
+                    <!-- 优惠信息 -->
+                    <div v-if="pkg.discount" class="package-discount-tag q-mt-xs">
+                      {{ pkg.discountText }}
+                    </div>
                   </div>
                   <div class="col-auto text-right">
+                    <div v-if="pkg.originalAmount" class="original-price text-caption text-grey-6 text-strike">
+                      ¥{{ pkg.originalAmount }}
+                    </div>
                     <div class="text-h5 text-primary text-weight-bold">¥{{ pkg.amount }}</div>
-                    <div class="text-caption text-grey-6">¥{{ pkg.pricePerUnit }}/次</div>
+                    <div class="text-caption text-positive text-weight-medium">¥{{ pkg.pricePerUnit }}/次</div>
+                    <div v-if="pkg.saveAmount" class="text-caption text-orange text-weight-medium q-mt-xs">
+                      节省¥{{ pkg.saveAmount }}
+                    </div>
                   </div>
                   <div class="col-auto q-ml-md">
                     <q-icon name="arrow_forward_ios" color="grey-5" size="sm" />
@@ -645,7 +706,9 @@
                     <q-icon name="workspace_premium" color="primary" size="md" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-weight-medium">{{ paymentInfo.planName }}</q-item-label>
+                    <q-item-label class="text-weight-medium">{{
+                      paymentInfo.planName
+                    }}</q-item-label>
                     <q-item-label caption>{{ paymentInfo.credits }}</q-item-label>
                   </q-item-section>
                   <q-item-section side>
@@ -659,15 +722,24 @@
               <div class="payment-summary q-mt-lg">
                 <div class="summary-row">
                   <span class="text-grey-7">订阅费用</span>
-                  <span class="text-weight-medium">¥{{ paymentInfo.amount }}</span>
+                  <span class="text-weight-medium">¥{{ paymentInfo.originalAmount || paymentInfo.amount }}</span>
                 </div>
-                <div class="summary-row">
-                  <span class="text-grey-7">优惠折扣</span>
-                  <span class="text-positive">-¥0</span>
+                <div v-if="paymentInfo.discount && paymentInfo.discount > 0" class="summary-row discount-row">
+                  <span class="text-grey-7">
+                    <q-icon name="local_offer" size="xs" class="q-mr-xs" />
+                    {{ paymentInfo.discountReason }}
+                  </span>
+                  <span class="text-positive text-weight-medium">-¥{{ paymentInfo.discount }}</span>
                 </div>
+                <q-separator spaced />
                 <div class="summary-row total">
                   <span class="text-h6">应付总额</span>
                   <span class="text-h5 text-primary text-weight-bold">¥{{ paymentInfo.amount }}</span>
+                </div>
+                <div v-if="paymentInfo.discount && paymentInfo.discount > 0" class="text-center q-mt-sm">
+                  <q-chip dense color="orange" text-color="white" icon="celebration" size="sm">
+                    已为您节省 ¥{{ paymentInfo.discount }}
+                  </q-chip>
                 </div>
               </div>
             </div>
@@ -678,11 +750,7 @@
             <div class="q-pa-md">
               <div class="text-h6 q-mb-md">支付方式</div>
               <div class="row q-col-gutter-md">
-                <div
-                  v-for="method in paymentMethods"
-                  :key="method.value"
-                  class="col-12"
-                >
+                <div v-for="method in paymentMethods" :key="method.value" class="col-12">
                   <q-card
                     flat
                     bordered
@@ -691,7 +759,12 @@
                     @click="selectedPaymentMethod = method.value"
                   >
                     <q-card-section class="row items-center q-pa-md">
-                      <q-icon :name="method.icon" :color="method.color" size="32px" class="q-mr-md" />
+                      <q-icon
+                        :name="method.icon"
+                        :color="method.color"
+                        size="32px"
+                        class="q-mr-md"
+                      />
                       <div class="col">
                         <div class="text-body1 text-weight-medium">{{ method.label }}</div>
                         <div class="text-caption text-grey-6">{{ method.description }}</div>
@@ -714,9 +787,7 @@
                   </q-chip>
                 </div>
                 <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="lock">
-                    SSL证书
-                  </q-chip>
+                  <q-chip dense color="positive" text-color="white" icon="lock"> SSL证书 </q-chip>
                 </div>
                 <div class="col-auto">
                   <q-chip dense color="positive" text-color="white" icon="shield">
@@ -734,36 +805,53 @@
 
           <!-- 导航按钮 -->
           <template v-slot:navigation>
-            <q-stepper-navigation>
-              <q-btn
-                v-if="paymentStep > 1"
-                flat
-                label="上一步"
-                @click="stepper.previous()"
-                class="q-mr-sm"
-              />
-              <q-space />
-              <q-btn
-                flat
-                label="取消"
-                @click="cancelPayment"
-                class="q-mr-sm"
-              />
-              <q-btn
-                v-if="paymentStep < 2"
-                unelevated
-                label="下一步"
-                color="primary"
-                @click="stepper.next()"
-              />
-              <q-btn
-                v-else
-                unelevated
-                label="确认支付"
-                color="positive"
-                @click="processPayment"
-                :loading="paymentProcessing"
-              />
+            <q-stepper-navigation class="q-pa-md">
+              <div class="row items-center">
+                <q-btn
+                  v-if="paymentStep > 1"
+                  flat
+                  color="grey-8"
+                  label="上一步"
+                  icon="arrow_back"
+                  @click="stepper.previous()"
+                  no-caps
+                />
+                <q-space />
+                <q-btn
+                  flat
+                  color="grey-8"
+                  label="取消订单"
+                  @click="cancelPayment"
+                  no-caps
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  v-if="paymentStep < 2"
+                  unelevated
+                  label="下一步：选择支付方式"
+                  color="primary"
+                  icon-right="arrow_forward"
+                  @click="stepper.next()"
+                  no-caps
+                  size="md"
+                />
+                <q-btn
+                  v-else
+                  unelevated
+                  label="确认支付"
+                  color="positive"
+                  icon="payment"
+                  @click="processPayment"
+                  :loading="paymentProcessing"
+                  no-caps
+                  size="md"
+                  class="payment-confirm-btn"
+                >
+                  <template v-slot:loading>
+                    <q-spinner-dots color="white" />
+                  </template>
+                </q-btn>
+              </div>
             </q-stepper-navigation>
           </template>
         </q-stepper>
@@ -843,24 +931,36 @@ const packageOptions = [
     type: 'package-10',
     name: '10次套餐包',
     credits: '10次AI分析',
-    amount: 168,
-    pricePerUnit: '16.8',
+    originalAmount: 190,
+    amount: 158,
+    discount: 10,
+    discountText: '首次立减10元',
+    saveAmount: 32,
+    pricePerUnit: '15.8',
     recommended: false,
   },
   {
     type: 'package-30',
     name: '30次套餐包',
     credits: '30次AI分析',
-    amount: 468,
-    pricePerUnit: '15.6',
+    originalAmount: 570,
+    amount: 438,
+    discount: 30,
+    discountText: '阶梯优惠30元',
+    saveAmount: 132,
+    pricePerUnit: '14.6',
     recommended: false,
   },
   {
     type: 'package-50',
     name: '50次套餐包',
     credits: '50次AI分析',
-    amount: 699,
-    pricePerUnit: '14.0',
+    originalAmount: 950,
+    amount: 649,
+    discount: 50,
+    discountText: '超值立减50元',
+    saveAmount: 301,
+    pricePerUnit: '13.0',
     recommended: true,
   },
 ];
@@ -959,6 +1059,9 @@ interface PaymentInfo {
   planName: string;
   amount: number;
   credits: string;
+  originalAmount?: number; // 原价
+  discount?: number; // 优惠金额
+  discountReason?: string; // 优惠原因
 }
 
 const paymentInfo = ref<PaymentInfo>({
@@ -966,32 +1069,73 @@ const paymentInfo = ref<PaymentInfo>({
   planName: '',
   amount: 0,
   credits: '',
+  originalAmount: 0,
+  discount: 0,
+  discountReason: '',
 });
+
+// 计算优惠金额
+const calculateDiscount = (planType: string, originalAmount: number): { discount: number; reason: string } => {
+  // 月度订阅优惠策略
+  if (planType === 'monthly') {
+    if (originalAmount >= 299) {
+      return { discount: 29, reason: '首月立减29元' };
+    }
+  }
+  
+  // 年度订阅优惠策略
+  if (planType === 'yearly') {
+    if (originalAmount >= 2999) {
+      return { discount: 299, reason: '年度会员特惠299元' };
+    }
+  }
+  
+  // 套餐包阶梯优惠
+  if (planType.startsWith('package-')) {
+    if (originalAmount >= 699) {
+      return { discount: 50, reason: '套餐优惠立减50元' };
+    } else if (originalAmount >= 468) {
+      return { discount: 30, reason: '套餐优惠立减30元' };
+    } else if (originalAmount >= 168) {
+      return { discount: 10, reason: '首次购买立减10元' };
+    }
+  }
+  
+  return { discount: 0, reason: '' };
+};
 
 // 处理订阅
 const handleSubscribe = (planType: 'monthly' | 'yearly') => {
   const plans = {
     monthly: {
       planName: '月度订阅',
-      amount: 299,
+      originalAmount: 299,
       credits: '20次AI分析/月',
     },
     yearly: {
       planName: '年度订阅',
-      amount: 2999,
+      originalAmount: 2999,
       credits: '300次AI分析/年',
     },
   };
 
+  const plan = plans[planType];
+  const { discount, reason } = calculateDiscount(planType, plan.originalAmount);
+
   paymentInfo.value = {
     planType,
-    ...plans[planType],
+    planName: plan.planName,
+    originalAmount: plan.originalAmount,
+    discount,
+    discountReason: reason,
+    amount: plan.originalAmount - discount,
+    credits: plan.credits,
   };
   showPaymentDialog.value = true;
 };
 
 // 处理套餐包购买
-const handlePackagePurchase = (packageType: string, amount: number) => {
+const handlePackagePurchase = (packageType: string, originalAmount: number) => {
   const packages: Record<string, { planName: string; credits: string }> = {
     'package-10': { planName: '10次套餐包', credits: '10次AI分析' },
     'package-30': { planName: '30次套餐包', credits: '30次AI分析' },
@@ -1008,10 +1152,15 @@ const handlePackagePurchase = (packageType: string, amount: number) => {
     return;
   }
 
+  const { discount, reason } = calculateDiscount(packageType, originalAmount);
+
   paymentInfo.value = {
     planType: packageType,
-    amount,
     planName: packageInfo.planName,
+    originalAmount,
+    discount,
+    discountReason: reason,
+    amount: originalAmount - discount,
     credits: packageInfo.credits,
   };
   showPackageDialog.value = false;
@@ -1173,6 +1322,118 @@ loadSavedConfig();
 </script>
 
 <style scoped>
+/* 订阅卡片样式 */
+.subscription-card {
+  transition: all 0.3s ease;
+}
+
+.subscription-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 价格容器样式 */
+.price-container {
+  position: relative;
+}
+
+.original-price {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.current-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* 优惠标签样式 */
+.discount-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.discount-tag::before {
+  content: '🎫';
+  margin-right: 4px;
+}
+
+.discount-tag::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+/* 套餐包优惠标签 */
+.package-discount-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.25);
+}
+
+.package-discount-tag::before {
+  content: '🎫';
+  margin-right: 3px;
+}
+
+/* 套餐包卡片样式 */
+.package-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.package-card:hover {
+  border-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+  transform: translateX(4px);
+}
+
+.package-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #1976d2 0%, #42a5f5 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.package-card:hover::before {
+  opacity: 1;
+}
+
 /* 支付摘要样式 */
 .payment-summary {
   background: #f8f9fa;
@@ -1187,10 +1448,30 @@ loadSavedConfig();
   padding: 8px 0;
 }
 
+.summary-row.discount-row {
+  color: #21ba45;
+  background: linear-gradient(90deg, rgba(33, 186, 69, 0.05) 0%, transparent 100%);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
 .summary-row.total {
   border-top: 1px solid #e0e0e0;
   margin-top: 8px;
   padding-top: 12px;
   font-weight: bold;
+}
+
+/* 支付按钮特殊样式 */
+.payment-confirm-btn {
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+}
+
+.payment-confirm-btn:hover {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-1px);
 }
 </style>
