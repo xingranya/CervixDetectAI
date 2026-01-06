@@ -1,138 +1,258 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row">
-      <div class="col-12">
-        <div class="text-h5 q-mb-md">AI模型配置</div>
-        <p class="text-body1">
-          配置CervixDetect™
-          深度学习引擎的高级参数。我们的AI模型基于超过10万张宫颈细胞学图像训练，采用先进的卷积神经网络架构和多模态融合技术。
-        </p>
+    <!-- 页面头部 -->
+    <div class="row items-center q-mb-md">
+      <div class="col">
+        <div class="text-h5 q-mb-xs">
+          <q-icon name="workspace_premium" class="q-mr-sm" color="primary" />
+          订阅与AI设置
+        </div>
+        <div class="text-subtitle2 text-grey-7">
+          选择适合您的AI辅助筛查订阅计划，配置AI引擎参数
+        </div>
       </div>
     </div>
 
     <div class="row q-col-gutter-md">
-      <!-- API配置卡片 -->
+      <!-- 左侧主内容 -->
       <div class="col-lg-8 col-md-12">
-        <q-card flat bordered>
-          <q-card-section class="bg-primary text-white">
-            <div class="text-h6">
-              <q-icon name="psychology" size="sm" class="q-mr-sm" />
-              CervixDetect™ AI引擎配置
+        <!-- 订阅计划选择 -->
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section>
+            <div class="text-h6 q-mb-md">订阅服务计划</div>
+            <div class="row q-col-gutter-md">
+              <!-- 按次付费 -->
+              <div class="col-12 col-md-4">
+                <q-card
+                  flat
+                  bordered
+                  class="cursor-pointer"
+                  :class="{ 'bg-blue-1': selectedPlan === 'pay-per-use' }"
+                  @click="selectedPlan = 'pay-per-use'"
+                >
+                  <q-card-section class="text-center">
+                    <q-icon name="payments" size="48px" color="primary" class="q-mb-sm" />
+                    <div class="text-h6 q-mb-xs">按次付费</div>
+                    <div class="text-h4 text-primary q-my-sm">¥19<span class="text-body2">/次</span></div>
+                    <div class="text-caption text-grey-7">灵活支付，按需使用</div>
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section>
+                    <div class="q-gutter-xs">
+                      <div v-for="feature in payPerUseFeatures" :key="feature.text" class="row items-center no-wrap">
+                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
+                        <span class="text-body2" :class="feature.enabled ? '' : 'text-grey-5'">{{ feature.text }}</span>
+                      </div>
+                    </div>
+                  </q-card-section>
+                  <q-card-actions>
+                    <q-btn
+                      flat
+                      color="primary"
+                      label="选择套餐包"
+                      no-caps
+                      class="full-width"
+                      @click.stop="showPackageDialog = true"
+                    />
+                  </q-card-actions>
+                </q-card>
+              </div>
+
+              <!-- 月度订阅 -->
+              <div class="col-12 col-md-4">
+                <q-card
+                  flat
+                  bordered
+                  class="cursor-pointer"
+                  :class="{ 'bg-blue-1': selectedPlan === 'monthly' }"
+                  @click="selectedPlan = 'monthly'"
+                >
+                  <q-badge color="orange" floating>
+                    <q-icon name="star" size="xs" class="q-mr-xs" />
+                    推荐
+                  </q-badge>
+                  <q-card-section class="text-center">
+                    <q-icon name="calendar_month" size="48px" color="primary" class="q-mb-sm" />
+                    <div class="text-h6 q-mb-xs">月度订阅</div>
+                    <div class="text-h4 text-primary q-my-sm">¥299<span class="text-body2">/月</span></div>
+                    <div class="text-caption text-grey-7">包含20次AI分析</div>
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section>
+                    <div class="q-gutter-xs">
+                      <div v-for="feature in monthlyFeatures" :key="feature.text" class="row items-center no-wrap">
+                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
+                        <span class="text-body2">{{ feature.text }}</span>
+                      </div>
+                    </div>
+                  </q-card-section>
+                  <q-card-actions>
+                    <q-btn
+                      unelevated
+                      color="primary"
+                      label="立即订阅"
+                      no-caps
+                      class="full-width"
+                      @click.stop="handleSubscribe('monthly')"
+                    />
+                  </q-card-actions>
+                </q-card>
+              </div>
+
+              <!-- 年度订阅 -->
+              <div class="col-12 col-md-4">
+                <q-card
+                  flat
+                  bordered
+                  class="cursor-pointer"
+                  :class="{ 'bg-blue-1': selectedPlan === 'yearly' }"
+                  @click="selectedPlan = 'yearly'"
+                >
+                  <q-badge color="positive" floating>
+                    <q-icon name="trending_up" size="xs" class="q-mr-xs" />
+                    超值
+                  </q-badge>
+                  <q-card-section class="text-center">
+                    <q-icon name="workspace_premium" size="48px" color="positive" class="q-mb-sm" />
+                    <div class="text-h6 q-mb-xs">年度订阅</div>
+                    <div class="text-h4 text-positive q-my-sm">¥2,999<span class="text-body2">/年</span></div>
+                    <q-chip dense color="positive" text-color="white" size="sm">
+                      立省590元
+                    </q-chip>
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section>
+                    <div class="q-gutter-xs">
+                      <div v-for="feature in yearlyFeatures" :key="feature.text" class="row items-center no-wrap">
+                        <q-icon :name="feature.icon" :color="feature.color" size="xs" class="q-mr-xs" />
+                        <span class="text-body2">{{ feature.text }}</span>
+                      </div>
+                    </div>
+                  </q-card-section>
+                  <q-card-actions>
+                    <q-btn
+                      unelevated
+                      color="positive"
+                      label="立即订阅"
+                      no-caps
+                      class="full-width"
+                      @click.stop="handleSubscribe('yearly')"
+                    />
+                  </q-card-actions>
+                </q-card>
+              </div>
             </div>
           </q-card-section>
+        </q-card>
+
+        <!-- AI模型配置 -->
+        <q-card flat bordered class="q-mb-md">
           <q-card-section>
+            <div class="text-h6 q-mb-md">AI引擎配置</div>
             <q-form class="q-gutter-md">
-              <q-input
-                v-model="apiConfig.apiKey"
-                outlined
-                label="授权密钥 *"
-                :type="showApiKey ? 'text' : 'password'"
-                readonly
-                disable
-                class="text-grey-7"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    :name="showApiKey ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer"
-                    @click="showApiKey = !showApiKey"
-                  />
-                </template>
-                <template v-slot:hint>
-                  <div class="row items-center q-gutter-xs">
-                    <q-icon name="verified_user" color="positive" size="18px" />
-                    <span class="text-positive text-weight-medium"
-                      >试用模式激活中 · 剩余 {{ trialDaysRemaining }} 天</span
-                    >
-                  </div>
-                </template>
-              </q-input>
-
-              <q-input
-                v-model="apiConfig.endpoint"
-                outlined
-                label="推理服务端点"
-                hint="AI推理服务器地址（系统默认配置）"
-                readonly
-                disable
-                class="text-grey-7"
-              />
-
               <q-select
                 v-model="apiConfig.model"
                 outlined
-                label="AI引擎版本 *"
+                label="AI引擎版本"
                 :options="modelOptions"
                 emit-value
                 map-options
                 hint="选择要使用的CervixDetect AI引擎版本"
-                lazy-rules
-                :rules="[(val) => (val && val.length > 0) || 'AI引擎版本为必填项']"
-              />
+              >
+                <template v-slot:prepend>
+                  <q-icon name="psychology" />
+                </template>
+              </q-select>
 
-              <q-input
-                v-model.number="apiConfig.timeout"
-                outlined
-                type="number"
-                label="超时时间（秒）"
-                hint="API请求的最大等待时间"
-                :min="10"
-                :max="300"
+              <q-slider
+                v-model="apiConfig.confidence"
+                :min="0.7"
+                :max="0.95"
+                :step="0.05"
+                label
+                label-always
+                :label-value="'置信度阈值: ' + (apiConfig.confidence * 100).toFixed(0) + '%'"
+                color="primary"
+                class="q-mt-lg"
               />
+              <div class="text-caption text-grey-6 q-mt-sm">
+                AI诊断结果的最低置信度要求，值越高诊断越保守
+              </div>
 
-              <q-input
-                v-model.number="apiConfig.maxRetries"
-                outlined
-                type="number"
-                label="最大重试次数"
-                hint="请求失败时的重试次数"
-                :min="0"
-                :max="5"
+              <q-slider
+                v-model="apiConfig.sensitivity"
+                :min="0.8"
+                :max="1.0"
+                :step="0.05"
+                label
+                label-always
+                :label-value="'敏感性: ' + (apiConfig.sensitivity * 100).toFixed(0) + '%'"
+                color="orange"
+                class="q-mt-lg"
               />
+              <div class="text-caption text-grey-6 q-mt-sm">
+                调整AI对异常细胞的检测敏感度
+              </div>
 
-              <div class="row q-mt-lg">
-                <q-btn
-                  color="secondary"
-                  label="测试连接"
-                  icon="cable"
-                  @click="testConnection"
-                  :loading="testing"
-                  class="q-mr-sm"
-                >
-                  <template v-slot:loading>
-                    <q-spinner-dots />
-                  </template>
-                </q-btn>
+              <div class="row q-mt-md">
                 <q-space />
-                <q-btn color="grey" label="重置" flat @click="resetConfig" class="q-mr-sm" />
-                <q-btn color="primary" label="保存配置" icon="save" @click="saveConfig" />
+                <q-btn flat label="恢复默认" @click="resetAIConfig" class="q-mr-sm" />
+                <q-btn unelevated color="primary" label="保存配置" no-caps @click="saveAIConfig" />
               </div>
             </q-form>
           </q-card-section>
         </q-card>
 
-        <!-- 高级设置 -->
-        <q-card flat bordered class="q-mt-md">
+        <!-- 服务偏好设置 -->
+        <q-card flat bordered>
           <q-card-section>
-            <div class="text-h6">高级设置</div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
+            <div class="text-h6 q-mb-md">服务偏好设置</div>
             <q-form class="q-gutter-md">
-              <q-toggle v-model="apiConfig.enableCache" label="启用响应缓存" left-label />
-              <div class="text-caption text-grey-6 q-ml-md">缓存相同请求的响应以提高性能</div>
+              <div class="q-gutter-sm">
+                <q-toggle v-model="preferences.enableNotification" label="启用智能提醒" left-label>
+                  <q-tooltip>分析完成后通过系统通知提醒您</q-tooltip>
+                </q-toggle>
+                <div class="text-caption text-grey-6 q-ml-md">
+                  分析完成、报告生成、订阅到期等重要事件的实时提醒
+                </div>
+              </div>
 
-              <q-toggle v-model="apiConfig.enableLogging" label="启用详细日志" left-label />
-              <div class="text-caption text-grey-6 q-ml-md">记录所有API请求和响应用于调试</div>
+              <div class="q-gutter-sm q-mt-md">
+                <q-toggle v-model="preferences.enableReportHistory" label="启用报告历史保存" left-label>
+                  <q-tooltip>永久保存所有分析报告</q-tooltip>
+                </q-toggle>
+                <div class="text-caption text-grey-6 q-ml-md">
+                  自动保存所有历史报告，支持随时查看和下载
+                </div>
+              </div>
+
+              <div class="q-gutter-sm q-mt-md">
+                <q-toggle v-model="preferences.autoRenewal" label="自动续费" left-label>
+                  <q-tooltip>订阅到期时自动续费</q-tooltip>
+                </q-toggle>
+                <div class="text-caption text-grey-6 q-ml-md">
+                  订阅到期前自动续费，确保服务不中断
+                </div>
+              </div>
 
               <q-input
-                v-model="apiConfig.customPrompt"
+                v-model="preferences.reportPreference"
                 outlined
                 type="textarea"
-                label="诊断偏好设置（可选）"
-                hint="自定义AI诊断的敏感性偏好和关注重点"
-                rows="4"
-              />
+                label="报告偏好设置（可选）"
+                hint="自定义报告中希望特别关注的内容和展示方式"
+                rows="3"
+                class="q-mt-md"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="description" />
+                </template>
+              </q-input>
+
+              <div class="row q-mt-md">
+                <q-space />
+                <q-btn unelevated color="primary" label="保存偏好" no-caps @click="savePreferences" />
+              </div>
             </q-form>
           </q-card-section>
         </q-card>
@@ -140,33 +260,129 @@
 
       <!-- 侧边栏信息 -->
       <div class="col-lg-4 col-md-12">
-        <!-- 当前状态 -->
+        <!-- 订阅状态 -->
         <q-card flat bordered>
           <q-card-section class="text-center">
             <q-icon
-              :name="apiConfig.status === 'connected' ? 'check_circle' : 'error'"
-              :color="apiConfig.status === 'connected' ? 'positive' : 'grey'"
+              :name="subscriptionStatus.icon"
+              :color="subscriptionStatus.color"
               size="3rem"
             />
             <div class="text-h6 q-mt-md">
-              {{ apiConfig.status === 'connected' ? 'AI引擎已激活' : '引擎未激活' }}
+              {{ subscriptionStatus.title }}
             </div>
-            <div class="text-caption text-grey-6" v-if="apiConfig.lastTested">
-              上次验证: {{ formatDateTime(apiConfig.lastTested) }}
+            <div class="text-caption text-grey-6 q-mt-xs">
+              {{ subscriptionStatus.subtitle }}
             </div>
             <q-badge
-              v-if="apiConfig.status === 'connected'"
-              color="positive"
-              class="q-mt-sm"
-              outline
+              :color="subscriptionStatus.badgeColor"
+              class="q-mt-md"
+              :outline="subscriptionStatus.type === 'trial'"
             >
               <q-icon name="schedule" size="14px" class="q-mr-xs" />
-              试用期: {{ trialDaysRemaining }} 天
+              {{ subscriptionStatus.badge }}
             </q-badge>
+          </q-card-section>
+          <q-separator />
+          <q-card-section>
+            <div class="q-gutter-sm">
+              <div class="row items-center">
+                <div class="col-6 text-grey-6">订阅类型</div>
+                <div class="col-6 text-weight-medium text-right">
+                  {{ subscriptionStatus.planName }}
+                </div>
+              </div>
+              <div class="row items-center">
+                <div class="col-6 text-grey-6">到期时间</div>
+                <div class="col-6 text-weight-medium text-right">
+                  {{ subscriptionStatus.expireDate }}
+                </div>
+              </div>
+              <div class="row items-center">
+                <div class="col-6 text-grey-6">剩余次数</div>
+                <div class="col-6 text-primary text-weight-bold text-right">
+                  {{ subscriptionStatus.remainingCount }} 次
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+          <q-card-actions v-if="subscriptionStatus.type === 'trial'">
+            <q-btn
+              unelevated
+              color="primary"
+              label="立即升级"
+              icon="arrow_upward"
+              class="full-width"
+              @click="showUpgradeDialog = true"
+            />
+          </q-card-actions>
+        </q-card>
+
+        <!-- 订阅计划对比 -->
+        <q-card flat bordered class="q-mt-md">
+          <q-card-section>
+            <div class="text-h6 q-mb-md">
+              <q-icon name="compare" color="primary" class="q-mr-sm" />
+              订阅计划对比
+            </div>
+            <q-markup-table flat dense>
+              <thead>
+                <tr>
+                  <th class="text-left">功能</th>
+                  <th class="text-center">按次</th>
+                  <th class="text-center">月度</th>
+                  <th class="text-center">年度</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>AI分析</td>
+                  <td class="text-center">¥19/次</td>
+                  <td class="text-center">20次</td>
+                  <td class="text-center">300次</td>
+                </tr>
+                <tr>
+                  <td>报告保存</td>
+                  <td class="text-center">7天</td>
+                  <td class="text-center">永久</td>
+                  <td class="text-center">永久</td>
+                </tr>
+                <tr>
+                  <td>优先处理</td>
+                  <td class="text-center">
+                    <q-icon name="close" color="grey" size="xs" />
+                  </td>
+                  <td class="text-center">
+                    <q-icon name="check" color="positive" size="xs" />
+                  </td>
+                  <td class="text-center">
+                    <q-icon name="check" color="positive" size="xs" />
+                  </td>
+                </tr>
+                <tr>
+                  <td>客服支持</td>
+                  <td class="text-center">基础</td>
+                  <td class="text-center">标准</td>
+                  <td class="text-center">VIP</td>
+                </tr>
+                <tr>
+                  <td>数据统计</td>
+                  <td class="text-center">
+                    <q-icon name="close" color="grey" size="xs" />
+                  </td>
+                  <td class="text-center">
+                    <q-icon name="close" color="grey" size="xs" />
+                  </td>
+                  <td class="text-center">
+                    <q-icon name="check" color="positive" size="xs" />
+                  </td>
+                </tr>
+              </tbody>
+            </q-markup-table>
           </q-card-section>
         </q-card>
 
-        <!-- 模型性能指标 -->
+        <!-- AI引擎性能指标 -->
         <q-card flat bordered class="q-mt-md">
           <q-card-section>
             <div class="text-h6 q-mb-md">
@@ -174,13 +390,6 @@
               AI引擎性能指标
             </div>
             <div class="q-gutter-sm">
-              <div class="row items-center">
-                <div class="col-6 text-grey-6">引擎版本</div>
-                <div class="col-6 text-weight-medium text-right">
-                  {{ getModelDisplayName(apiConfig.model) }}
-                </div>
-              </div>
-              <q-separator spaced />
               <div class="row items-center">
                 <div class="col-6 text-grey-6">临床准确率</div>
                 <div class="col-6 text-positive text-weight-bold text-right">97.8%</div>
@@ -261,12 +470,12 @@
           </q-card-section>
         </q-card>
 
-        <!-- 配置指南 -->
+        <!-- 订阅指南 -->
         <q-card flat bordered class="q-mt-md">
           <q-card-section>
             <div class="text-h6 q-mb-md">
               <q-icon name="help_outline" color="info" class="q-mr-sm" />
-              配置指南
+              订阅指南
             </div>
             <q-list dense>
               <q-item>
@@ -275,7 +484,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label caption class="text-body2">
-                    联系技术支持获取系统授权密钥
+                    根据使用频率选择合适的订阅计划
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -286,7 +495,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label caption class="text-body2">
-                    输入授权密钥并选择合适的AI引擎版本
+                    点击"立即订阅"按钮进入支付流程
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -297,7 +506,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label caption class="text-body2">
-                    点击"测试连接"验证AI引擎连接状态
+                    完成支付后即可开始使用AI分析服务
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -308,7 +517,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label caption class="text-body2">
-                    保存配置并开始使用AI辅助诊断功能
+                    订阅到期前将收到续费提醒通知
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -357,6 +566,240 @@
         </q-card>
       </div>
     </div>
+
+    <!-- 套餐包选择弹窗 -->
+    <q-dialog v-model="showPackageDialog">
+      <q-card style="min-width: 500px; max-width: 600px">
+        <q-card-section class="bg-primary text-white">
+          <div class="text-h6">
+            <q-icon name="redeem" class="q-mr-sm" />
+            选择套餐包
+          </div>
+          <div class="text-caption">更多次数，更多优惠</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="row q-col-gutter-md">
+            <div
+              v-for="pkg in packageOptions"
+              :key="pkg.type"
+              class="col-12"
+            >
+              <q-card
+                flat
+                bordered
+                class="cursor-pointer"
+                @click="handlePackagePurchase(pkg.type, pkg.amount)"
+              >
+                <q-card-section class="row items-center q-pa-md">
+                  <div class="col">
+                    <div class="text-h6 text-weight-medium">{{ pkg.name }}</div>
+                    <div class="text-caption text-grey-7 q-mt-xs">{{ pkg.credits }}</div>
+                  </div>
+                  <div class="col-auto text-right">
+                    <div class="text-h5 text-primary text-weight-bold">¥{{ pkg.amount }}</div>
+                    <div class="text-caption text-grey-6">¥{{ pkg.pricePerUnit }}/次</div>
+                  </div>
+                  <div class="col-auto q-ml-md">
+                    <q-icon name="arrow_forward_ios" color="grey-5" size="sm" />
+                  </div>
+                </q-card-section>
+                <q-badge
+                  v-if="pkg.recommended"
+                  color="orange"
+                  floating
+                  style="top: 8px; right: 8px"
+                >
+                  <q-icon name="star" size="xs" class="q-mr-xs" />
+                  推荐
+                </q-badge>
+              </q-card>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="取消" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- 订阅支付弹窗 -->
+    <q-dialog v-model="showPaymentDialog" persistent>
+      <q-card style="width: 100%; max-width: 650px">
+        <q-card-section class="bg-primary text-white">
+          <div class="text-h6">
+            <q-icon name="shopping_cart" class="q-mr-sm" />
+            确认订阅
+          </div>
+          <div class="text-caption">安全、便捷的支付流程</div>
+        </q-card-section>
+
+        <!-- 步骤指示器 -->
+        <q-stepper v-model="paymentStep" ref="stepper" flat>
+          <!-- 步骤1: 订单确认 -->
+          <q-step :name="1" title="订单确认" icon="receipt" :done="paymentStep > 1">
+            <div class="q-pa-md">
+              <div class="text-h6 q-mb-md">订单详情</div>
+              <q-list bordered separator class="rounded-borders">
+                <q-item>
+                  <q-item-section avatar>
+                    <q-icon name="workspace_premium" color="primary" size="md" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-weight-medium">{{ paymentInfo.planName }}</q-item-label>
+                    <q-item-label caption>{{ paymentInfo.credits }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-item-label class="text-h6 text-primary text-weight-bold">
+                      ¥{{ paymentInfo.amount }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+
+              <div class="payment-summary q-mt-lg">
+                <div class="summary-row">
+                  <span class="text-grey-7">订阅费用</span>
+                  <span class="text-weight-medium">¥{{ paymentInfo.amount }}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="text-grey-7">优惠折扣</span>
+                  <span class="text-positive">-¥0</span>
+                </div>
+                <div class="summary-row total">
+                  <span class="text-h6">应付总额</span>
+                  <span class="text-h5 text-primary text-weight-bold">¥{{ paymentInfo.amount }}</span>
+                </div>
+              </div>
+            </div>
+          </q-step>
+
+          <!-- 步骤2: 支付方式 -->
+          <q-step :name="2" title="选择支付方式" icon="payment" :done="paymentStep > 2">
+            <div class="q-pa-md">
+              <div class="text-h6 q-mb-md">支付方式</div>
+              <div class="row q-col-gutter-md">
+                <div
+                  v-for="method in paymentMethods"
+                  :key="method.value"
+                  class="col-12"
+                >
+                  <q-card
+                    flat
+                    bordered
+                    class="cursor-pointer"
+                    :class="{ 'bg-blue-1': selectedPaymentMethod === method.value }"
+                    @click="selectedPaymentMethod = method.value"
+                  >
+                    <q-card-section class="row items-center q-pa-md">
+                      <q-icon :name="method.icon" :color="method.color" size="32px" class="q-mr-md" />
+                      <div class="col">
+                        <div class="text-body1 text-weight-medium">{{ method.label }}</div>
+                        <div class="text-caption text-grey-6">{{ method.description }}</div>
+                      </div>
+                      <q-radio
+                        v-model="selectedPaymentMethod"
+                        :val="method.value"
+                        color="primary"
+                      />
+                    </q-card-section>
+                  </q-card>
+                </div>
+              </div>
+
+              <!-- 安全信息 -->
+              <div class="row q-col-gutter-sm q-mt-md">
+                <div class="col-auto">
+                  <q-chip dense color="positive" text-color="white" icon="verified_user">
+                    安全加密
+                  </q-chip>
+                </div>
+                <div class="col-auto">
+                  <q-chip dense color="positive" text-color="white" icon="lock">
+                    SSL证书
+                  </q-chip>
+                </div>
+                <div class="col-auto">
+                  <q-chip dense color="positive" text-color="white" icon="shield">
+                    隐私保护
+                  </q-chip>
+                </div>
+                <div class="col-auto">
+                  <q-chip dense color="positive" text-color="white" icon="support_agent">
+                    7x24客服
+                  </q-chip>
+                </div>
+              </div>
+            </div>
+          </q-step>
+
+          <!-- 导航按钮 -->
+          <template v-slot:navigation>
+            <q-stepper-navigation>
+              <q-btn
+                v-if="paymentStep > 1"
+                flat
+                label="上一步"
+                @click="stepper.previous()"
+                class="q-mr-sm"
+              />
+              <q-space />
+              <q-btn
+                flat
+                label="取消"
+                @click="cancelPayment"
+                class="q-mr-sm"
+              />
+              <q-btn
+                v-if="paymentStep < 2"
+                unelevated
+                label="下一步"
+                color="primary"
+                @click="stepper.next()"
+              />
+              <q-btn
+                v-else
+                unelevated
+                label="确认支付"
+                color="positive"
+                @click="processPayment"
+                :loading="paymentProcessing"
+              />
+            </q-stepper-navigation>
+          </template>
+        </q-stepper>
+      </q-card>
+    </q-dialog>
+
+    <!-- 升级弹窗 -->
+    <q-dialog v-model="showUpgradeDialog">
+      <q-card style="min-width: 400px">
+        <q-card-section class="bg-primary text-white">
+          <div class="text-h6">升级订阅</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="text-body1 q-mb-md">
+            试用期即将结束，升级到正式订阅以继续享受AI辅助筛查服务。
+          </div>
+          <q-list bordered separator>
+            <q-item clickable v-ripple @click="handleUpgrade('monthly')">
+              <q-item-section>
+                <q-item-label>月度订阅</q-item-label>
+                <q-item-label caption>¥299/月 · 20次AI分析</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-ripple @click="handleUpgrade('yearly')">
+              <q-item-section>
+                <q-item-label>年度订阅 (推荐)</q-item-label>
+                <q-item-label caption>¥2,999/年 · 立省590元</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="稍后再说" color="grey" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -366,24 +809,70 @@ import { useQuasar } from 'quasar';
 
 const $q = useQuasar();
 
-// API配置数据
+// 选中的订阅计划
+const selectedPlan = ref<'pay-per-use' | 'monthly' | 'yearly' | null>(null);
+
+// 订阅计划功能列表
+const payPerUseFeatures = [
+  { icon: 'check_circle', color: 'positive', text: '单次AI分析', enabled: true },
+  { icon: 'check_circle', color: 'positive', text: '完整分析报告', enabled: true },
+  { icon: 'check_circle', color: 'positive', text: '7天报告保存', enabled: true },
+  { icon: 'cancel', color: 'grey-4', text: '优先处理', enabled: false },
+];
+
+const monthlyFeatures = [
+  { icon: 'check_circle', color: 'positive', text: '20次/月 AI分析' },
+  { icon: 'check_circle', color: 'positive', text: '完整分析报告' },
+  { icon: 'check_circle', color: 'positive', text: '永久报告保存' },
+  { icon: 'check_circle', color: 'positive', text: '优先处理' },
+  { icon: 'check_circle', color: 'positive', text: '智能提醒服务' },
+];
+
+const yearlyFeatures = [
+  { icon: 'check_circle', color: 'positive', text: '300次/年 AI分析' },
+  { icon: 'check_circle', color: 'positive', text: '完整分析报告' },
+  { icon: 'check_circle', color: 'positive', text: '永久报告保存' },
+  { icon: 'check_circle', color: 'positive', text: 'VIP优先处理' },
+  { icon: 'check_circle', color: 'positive', text: '专属客服支持' },
+  { icon: 'check_circle', color: 'positive', text: '数据统计分析' },
+];
+
+// 套餐包选项
+const packageOptions = [
+  {
+    type: 'package-10',
+    name: '10次套餐包',
+    credits: '10次AI分析',
+    amount: 168,
+    pricePerUnit: '16.8',
+    recommended: false,
+  },
+  {
+    type: 'package-30',
+    name: '30次套餐包',
+    credits: '30次AI分析',
+    amount: 468,
+    pricePerUnit: '15.6',
+    recommended: false,
+  },
+  {
+    type: 'package-50',
+    name: '50次套餐包',
+    credits: '50次AI分析',
+    amount: 699,
+    pricePerUnit: '14.0',
+    recommended: true,
+  },
+];
+
+// API配置数据 (AI引擎配置)
 const apiConfig = ref({
-  apiKey: 'CDAI-TRIAL-2024-****-****-****-9F8A',
-  endpoint: 'https://api.cervixdetect.com/v1/inference',
   model: 'qwen-vl-max',
-  timeout: 60,
-  maxRetries: 3,
-  enableCache: true,
-  enableLogging: false,
-  customPrompt: '',
-  status: 'connected' as 'connected' | 'disconnected',
-  lastTested: new Date().toISOString(),
+  confidence: 0.85,
+  sensitivity: 0.9,
 });
 
-// 试用期剩余天数
-const trialDaysRemaining = ref(7);
-
-// 模型选项 - 映射到内部实际模型
+// 模型选项
 const modelOptions = [
   {
     label: 'CervixDetect Pro (推荐)',
@@ -394,137 +883,314 @@ const modelOptions = [
   { label: 'CervixDetect Lite', value: 'qwen-vl-v1', description: '快速筛查模式' },
 ];
 
-// 获取模型显示名称
-const getModelDisplayName = (value: string) => {
-  if (!value) return '未设置';
-  const model = modelOptions.find((m) => m.value === value);
-  return model ? model.label : value;
+// 用户偏好设置
+const preferences = ref({
+  enableNotification: true,
+  enableReportHistory: true,
+  autoRenewal: false,
+  reportPreference: '',
+});
+
+// 订阅状态信息
+interface SubscriptionStatus {
+  type: 'trial' | 'active' | 'expired';
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  badge: string;
+  badgeColor: string;
+  planName: string;
+  expireDate: string;
+  remainingCount: number;
+}
+
+const subscriptionStatus = ref<SubscriptionStatus>({
+  type: 'trial',
+  title: '试用期激活中',
+  subtitle: '体验完整AI辅助筛查功能',
+  icon: 'verified_user',
+  color: 'positive',
+  badge: '剩余 7 天',
+  badgeColor: 'positive',
+  planName: '试用版',
+  expireDate: '2026-01-13',
+  remainingCount: 10,
+});
+
+// 支付相关
+const showPaymentDialog = ref(false);
+const showPackageDialog = ref(false);
+const showUpgradeDialog = ref(false);
+const paymentProcessing = ref(false);
+// 支付流程步骤控制
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stepper = ref<any>(null);
+const paymentStep = ref(1); // 支付流程步骤
+const selectedPaymentMethod = ref('alipay'); // 选中的支付方式
+
+// 支付方式选项
+const paymentMethods = [
+  {
+    value: 'alipay',
+    label: '支付宝',
+    description: '快捷安全的移动支付',
+    icon: 'account_balance_wallet',
+    color: 'blue',
+  },
+  {
+    value: 'wechat',
+    label: '微信支付',
+    description: '十亿用户的选择',
+    icon: 'chat',
+    color: 'green',
+  },
+  {
+    value: 'card',
+    label: '信用卡/借记卡',
+    description: '支持Visa、Mastercard等',
+    icon: 'credit_card',
+    color: 'orange',
+  },
+];
+
+interface PaymentInfo {
+  planType: string;
+  planName: string;
+  amount: number;
+  credits: string;
+}
+
+const paymentInfo = ref<PaymentInfo>({
+  planType: '',
+  planName: '',
+  amount: 0,
+  credits: '',
+});
+
+// 处理订阅
+const handleSubscribe = (planType: 'monthly' | 'yearly') => {
+  const plans = {
+    monthly: {
+      planName: '月度订阅',
+      amount: 299,
+      credits: '20次AI分析/月',
+    },
+    yearly: {
+      planName: '年度订阅',
+      amount: 2999,
+      credits: '300次AI分析/年',
+    },
+  };
+
+  paymentInfo.value = {
+    planType,
+    ...plans[planType],
+  };
+  showPaymentDialog.value = true;
 };
 
-const showApiKey = ref(false);
-const testing = ref(false);
+// 处理套餐包购买
+const handlePackagePurchase = (packageType: string, amount: number) => {
+  const packages: Record<string, { planName: string; credits: string }> = {
+    'package-10': { planName: '10次套餐包', credits: '10次AI分析' },
+    'package-30': { planName: '30次套餐包', credits: '30次AI分析' },
+    'package-50': { planName: '50次套餐包', credits: '50次AI分析' },
+  };
 
-// 保存原始配置用于重置
-const originalConfig = ref({ ...apiConfig.value });
-
-// 格式化时间显示
-const formatDateTime = (isoString: string) => {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes}分钟前`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}小时前`;
-
-  return date.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-// 测试连接
-const testConnection = async () => {
-  testing.value = true;
-
-  try {
-    // 模拟真实的API测试过程
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // 模拟验证步骤
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    apiConfig.value.status = 'connected';
-    apiConfig.value.lastTested = new Date().toISOString();
-
-    $q.notify({
-      type: 'positive',
-      message: 'AI引擎连接成功！系统已就绪',
-      caption: `引擎版本: ${getModelDisplayName(apiConfig.value.model)} | 延迟: 28ms`,
-      position: 'top',
-      timeout: 3000,
-      icon: 'check_circle',
-    });
-  } catch (error) {
-    apiConfig.value.status = 'disconnected';
-    const errorMessage =
-      error instanceof Error ? error.message : 'AI引擎连接失败，请检查授权密钥和网络连接';
+  const packageInfo = packages[packageType];
+  if (!packageInfo) {
     $q.notify({
       type: 'negative',
-      message: errorMessage,
-      position: 'top',
-    });
-  } finally {
-    testing.value = false;
-  }
-};
-
-// 保存配置
-const saveConfig = () => {
-  if (!apiConfig.value.apiKey || !apiConfig.value.model) {
-    $q.notify({
-      type: 'warning',
-      message: '请填写所有必填项',
+      message: '无效的套餐包',
       position: 'top',
     });
     return;
   }
 
-  // 保存到 localStorage
-  localStorage.setItem('qwen_api_config', JSON.stringify(apiConfig.value));
-  originalConfig.value = { ...apiConfig.value };
+  paymentInfo.value = {
+    planType: packageType,
+    amount,
+    planName: packageInfo.planName,
+    credits: packageInfo.credits,
+  };
+  showPackageDialog.value = false;
+  showPaymentDialog.value = true;
+};
 
+// 处理升级
+const handleUpgrade = (planType: 'monthly' | 'yearly') => {
+  showUpgradeDialog.value = false;
+  handleSubscribe(planType);
+};
+
+// 取消支付
+const cancelPayment = () => {
+  showPaymentDialog.value = false;
+  paymentStep.value = 1;
+  selectedPaymentMethod.value = 'alipay';
+};
+
+// 模拟支付流程
+const processPayment = async () => {
+  paymentProcessing.value = true;
+
+  try {
+    // 模拟支付处理延迟
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // 模拟支付成功
+    const isSuccess = Math.random() > 0.1; // 90% 成功率
+
+    if (isSuccess) {
+      // 更新订阅状态
+      if (paymentInfo.value.planType === 'monthly') {
+        subscriptionStatus.value = {
+          type: 'active',
+          title: '月度订阅已激活',
+          subtitle: '享受完整AI辅助筛查服务',
+          icon: 'check_circle',
+          color: 'positive',
+          badge: '有效期至 2026-02-06',
+          badgeColor: 'primary',
+          planName: '月度订阅',
+          expireDate: '2026-02-06',
+          remainingCount: 20,
+        };
+      } else if (paymentInfo.value.planType === 'yearly') {
+        subscriptionStatus.value = {
+          type: 'active',
+          title: '年度订阅已激活',
+          subtitle: 'VIP会员尊享服务',
+          icon: 'workspace_premium',
+          color: 'amber',
+          badge: '有效期至 2027-01-06',
+          badgeColor: 'amber',
+          planName: '年度订阅',
+          expireDate: '2027-01-06',
+          remainingCount: 300,
+        };
+      } else {
+        // 套餐包
+        const credits = parseInt(paymentInfo.value.credits);
+        subscriptionStatus.value.remainingCount += credits;
+      }
+
+      $q.notify({
+        type: 'positive',
+        message: '支付成功！',
+        caption: `${paymentInfo.value.planName} 已激活`,
+        position: 'top',
+        timeout: 3000,
+        icon: 'check_circle',
+      });
+
+      showPaymentDialog.value = false;
+    } else {
+      throw new Error('支付失败');
+    }
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: '支付失败',
+      caption: '请稍后重试或联系客服',
+      position: 'top',
+      icon: 'error',
+    });
+  } finally {
+    paymentProcessing.value = false;
+  }
+};
+
+// 保存AI配置
+const saveAIConfig = () => {
+  localStorage.setItem('ai_engine_config', JSON.stringify(apiConfig.value));
   $q.notify({
     type: 'positive',
-    message: 'AI引擎配置保存成功！',
+    message: 'AI引擎配置已保存',
     position: 'top',
+    icon: 'check_circle',
   });
 };
 
-// 重置配置
-const resetConfig = () => {
-  apiConfig.value = { ...originalConfig.value };
+// 重置AI配置
+const resetAIConfig = () => {
+  apiConfig.value = {
+    model: 'qwen-vl-max',
+    confidence: 0.85,
+    sensitivity: 0.9,
+  };
   $q.notify({
     type: 'info',
-    message: '已恢复为上次保存的配置',
+    message: '已恢复默认配置',
     position: 'top',
   });
 };
 
-// 打开文档（已移除，不再需要）
+// 保存用户偏好
+const savePreferences = () => {
+  localStorage.setItem('user_preferences', JSON.stringify(preferences.value));
+  $q.notify({
+    type: 'positive',
+    message: '偏好设置已保存',
+    position: 'top',
+    icon: 'check_circle',
+  });
+};
 
 // 加载保存的配置
 const loadSavedConfig = () => {
-  const saved = localStorage.getItem('qwen_api_config');
-  if (saved) {
+  const savedAIConfig = localStorage.getItem('ai_engine_config');
+  if (savedAIConfig) {
     try {
-      apiConfig.value = JSON.parse(saved);
-      originalConfig.value = { ...apiConfig.value };
+      apiConfig.value = JSON.parse(savedAIConfig);
     } catch (e) {
-      console.error('加载配置失败:', e);
+      console.error('加载AI配置失败:', e);
+    }
+  }
+
+  const savedPreferences = localStorage.getItem('user_preferences');
+  if (savedPreferences) {
+    try {
+      preferences.value = JSON.parse(savedPreferences);
+    } catch (e) {
+      console.error('加载偏好设置失败:', e);
+    }
+  }
+
+  const savedSubscription = localStorage.getItem('subscription_status');
+  if (savedSubscription) {
+    try {
+      subscriptionStatus.value = JSON.parse(savedSubscription);
+    } catch (e) {
+      console.error('加载订阅状态失败:', e);
     }
   }
 };
 
 // 页面加载时读取配置
 loadSavedConfig();
-
-// 模拟试用期倒计时
-const updateTrialDays = () => {
-  const trialStartDate = new Date('2024-11-12'); // 假设试用开始日期
-  const now = new Date();
-  const trialEndDate = new Date(trialStartDate);
-  trialEndDate.setDate(trialEndDate.getDate() + 7);
-
-  const diffTime = trialEndDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  trialDaysRemaining.value = diffDays > 0 ? diffDays : 0;
-};
-
-// 初始化试用期天数
-updateTrialDays();
 </script>
+
+<style scoped>
+/* 支付摘要样式 */
+.payment-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.summary-row.total {
+  border-top: 1px solid #e0e0e0;
+  margin-top: 8px;
+  padding-top: 12px;
+  font-weight: bold;
+}
+</style>
