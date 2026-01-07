@@ -251,13 +251,30 @@ export const userAPI = {
 };
 ```
 
-### 病例模块
+### 患者模块
 
-病例模块提供了创建、获取、更新、删除病例以及获取病例相关研究的功能。
+患者模块提供了创建、获取、更新、删除患者以及获取患者相关病例的功能。
 
 ```typescript
 export const patientAPI = {
-  async createPatient(patientData: any) {
+  async createPatient(patientData: {
+    name: string;
+    gender: 'male' | 'female' | 'other';
+    birth_date?: string;
+    phone?: string;
+    id_card?: string;
+    address?: string;
+    emergency_contact?: string;
+    emergency_phone?: string;
+    emergency_relation?: string;  // 新增字段
+    medical_card_no?: string;      // 新增字段
+    medical_history?: string;
+    sexual_history?: 'none' | 'regular' | 'irregular' | 'multiple_partners' | 'early_sexual_activity' | 'other';  // 新增字段
+    allergies?: string;
+    allergy_history?: string;      // 新增字段
+    family_history?: string;       // 新增字段
+    notes?: string;                // 新增字段
+  }) {
     const { data } = await apiClient.post('/patients', patientData);
     return data;
   },

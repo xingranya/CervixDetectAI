@@ -29,13 +29,18 @@
 | `gender` | ENUM('male', 'female', 'other') | 否 | 性别枚举 |
 | `birth_date` | DATEONLY | 是 | 出生日期 |
 | `phone` | STRING(20) | 是 | 联系电话 |
+| `sexual_history` | ENUM('none', 'regular', 'irregular', 'multiple_partners', 'early_sexual_activity', 'other') | 是 | 性生活史，默认值'none' |
 | `id_card` | STRING(50) | 是 | 身份证号（AES加密存储） |
+| `medical_card_no` | STRING(50) | 是 | 医保卡号 |
 | `address` | STRING(500) | 是 | 联系地址 |
 | `emergency_contact` | STRING(100) | 是 | 紧急联系人 |
 | `emergency_phone` | STRING(20) | 是 | 紧急电话 |
+| `emergency_relation` | STRING(50) | 是 | 紧急联系人关系 |
+| `allergy_history` | TEXT | 是 | 过敏史 |
 | `medical_history` | TEXT | 是 | 既往病史 |
-| `allergies` | TEXT | 是 | 过敏信息 |
-| `created_by` | BIGINT | 否 | 创建者用户ID，外键关联 `users.id` |
+| `family_history` | TEXT | 是 | 家族病史 |
+| `notes` | TEXT | 是 | 备注 |
+| `created_by` | BIGINT | 是 | 创建者用户ID，外键关联 `users.id`，删除时设置为NULL |
 
 **Section sources**
 - [Patient.js](file://server/models/Patient.js#L8-L69)
@@ -69,7 +74,7 @@
     -   `key: 'id'`：关联到 `users` 表的 `id` 字段。
 -   **级联操作**：
     -   `onUpdate: 'CASCADE'`：当 `users` 表中的用户ID更新时，`patients` 表中对应的 `created_by` 值会自动更新。
-    -   `onDelete: 'RESTRICT'`：这是关键的安全设计。当系统管理员试图删除一个 `users` 表中的用户时，如果该用户创建了任何患者记录，数据库将**阻止删除操作**。这确保了患者数据的来源可追溯，防止了因删除用户而导致患者记录成为“孤儿”数据，从而维护了数据的完整性和审计追踪能力。
+    -   `onDelete: 'SET NULL'`：当系统管理员删除一个 `users` 表中的用户时，该用户创建的患者记录的 `created_by` 字段将被设置为 NULL，而不是阻止删除操作。这允许用户账户被删除，同时保留患者历史记录，但会失去创建者的追溯信息。
 
 ```mermaid
 erDiagram
@@ -91,12 +96,17 @@ string name
 enum gender
 date birth_date
 string phone
+enum sexual_history "性生活史"
 string id_card "身份证号加密存储"
+string medical_card_no "医保卡号"
 string address
 string emergency_contact
 string emergency_phone
+string emergency_relation "紧急联系人关系"
+text allergy_history "过敏史"
 text medical_history
-text allergies
+text family_history "家族病史"
+text notes "备注"
 bigint created_by FK
 }
 users ||--o{ patients : "creates"

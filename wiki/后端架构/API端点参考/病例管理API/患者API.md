@@ -77,8 +77,14 @@ string id_card UK
 string address
 string emergency_contact
 string emergency_phone
+string emergency_relation
+string medical_card_no
 text medical_history
+enum sexual_history
 text allergies
+text allergy_history
+text family_history
+text notes
 bigint created_by FK
 timestamp created_at
 timestamp updated_at
@@ -113,8 +119,14 @@ PATIENT ||--|| USER : created_by::id
   "address": "北京市朝阳区",
   "emergency_contact": "李四",
   "emergency_phone": "13900139000",
+  "emergency_relation": "配偶",
+  "medical_card_no": "320106199001011234",
   "medical_history": "无",
-  "allergies": "无"
+  "sexual_history": "regular",
+  "allergies": "无",
+  "allergy_history": "无已知药物过敏",
+  "family_history": "母亲有乳腺癌病史",
+  "notes": "定期复查"
 }
 ```
 

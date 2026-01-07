@@ -73,13 +73,18 @@ end
   "name": "string",
   "gender": "male|female|other",
   "birth_date": "string (date)",
-  "id_card": "string",
   "phone": "string",
+  "sexual_history": "none|regular|irregular|multiple_partners|early_sexual_activity|other",
+  "id_card": "string",
+  "medical_card_no": "string",
   "address": "string",
   "emergency_contact": "string",
   "emergency_phone": "string",
+  "emergency_relation": "string",
+  "allergy_history": "string",
   "medical_history": "string",
-  "allergies": "string"
+  "family_history": "string",
+  "notes": "string"
 }
 ```
 
@@ -96,12 +101,17 @@ end
       "gender": "string",
       "birth_date": "string",
       "phone": "string",
+      "sexual_history": "string",
       "id_card": "string",
+      "medical_card_no": "string",
       "address": "string",
       "emergency_contact": "string",
       "emergency_phone": "string",
+      "emergency_relation": "string",
+      "allergy_history": "string",
       "medical_history": "string",
-      "allergies": "string",
+      "family_history": "string",
+      "notes": "string",
       "created_by": "number",
       "created_at": "string",
       "updated_at": "string"
@@ -152,12 +162,17 @@ end
         "gender": "string",
         "birth_date": "string",
         "phone": "string",
+        "sexual_history": "string",
         "id_card": "string",
+        "medical_card_no": "string",
         "address": "string",
         "emergency_contact": "string",
         "emergency_phone": "string",
+        "emergency_relation": "string",
+        "allergy_history": "string",
         "medical_history": "string",
-        "allergies": "string",
+        "family_history": "string",
+        "notes": "string",
         "created_by": "number",
         "created_at": "string",
         "updated_at": "string",
@@ -212,12 +227,17 @@ end
       "gender": "string",
       "birth_date": "string",
       "phone": "string",
+      "sexual_history": "string",
       "id_card": "string",
+      "medical_card_no": "string",
       "address": "string",
       "emergency_contact": "string",
       "emergency_phone": "string",
+      "emergency_relation": "string",
+      "allergy_history": "string",
       "medical_history": "string",
-      "allergies": "string",
+      "family_history": "string",
+      "notes": "string",
       "created_by": "number",
       "created_at": "string",
       "updated_at": "string",
@@ -264,13 +284,18 @@ end
   "name": "string",
   "gender": "male|female|other",
   "birth_date": "string (date)",
-  "id_card": "string",
   "phone": "string",
+  "sexual_history": "none|regular|irregular|multiple_partners|early_sexual_activity|other",
+  "id_card": "string",
+  "medical_card_no": "string",
   "address": "string",
   "emergency_contact": "string",
   "emergency_phone": "string",
+  "emergency_relation": "string",
+  "allergy_history": "string",
   "medical_history": "string",
-  "allergies": "string"
+  "family_history": "string",
+  "notes": "string"
 }
 ```
 
@@ -287,12 +312,17 @@ end
       "gender": "string",
       "birth_date": "string",
       "phone": "string",
+      "sexual_history": "string",
       "id_card": "string",
+      "medical_card_no": "string",
       "address": "string",
       "emergency_contact": "string",
       "emergency_phone": "string",
+      "emergency_relation": "string",
+      "allergy_history": "string",
       "medical_history": "string",
-      "allergies": "string",
+      "family_history": "string",
+      "notes": "string",
       "created_by": "number",
       "created_at": "string",
       "updated_at": "string",
@@ -428,12 +458,17 @@ string name
 enum gender
 date birth_date
 string phone
+enum sexual_history
 string id_card UK
+string medical_card_no
 string address
 string emergency_contact
 string emergency_phone
+string emergency_relation
+text allergy_history
 text medical_history
-text allergies
+text family_history
+text notes
 bigint created_by FK
 timestamp created_at
 timestamp updated_at
@@ -449,12 +484,17 @@ PATIENT ||--o{ STUDY : "拥有"
 - `gender`: 性别，枚举值(male, female, other)，必填
 - `birth_date`: 出生日期
 - `phone`: 电话号码
+- `sexual_history`: 性生活史，枚举值(none, regular, irregular, multiple_partners, early_sexual_activity, other)
 - `id_card`: 身份证号，加密存储
+- `medical_card_no`: 医保卡号
 - `address`: 地址
 - `emergency_contact`: 紧急联系人
 - `emergency_phone`: 紧急联系电话
+- `emergency_relation`: 紧急联系人关系
+- `allergy_history`: 过敏史
 - `medical_history`: 病史
-- `allergies`: 过敏信息
+- `family_history`: 家族病史
+- `notes`: 备注
 - `created_by`: 创建者用户ID，外键关联users表
 
 **Diagram sources**
