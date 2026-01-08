@@ -12,6 +12,7 @@
 </cite>
 
 ## 目录
+
 1. [项目概述](#项目概述)
 2. [HTTP客户端配置](#http客户端配置)
 3. [API端点组织](#api端点组织)
@@ -26,6 +27,7 @@
 CervixDetectAI是一个基于Vue 3和Quasar框架构建的前端应用，旨在提供一个AI驱动的宫颈癌筛查系统。该系统通过集成后端RESTful API，实现了用户认证、病例管理、AI分析和报告生成等核心功能。本技术文档详细说明了前端API集成的实现细节，包括基于axios的HTTP客户端配置、API端点的组织方式、业务服务的抽象逻辑以及最佳实践。
 
 **Section sources**
+
 - [axios.ts](file://src/boot/axios.ts)
 - [api.ts](file://src/services/api.ts)
 - [apiService.ts](file://src/services/apiService.ts)
@@ -52,6 +54,7 @@ AxiosConfig --> AxiosInstance : "创建"
 ```
 
 **Diagram sources**
+
 - [axios.ts](file://src/boot/axios.ts#L17-L23)
 
 ### 基础URL设置
@@ -59,12 +62,12 @@ AxiosConfig --> AxiosInstance : "创建"
 基础URL通过环境变量`VITE_API_BASE_URL`进行配置，如果环境变量未设置，则默认使用`http://localhost:3000/api`。这种配置方式使得应用可以在不同的环境中灵活切换后端API地址。
 
 ```typescript
-const api = axios.create({ 
+const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
 });
 ```
 
@@ -87,12 +90,14 @@ devServer: {
 ```
 
 此配置的关键参数说明：
+
 - `target`: 指定代理的目标服务器地址
 - `changeOrigin`: 设置为`true`以改变请求头中的origin字段，避免CORS问题
 - `ws`: 设置为`true`以支持WebSocket连接代理
 
 **Section sources**
-- [quasar.config.ts](file://quasar.config.ts#L81-L91) - *新增开发服务器代理配置*
+
+- [quasar.config.ts](file://quasar.config.ts#L81-L91) - _新增开发服务器代理配置_
 
 ### 请求/响应拦截器
 
@@ -113,6 +118,7 @@ Server-->>Client : 返回响应
 ```
 
 **Diagram sources**
+
 - [api.ts](file://src/services/api.ts#L18-L28)
 
 响应拦截器负责统一处理错误，特别是401未授权错误。当检测到401错误时，拦截器会尝试使用`refreshToken`刷新访问令牌。如果刷新成功，则重新发送原始请求；如果刷新失败，则清除本地存储的令牌并重定向到登录页面。
@@ -132,9 +138,11 @@ ReturnResponse --> End
 ```
 
 **Diagram sources**
+
 - [api.ts](file://src/services/api.ts#L31-L63)
 
 **Section sources**
+
 - [axios.ts](file://src/boot/axios.ts#L17-L37)
 - [api.ts](file://src/services/api.ts#L17-L63)
 
@@ -204,6 +212,7 @@ reportAPI --> apiClient : "使用"
 ```
 
 **Diagram sources**
+
 - [api.ts](file://src/services/api.ts#L66-L334)
 
 ### 认证模块
@@ -216,7 +225,7 @@ export const authAPI = {
     const { data } = await apiClient.post('/auth/login', { email, password });
     return data;
   },
-  
+
   async register(userData: {
     email: string;
     password: string;
@@ -226,7 +235,7 @@ export const authAPI = {
     const { data } = await apiClient.post('/auth/register', userData);
     return data;
   },
-  
+
   // ... 其他方法
 };
 ```
@@ -241,12 +250,12 @@ export const userAPI = {
     const { data } = await apiClient.get('/users/me');
     return data;
   },
-  
+
   async updateProfile(userData: { real_name?: string; phone?: string }) {
     const { data } = await apiClient.put('/users/me', userData);
     return data;
   },
-  
+
   // ... 其他方法
 };
 ```
@@ -266,24 +275,30 @@ export const patientAPI = {
     address?: string;
     emergency_contact?: string;
     emergency_phone?: string;
-    emergency_relation?: string;  // 新增字段
-    medical_card_no?: string;      // 新增字段
+    emergency_relation?: string; // 新增字段
+    medical_card_no?: string; // 新增字段
     medical_history?: string;
-    sexual_history?: 'none' | 'regular' | 'irregular' | 'multiple_partners' | 'early_sexual_activity' | 'other';  // 新增字段
+    sexual_history?:
+      | 'none'
+      | 'regular'
+      | 'irregular'
+      | 'multiple_partners'
+      | 'early_sexual_activity'
+      | 'other'; // 新增字段
     allergies?: string;
-    allergy_history?: string;      // 新增字段
-    family_history?: string;       // 新增字段
-    notes?: string;                // 新增字段
+    allergy_history?: string; // 新增字段
+    family_history?: string; // 新增字段
+    notes?: string; // 新增字段
   }) {
     const { data } = await apiClient.post('/patients', patientData);
     return data;
   },
-  
+
   async getPatients(params?: { page?: number; limit?: number; search?: string; gender?: string }) {
     const { data } = await apiClient.get('/patients', { params });
     return data;
   },
-  
+
   // ... 其他方法
 };
 ```
@@ -298,7 +313,7 @@ export const studyAPI = {
     const { data } = await apiClient.post('/studies', studyData);
     return data;
   },
-  
+
   async uploadImages(studyId: number, images: File[]) {
     const formData = new FormData();
     images.forEach((image) => {
@@ -309,7 +324,7 @@ export const studyAPI = {
     });
     return data;
   },
-  
+
   // ... 其他方法
 };
 ```
@@ -329,12 +344,12 @@ export const analysisTaskAPI = {
     const { data } = await apiClient.post('/analysis-tasks', taskData);
     return data;
   },
-  
+
   async saveResult(id: number, resultData: any) {
     const { data } = await apiClient.post(`/analysis-tasks/${id}/result`, resultData);
     return data;
   },
-  
+
   // ... 其他方法
 };
 ```
@@ -349,19 +364,20 @@ export const reportAPI = {
     const { data } = await apiClient.post('/reports', reportData);
     return data;
   },
-  
+
   async downloadReport(id: number) {
     const response = await apiClient.get(`/reports/${id}/download`, {
       responseType: 'blob',
     });
     return response.data;
   },
-  
+
   // ... 其他方法
 };
 ```
 
 **Section sources**
+
 - [api.ts](file://src/services/api.ts#L66-L334)
 
 ## 业务服务抽象
@@ -417,6 +433,7 @@ StudyAnalysisResponse --> ApiService : "作为返回值"
 ```
 
 **Diagram sources**
+
 - [apiService.ts](file://src/services/apiService.ts#L41-L55)
 - [apiService.ts](file://src/services/apiService.ts#L92-L122)
 - [apiService.ts](file://src/services/apiService.ts#L128-L131)
@@ -517,6 +534,7 @@ export async function pollTaskStatus(
 ```
 
 **Section sources**
+
 - [apiService.ts](file://src/services/apiService.ts#L41-L197)
 
 ## 调用示例
@@ -557,6 +575,7 @@ end
 ```
 
 **Diagram sources**
+
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L330-L480)
 
 ```typescript
@@ -682,6 +701,7 @@ const uploadAndAnalyze = async () => {
 ```
 
 **Section sources**
+
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L261-L482)
 
 ## 错误处理策略
@@ -704,6 +724,7 @@ B --> |否| G
 ```
 
 **Diagram sources**
+
 - [api.ts](file://src/services/api.ts#L38-L58)
 
 ### 网络错误和超时处理
@@ -743,6 +764,7 @@ try {
 ```
 
 **Section sources**
+
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L453-L477)
 
 ## 请求取消与防重复提交
@@ -762,6 +784,7 @@ E --> F[显示上传进度]
 虽然当前代码中没有显式实现请求取消，但可以通过axios的CancelToken或AbortController来实现。防重复提交则通过在`uploadAndAnalyze`函数中设置`uploading.value = true`来实现，确保在上传过程中按钮处于禁用状态。
 
 **Section sources**
+
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L278)
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L379)
 
@@ -805,4 +828,5 @@ E --> F[显示上传进度]
 - `GET /:id/download` - 下载PDF报告
 
 **Section sources**
+
 - [README.md](file://README.md#L418-L454)

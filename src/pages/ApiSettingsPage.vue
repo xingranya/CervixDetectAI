@@ -85,7 +85,7 @@
                   <q-card-section class="text-center">
                     <q-icon name="calendar_month" size="48px" color="primary" class="q-mb-sm" />
                     <div class="text-h6 q-mb-xs">月度订阅</div>
-                    
+
                     <!-- 价格显示优化 -->
                     <div class="price-container q-my-sm">
                       <div class="original-price text-caption text-grey-6 text-strike">¥299</div>
@@ -93,11 +93,9 @@
                         <span class="text-h4 text-primary text-weight-bold">¥270</span>
                         <span class="text-body2 text-grey-7">/月</span>
                       </div>
-                      <div class="discount-tag q-mt-xs">
-                        首月立减29元
-                      </div>
+                      <div class="discount-tag q-mt-xs">首月立减29元</div>
                     </div>
-                    
+
                     <div class="text-caption text-grey-7">包含20次AI分析</div>
                   </q-card-section>
                   <q-separator />
@@ -147,7 +145,7 @@
                   <q-card-section class="text-center">
                     <q-icon name="workspace_premium" size="48px" color="positive" class="q-mb-sm" />
                     <div class="text-h6 q-mb-xs">年度订阅</div>
-                    
+
                     <!-- 价格显示优化 -->
                     <div class="price-container q-my-sm">
                       <div class="original-price text-caption text-grey-6 text-strike">¥2,999</div>
@@ -155,11 +153,9 @@
                         <span class="text-h4 text-positive text-weight-bold">¥2,700</span>
                         <span class="text-body2 text-grey-7">/年</span>
                       </div>
-                      <div class="discount-tag q-mt-xs">
-                        年度特惠299元
-                      </div>
+                      <div class="discount-tag q-mt-xs">年度特惠299元</div>
                     </div>
-                    
+
                     <div class="text-caption text-positive text-weight-medium">相当于¥225/月</div>
                   </q-card-section>
                   <q-separator />
@@ -651,12 +647,20 @@
                     </div>
                   </div>
                   <div class="col-auto text-right">
-                    <div v-if="pkg.originalAmount" class="original-price text-caption text-grey-6 text-strike">
+                    <div
+                      v-if="pkg.originalAmount"
+                      class="original-price text-caption text-grey-6 text-strike"
+                    >
                       ¥{{ pkg.originalAmount }}
                     </div>
                     <div class="text-h5 text-primary text-weight-bold">¥{{ pkg.amount }}</div>
-                    <div class="text-caption text-positive text-weight-medium">¥{{ pkg.pricePerUnit }}/次</div>
-                    <div v-if="pkg.saveAmount" class="text-caption text-orange text-weight-medium q-mt-xs">
+                    <div class="text-caption text-positive text-weight-medium">
+                      ¥{{ pkg.pricePerUnit }}/次
+                    </div>
+                    <div
+                      v-if="pkg.saveAmount"
+                      class="text-caption text-orange text-weight-medium q-mt-xs"
+                    >
                       节省¥{{ pkg.saveAmount }}
                     </div>
                   </div>
@@ -722,9 +726,14 @@
               <div class="payment-summary q-mt-lg">
                 <div class="summary-row">
                   <span class="text-grey-7">订阅费用</span>
-                  <span class="text-weight-medium">¥{{ paymentInfo.originalAmount || paymentInfo.amount }}</span>
+                  <span class="text-weight-medium"
+                    >¥{{ paymentInfo.originalAmount || paymentInfo.amount }}</span
+                  >
                 </div>
-                <div v-if="paymentInfo.discount && paymentInfo.discount > 0" class="summary-row discount-row">
+                <div
+                  v-if="paymentInfo.discount && paymentInfo.discount > 0"
+                  class="summary-row discount-row"
+                >
                   <span class="text-grey-7">
                     <q-icon name="local_offer" size="xs" class="q-mr-xs" />
                     {{ paymentInfo.discountReason }}
@@ -734,9 +743,14 @@
                 <q-separator spaced />
                 <div class="summary-row total">
                   <span class="text-h6">应付总额</span>
-                  <span class="text-h5 text-primary text-weight-bold">¥{{ paymentInfo.amount }}</span>
+                  <span class="text-h5 text-primary text-weight-bold"
+                    >¥{{ paymentInfo.amount }}</span
+                  >
                 </div>
-                <div v-if="paymentInfo.discount && paymentInfo.discount > 0" class="text-center q-mt-sm">
+                <div
+                  v-if="paymentInfo.discount && paymentInfo.discount > 0"
+                  class="text-center q-mt-sm"
+                >
                   <q-chip dense color="orange" text-color="white" icon="celebration" size="sm">
                     已为您节省 ¥{{ paymentInfo.discount }}
                   </q-chip>
@@ -1075,21 +1089,24 @@ const paymentInfo = ref<PaymentInfo>({
 });
 
 // 计算优惠金额
-const calculateDiscount = (planType: string, originalAmount: number): { discount: number; reason: string } => {
+const calculateDiscount = (
+  planType: string,
+  originalAmount: number,
+): { discount: number; reason: string } => {
   // 月度订阅优惠策略
   if (planType === 'monthly') {
     if (originalAmount >= 299) {
       return { discount: 29, reason: '首月立减29元' };
     }
   }
-  
+
   // 年度订阅优惠策略
   if (planType === 'yearly') {
     if (originalAmount >= 2999) {
       return { discount: 299, reason: '年度会员特惠299元' };
     }
   }
-  
+
   // 套餐包阶梯优惠
   if (planType.startsWith('package-')) {
     if (originalAmount >= 699) {
@@ -1100,7 +1117,7 @@ const calculateDiscount = (planType: string, originalAmount: number): { discount
       return { discount: 10, reason: '首次购买立减10元' };
     }
   }
-  
+
   return { discount: 0, reason: '' };
 };
 
