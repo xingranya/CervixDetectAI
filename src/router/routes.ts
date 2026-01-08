@@ -9,6 +9,16 @@ const routes: RouteRecordRaw[] = [
       { path: 'login', component: () => import('pages/LoginPage.vue') },
       { path: 'register', component: () => import('pages/RegisterPage.vue') },
       { path: 'forgot-password', component: () => import('pages/ForgotPasswordPage.vue') },
+      {
+        path: 'user-agreement',
+        name: 'UserAgreement',
+        component: () => import('pages/UserAgreementPage.vue'),
+      },
+      {
+        path: 'privacy-policy',
+        name: 'PrivacyPolicy',
+        component: () => import('pages/PrivacyPolicyPage.vue'),
+      },
     ],
   },
 

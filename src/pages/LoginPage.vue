@@ -71,7 +71,23 @@
               <q-btn flat no-caps label="忘记密码？" to="/forgot-password" />
             </div>
 
-            <div class="q-mt-xl">
+            <!-- 协议复选框 -->
+            <div class="agreement-checkbox q-mt-sm">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
+                </span>
+              </q-checkbox>
+            </div>
+
+            <div class="q-mt-lg">
               <q-btn
                 color="primary"
                 :loading="authStore.isAuthenticating"
@@ -80,11 +96,14 @@
                 size="lg"
                 style="width: 100%"
                 type="submit"
-                :disabled="authStore.isAuthenticating"
+                :disabled="!agreeTerms || authStore.isAuthenticating"
               >
                 <span v-if="!authStore.isAuthenticating">登录</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
+              <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
+                请先同意用户协议和隐私政策
+              </div>
             </div>
           </q-form>
 
@@ -128,7 +147,23 @@
               </template>
             </q-input>
 
-            <div class="q-mt-xl">
+            <!-- 协议复选框 -->
+            <div class="agreement-checkbox q-mt-sm">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
+                </span>
+              </q-checkbox>
+            </div>
+
+            <div class="q-mt-lg">
               <q-btn
                 color="primary"
                 :loading="authStore.isAuthenticating"
@@ -137,11 +172,14 @@
                 size="lg"
                 style="width: 100%"
                 type="submit"
-                :disabled="authStore.isAuthenticating"
+                :disabled="!agreeTerms || authStore.isAuthenticating"
               >
                 <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
+              <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
+                请先同意用户协议和隐私政策
+              </div>
             </div>
           </q-form>
         </q-card-section>
@@ -152,6 +190,14 @@
         </q-card-section>
       </q-card>
     </div>
+
+    <!-- 协议弹窗 -->
+    <AgreementDialog
+      v-model="showAgreementDialog"
+      :initial-tab="agreementTab"
+      :show-agree-button="true"
+      @agree="agreeTerms = true"
+    />
   </q-page>
 </template>
 
@@ -161,6 +207,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { authAPI } from 'src/services/api';
 import { useQuasar } from 'quasar';
+import AgreementDialog from 'src/components/common/AgreementDialog.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -175,6 +222,20 @@ const isPwd = ref(true);
 const rememberMe = ref(true);
 const countdown = ref(0);
 const isSendingSms = ref(false);
+
+// 协议相关状态
+const agreeTerms = ref(false);
+const showAgreementDialog = ref(false);
+const agreementTab = ref<'agreement' | 'privacy'>('agreement');
+
+/**
+ * 显示协议弹窗
+ * @param tab 要显示的协议类型
+ */
+const showAgreement = (tab: 'agreement' | 'privacy') => {
+  agreementTab.value = tab;
+  showAgreementDialog.value = true;
+};
 
 // 倒计时文本
 const countdownText = computed(() => {
@@ -335,3 +396,21 @@ const onSmsLogin = async () => {
   }
 };
 </script>
+
+<style scoped>
+/* 协议复选框样式 */
+.agreement-checkbox {
+  margin-top: 8px;
+}
+
+.agreement-link {
+  color: #1976d2;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.agreement-link:hover {
+  text-decoration: underline;
+}
+</style>

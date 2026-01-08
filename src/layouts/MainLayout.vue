@@ -174,7 +174,7 @@ const essentialLinks = [
 // Analysis-specific links
 const analysisLinks = [
   {
-    title: 'API设置',
+    title: '订阅与AI设置',
     caption: '模型配置',
     icon: 'api',
     route: '/app/models',

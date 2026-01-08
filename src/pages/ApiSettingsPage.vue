@@ -756,6 +756,31 @@
                   </q-chip>
                 </div>
               </div>
+
+              <!-- 协议确认复选框 -->
+              <div class="agreement-section q-mt-lg">
+                <q-checkbox v-model="agreePaymentTerms" dense>
+                  <span class="text-body2 text-grey-8">
+                    我已阅读并同意
+                    <span
+                      class="agreement-link"
+                      @click.stop.prevent="showPaymentAgreement('agreement')"
+                    >
+                      《用户协议》
+                    </span>
+                    和
+                    <span
+                      class="agreement-link"
+                      @click.stop.prevent="showPaymentAgreement('privacy')"
+                    >
+                      《隐私政策》
+                    </span>
+                  </span>
+                </q-checkbox>
+                <div v-if="!agreePaymentTerms" class="text-caption text-orange q-mt-xs q-ml-md">
+                  请先同意用户协议和隐私政策后继续
+                </div>
+              </div>
             </div>
           </q-step>
 
@@ -848,6 +873,7 @@
                   @click="stepper.next()"
                   no-caps
                   size="md"
+                  :disabled="!agreePaymentTerms"
                 />
                 <q-btn
                   v-else
@@ -902,12 +928,21 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- 协议弹窗 -->
+    <AgreementDialog
+      v-model="showPaymentAgreementDialog"
+      :initial-tab="paymentAgreementTab"
+      :show-agree-button="true"
+      @agree="agreePaymentTerms = true"
+    />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useQuasar } from 'quasar';
+import AgreementDialog from 'src/components/common/AgreementDialog.vue';
 
 const $q = useQuasar();
 
@@ -1042,6 +1077,20 @@ const paymentProcessing = ref(false);
 const stepper = ref<any>(null);
 const paymentStep = ref(1); // 支付流程步骤
 const selectedPaymentMethod = ref('alipay'); // 选中的支付方式
+
+// 支付协议相关状态
+const agreePaymentTerms = ref(false);
+const showPaymentAgreementDialog = ref(false);
+const paymentAgreementTab = ref<'agreement' | 'privacy'>('agreement');
+
+/**
+ * 显示支付协议弹窗
+ * @param tab 要显示的协议类型
+ */
+const showPaymentAgreement = (tab: 'agreement' | 'privacy') => {
+  paymentAgreementTab.value = tab;
+  showPaymentAgreementDialog.value = true;
+};
 
 // 支付方式选项
 const paymentMethods = [
@@ -1490,5 +1539,24 @@ loadSavedConfig();
 .payment-confirm-btn:hover {
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
   transform: translateY(-1px);
+}
+
+/* 协议复选框样式 */
+.agreement-section {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.agreement-link {
+  color: #1976d2;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.agreement-link:hover {
+  text-decoration: underline;
 }
 </style>
