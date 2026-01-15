@@ -1,463 +1,258 @@
-# CervixDetectAI - 宫颈癌AI筛查云平台
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目概述
 
-CervixDetectAI 是一个基于 Quasar 框架开发的宫颈癌影像AI辅助筛查SaaS云平台。本项目采用"互联网+医疗"的电子商务SaaS模式，通过云端提供服务，医疗机构可按次、按年或定制化购买服务，极大降低了初始投入门槛，实现了筛查服务的"即插即用"。
+CervixDetectAI 是一个基于 Quasar (Vue 3 + TypeScript) 的宫颈癌AI辅助筛查SaaS云平台。项目采用前后端分离架构，前端使用 Quasar Framework，后端使用 Node.js + Express + MySQL。
 
-### 核心创新
+## 常用命令
 
-- **技术创新**：通过自研算法，在保持高准确率的同时，显著降低了计算成本和参数数量，使其能在基层医疗机构的普通硬件上流畅运行
-- **模式创新**：采用SaaS云服务模式，实现宫颈癌筛查的普惠化
-
-## 技术栈
-
-### 前端技术
-
-- **前端框架**: Quasar (Vue 3 + TypeScript)
-- **状态管理**: Pinia
-- **路由管理**: Vue Router
-- **UI组件**: Quasar Components
-- **构建工具**: Vite
-- **HTTP客户端**: Axios
-
-### 后端技术
-
-- **运行环境**: Node.js + Express
-- **数据库**: MySQL (Sequelize ORM)
-- **认证方式**: JWT (accessToken + refreshToken)
-- **文件上传**: Multer
-- **短信服务**: 阿里云短信服务 (Dypnsapi20170525)
-
-## 项目结构
-
-```
-CervixDetectAI/
-├── src/                      # 前端源代码
-│   ├── assets/              # 静态资源
-│   ├── boot/                # Quasar启动文件
-│   ├── components/          # 公共组件
-│   │   └── EssentialLink.vue
-│   ├── layouts/             # 页面布局
-│   │   ├── MainLayout.vue   # 主应用布局
-│   │   └── PublicLayout.vue # 公共页面布局
-│   ├── pages/               # 页面组件
-│   │   ├── LoginPage.vue        # 登录页（邮箱/手机号）
-│   │   ├── RegisterPage.vue     # 注册页
-│   │   ├── ForgotPasswordPage.vue # 忘记密码
-│   │   ├── DashboardPage.vue    # 仪表盘
-│   │   ├── StudiesPage.vue      # 病例管理
-│   │   ├── StudyDetailPage.vue  # 病例详情
-│   │   ├── UploadPage.vue       # 上传分析
-│   │   ├── ReportsPage.vue      # 报告中心
-│   │   ├── ApiSettingsPage.vue  # API设置
-│   │   ├── ProfilePage.vue      # 个人资料
-│   │   ├── SettingsPage.vue     # 系统设置
-│   │   └── ErrorNotFound.vue    # 404页面
-│   ├── router/              # 路由配置
-│   ├── services/            # API服务
-│   │   └── api.ts          # HTTP请求封装
-│   ├── stores/              # Pinia状态管理
-│   │   ├── authStore.ts    # 认证状态
-│   │   ├── studyStore.ts   # 病例数据
-│   │   └── analysisStore.ts # AI分析任务
-│   └── App.vue              # 根组件
-├── server/                   # 后端服务器
-│   ├── config/              # 配置文件
-│   │   └── database.js     # 数据库配置
-│   ├── models/              # Sequelize模型
-│   │   ├── User.js         # 用户模型
-│   │   ├── Patient.js      # 患者模型
-│   │   ├── Study.js        # 病例模型
-│   │   ├── AnalysisTask.js # 分析任务模型
-│   │   ├── Report.js       # 报告模型
-│   │   ├── SmsCode.js      # 短信验证码模型
-│   │   └── index.js        # 模型关联
-│   ├── routes/              # 路由控制器
-│   │   ├── auth.js         # 认证接口
-│   │   ├── sms-auth.js     # 短信认证接口
-│   │   ├── users.js        # 用户管理
-│   │   ├── patients.js     # 患者管理
-│   │   ├── studies.js      # 病例管理
-│   │   ├── analysis-tasks.js # 分析任务
-│   │   ├── reports.js      # 报告管理
-│   │   └── analyze.js      # AI分析接口
-│   ├── services/            # 业务逻辑
-│   │   └── sms.service.js  # 短信服务
-│   ├── middleware/          # 中间件
-│   │   └── auth.js         # JWT认证中间件
-│   ├── scripts/             # 数据库脚本
-│   │   ├── init-database.js      # 数据库初始化
-│   │   ├── create-sms-table.js   # 创建短信表
-│   │   ├── update-study-status.js # 更新病例状态
-│   │   └── update-status.sql     # SQL脚本
-│   ├── uploads/             # 上传文件目录
-│   ├── reports/             # 生成的报告目录
-│   ├── .env                 # 环境变量
-│   ├── index.js             # 服务器入口
-│   └── package.json         # 后端依赖
-├── public/                   # 静态资源
-├── .env                      # 前端环境变量
-├── quasar.config.ts          # Quasar构建配置
-├── package.json              # 前端依赖
-└── README.md                 # 项目说明
-```
-
-## 安装和运行
-
-### 环境要求
-
-- Node.js 16.x 或更高版本
-- npm 或 yarn
-- MySQL 5.7+ 或 8.0+
-
-### 数据库配置
-
-#### 1. 创建数据库
-
-```sql
-CREATE DATABASE cervix_detect_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-#### 2. 配置数据库连接
-
-在 `server/.env` 文件中配置：
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=cervix_detect_ai
-```
-
-#### 3. 初始化数据库
-
-运行初始化脚本创建表结构和默认数据：
+### 前端开发
 
 ```bash
-cd server
-node scripts/init-database.js
-```
-
-该脚本会自动创建以下数据表：
-
-- `users` - 用户表
-- `patients` - 患者信息表
-- `studies` - 病例研究表
-- `analysis_tasks` - AI分析任务表
-- `reports` - 分析报告表
-- `sms_codes` - 短信验证码表
-
-并创建默认管理员账户：
-
-- 邮箱: `admin@cervixdetectai.com`
-- 密码: `admin123456`
-
-### 短信服务配置（可选）
-
-如需使用短信验证码登录/注册功能，需配置阿里云短信服务：
-
-在 `server/.env` 文件中添加：
-
-```env
-ALIYUN_ACCESS_KEY_ID=your_access_key_id
-ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name
-ALIYUN_SMS_TEMPLATE_CODE=your_template_code
-```
-
-创建短信验证码表：
-
-```bash
-cd server
-node scripts/create-sms-table.js
-```
-
-### 前端安装步骤
-
-1. 克隆项目
-
-```bash
-git clone <repository-url>
-cd CervixDetectAI
-```
-
-2. 安装前端依赖
-
-```bash
-npm install
-# 或使用 yarn
-yarn install
-```
-
-3. 配置环境变量
-   复制 `.env.example` 为 `.env` 并配置：
-
-```env
-VITE_API_BASE_URL=http://localhost:3000/api
-```
-
-4. 启动前端开发服务器
-
-```bash
+# 启动开发服务器（端口 9000）
 npm run dev
-# 或使用 yarn
-yarn dev
-```
 
-前端将运行在: `http://localhost:9000`
+# 类型检查
+npx vue-tsc --noEmit
 
-### 后端安装步骤
+# 代码检查
+npm run lint
 
-1. 安装后端依赖
+# 代码格式化
+npm run format
 
-```bash
-cd server
-npm install
-```
-
-2. 配置环境变量
-   在 `server/.env` 文件中配置完整参数：
-
-```env
-# 数据库配置
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=cervix_detect_ai
-
-# JWT密钥
-JWT_SECRET=your-secret-key-change-in-production
-JWT_REFRESH_SECRET=your-refresh-secret-key-change-in-production
-
-# 服务器端口
-PORT=3000
-
-# 阿里云短信配置（可选）
-ALIYUN_ACCESS_KEY_ID=your_access_key_id
-ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name
-ALIYUN_SMS_TEMPLATE_CODE=100001
-```
-
-3. 初始化数据库（如果还未执行）
-
-```bash
-node scripts/init-database.js
-```
-
-4. 启动后端服务器
-
-```bash
-npm start
-# 或使用开发模式（带自动重启）
-npm run dev
-```
-
-后端将运行在: `http://localhost:3000`
-
-### 构建生产版本
-
-前端构建：
-
-```bash
+# 构建生产版本
 npm run build
-# 或使用 yarn
-yarn build
 ```
 
-构建产物位于 `dist/spa` 目录
-
-## 核心功能
-
-### 用户认证系统
-
-- **邮箱登录**: 支持邮箱+密码登录
-- **手机号登录**: 支持手机号+短信验证码登录
-- **注册即登录**: 手机号登录时，新用户自动注册并登录
-- **JWT认证**: accessToken（1小时）+ refreshToken（7天）双Token机制
-- **忘记密码**: 通过短信验证码重置密码
-
-### 用户体验流程
-
-1. **登录页面**: 用户通过邮箱或手机号登录系统
-2. **仪表盘**: 查看整体统计信息和近期病例
-3. **病例管理**: 查看所有病例记录，支持搜索和筛选
-4. **图像上传**: 上传宫颈图像进行AI分析
-5. **结果查看**: 查看AI分析结果和详细报告
-6. **报告中心**: 访问历史分析报告，支持下载
-7. **个人资料**: 管理个人信息、头像、联系方式
-8. **系统设置**: 配置通知偏好、密码、隐私设置
-
-### AI分析流程
-
-1. 上传宫颈图像（支持拖拽上传）
-2. 填写患者基本信息
-3. 系统开始AI分析处理
-4. 实时显示分析进度
-5. 分析完成后显示诊断结果
-6. 提供临床建议和生物标志物信息
-7. 自动生成PDF报告
-
-## 重要脚本说明
-
-### 数据库管理脚本
-
-#### 1. 初始化数据库
+### 后端开发（在 server 目录）
 
 ```bash
 cd server
+
+# 启动后端服务器（端口 3000）
+npm start
+
+# 开发模式（自动重启）
+npm run dev
+
+# 初始化数据库
 node scripts/init-database.js
-```
 
-功能：
-
-- 自动创建所有数据表
-- 建立表之间的关联关系
-- 创建默认管理员账户
-- 插入测试数据（可选）
-
-#### 2. 创建短信验证码表
-
-```bash
+# 创建短信验证码表
 node scripts/create-sms-table.js
-```
 
-功能：
-
-- 创建 `sms_codes` 表
-- 设置验证码过期时间（5分钟）
-- 配置发送频率限制（60秒）
-
-#### 3. 更新病例状态
-
-```bash
+# 更新病例状态
 node scripts/update-study-status.js
 ```
 
-功能：
+## 核心架构
 
-- 批量更新病例状态
-- 修复数据不一致问题
+### 双 API 客户端架构（重要）
 
-### API接口说明
+项目存在**两个独立的 axios 实例**，需要注意区分：
 
-#### 认证接口 (`/api/auth`)
+1. **`src/services/api.ts`** - 主要 API 客户端
+   - 带有 JWT 认证拦截器
+   - 自动处理 token 刷新
+   - 包含所有业务 API（auth, user, patient, study, report 等）
+   - 导出 `authAPI`, `patientAPI`, `studyAPI` 等命名导出
 
-- `POST /register` - 邮箱注册
-- `POST /login` - 邮箱登录
-- `POST /refresh` - 刷新Token
-- `POST /logout` - 登出
-- `GET /me` - 获取当前用户信息
+2. **`src/services/apiService.ts`** - 图像上传专用客户端
+   - 超时时间 60 秒（适用于大文件上传）
+   - 包含 `uploadImage`, `pollTaskStatus` 等图像相关功能
+   - 用于 AI 分析的上传和轮询
 
-#### 短信认证接口 (`/api/auth/sms`)
+3. **`src/boot/axios.ts`** - Quasar 全局实例
+   - 注册为 `$api` 全局属性
+   - 用于组件中的直接访问（Options API）
 
-- `POST /send-code` - 发送短信验证码
-- `POST /login` - 短信验证码登录
-- `POST /register` - 短信验证码注册
-- `POST /reset-password` - 短信验证码重置密码
+**注意**: 这三个实例用途不同，修改时需要明确区分，避免破坏现有功能。
 
-#### 病例管理接口 (`/api/studies`)
+### 状态管理（Pinia Stores）
 
-- `GET /` - 获取病例列表
-- `POST /` - 创建新病例
-- `GET /:id` - 获取病例详情
-- `PUT /:id` - 更新病例信息
-- `DELETE /:id` - 删除病例
+所有 stores 位于 `src/stores/`：
 
-#### AI分析接口 (`/api/analysis`)
+- **`authStore.ts`** - 用户认证状态
+  - 管理登录/登出状态
+  - 处理 JWT token（accessToken + refreshToken）
+  - 提供 `initializeAuth()` 从 localStorage 恢复会话
+  - `login`, `register`, `smsLogin`, `smsRegister` 方法有重复代码模式
 
-- `POST /analyze` - 开始AI分析
-- `GET /tasks` - 获取分析任务列表
-- `GET /tasks/:id` - 获取任务详情
+- **`studyStore.ts`** - 病例数据管理
+  - 管理病例列表和当前病例
+  - `fetchStudies()` - 获取病例列表
+  - `loadStudyById()` - 获取单个病例详情
+  - 包含数据映射逻辑（将后端数据映射到前端格式）
 
-#### 报告接口 (`/api/reports`)
+- **`patientStore.ts`** - 患者信息管理
+- **`analysisStore.ts`** - AI 分析任务状态
+- **`modelStore.ts`** - AI 模型信息
 
-- `GET /` - 获取报告列表
-- `GET /:id` - 获取报告详情
-- `GET /:id/download` - 下载PDF报告
+### 路由结构
 
-### 环境变量说明
+**两层架构**：
 
-#### 前端 `.env`
+1. **公共路由**（`PublicLayout`）- 无需认证
+   - `/` 或 `/login` - 登录页
+   - `/register` - 注册页
+   - `/forgot-password` - 忘记密码
+   - `/user-agreement` - 用户协议
+   - `/privacy-policy` - 隐私政策
 
-```env
-VITE_API_BASE_URL=http://localhost:3000/api  # 后端API地址
-```
+2. **应用路由**（`MainLayout`）- 需要认证（`meta: { requiresAuth: true }`）
+   - `/app` - 仪表盘
+   - `/app/studies` - 病例管理
+   - `/app/studies/:id` - 病例详情
+   - `/app/upload` - 上传分析
+   - `/app/patients` - 患者管理
+   - `/app/reports` - 报告中心
+   - `/app/models` - AI 模型设置
+   - `/app/settings` - 系统设置
+   - `/app/profile` - 个人资料
 
-#### 后端 `server/.env`
-
-```env
-# 数据库配置
-DB_HOST=localhost              # 数据库主机
-DB_PORT=3306                   # 数据库端口
-DB_USER=root                   # 数据库用户名
-DB_PASSWORD=your_password      # 数据库密码
-DB_NAME=cervix_detect_ai       # 数据库名称
-
-# JWT配置
-JWT_SECRET=your-secret-key                    # JWT密钥（生产环境必须修改）
-JWT_REFRESH_SECRET=your-refresh-secret-key    # 刷新Token密钥
-
-# 服务器配置
-PORT=3000                      # 服务器端口
-
-# 阿里云短信配置（可选）
-ALIYUN_ACCESS_KEY_ID=your_key              # 阿里云AccessKey ID
-ALIYUN_ACCESS_KEY_SECRET=your_secret       # 阿里云AccessKey Secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name        # 短信签名
-ALIYUN_SMS_TEMPLATE_CODE=100001            # 短信模板代码（纯数字，无SMS_前缀）
-```
-
-## 开发注意事项
-
-### 数据库设计
-
-- 所有表使用 `utf8mb4_unicode_ci` 字符集，支持中文和emoji
-- 时间字段统一使用 `TIMESTAMP` 或 `DATETIME`
-- 软删除使用 `deleted_at` 字段
-- 外键关联使用 Sequelize 的关联方法
+路由守卫在 `src/router/index.ts` 中检查认证状态。
 
 ### 认证机制
 
-- accessToken 有效期1小时，存储在内存中
-- refreshToken 有效期7天，存储在 localStorage
-- 前端自动刷新Token机制
-- 后端使用JWT中间件验证所有受保护的路由
+**双 Token 系统**：
+- `accessToken` - 1 小时有效期，存储在内存（Pinia store）
+- `refreshToken` - 7 天有效期，存储在 localStorage
+
+自动刷新流程：
+1. API 请求返回 401
+2. `src/services/api.ts` 的响应拦截器捕获
+3. 使用 refreshToken 调用 `/api/auth/refresh`
+4. 更新 localStorage 中的 accessToken
+5. 重试原始请求
+6. 如果刷新失败，清除 token 并跳转 `/login`
 
 ### 短信验证码
 
-- 验证码6位数字，有效期5分钟
-- 发送频率限制：60秒内只能发送一次
-- 每日发送上限：10次/手机号
-- 验证码一次性使用，验证后标记为已使用
+使用阿里云短信服务（`@alicloud/dypnsapi20170525`）：
+- 配置在 `server/.env`
+- 验证码有效期：5 分钟
+- 发送频率限制：60 秒
+- 日发送上限：10 次/手机号
+- 支持登录、注册、重置密码场景
+
+## 关键开发注意事项
+
+### TypeScript 配置
+
+- 严格模式已启用（`quasar.config.ts`）
+- 大量使用 `eslint-disable @typescript-eslint/no-explicit-any`
+- 类型定义分散在各文件中，未统一管理
+
+### 数据库
+
+- 使用 Sequelize ORM
+- 所有表使用 `utf8mb4_unicode_ci` 字符集
+- 软删除通过 `deleted_at` 字段
+- 模型关联定义在 `server/models/index.js`
 
 ### 文件上传
 
 - 图像上传限制：10MB
 - 支持格式：JPG, PNG, JPEG
-- 文件存储在 `server/uploads/` 目录
-- 报告生成在 `server/reports/` 目录
+- 上传目录：`server/uploads/`
+- 报告生成目录：`server/reports/`
 
-## 未来发展
+### 环境变量
 
-### 模型集成
+**前端** `.env`:
+```env
+VITE_API_BASE_URL=http://localhost:3000/api
+```
 
-- 集成真实的宫颈癌AI检测模型
-- 实现云端模型服务
-- 模型版本管理
+**后端** `server/.env`:
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=cervix_detect_ai
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
+PORT=3000
+ALIYUN_ACCESS_KEY_ID=your_key
+ALIYUN_ACCESS_KEY_SECRET=your_secret
+ALIYUN_SMS_SIGN_NAME=your_sign_name
+ALIYUN_SMS_TEMPLATE_CODE=100001
+```
 
-### 数据分析
+## 常见任务模式
 
-- 提供更详细的统计分析
-- 趋势报告生成
-- 数据可视化仪表盘
+### 添加新的 API 端点
 
-### 扩展功能
+1. 在 `src/services/api.ts` 添加函数
+2. 在对应的 Store 中调用
+3. 在页面组件中使用 Store 的 action
 
-- 多用户协作
-- 病例分享功能
-- 更详细的图像分析工具
-- 移动端APP
-- 微信小程序
+示例：
+```typescript
+// 1. src/services/api.ts
+export const newFeatureAPI = {
+  async getData() {
+    const { data } = await apiClient.get('/new-feature');
+    return data;
+  }
+};
+
+// 2. src/store/newFeatureStore.ts
+import { newFeatureAPI } from 'src/services/api';
+export const useNewFeatureStore = defineStore('newFeature', {
+  actions: {
+    async fetchData() {
+      const response = await newFeatureAPI.getData();
+      return response;
+    }
+  }
+});
+
+// 3. 页面组件
+import { useNewFeatureStore } from 'stores/newFeatureStore';
+const newFeatureStore = useNewFeatureStore();
+await newFeatureStore.fetchData();
+```
+
+### 添加需要认证的新页面
+
+1. 在 `src/pages/` 创建组件
+2. 在 `src/router/routes.ts` 的 `/app` 路由组中添加路由
+3. 确保路由有 `meta: { requiresAuth: true }`
+
+### 修改认证相关逻辑
+
+认证逻辑分散在多处，修改时需要同步：
+- `src/stores/authStore.ts`
+- `src/services/api.ts` (authAPI 部分)
+- `src/router/index.ts` (路由守卫)
+- `src/boot/axios.ts` (全局拦截器)
+
+### 数据映射模式
+
+`studyStore` 中有将后端数据映射到前端格式的逻辑（约 88-111 行）。如果后端 API 响应格式变化，需要更新映射逻辑。
+
+## 已知技术债务
+
+1. **API 客户端重复** - 三个 axios 实例功能重叠
+2. **authStore 代码重复** - `login`, `register`, `smsLogin`, `smsRegister` 有相同的 try-catch 结构
+3. **类型定义分散** - 使用 `any` 类型过多，缺少统一的类型定义文件
+4. **console.log** - 生产代码中有调试日志（`studyAPI`, `apiService.ts`）
+5. **错误处理不一致** - 有的 Store 返回 `{success, error}`，有的抛出异常
+
+## 重要提醒
+
+⚠️ **项目当前功能运行正常，进行重构时请格外谨慎：**
+
+- 任何修改都应该在功能上保持等效
+- 优先创建新分支进行实验性修改
+- 每个小改动都要完整测试相关功能
+- 注意双 API 客户端架构，不要混淆使用
+- 修改认证逻辑时必须测试所有认证方式（邮箱、短信）
+- 数据库操作前先备份数据
+
+如果不需要解决具体问题，建议保持现状，不要进行大规模重构。
