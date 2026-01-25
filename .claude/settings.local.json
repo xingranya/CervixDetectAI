@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Skill(superpowers:writing-plans)"
+      "Skill(superpowers:writing-plans)",
+      "mcp__Docx-Mcp_Server__test_connection",
+      "mcp__context7__resolve-library-id",
+      "mcp__bingcn__bing_search",
+      "mcp__fetch__fetch",
+      "mcp__mysql__list_tables",
+      "mcp__playwright__browser_snapshot",
+      "WebSearch",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ]
   }
 }
