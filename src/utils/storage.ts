@@ -3,17 +3,10 @@
  * 提供类型安全的存储访问和错误处理
  */
 
-const STORAGE_PREFIX = 'cervix_detect_';
-
 /**
  * 存储类型
  */
 type StorageType = 'local' | 'session';
-
-/**
- * 获取带前缀的键名
- */
-const getKey = (key: string) => `${STORAGE_PREFIX}${key}`;
 
 /**
  * 获取存储对象

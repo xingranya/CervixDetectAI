@@ -32,8 +32,8 @@
             :y="ann.displayY"
             :width="ann.displayWidth"
             :height="ann.displayHeight"
-            :fill="getAnnotationFill(ann.confidence)"
-            :stroke="getAnnotationColor(ann.confidence)"
+            :fill="getAnnotationFill(ann.confidence, ann.source)"
+            :stroke="getAnnotationColor(ann.confidence, ann.source)"
             stroke-width="2"
             vector-effect="non-scaling-stroke"
             style="cursor: pointer; pointer-events: all"
@@ -47,7 +47,7 @@
             :y="ann.labelY"
             :width="getLabelWidth(ann)"
             height="20"
-            :fill="getAnnotationColor(ann.confidence)"
+            :fill="getAnnotationColor(ann.confidence, ann.source)"
             rx="4"
             ry="4"
             style="cursor: pointer; pointer-events: all"
@@ -259,9 +259,10 @@ const handleMouseUp = () => {
         y,
         width,
         height,
-        label: '人工标注',
+        label: '手动标注区域',
         confidence: 1.0,
         timestamp: Date.now(),
+        source: 'manual',
       });
     }
   }

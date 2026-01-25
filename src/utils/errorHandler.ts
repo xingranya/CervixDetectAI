@@ -1,11 +1,13 @@
 import { Notify } from 'quasar';
-import { AxiosError } from 'axios';
+import type { AxiosError } from 'axios';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface ApiErrorResponse {
   status?: string;
   message?: string;
   code?: number;
-  data?: any;
+  data?: unknown;
 }
 
 /**

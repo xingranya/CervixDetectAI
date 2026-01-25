@@ -1,9 +1,10 @@
-import axios, {
+import type {
   AxiosInstance,
-  InternalAxiosRequestConfig,
   AxiosError,
+  InternalAxiosRequestConfig,
   AxiosResponse
 } from 'axios';
+import axios from 'axios';
 
 // API Base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -34,7 +35,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error: unknown) => {
-    return Promise.reject(error);
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
   },
 );
 
@@ -86,7 +87,7 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           window.location.href = '/login';
-          return Promise.reject(refreshError);
+          return Promise.reject(refreshError instanceof Error ? refreshError : new Error(String(refreshError)));
         }
       } else {
         // No refresh token, redirect
@@ -94,7 +95,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
   },
 );
 

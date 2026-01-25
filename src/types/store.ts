@@ -1,4 +1,5 @@
-import type { User, Patient, Study, AnalysisTask, ModelInfo, PredictionResponse } from './models';
+import type { User, Patient, Study, AnalysisTask, ModelInfo } from './models';
+import type { PredictionResponse } from './api';
 
 export interface AuthState {
   user: User | null;

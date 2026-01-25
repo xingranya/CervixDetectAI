@@ -1,7 +1,8 @@
-import type { Patient, PatientRaw, AnalysisResult } from './models';
+import type { Patient, PatientRaw } from './models';
+import type { User } from './models';
 
 // Generic API Response
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
@@ -11,7 +12,7 @@ export interface ApiResponse<T = any> {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: any; // Using any for now to avoid circular dependency, usually User model
+  user: User;
 }
 
 export interface RegisterRequest {
