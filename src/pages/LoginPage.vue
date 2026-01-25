@@ -86,6 +86,21 @@
               </q-checkbox>
             </div>
 
+            <!-- AI 验证码 -->
+            <div class="captcha-wrapper q-mt-md" v-if="agreeTerms && !captchaVerified">
+              <div class="text-caption text-grey-6 q-mb-sm text-center">请完成安全验证</div>
+              <AliCaptcha
+                ref="captchaRef"
+                instance-id="login-email"
+                @success="onCaptchaSuccess"
+                @fail="onCaptchaFail"
+              />
+            </div>
+            <div v-if="captchaVerified" class="captcha-verified q-mt-md text-center">
+              <q-icon name="verified" color="positive" size="20px" />
+              <span class="q-ml-xs text-positive">验证已通过</span>
+            </div>
+
             <div class="q-mt-lg">
               <q-btn
                 color="primary"
@@ -95,13 +110,16 @@
                 size="lg"
                 style="width: 100%"
                 type="submit"
-                :disabled="!agreeTerms || authStore.isAuthenticating"
+                :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
               >
                 <span v-if="!authStore.isAuthenticating">登录</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
+              </div>
+              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+                请完成安全验证
               </div>
             </div>
           </q-form>
@@ -141,10 +159,32 @@
                   flat
                   dense
                   color="primary"
-                  @click="sendSmsCode"
+                  @click="triggerSmsCaptcha"
                 />
               </template>
             </q-input>
+
+            <!-- 短信验证码图像复原验证弹窗 -->
+            <q-dialog v-model="showSmsCaptchaDialog" persistent @hide="onSmsCaptchaDialogHide">
+              <q-card style="min-width: 320px">
+                <q-card-section class="row items-center q-pb-none">
+                  <div class="text-h6">安全验证</div>
+                  <q-space />
+                  <q-btn icon="close" flat round dense v-close-popup />
+                </q-card-section>
+                <q-card-section class="text-center">
+                  <div class="text-caption text-grey-6 q-mb-md">请完成图像验证后发送验证码</div>
+                  <AliCaptcha
+                    v-if="showSmsCaptchaDialog"
+                    ref="smsCaptchaRef"
+                    instance-id="login-sms"
+                    scene-id="1dynwu1h"
+                    @success="onSmsCaptchaSuccess"
+                    @fail="onSmsCaptchaFail"
+                  />
+                </q-card-section>
+              </q-card>
+            </q-dialog>
 
             <!-- 协议复选框 -->
             <div class="agreement-checkbox q-mt-sm">
@@ -162,6 +202,21 @@
               </q-checkbox>
             </div>
 
+            <!-- AI 验证码（一点即过） -->
+            <div class="captcha-wrapper q-mt-md" v-if="agreeTerms && !captchaVerified">
+              <div class="text-caption text-grey-6 q-mb-sm text-center">请完成安全验证</div>
+              <AliCaptcha
+                instance-id="login-phone"
+                scene-id="u1g43fza"
+                @success="onCaptchaSuccess"
+                @fail="onCaptchaFail"
+              />
+            </div>
+            <div v-if="captchaVerified" class="captcha-verified q-mt-md text-center">
+              <q-icon name="verified" color="positive" size="20px" />
+              <span class="q-ml-xs text-positive">验证已通过</span>
+            </div>
+
             <div class="q-mt-lg">
               <q-btn
                 color="primary"
@@ -171,13 +226,16 @@
                 size="lg"
                 style="width: 100%"
                 type="submit"
-                :disabled="!agreeTerms || authStore.isAuthenticating"
+                :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
               >
                 <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
+              </div>
+              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+                请完成安全验证
               </div>
             </div>
           </q-form>
@@ -207,6 +265,7 @@ import { useAuthStore } from 'stores/authStore';
 import { authAPI } from 'src/services/api';
 import { useQuasar } from 'quasar';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
+import AliCaptcha from 'src/components/common/AliCaptcha.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -225,6 +284,92 @@ const isSendingSms = ref(false);
 const agreeTerms = ref(false);
 const showAgreementDialog = ref(false);
 const agreementTab = ref<'agreement' | 'privacy'>('agreement');
+
+// 验证码相关状态
+const captchaToken = ref('');
+const captchaVerified = ref(false);
+const captchaRef = ref<InstanceType<typeof AliCaptcha> | null>(null);
+
+// 短信验证码图像复原验证相关状态
+const showSmsCaptchaDialog = ref(false);
+const smsCaptchaRef = ref<InstanceType<typeof AliCaptcha> | null>(null);
+
+/**
+ * 验证码验证成功回调
+ */
+const onCaptchaSuccess = (token: string) => {
+  captchaToken.value = token;
+  captchaVerified.value = true;
+  $q.notify({
+    type: 'positive',
+    message: '验证成功',
+    position: 'top',
+    timeout: 1500,
+  });
+};
+
+/**
+ * 验证码验证失败回调
+ */
+const onCaptchaFail = (error: string) => {
+  captchaToken.value = '';
+  captchaVerified.value = false;
+  $q.notify({
+    type: 'negative',
+    message: error || '验证失败，请重试',
+    position: 'top',
+  });
+};
+
+/**
+ * 触发短信验证码图像复原验证
+ */
+const triggerSmsCaptcha = () => {
+  if (!canSendSms.value) return;
+
+  // 验证手机号格式
+  const phoneRegex = /^1[3-9]\d{9}$/;
+  if (!phoneRegex.test(phone.value)) {
+    $q.notify({
+      type: 'negative',
+      message: '请输入正确的手机号',
+      position: 'top',
+    });
+    return;
+  }
+
+  // 显示图像复原验证弹窗
+  showSmsCaptchaDialog.value = true;
+};
+
+/**
+ * 短信验证码图像复原验证成功回调
+ */
+const onSmsCaptchaSuccess = (token: string) => {
+  console.log('📱 短信验证码图像复原验证成功:', token);
+  showSmsCaptchaDialog.value = false;
+  // 验证成功后发送短信验证码
+  void sendSmsCode();
+};
+
+/**
+ * 短信验证码图像复原验证失败回调
+ */
+const onSmsCaptchaFail = (error: string) => {
+  $q.notify({
+    type: 'negative',
+    message: error || '验证失败，请重试',
+    position: 'top',
+  });
+};
+
+/**
+ * 短信验证码弹窗关闭回调
+ */
+const onSmsCaptchaDialogHide = () => {
+  // 弹窗关闭时重置引用，确保下次打开时重新初始化
+  smsCaptchaRef.value = null;
+};
 
 /**
  * 显示协议弹窗

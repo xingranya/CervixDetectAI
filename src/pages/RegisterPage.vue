@@ -118,6 +118,20 @@
               </q-checkbox>
             </div>
 
+            <!-- AI 验证码 -->
+            <div class="captcha-wrapper q-mt-md" v-if="agreeTerms && !captchaVerified">
+              <div class="text-caption text-grey-6 q-mb-sm text-center">请完成安全验证</div>
+              <AliCaptcha
+                instance-id="register"
+                @success="onCaptchaSuccess"
+                @fail="onCaptchaFail"
+              />
+            </div>
+            <div v-if="captchaVerified" class="captcha-verified q-mt-md text-center">
+              <q-icon name="verified" color="positive" size="20px" />
+              <span class="q-ml-xs text-positive">验证已通过</span>
+            </div>
+
             <div class="q-mt-lg">
               <q-btn
                 color="primary"
@@ -127,13 +141,16 @@
                 size="lg"
                 style="width: 100%"
                 type="submit"
-                :disabled="!agreeTerms || authStore.isAuthenticating"
+                :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
               >
                 <span v-if="!authStore.isAuthenticating">注册</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
+              </div>
+              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+                请完成安全验证
               </div>
             </div>
           </q-form>
@@ -162,6 +179,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { useQuasar } from 'quasar';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
+import AliCaptcha from 'src/components/common/AliCaptcha.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -179,6 +197,37 @@ const isConfirmPwd = ref(true);
 const agreeTerms = ref(false);
 const showAgreementDialog = ref(false);
 const agreementTab = ref<'agreement' | 'privacy'>('agreement');
+
+// 验证码相关状态
+const captchaToken = ref('');
+const captchaVerified = ref(false);
+
+/**
+ * 验证码验证成功回调
+ */
+const onCaptchaSuccess = (token: string) => {
+  captchaToken.value = token;
+  captchaVerified.value = true;
+  $q.notify({
+    type: 'positive',
+    message: '验证成功',
+    position: 'top',
+    timeout: 1500,
+  });
+};
+
+/**
+ * 验证码验证失败回调
+ */
+const onCaptchaFail = (error: string) => {
+  captchaToken.value = '';
+  captchaVerified.value = false;
+  $q.notify({
+    type: 'negative',
+    message: error || '验证失败，请重试',
+    position: 'top',
+  });
+};
 
 /**
  * 显示协议弹窗
