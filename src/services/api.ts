@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleError } from 'src/utils/errorHandler';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
@@ -48,16 +49,25 @@ apiClient.interceptors.response.use(
           localStorage.setItem('accessToken', data.data.accessToken);
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.data.accessToken}`;
 
+          // Update the authorization header for the retried request
+          originalRequest.headers['Authorization'] = `Bearer ${data.data.accessToken}`;
+
           return apiClient(originalRequest);
         } catch (refreshError) {
           // Refresh failed, clear tokens and redirect to login
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+
+          handleError(refreshError, '登录已过期，请重新登录');
+
           window.location.href = '/login';
           return Promise.reject(refreshError);
         }
       }
     }
+
+    // Use unified error handler
+    handleError(error);
 
     return Promise.reject(error);
   },

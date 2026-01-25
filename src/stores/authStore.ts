@@ -47,44 +47,36 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * 内部辅助：执行认证操作的通用包装
+     * 内部辅助：统一处理认证请求（登录/注册）
+     * 封装了 loading 状态、错误处理和成功后的数据保存
      */
-    async _executeAuth<T>(
-      operation: () => Promise<{ success: boolean; data?: T; message?: string }>,
-      errorMsg: string,
-    ): Promise<{ success: boolean; error?: string; data?: T }> {
+    async _handleAuthRequest(
+      apiCall: () => Promise<any>,
+      defaultErrorMsg: string
+    ): Promise<{ success: boolean; error?: string }> {
       this.isAuthenticating = true;
       try {
-        const response = await operation();
-        if (response.success && response.data) {
-          return { success: true, data: response.data };
+        const response = await apiCall();
+
+        if (response.success) {
+          this._saveAuthData(response.data);
+          return { success: true };
+        } else {
+          return { success: false, error: response.message };
         }
-        return { success: false, error: response.message || errorMsg };
       } catch (error: any) {
-        return { success: false, error: error.response?.data?.message || errorMsg };
+        const errorMessage = error.response?.data?.message || defaultErrorMsg;
+        return { success: false, error: errorMessage };
       } finally {
         this.isAuthenticating = false;
       }
     },
 
     async login(email: string, password: string) {
-      this.isAuthenticating = true;
-      try {
-        const response = await authAPI.login(email, password);
-
-        if (response.success) {
-          this._saveAuthData(response.data);
-
-          return { success: true };
-        } else {
-          return { success: false, error: response.message };
-        }
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || '登录失败';
-        return { success: false, error: errorMessage };
-      } finally {
-        this.isAuthenticating = false;
-      }
+      return this._handleAuthRequest(
+        () => authAPI.login(email, password),
+        '登录失败'
+      );
     },
 
     async register(userData: {
@@ -93,45 +85,18 @@ export const useAuthStore = defineStore('auth', {
       real_name?: string;
       phone?: string;
     }) {
-      this.isAuthenticating = true;
-      try {
-        const response = await authAPI.register(userData);
-
-        if (response.success) {
-          // Auto login after registration
-          this._saveAuthData(response.data);
-
-          return { success: true };
-        } else {
-          return { success: false, error: response.message };
-        }
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || '注册失败';
-        return { success: false, error: errorMessage };
-      } finally {
-        this.isAuthenticating = false;
-      }
+      return this._handleAuthRequest(
+        () => authAPI.register(userData),
+        '注册失败'
+      );
     },
 
     // 短信验证码登录
     async smsLogin(phone: string, code: string) {
-      this.isAuthenticating = true;
-      try {
-        const response = await authAPI.smsLogin(phone, code);
-
-        if (response.success) {
-          this._saveAuthData(response.data);
-
-          return { success: true };
-        } else {
-          return { success: false, error: response.message };
-        }
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || '短信登录失败';
-        return { success: false, error: errorMessage };
-      } finally {
-        this.isAuthenticating = false;
-      }
+      return this._handleAuthRequest(
+        () => authAPI.smsLogin(phone, code),
+        '短信登录失败'
+      );
     },
 
     // 短信验证码注册
@@ -140,23 +105,10 @@ export const useAuthStore = defineStore('auth', {
       code: string,
       userData?: { username?: string; real_name?: string; email?: string },
     ) {
-      this.isAuthenticating = true;
-      try {
-        const response = await authAPI.smsRegister(phone, code, userData);
-
-        if (response.success) {
-          this._saveAuthData(response.data);
-
-          return { success: true };
-        } else {
-          return { success: false, error: response.message };
-        }
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || '短信注册失败';
-        return { success: false, error: errorMessage };
-      } finally {
-        this.isAuthenticating = false;
-      }
+      return this._handleAuthRequest(
+        () => authAPI.smsRegister(phone, code, userData),
+        '短信注册失败'
+      );
     },
 
     async logout() {

@@ -1,4 +1,4 @@
-import { api } from 'src/boot/axios';
+import apiClient from './apiClient';
 
 export interface ModelInfo {
   id: string;
@@ -51,11 +51,11 @@ export interface ModelMetrics {
 }
 
 class ModelService {
-  private baseUrl = '/api/models';
+  private baseUrl = '/models';
 
   async getModels(): Promise<ModelInfo[]> {
     try {
-      const response = await api.get(`${this.baseUrl}/`);
+      const response = await apiClient.get(`${this.baseUrl}/`);
       return response.data;
     } catch (error) {
       console.error('获取模型列表失败:', error);
@@ -65,7 +65,7 @@ class ModelService {
 
   async getModel(modelId: string): Promise<ModelInfo> {
     try {
-      const response = await api.get(`${this.baseUrl}/${modelId}`);
+      const response = await apiClient.get(`${this.baseUrl}/${modelId}`);
       return response.data;
     } catch (error) {
       console.error(`获取模型 ${modelId} 失败:`, error);
@@ -79,7 +79,7 @@ class ModelService {
       formData.append('model', modelFile);
       formData.append('metadata', JSON.stringify(metadata));
 
-      const response = await api.post(`${this.baseUrl}/upload`, formData, {
+      const response = await apiClient.post(`${this.baseUrl}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -93,7 +93,7 @@ class ModelService {
 
   async predict(request: PredictionRequest): Promise<PredictionResponse> {
     try {
-      const response = await api.post(`${this.baseUrl}/${request.modelId}/predict`, request);
+      const response = await apiClient.post(`${this.baseUrl}/${request.modelId}/predict`, request);
       return response.data;
     } catch (error) {
       console.error('模型预测失败:', error);
@@ -103,7 +103,7 @@ class ModelService {
 
   async getModelMetrics(modelId: string): Promise<ModelMetrics> {
     try {
-      const response = await api.get(`${this.baseUrl}/${modelId}/metrics`);
+      const response = await apiClient.get(`${this.baseUrl}/${modelId}/metrics`);
       return response.data;
     } catch (error) {
       console.error(`获取模型 ${modelId} 指标失败:`, error);
@@ -113,7 +113,7 @@ class ModelService {
 
   async updateModelStatus(modelId: string, status: 'active' | 'inactive'): Promise<ModelInfo> {
     try {
-      const response = await api.patch(`${this.baseUrl}/${modelId}/status`, { status });
+      const response = await apiClient.patch(`${this.baseUrl}/${modelId}/status`, { status });
       return response.data;
     } catch (error) {
       console.error(`更新模型 ${modelId} 状态失败:`, error);
@@ -123,7 +123,7 @@ class ModelService {
 
   async deleteModel(modelId: string): Promise<void> {
     try {
-      await api.delete(`${this.baseUrl}/${modelId}`);
+      await apiClient.delete(`${this.baseUrl}/${modelId}`);
     } catch (error) {
       console.error(`删除模型 ${modelId} 失败:`, error);
       throw error;

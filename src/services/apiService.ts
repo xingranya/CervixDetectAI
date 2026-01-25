@@ -1,42 +1,7 @@
+import apiClient from './apiClient';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-
-// 创建axios实例
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 60000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// 请求拦截器
-apiClient.interceptors.request.use(
-  (config) => {
-    console.log(`📡 API请求: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error: Error) => {
-    return Promise.reject(error);
-  },
-);
-
-// 响应拦截器
-apiClient.interceptors.response.use(
-  (response) => {
-    console.log(`✅ API响应: ${response.config.url}`, response.status);
-    return response;
-  },
-  (error: unknown) => {
-    if (axios.isAxiosError(error)) {
-      console.error(`❌ API错误: ${error.config?.url}`, error.message);
-    } else {
-      console.error('❌ API错误:', error);
-    }
-    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
-  },
-);
+const API_BASE_URL = apiClient.defaults.baseURL;
 
 export interface UploadImageRequest {
   image: File;
