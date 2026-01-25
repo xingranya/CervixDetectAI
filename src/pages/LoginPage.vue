@@ -65,10 +65,9 @@
               </template>
             </q-input>
 
-            <div class="row q-mt-md">
-              <q-checkbox v-model="rememberMe" label="记住我" />
+            <div class="row items-center q-mt-md">
               <q-space />
-              <q-btn flat no-caps label="忘记密码？" to="/forgot-password" />
+              <q-btn flat dense no-caps color="grey-7" label="忘记密码？" to="/forgot-password" />
             </div>
 
             <!-- 协议复选框 -->
@@ -219,7 +218,6 @@ const password = ref('');
 const phone = ref('');
 const smsCode = ref('');
 const isPwd = ref(true);
-const rememberMe = ref(true);
 const countdown = ref(0);
 const isSendingSms = ref(false);
 

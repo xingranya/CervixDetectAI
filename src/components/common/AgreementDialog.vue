@@ -2,9 +2,9 @@
   <q-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    maximized
-    transition-show="slide-up"
-    transition-hide="slide-down"
+    :maximized="$q.screen.lt.sm"
+    transition-show="scale"
+    transition-hide="scale"
   >
     <q-card class="agreement-dialog">
       <!-- 对话框头部 -->
@@ -299,6 +299,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 
 // Props 定义
 interface Props {
@@ -322,6 +323,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const $q = useQuasar();
 
 // 当前激活的Tab
 const activeTab = ref<'agreement' | 'privacy'>(props.initialTab);
@@ -373,7 +375,12 @@ const openFullPrivacy = () => {
 .agreement-dialog {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  width: 700px;
+  max-width: 90vw;
+  height: 80vh;
+  max-height: 700px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .dialog-header {
@@ -386,7 +393,7 @@ const openFullPrivacy = () => {
 }
 
 .scroll-area {
-  height: calc(100vh - 200px);
+  height: 100%;
 }
 
 .dialog-actions {
@@ -397,7 +404,7 @@ const openFullPrivacy = () => {
 /* 协议文本样式 */
 .agreement-text,
 .privacy-text {
-  max-width: 700px;
+  max-width: 100%;
   margin: 0 auto;
   line-height: 1.8;
 }
@@ -429,10 +436,14 @@ const openFullPrivacy = () => {
   text-align: justify;
 }
 
-/* 响应式调整 */
+/* 移动端全屏时恢复原样式 */
 @media (max-width: 599px) {
-  .scroll-area {
-    height: calc(100vh - 220px);
+  .agreement-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100%;
+    border-radius: 0;
   }
 
   .agreement-text,

@@ -497,12 +497,18 @@ const scrollToSection = (sectionId: string) => {
 };
 
 /**
- * 返回上一页
+ * 返回上一页或关闭标签页
  */
 const goBack = () => {
-  if (window.history.length > 1) {
+  // 检查是否是从新标签页打开的（通过 window.open 打开的页面 opener 不为 null）
+  if (window.opener) {
+    // 新标签页打开的，直接关闭
+    window.close();
+  } else if (window.history.length > 2) {
+    // 有足够的历史记录，可以返回
     router.back();
   } else {
+    // 没有历史记录，跳转到登录页
     void router.push('/login');
   }
 };
