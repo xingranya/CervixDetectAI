@@ -58,6 +58,18 @@ const User = sequelize.define(
       type: DataTypes.STRING(45),
       allowNull: true,
     },
+    subscription_type: {
+      type: DataTypes.ENUM('none', 'monthly', 'yearly', 'package'),
+      defaultValue: 'none',
+    },
+    subscription_expires_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    remaining_credits: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   },
   {
     tableName: 'users',

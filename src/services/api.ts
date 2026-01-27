@@ -359,4 +359,20 @@ export const dashboardAPI = {
   },
 };
 
+// Payment API
+export const paymentAPI = {
+  createOrder: (planType: string, paymentMethod: string) =>
+    apiClient.post('/payment/create', { planType, paymentMethod }),
+
+  getOrderStatus: (outTradeNo: string) =>
+    apiClient.get(`/payment/status/${outTradeNo}`),
+
+  // 公开接口，不需要认证
+  checkOrderStatus: (outTradeNo: string) =>
+    axios.get(`${API_BASE_URL}/payment/check/${outTradeNo}`),
+
+  getOrders: (params?: { page?: number; limit?: number }) =>
+    apiClient.get('/payment/orders', { params }),
+};
+
 export default apiClient;

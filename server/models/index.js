@@ -11,11 +11,13 @@ const AnalysisTask = require('./AnalysisTask');
 const AnalysisResult = require('./AnalysisResult');
 const MedicalReport = require('./MedicalReport');
 const SmsCode = require('./SmsCode');
+const Order = require('./Order');
 
 // 定义模型关系
 
 // User 关系
 User.hasMany(UserAvatar, { foreignKey: 'user_id', as: 'avatars' });
+User.hasMany(Order, { foreignKey: 'user_id', as: 'orders' });
 User.hasMany(Patient, { foreignKey: 'created_by', as: 'created_patients' });
 User.hasMany(Study, { foreignKey: 'user_id', as: 'studies' });
 User.hasMany(AnalysisTask, { foreignKey: 'user_id', as: 'analysis_tasks' });
@@ -63,6 +65,9 @@ MedicalReport.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 MedicalReport.belongsTo(User, { foreignKey: 'generated_by', as: 'generator' });
 MedicalReport.belongsTo(User, { foreignKey: 'signed_by', as: 'signer' });
 
+// Order 关系
+Order.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 // 导出所有模型和sequelize实例
 module.exports = {
   sequelize,
@@ -75,4 +80,5 @@ module.exports = {
   AnalysisResult,
   MedicalReport,
   SmsCode,
+  Order,
 };
