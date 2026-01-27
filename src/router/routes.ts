@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
         name: 'PrivacyPolicy',
         component: () => import('pages/PrivacyPolicyPage.vue'),
       },
+      // 支付结果页 - 公开路由，不需要认证
+      {
+        path: 'payment/result',
+        name: 'payment-result',
+        component: () => import('pages/PaymentResultPage.vue'),
+      },
     ],
   },
 

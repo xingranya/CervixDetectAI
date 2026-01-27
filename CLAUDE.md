@@ -89,6 +89,18 @@ quasar build -m capacitor -T android  # Android 构建
 
 ## 近期更新
 
+- **[2026-01-28] 易支付(EPay)集成**
+  - 集成第三方支付平台，支持支付宝、微信支付、银行卡（模拟）
+  - 新增 `Order` 订单数据模型，记录支付订单
+  - 新增 `PaymentResultPage.vue` 支付结果页
+  - 用户模型扩展订阅字段：`subscription_type`、`subscription_expires_at`、`remaining_credits`
+  - 支持套餐购买和订阅会员，自动发放积分权益
+  - Hash Mode 路由兼容处理（前端重定向脚本）
+  - **NAT 网络环境支持**：通过 `EXTERNAL_PORT` 环境变量配置外网端口
+    - `paymentService.js`: 创建订单时动态生成带端口的回调 URL
+    - `payment.js /return`: 支付完成跳转时自动添加外网端口
+    - 支持多域名部署，自动获取请求域名 + 固定端口
+
 - **[2026-01-26] 阿里云 AI 验证码集成**
   - 新增 `AliCaptcha.vue` 组件，支持阿里云 ESA AI 验证码
   - 登录/注册页面集成"一点即过"验证（场景ID: u1g43fza）

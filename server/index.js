@@ -17,8 +17,10 @@ const reportsRouter = require('./routes/reports');
 const dashboardRouter = require('./routes/dashboard');
 const systemRouter = require('./routes/system');
 const settingsRouter = require('./routes/settings');
+const paymentRouter = require('./routes/payment');
 const { testConnection } = require('./config/sequelize');
 const swaggerJsdoc = require('swagger-jsdoc');
+
 const swaggerUi = require('swagger-ui-express');
 
 const app = express();
@@ -102,6 +104,7 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/payment', paymentRouter);
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

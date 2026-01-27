@@ -940,8 +940,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useQuasar } from 'quasar';
+import { ref, onMounted } from 'vue';
+import { useQuasar, date } from 'quasar';
+import { paymentAPI, userAPI } from 'src/services/api';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
 
 const $q = useQuasar();
@@ -976,6 +977,18 @@ const yearlyFeatures = [
 
 // 套餐包选项
 const packageOptions = [
+  {
+    type: 'test',
+    name: '测试套餐',
+    credits: '1次AI分析',
+    originalAmount: 0.01,
+    amount: 0.01,
+    discount: 0,
+    discountText: '',
+    saveAmount: 0,
+    pricePerUnit: '0.01',
+    recommended: false,
+  },
   {
     type: 'package-10',
     name: '10次套餐包',
@@ -1102,16 +1115,16 @@ const paymentMethods = [
     color: 'blue',
   },
   {
-    value: 'wechat',
+    value: 'wxpay',
     label: '微信支付',
     description: '十亿用户的选择',
     icon: 'chat',
     color: 'green',
   },
   {
-    value: 'card',
-    label: '信用卡/借记卡',
-    description: '支持Visa、Mastercard等',
+    value: 'bank',
+    label: '银行卡支付',
+    description: '支持各大银行储蓄卡/信用卡',
     icon: 'credit_card',
     color: 'orange',
   },
@@ -1203,6 +1216,7 @@ const handleSubscribe = (planType: 'monthly' | 'yearly') => {
 // 处理套餐包购买
 const handlePackagePurchase = (packageType: string, originalAmount: number) => {
   const packages: Record<string, { planName: string; credits: string }> = {
+    'test': { planName: '测试套餐', credits: '1次AI分析' },
     'package-10': { planName: '10次套餐包', credits: '10次AI分析' },
     'package-30': { planName: '30次套餐包', credits: '30次AI分析' },
     'package-50': { planName: '50次套餐包', credits: '50次AI分析' },
@@ -1251,63 +1265,22 @@ const processPayment = async () => {
   paymentProcessing.value = true;
 
   try {
-    // 模拟支付处理延迟
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const { data } = await paymentAPI.createOrder(
+      paymentInfo.value.planType,
+      selectedPaymentMethod.value,
+    );
 
-    // 模拟支付成功
-    const isSuccess = Math.random() > 0.1; // 90% 成功率
-
-    if (isSuccess) {
-      // 更新订阅状态
-      if (paymentInfo.value.planType === 'monthly') {
-        subscriptionStatus.value = {
-          type: 'active',
-          title: '月度订阅已激活',
-          subtitle: '享受完整AI辅助筛查服务',
-          icon: 'check_circle',
-          color: 'positive',
-          badge: '有效期至 2026-02-06',
-          badgeColor: 'primary',
-          planName: '月度订阅',
-          expireDate: '2026-02-06',
-          remainingCount: 20,
-        };
-      } else if (paymentInfo.value.planType === 'yearly') {
-        subscriptionStatus.value = {
-          type: 'active',
-          title: '年度订阅已激活',
-          subtitle: 'VIP会员尊享服务',
-          icon: 'workspace_premium',
-          color: 'amber',
-          badge: '有效期至 2027-01-06',
-          badgeColor: 'amber',
-          planName: '年度订阅',
-          expireDate: '2027-01-06',
-          remainingCount: 300,
-        };
-      } else {
-        // 套餐包
-        const credits = parseInt(paymentInfo.value.credits);
-        subscriptionStatus.value.remainingCount += credits;
-      }
-
-      $q.notify({
-        type: 'positive',
-        message: '支付成功！',
-        caption: `${paymentInfo.value.planName} 已激活`,
-        position: 'top',
-        timeout: 3000,
-        icon: 'check_circle',
-      });
-
-      showPaymentDialog.value = false;
+    // 跳转到支付页面
+    if (data.data && data.data.payUrl) {
+      window.location.href = data.data.payUrl;
     } else {
-      throw new Error('支付失败');
+      throw new Error('获取支付链接失败');
     }
-  } catch {
+  } catch (error) {
+    console.error('创建订单失败:', error);
     $q.notify({
       type: 'negative',
-      message: '支付失败',
+      message: '创建订单失败',
       caption: '请稍后重试或联系客服',
       position: 'top',
       icon: 'error',
@@ -1372,19 +1345,78 @@ const loadSavedConfig = () => {
       console.error('加载偏好设置失败:', e);
     }
   }
+};
 
-  const savedSubscription = localStorage.getItem('subscription_status');
-  if (savedSubscription) {
-    try {
-      subscriptionStatus.value = JSON.parse(savedSubscription);
-    } catch (e) {
-      console.error('加载订阅状态失败:', e);
+// 从后端获取真实的用户权益数据
+const loadUserSubscription = async () => {
+  try {
+    const response = await userAPI.getProfile();
+    const user = response.data;
+
+    // 根据后端返回的数据更新订阅状态
+    const now = new Date();
+    const expiresAt = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
+    const isExpired = !expiresAt || expiresAt < now;
+    const remainingCredits = user.remaining_credits || 0;
+
+    if (user.subscription_type && user.subscription_type !== 'none' && !isExpired) {
+      // 有效订阅
+      const planNames: Record<string, string> = {
+        monthly: '月度订阅',
+        yearly: '年度订阅',
+        package: '套餐包',
+      };
+      subscriptionStatus.value = {
+        type: 'active',
+        title: `${planNames[user.subscription_type] || '订阅'}已激活`,
+        subtitle: '享受完整AI辅助筛查服务',
+        icon: user.subscription_type === 'yearly' ? 'workspace_premium' : 'check_circle',
+        color: user.subscription_type === 'yearly' ? 'amber' : 'positive',
+        badge: `有效期至 ${date.formatDate(expiresAt, 'YYYY-MM-DD')}`,
+        badgeColor: user.subscription_type === 'yearly' ? 'amber' : 'primary',
+        planName: planNames[user.subscription_type] || '订阅会员',
+        expireDate: date.formatDate(expiresAt, 'YYYY-MM-DD'),
+        remainingCount: remainingCredits,
+      };
+    } else if (remainingCredits > 0) {
+      // 有剩余点数但无订阅
+      subscriptionStatus.value = {
+        type: 'active',
+        title: '套餐包用户',
+        subtitle: '按次使用AI分析服务',
+        icon: 'payments',
+        color: 'primary',
+        badge: `剩余 ${remainingCredits} 次`,
+        badgeColor: 'primary',
+        planName: '按次付费',
+        expireDate: '永久有效',
+        remainingCount: remainingCredits,
+      };
+    } else {
+      // 无订阅无点数
+      subscriptionStatus.value = {
+        type: 'trial',
+        title: '未订阅',
+        subtitle: '开始体验AI辅助筛查服务',
+        icon: 'info',
+        color: 'grey',
+        badge: '暂无权益',
+        badgeColor: 'grey',
+        planName: '未订阅',
+        expireDate: '-',
+        remainingCount: 0,
+      };
     }
+  } catch (e) {
+    console.error('获取用户权益失败:', e);
   }
 };
 
 // 页面加载时读取配置
-loadSavedConfig();
+onMounted(() => {
+  loadSavedConfig();
+  void loadUserSubscription();
+});
 </script>
 
 <style scoped>

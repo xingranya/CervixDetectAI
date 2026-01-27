@@ -17,6 +17,17 @@
     <link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png" />
+
+    <!-- 支付结果页重定向：在 Vue 加载前处理 -->
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var outTradeNo = params.get('out_trade_no');
+        if (outTradeNo && window.location.hash.indexOf('/payment/result') === -1) {
+          window.location.replace(window.location.origin + '/#/payment/result?out_trade_no=' + outTradeNo);
+        }
+      })();
+    </script>
   </head>
   <body>
     <!-- quasar:entry-point -->
