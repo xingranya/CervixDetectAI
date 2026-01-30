@@ -10,6 +10,14 @@
             <img src="/logo.svg" alt="CervixDetectAI Logo" />
           </q-avatar>
           CervixDetectAI
+          <template v-if="currentHospital">
+            <span class="q-mx-sm text-grey-4">|</span>
+            <q-avatar v-if="currentHospital.iconUrl" size="24px" class="q-mr-xs hospital-logo">
+              <img :src="currentHospital.iconUrl" :alt="currentHospital.name" />
+            </q-avatar>
+            <q-icon v-else :name="currentHospital.icon" size="xs" class="q-mr-xs" />
+            <span class="text-caption">{{ currentHospital.name }}</span>
+          </template>
         </q-toolbar-title>
 
         <div class="q-gutter-sm row items-center no-wrap">
@@ -104,6 +112,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
 import EssentialLink from 'components/EssentialLink.vue';
+import { HOSPITALS } from 'src/constants/hospitals';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -113,6 +122,12 @@ const leftDrawerOpen = ref(true);
 // 用户名称
 const userName = computed(() => {
   return authStore.user?.real_name || authStore.user?.username || '用户';
+});
+
+// 当前医院信息
+const currentHospital = computed(() => {
+  if (!authStore.user?.hospital_id) return null;
+  return HOSPITALS.find(h => h.id === authStore.user?.hospital_id);
 });
 
 // 处理头像URL

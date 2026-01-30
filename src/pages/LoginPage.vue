@@ -28,11 +28,15 @@
             active-color="primary"
             indicator-color="primary"
           >
+            <q-tab name="employee" label="工号登录" />
             <q-tab name="email" label="邮箱登录" />
             <q-tab name="phone" label="手机登录" />
           </q-tabs>
           <div v-if="loginType === 'phone'" class="text-caption text-grey-6 q-mt-sm text-center">
             输入手机号和验证码，新用户将自动注册
+          </div>
+          <div v-if="loginType === 'employee'" class="text-caption text-grey-6 q-mt-sm text-center">
+            请选择所属医院并输入工号
           </div>
         </q-card-section>
 
@@ -125,7 +129,7 @@
           </q-form>
 
           <!-- 短信登录 -->
-          <q-form v-else @submit.prevent="onSmsLogin" class="q-gutter-md">
+          <q-form v-else-if="loginType === 'phone'" @submit.prevent="onSmsLogin" class="q-gutter-md">
             <q-input
               v-model="phone"
               outlined
@@ -202,12 +206,106 @@
               </q-checkbox>
             </div>
 
-            <!-- AI 验证码（一点即过） -->
+            <div class="q-mt-lg">
+              <q-btn
+                color="primary"
+                :loading="authStore.isAuthenticating"
+                unelevated
+                rounded
+                size="lg"
+                style="width: 100%"
+                type="submit"
+                :disabled="!agreeTerms || authStore.isAuthenticating"
+              >
+                <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
+                <q-spinner-hourglass v-else />
+              </q-btn>
+              <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
+                请先同意用户协议和隐私政策
+              </div>
+            </div>
+          </q-form>
+
+          <!-- 工号登录 -->
+          <q-form v-else-if="loginType === 'employee'" @submit="onEmployeeLogin" class="q-gutter-md">
+            <q-select
+              v-model="hospital"
+              outlined
+              :options="HOSPITALS"
+              option-label="name"
+              option-value="id"
+              label="所属医院"
+              :rules="[(val) => !!val || '请选择医院']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="local_hospital" />
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar>
+                    <q-avatar v-if="scope.opt.iconUrl" size="24px" class="hospital-logo">
+                      <img :src="scope.opt.iconUrl" :alt="scope.opt.name" />
+                    </q-avatar>
+                    <q-icon v-else :name="scope.opt.icon" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+
+            <q-input
+              v-model="employeeId"
+              outlined
+              label="工号"
+              lazy-rules
+              :rules="[(val) => (val && val.length > 0) || '请输入工号']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="badge" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="password"
+              outlined
+              label="密码"
+              :type="isPwd ? 'password' : 'text'"
+              lazy-rules
+              :rules="[(val) => (val && val.length > 0) || '请输入密码']"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
+                />
+              </template>
+            </q-input>
+
+            <!-- 协议复选框 -->
+            <div class="agreement-checkbox q-mt-sm">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
+                </span>
+              </q-checkbox>
+            </div>
+
+            <!-- AI 验证码 -->
             <div class="captcha-wrapper q-mt-md" v-if="agreeTerms && !captchaVerified">
               <div class="text-caption text-grey-6 q-mb-sm text-center">请完成安全验证</div>
               <AliCaptcha
-                instance-id="login-phone"
-                scene-id="u1g43fza"
+                ref="captchaRef"
+                instance-id="login-employee"
                 @success="onCaptchaSuccess"
                 @fail="onCaptchaFail"
               />
@@ -228,7 +326,7 @@
                 type="submit"
                 :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
               >
-                <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
+                <span v-if="!authStore.isAuthenticating">登录</span>
                 <q-spinner-hourglass v-else />
               </q-btn>
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
@@ -266,16 +364,19 @@ import { authAPI } from 'src/services/api';
 import { useQuasar } from 'quasar';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
 import AliCaptcha from 'src/components/common/AliCaptcha.vue';
+import { HOSPITALS, type Hospital } from 'src/constants/hospitals';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const $q = useQuasar();
 
-const loginType = ref<'email' | 'phone'>('email');
+const loginType = ref<'email' | 'phone' | 'employee'>('employee');
 const email = ref('');
 const password = ref('');
 const phone = ref('');
 const smsCode = ref('');
+const hospital = ref<Hospital | null>(null);
+const employeeId = ref('');
 const isPwd = ref(true);
 const countdown = ref(0);
 const isSendingSms = ref(false);
@@ -534,6 +635,38 @@ const onSmsLogin = async () => {
     $q.notify({
       type: 'negative',
       message: errorMessage,
+      position: 'top',
+    });
+  }
+};
+
+// 工号登录
+const onEmployeeLogin = async () => {
+  if (!hospital.value) return;
+
+  try {
+    const result = await authStore.employeeLogin(hospital.value.id, employeeId.value, password.value);
+
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: '登录成功',
+        position: 'top',
+      });
+      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
+      void router.push(redirectPath);
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: result.error || '登录失败',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    console.error('工号登录错误:', error);
+    $q.notify({
+      type: 'negative',
+      message: '登录过程中发生错误',
       position: 'top',
     });
   }

@@ -12,13 +12,13 @@ const router = express.Router();
  */
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, real_name, phone } = req.body;
+    const { username, email, password, real_name, phone, hospital_id, employee_id } = req.body;
 
     // 基础验证
-    if (!email || !password) {
+    if ((!email && !employee_id) || !password) {
       return res.status(400).json({
         success: false,
-        message: '邮箱和密码为必填项',
+        message: '账号和密码为必填项',
       });
     }
 
@@ -31,21 +31,34 @@ router.post('/register', async (req, res) => {
     }
 
     // 邮箱格式验证
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: '邮箱格式不正确',
-      });
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: '邮箱格式不正确',
+        });
+      }
+
+      // 检查邮箱是否已存在
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: '该邮箱已被注册',
+        });
+      }
     }
 
-    // 检查邮箱是否已存在
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: '该邮箱已被注册',
-      });
+    // 检查工号是否已存在
+    if (employee_id) {
+      const existingEmployee = await User.findOne({ where: { employee_id } });
+      if (existingEmployee) {
+        return res.status(409).json({
+          success: false,
+          message: '该工号已被注册',
+        });
+      }
     }
 
     // 检查用户名是否已存在（如果提供了用户名）
@@ -62,10 +75,12 @@ router.post('/register', async (req, res) => {
     // 创建用户（password_hash会在beforeSave hook中自动加密）
     const user = await User.create({
       username: username || `user_${Date.now()}`,
-      email,
+      email: email || null,
       password_hash: password, // beforeSave hook会自动加密
       real_name,
       phone,
+      hospital_id,
+      employee_id,
       role: 'user', // 默认角色
       status: 'active', // 注册即激活
     });
@@ -85,6 +100,8 @@ router.post('/register', async (req, res) => {
           email: user.email,
           real_name: user.real_name,
           phone: user.phone,
+          hospital_id: user.hospital_id,
+          employee_id: user.employee_id,
           avatar_url: user.avatar_url,
           role: user.role,
           status: user.status,
@@ -109,22 +126,28 @@ router.post('/register', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, hospital_id, employee_id } = req.body;
 
     // 验证必填字段
-    if (!email || !password) {
+    if ((!email && (!hospital_id || !employee_id)) || !password) {
       return res.status(400).json({
         success: false,
-        message: '邮箱和密码为必填项',
+        message: '账号和密码为必填项',
       });
     }
 
     // 查找用户
-    const user = await User.findOne({ where: { email } });
+    let user;
+    if (hospital_id && employee_id) {
+      user = await User.findOne({ where: { hospital_id, employee_id } });
+    } else {
+      user = await User.findOne({ where: { email } });
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: '邮箱或密码错误',
+        message: '账号或密码错误',
       });
     }
 
@@ -169,6 +192,8 @@ router.post('/login', async (req, res) => {
           email: user.email,
           real_name: user.real_name,
           phone: user.phone,
+          hospital_id: user.hospital_id,
+          employee_id: user.employee_id,
           avatar_url: user.avatar_url,
           role: user.role,
           status: user.status,

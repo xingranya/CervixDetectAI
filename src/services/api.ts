@@ -80,9 +80,20 @@ export const authAPI = {
     return data;
   },
 
+  async employeeLogin(hospitalId: string, employeeId: string, password: string) {
+    const { data } = await apiClient.post('/auth/login', {
+      hospital_id: hospitalId,
+      employee_id: employeeId,
+      password,
+    });
+    return data;
+  },
+
   async register(userData: {
-    email: string;
     password: string;
+    hospital_id: string;
+    employee_id: string;
+    email?: string;
     real_name?: string;
     phone?: string;
   }) {

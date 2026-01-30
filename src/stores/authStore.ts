@@ -9,6 +9,8 @@ interface User {
   email: string;
   real_name?: string;
   phone?: string;
+  hospital_id?: string;
+  employee_id?: string;
   role: 'admin' | 'doctor' | 'user';
   status: 'active' | 'disabled';
   avatar_url?: string;
@@ -79,9 +81,18 @@ export const useAuthStore = defineStore('auth', {
       );
     },
 
+    async employeeLogin(hospitalId: string, employeeId: string, password: string) {
+      return this._handleAuthRequest(
+        () => authAPI.employeeLogin(hospitalId, employeeId, password),
+        '工号登录失败'
+      );
+    },
+
     async register(userData: {
-      email: string;
       password: string;
+      hospital_id: string;
+      employee_id: string;
+      email?: string;
       real_name?: string;
       phone?: string;
     }) {

@@ -1,18 +1,19 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row">
+  <q-page class="q-pa-lg bg-grey-1">
+    <div class="row q-mb-lg">
       <div class="col-12">
-        <div class="text-h5 q-mb-md">个人资料</div>
-        <p>管理您的个人信息和偏好设置。</p>
+        <div class="text-h4 text-weight-bold q-mb-xs">个人资料</div>
+        <p class="text-grey-7 text-body1">管理您的个人信息和偏好设置</p>
       </div>
     </div>
 
-    <div class="row q-col-gutter-md">
-      <!-- 主要信息卡片 -->
-      <div class="col-md-4 col-xs-12">
-        <q-card flat bordered>
-          <q-card-section class="text-center">
-            <q-avatar size="120px" class="q-mb-md" color="primary" text-color="white">
+    <div class="row q-col-gutter-lg">
+      <!-- 左侧：用户信息卡片 -->
+      <div class="col-lg-4 col-md-5 col-xs-12">
+        <!-- 用户头像卡片 -->
+        <q-card flat class="profile-card q-mb-lg">
+          <q-card-section class="text-center q-pa-xl">
+            <q-avatar size="120px" class="q-mb-lg avatar-wrapper" color="primary" text-color="white">
               <template v-if="avatarUrl">
                 <img :src="avatarUrl" alt="用户头像" />
               </template>
@@ -20,218 +21,293 @@
                 <div class="text-h3">{{ userInitial }}</div>
               </template>
             </q-avatar>
-            <div class="text-h6">{{ user?.real_name || user?.username || '用户' }}</div>
-            <div class="text-subtitle2 text-grey-6">
-              {{ user?.role === 'doctor' ? '医生' : user?.role === 'admin' ? '管理员' : '用户' }}
-            </div>
-            <div class="text-caption text-grey-6 q-mt-sm">
-              {{ user?.email || user?.phone || '' }}
-            </div>
 
-            <q-btn
-              label="更改头像"
-              color="primary"
-              flat
-              dense
-              class="q-mt-md"
-              @click="changeAvatar"
-            />
+            <div class="text-h5 text-weight-bold q-mb-sm">{{ user?.real_name || user?.username || '用户' }}</div>
+
+            <q-badge
+              :color="user?.role === 'admin' ? 'red' : user?.role === 'doctor' ? 'primary' : 'grey-6'"
+              class="q-pa-sm"
+              rounded
+            >
+              {{ user?.role === 'doctor' ? '医生' : user?.role === 'admin' ? '管理员' : '普通用户' }}
+            </q-badge>
+
+            <div class="q-mt-lg">
+              <q-btn
+                label="更改头像"
+                color="primary"
+                outline
+                rounded
+                size="sm"
+                icon="photo_camera"
+                @click="changeAvatar"
+                class="q-px-md"
+              />
+            </div>
           </q-card-section>
+        </q-card>
 
-          <q-separator />
+        <!-- 账户信息卡片 -->
+        <q-card flat class="profile-card q-mb-lg">
+          <q-card-section class="q-pa-lg">
+            <div class="text-subtitle1 text-weight-bold q-mb-md">账户信息</div>
 
-          <q-card-section>
-            <div class="q-gutter-sm">
-              <div class="row items-center">
-                <div class="col-4 text-grey-6">用户名</div>
-                <div class="col-8 text-weight-medium">{{ user?.username || '-' }}</div>
+            <div class="info-item" v-if="currentHospital">
+              <div class="info-icon bg-blue-1">
+                <q-icon :name="currentHospital.icon" color="primary" size="sm" />
               </div>
-              <div class="row items-center" v-if="profileData.phone">
-                <div class="col-4 text-grey-6">手机号</div>
-                <div class="col-8 text-weight-medium">{{ profileData.phone }}</div>
+              <div class="info-content">
+                <div class="info-label">所属医院</div>
+                <div class="info-value">{{ currentHospital.name }}</div>
               </div>
-              <div class="row items-center" v-if="profileData.department">
-                <div class="col-4 text-grey-6">科室</div>
-                <div class="col-8 text-weight-medium">{{ profileData.department }}</div>
+            </div>
+
+            <div class="info-item" v-if="user?.employee_id">
+              <div class="info-icon bg-purple-1">
+                <q-icon name="badge" color="purple" size="sm" />
               </div>
-              <div class="row items-center" v-if="profileData.registeredDate">
-                <div class="col-4 text-grey-6">注册日期</div>
-                <div class="col-8 text-weight-medium">
-                  {{ new Date(profileData.registeredDate).toLocaleDateString() }}
-                </div>
+              <div class="info-content">
+                <div class="info-label">工号</div>
+                <div class="info-value">{{ user.employee_id }}</div>
+              </div>
+            </div>
+
+            <div class="info-item" v-if="currentDepartment">
+              <div class="info-icon bg-teal-1">
+                <q-icon name="medical_services" color="teal" size="sm" />
+              </div>
+              <div class="info-content">
+                <div class="info-label">科室</div>
+                <div class="info-value">{{ currentDepartment.name }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-icon bg-orange-1">
+                <q-icon name="event" color="orange" size="sm" />
+              </div>
+              <div class="info-content">
+                <div class="info-label">注册日期</div>
+                <div class="info-value">{{ formattedRegisterDate }}</div>
               </div>
             </div>
           </q-card-section>
         </q-card>
 
         <!-- 统计信息卡片 -->
-        <q-card flat bordered class="q-mt-md">
-          <q-card-section>
-            <div class="text-h6 q-mb-md">活动统计</div>
-            <div class="row q-col-gutter-md text-center">
+        <q-card flat class="profile-card">
+          <q-card-section class="q-pa-lg">
+            <div class="text-subtitle1 text-weight-bold q-mb-lg">活动统计</div>
+            <div class="row q-col-gutter-md">
               <div class="col-6">
-                <div class="text-h5 text-primary">{{ profileData.stats.totalCases }}</div>
-                <div class="text-caption text-grey-6">总病例</div>
+                <div class="stat-box bg-blue-1">
+                  <div class="stat-value text-primary">{{ profileData.stats.totalCases }}</div>
+                  <div class="stat-label">总病例</div>
+                </div>
               </div>
               <div class="col-6">
-                <div class="text-h5 text-secondary">{{ profileData.stats.thisMonth }}</div>
-                <div class="text-caption text-grey-6">本月病例</div>
+                <div class="stat-box bg-green-1">
+                  <div class="stat-value text-green">{{ profileData.stats.thisMonth }}</div>
+                  <div class="stat-label">本月病例</div>
+                </div>
               </div>
             </div>
           </q-card-section>
         </q-card>
       </div>
 
-      <!-- 详细信息卡片 -->
-      <div class="col-md-8 col-xs-12">
-        <q-card flat bordered class="profile-form-card">
-          <q-card-section class="bg-grey-1">
-            <div class="row items-center">
-              <q-icon name="person" size="sm" color="primary" class="q-mr-sm" />
-              <div class="text-h6 text-weight-medium">基本信息</div>
-            </div>
-            <div class="text-caption text-grey-7 q-mt-xs">更新您的个人信息和联系方式</div>
-          </q-card-section>
-          <q-separator />
+      <!-- 右侧：表单卡片 -->
+      <div class="col-lg-8 col-md-7 col-xs-12">
+        <!-- 编辑资料卡片 -->
+        <q-card flat class="profile-card q-mb-lg">
           <q-card-section class="q-pa-lg">
-            <q-form class="q-gutter-lg">
-              <!-- 姓名 -->
-              <q-input
-                v-model="profileData.firstName"
-                outlined
-                label="姓名"
-                stack-label
-                placeholder="请输入姓名"
-                bg-color="white"
-                class="modern-input"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="badge" color="grey-6" />
-                </template>
-              </q-input>
+            <div class="row items-center q-mb-lg">
+              <q-icon name="edit" size="sm" color="primary" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">编辑资料</div>
+            </div>
 
-              <!-- 邮箱 -->
-              <q-input
-                v-model="profileData.email"
-                outlined
-                label="邮箱"
-                stack-label
-                type="email"
-                placeholder="example@email.com"
-                bg-color="white"
-                class="modern-input"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="email" color="grey-6" />
-                </template>
-              </q-input>
+            <q-form class="form-container" @submit.prevent="saveProfile">
+              <!-- 基本信息区块 -->
+              <div class="form-section">
+                <div class="form-section-title">基本信息</div>
+                <q-input
+                  v-model="profileData.firstName"
+                  outlined
+                  label="姓名"
+                  placeholder="请输入您的真实姓名"
+                  class="form-input"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="person" color="grey-6" />
+                  </template>
+                </q-input>
+              </div>
 
-              <!-- 电话 -->
-              <q-input
-                v-model="profileData.phone"
-                outlined
-                label="电话"
-                stack-label
-                type="tel"
-                placeholder="请输入手机号码"
-                bg-color="white"
-                class="modern-input"
-                maxlength="11"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="phone" color="grey-6" />
-                </template>
-              </q-input>
-
-              <!-- 医疗机构与科室 -->
-              <div class="row q-col-gutter-md">
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.institution"
-                    outlined
-                    label="医疗机构"
-                    stack-label
-                    placeholder="请输入医疗机构名称"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="domain" color="grey-6" />
-                    </template>
-                  </q-input>
-                </div>
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.department"
-                    outlined
-                    label="科室"
-                    stack-label
-                    placeholder="请输入科室"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="medical_services" color="grey-6" />
-                    </template>
-                  </q-input>
+              <!-- 联系方式区块 -->
+              <div class="form-section">
+                <div class="form-section-title">联系方式</div>
+                <div class="row q-col-gutter-lg">
+                  <div class="col-md-6 col-12">
+                    <q-input
+                      v-model="profileData.email"
+                      outlined
+                      label="邮箱"
+                      type="email"
+                      placeholder="example@email.com"
+                      class="form-input"
+                      :rules="[
+                        (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确'
+                      ]"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="email" color="grey-6" />
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-md-6 col-12">
+                    <q-input
+                      v-model="profileData.phone"
+                      outlined
+                      label="手机号"
+                      type="tel"
+                      placeholder="请输入手机号码"
+                      class="form-input"
+                      maxlength="11"
+                      :rules="[
+                        (val) => !val || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确'
+                      ]"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="phone" color="grey-6" />
+                      </template>
+                    </q-input>
+                  </div>
                 </div>
               </div>
 
-              <!-- 职称与职务 -->
-              <div class="row q-col-gutter-md">
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.position"
-                    outlined
-                    label="职称"
-                    stack-label
-                    placeholder="请输入职称"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="workspace_premium" color="grey-6" />
-                    </template>
-                  </q-input>
+              <!-- 工作信息区块 -->
+              <div class="form-section" v-if="currentHospital || user?.employee_id">
+                <div class="form-section-title">工作信息</div>
+
+                <q-field
+                  v-if="currentHospital"
+                  outlined
+                  label="所属医院"
+                  stack-label
+                  class="form-input readonly-field"
+                >
+                  <template v-slot:prepend>
+                    <q-icon :name="currentHospital.icon" color="primary" />
+                  </template>
+                  <template v-slot:control>
+                    <div class="self-center full-width q-pl-xs">
+                      {{ currentHospital.name }}
+                    </div>
+                  </template>
+                  <template v-slot:append>
+                    <q-icon name="lock" color="grey-4" size="xs" />
+                  </template>
+                </q-field>
+
+                <div class="row q-col-gutter-lg" v-if="user?.employee_id">
+                  <div class="col-md-6 col-12">
+                    <q-field
+                      outlined
+                      label="工号"
+                      stack-label
+                      class="form-input readonly-field"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="badge" color="purple" />
+                      </template>
+                      <template v-slot:control>
+                        <div class="self-center full-width q-pl-xs">
+                          {{ user.employee_id }}
+                        </div>
+                      </template>
+                      <template v-slot:append>
+                        <q-icon name="lock" color="grey-4" size="xs" />
+                      </template>
+                    </q-field>
+                  </div>
+                  <div class="col-md-6 col-12">
+                    <q-field
+                      v-if="currentDepartment"
+                      outlined
+                      label="科室"
+                      stack-label
+                      class="form-input readonly-field"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="medical_services" color="teal" />
+                      </template>
+                      <template v-slot:control>
+                        <div class="self-center full-width q-pl-xs">
+                          {{ currentDepartment.name }}
+                        </div>
+                      </template>
+                      <template v-slot:append>
+                        <q-icon name="lock" color="grey-4" size="xs" />
+                      </template>
+                    </q-field>
+                  </div>
                 </div>
-                <div class="col-md-6 col-12">
-                  <q-input
-                    v-model="profileData.title"
-                    outlined
-                    label="职务"
-                    stack-label
-                    placeholder="请输入职务"
-                    bg-color="white"
-                    class="modern-input"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="work" color="grey-6" />
-                    </template>
-                  </q-input>
+              </div>
+
+              <!-- 职业信息区块 -->
+              <div class="form-section">
+                <div class="form-section-title">职业信息</div>
+                <div class="row q-col-gutter-lg">
+                  <div class="col-md-6 col-12">
+                    <q-input
+                      v-model="profileData.position"
+                      outlined
+                      label="职称"
+                      placeholder="如：主任医师、副主任医师"
+                      class="form-input"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="workspace_premium" color="grey-6" />
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-md-6 col-12">
+                    <q-input
+                      v-model="profileData.title"
+                      outlined
+                      label="职务"
+                      placeholder="如：科室主任、副主任"
+                      class="form-input"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="work" color="grey-6" />
+                      </template>
+                    </q-input>
+                  </div>
                 </div>
               </div>
 
               <!-- 按钮组 -->
-              <div class="row q-mt-xl q-pt-md" style="border-top: 1px solid #e0e0e0">
+              <div class="row q-mt-xl q-pt-lg form-actions">
                 <q-space />
                 <q-btn
-                  color="grey-7"
-                  label="取消"
-                  outline
+                  color="grey-6"
+                  label="重置"
+                  flat
                   rounded
-                  unelevated
                   @click="resetForm"
-                  class="q-mr-sm q-px-lg"
+                  class="q-mr-md q-px-lg"
                   :disable="loading"
+                  icon="refresh"
                 />
                 <q-btn
                   color="primary"
                   label="保存更改"
                   rounded
                   unelevated
-                  @click="saveProfile"
+                  type="submit"
                   :loading="loading"
-                  class="q-px-lg"
+                  class="q-px-xl"
                   icon-right="check"
                 />
               </div>
@@ -239,37 +315,111 @@
           </q-card-section>
         </q-card>
 
-        <!-- 专业资质卡片 -->
-        <q-card v-if="profileData.certifications.length > 0" flat bordered class="q-mt-md">
-          <q-card-section>
-            <div class="text-h6">专业资质</div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <q-list>
-              <q-item v-for="(cert, index) in profileData.certifications" :key="index">
+        <!-- 安全设置卡片 -->
+        <q-card flat class="profile-card">
+          <q-card-section class="q-pa-lg">
+            <div class="row items-center q-mb-md">
+              <q-icon name="security" size="sm" color="orange" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">安全设置</div>
+            </div>
+
+            <q-list class="security-list">
+              <q-item clickable v-ripple @click="showChangePassword" class="security-item">
                 <q-item-section avatar>
-                  <q-icon color="primary" name="verified" />
+                  <div class="security-icon bg-orange-1">
+                    <q-icon name="lock" color="orange" size="sm" />
+                  </div>
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>{{ cert.name }}</q-item-label>
-                  <q-item-label caption>{{ cert.issuer }} - {{ cert.year }}</q-item-label>
+                  <q-item-label class="text-weight-medium">修改密码</q-item-label>
+                  <q-item-label caption class="text-grey-6">定期更换密码以保护账户安全</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon name="chevron_right" color="grey-5" />
                 </q-item-section>
               </q-item>
             </q-list>
-
-            <q-btn
-              label="添加资质"
-              color="primary"
-              flat
-              icon="add"
-              class="q-mt-sm"
-              @click="addCertification"
-            />
           </q-card-section>
         </q-card>
       </div>
     </div>
+
+    <!-- 修改密码对话框 -->
+    <q-dialog v-model="passwordDialog" persistent>
+      <q-card style="min-width: 420px" class="password-dialog">
+        <q-card-section class="row items-center q-pb-none q-pt-lg q-px-lg">
+          <div class="text-h6 text-weight-bold">修改密码</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg">
+          <q-form @submit.prevent="changePassword" class="q-gutter-lg">
+            <q-input
+              v-model="passwordForm.currentPassword"
+              outlined
+              label="当前密码"
+              :type="showCurrentPwd ? 'text' : 'password'"
+              :rules="[(val) => !!val || '请输入当前密码']"
+              class="form-input"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="showCurrentPwd ? 'visibility' : 'visibility_off'"
+                  class="cursor-pointer"
+                  @click="showCurrentPwd = !showCurrentPwd"
+                />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="passwordForm.newPassword"
+              outlined
+              label="新密码"
+              :type="showNewPwd ? 'text' : 'password'"
+              :rules="[
+                (val) => !!val || '请输入新密码',
+                (val) => val.length >= 6 || '密码长度至少6位'
+              ]"
+              class="form-input"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="showNewPwd ? 'visibility' : 'visibility_off'"
+                  class="cursor-pointer"
+                  @click="showNewPwd = !showNewPwd"
+                />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="passwordForm.confirmPassword"
+              outlined
+              label="确认新密码"
+              :type="showConfirmPwd ? 'text' : 'password'"
+              :rules="[
+                (val) => !!val || '请确认新密码',
+                (val) => val === passwordForm.newPassword || '两次输入的密码不一致'
+              ]"
+              class="form-input"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="showConfirmPwd ? 'visibility' : 'visibility_off'"
+                  class="cursor-pointer"
+                  @click="showConfirmPwd = !showConfirmPwd"
+                />
+              </template>
+            </q-input>
+
+            <div class="row justify-end q-mt-lg q-pt-md">
+              <q-btn label="取消" flat color="grey-7" v-close-popup class="q-mr-md q-px-lg" rounded />
+              <q-btn label="确认修改" color="primary" type="submit" :loading="passwordLoading" rounded unelevated class="q-px-lg" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -278,25 +428,38 @@ import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/authStore';
 import { userAPI } from 'src/services/api';
+import { HOSPITALS, DEPARTMENTS } from 'src/constants/hospitals';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 
 const user = computed(() => authStore.user);
 
-// 处理头像URL，确保是完整的URL
+const currentHospital = computed(() => {
+  if (!user.value?.hospital_id) return null;
+  return HOSPITALS.find(h => h.id === user.value?.hospital_id);
+});
+
+const currentDepartment = computed(() => {
+  if (!user.value?.employee_id) return null;
+  const deptCode = user.value.employee_id.substring(0, 2);
+  return DEPARTMENTS.find(d => d.code === deptCode);
+});
+
+const formattedRegisterDate = computed(() => {
+  if (!profileData.value.registeredDate) return '-';
+  return new Date(profileData.value.registeredDate).toLocaleDateString('zh-CN');
+});
+
 const avatarUrl = computed(() => {
   if (!user.value?.avatar_url) return '';
   const url = user.value.avatar_url;
-  // 如果已经是完整URL，直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  // 开发环境：拼接 localhost:3000
   if (import.meta.env.DEV) {
     return `http://localhost:3000${url}`;
   }
-  // 生产环境：直接使用相对路径
   return url;
 });
 
@@ -314,8 +477,6 @@ const profileData = ref({
   firstName: '',
   email: '',
   phone: '',
-  institution: '',
-  department: '',
   position: '',
   title: '',
   registeredDate: '',
@@ -323,27 +484,33 @@ const profileData = ref({
     totalCases: 0,
     thisMonth: 0,
   },
-  certifications: [] as Array<{ name: string; issuer: string; year: string }>,
 });
 
 const loading = ref(false);
 
+const passwordDialog = ref(false);
+const passwordLoading = ref(false);
+const showCurrentPwd = ref(false);
+const showNewPwd = ref(false);
+const showConfirmPwd = ref(false);
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+});
+
 onMounted(async () => {
-  // 确保先从localStorage恢复authStore状态
   authStore.initializeAuth();
-  // 然后加载用户数据到表单
   await loadUserData();
 });
 
 const loadUserData = async () => {
   try {
-    // 尝试从服务器获取最新数据
     await authStore.fetchCurrentUser();
   } catch (error) {
     console.error('获取用户信息失败:', error);
   }
-  
-  // 从authStore加载数据到表单
+
   if (user.value) {
     profileData.value.email = user.value.email || '';
     profileData.value.phone = user.value.phone || '';
@@ -355,26 +522,22 @@ const loadUserData = async () => {
 const saveProfile = async () => {
   loading.value = true;
   try {
-    // 构建更新数据对象
-    const updateData: { real_name?: string; phone?: string } = {};
-    
+    const updateData: { real_name?: string; phone?: string; email?: string } = {};
+
     if (profileData.value.firstName) {
       updateData.real_name = profileData.value.firstName.trim();
     }
     if (profileData.value.phone) {
       updateData.phone = profileData.value.phone;
     }
-    
+
     const response = await userAPI.updateProfile(updateData);
 
     if (response.success) {
-      // 更新authStore和localStorage
       authStore.user = response.data.user;
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      // 重新加载表单数据
       await loadUserData();
-      
+
       $q.notify({
         type: 'positive',
         message: '个人资料保存成功！',
@@ -449,76 +612,198 @@ const uploadAvatar = async (file: File) => {
   }
 };
 
-const addCertification = () => {
-  $q.notify({
-    type: 'info',
-    message: '添加资质功能将在实际应用中实现',
-    position: 'top',
-  });
+const showChangePassword = () => {
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  };
+  showCurrentPwd.value = false;
+  showNewPwd.value = false;
+  showConfirmPwd.value = false;
+  passwordDialog.value = true;
+};
+
+const changePassword = async () => {
+  passwordLoading.value = true;
+  try {
+    const response = await userAPI.updatePassword({
+      current_password: passwordForm.value.currentPassword,
+      new_password: passwordForm.value.newPassword,
+    });
+
+    if (response.success) {
+      passwordDialog.value = false;
+      $q.notify({
+        type: 'positive',
+        message: '密码修改成功！',
+        position: 'top',
+      });
+    }
+  } catch (error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || '密码修改失败',
+      position: 'top',
+    });
+  } finally {
+    passwordLoading.value = false;
+  }
 };
 </script>
 
 <style scoped>
-.q-avatar img {
+/* 卡片基础样式 */
+.profile-card {
+  border-radius: 16px;
+  border: 1px solid #e8e8e8;
+  background: white;
+}
+
+/* 头像样式 */
+.avatar-wrapper {
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.25);
+}
+
+.avatar-wrapper img {
   object-fit: cover;
 }
 
-/* 表单卡片样式 */
-.profile-form-card {
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s ease;
+/* 信息项样式 */
+.info-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.profile-form-card:hover {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+.info-item:last-child {
+  border-bottom: none;
 }
 
-/* 现代化输入框样式 */
-.modern-input :deep(.q-field__control) {
-  border-radius: 8px;
-  transition: all 0.3s ease;
+.info-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
 }
 
-.modern-input :deep(.q-field__control):hover {
-  background-color: #f5f5f5;
+.info-content {
+  flex: 1;
 }
 
-.modern-input :deep(.q-field--focused .q-field__control) {
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+.info-label {
+  font-size: 12px;
+  color: #9e9e9e;
+  margin-bottom: 2px;
 }
 
-/* 输入框聚焦状态 */
-.modern-input :deep(.q-field--outlined .q-field__control:before) {
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 统计盒子样式 */
+.stat-box {
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #757575;
+  margin-top: 8px;
+}
+
+/* 表单容器 */
+.form-container {
+  max-width: 100%;
+}
+
+/* 表单区块 */
+.form-section {
+  margin-bottom: 16px;
+}
+
+.form-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9e9e9e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 表单输入框 */
+.form-input {
+  margin-bottom: 16px;
+}
+
+.form-input :deep(.q-field__control) {
+  border-radius: 10px;
+  min-height: 48px;
+}
+
+.form-input :deep(.q-field__native) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* 只读字段样式 */
+.readonly-field :deep(.q-field__control) {
+  background-color: #fafafa;
+}
+
+.readonly-field :deep(.q-field__control:before) {
   border-color: #e0e0e0;
-  transition: border-color 0.3s ease;
 }
 
-.modern-input :deep(.q-field--outlined:hover .q-field__control:before) {
-  border-color: #bdbdbd;
+/* 表单操作按钮区域 */
+.form-actions {
+  border-top: 1px solid #f0f0f0;
 }
 
-.modern-input :deep(.q-field--outlined.q-field--focused .q-field__control:before) {
-  border-color: var(--q-primary);
-  border-width: 2px;
+/* 安全设置列表 */
+.security-list {
+  margin: 0 -16px;
 }
 
-/* 图标样式 */
-.modern-input :deep(.q-field__prepend) {
-  padding-right: 8px;
+.security-item {
+  padding: 16px;
+  border-radius: 12px;
+  margin: 0 8px;
 }
 
-/* 按钮悬停效果 */
-.q-btn {
-  transition: all 0.3s ease;
+.security-item:hover {
+  background-color: #fafafa;
 }
 
-.q-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.security-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 密码对话框 */
+.password-dialog {
+  border-radius: 16px;
 }
 </style>

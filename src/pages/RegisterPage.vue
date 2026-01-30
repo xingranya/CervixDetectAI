@@ -17,15 +17,102 @@
 
         <q-card-section>
           <q-form @submit="onRegister" class="q-gutter-md">
+            <!-- 1. 所属医院（必填） -->
+            <q-select
+              v-model="hospital"
+              outlined
+              :options="HOSPITALS"
+              option-label="name"
+              option-value="id"
+              label="所属医院"
+              :rules="[(val) => !!val || '请选择所属医院']"
+            >
+              <template v-slot:prepend>
+                <q-icon name="local_hospital" />
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar>
+                    <q-avatar v-if="scope.opt.iconUrl" size="24px" class="hospital-logo">
+                      <img :src="scope.opt.iconUrl" :alt="scope.opt.name" />
+                    </q-avatar>
+                    <q-icon v-else :name="scope.opt.icon" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+
+            <!-- 2. 工号（必填） -->
+            <div class="row q-col-gutter-sm">
+              <div class="col-4">
+                <q-select
+                  v-model="department"
+                  outlined
+                  :options="DEPARTMENTS"
+                  option-label="name"
+                  option-value="code"
+                  label="科室"
+                  :rules="[(val) => !!val || '请选择']"
+                />
+              </div>
+              <div class="col-4">
+                <q-input
+                  v-model="entryYear"
+                  outlined
+                  label="入职年份"
+                  mask="####"
+                  :rules="[
+                    (val) => !!val || '必填',
+                    (val) => val.length === 4 || '4位年份',
+                    (val) => parseInt(val) > 1900 && parseInt(val) <= new Date().getFullYear() || '无效年份'
+                  ]"
+                />
+              </div>
+              <div class="col-4">
+                <q-input
+                  v-model="sequenceNumber"
+                  outlined
+                  label="顺序号"
+                  mask="##"
+                  :rules="[(val) => !!val || '必填', (val) => val.length === 2 || '2位数字']"
+                />
+              </div>
+              <div class="col-12 q-mb-md text-caption text-grey">
+                预览工号: {{ department ? department.code : 'XX' }}{{ entryYear || 'YYYY' }}{{ sequenceNumber || 'NN' }}
+              </div>
+            </div>
+
+            <!-- 3. 手机号（可选） -->
+            <q-input
+              v-model="phone"
+              outlined
+              label="手机号（可选）"
+              type="tel"
+              maxlength="11"
+              lazy-rules
+              :rules="[
+                (val) =>
+                  !val || val.length === 0 || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确',
+              ]"
+            >
+              <template v-slot:prepend>
+                <q-icon name="phone" />
+              </template>
+            </q-input>
+
+            <!-- 4. 邮箱（可选） -->
             <q-input
               v-model="email"
               outlined
-              label="邮箱"
+              label="邮箱（可选）"
               type="email"
               lazy-rules
               :rules="[
-                (val) => (val && val.length > 0) || '请输入邮箱',
-                (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
+                (val) =>
+                  !val || val.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
               ]"
             >
               <template v-slot:prepend>
@@ -33,6 +120,14 @@
               </template>
             </q-input>
 
+            <!-- 5. 姓名（可选） -->
+            <q-input v-model="realName" outlined label="姓名（可选）" lazy-rules>
+              <template v-slot:prepend>
+                <q-icon name="person" />
+              </template>
+            </q-input>
+
+            <!-- 6. 密码 -->
             <q-input
               v-model="password"
               outlined
@@ -76,29 +171,6 @@
                   class="cursor-pointer"
                   @click="isConfirmPwd = !isConfirmPwd"
                 />
-              </template>
-            </q-input>
-
-            <q-input v-model="realName" outlined label="姓名（可选）" lazy-rules>
-              <template v-slot:prepend>
-                <q-icon name="person" />
-              </template>
-            </q-input>
-
-            <q-input
-              v-model="phone"
-              outlined
-              label="手机号（可选）"
-              type="tel"
-              maxlength="11"
-              lazy-rules
-              :rules="[
-                (val) =>
-                  !val || val.length === 0 || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确',
-              ]"
-            >
-              <template v-slot:prepend>
-                <q-icon name="phone" />
               </template>
             </q-input>
 
@@ -180,16 +252,21 @@ import { useAuthStore } from 'stores/authStore';
 import { useQuasar } from 'quasar';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
 import AliCaptcha from 'src/components/common/AliCaptcha.vue';
+import { HOSPITALS, DEPARTMENTS, type Hospital, type Department } from 'src/constants/hospitals';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const $q = useQuasar();
 
+const hospital = ref<Hospital | null>(null);
+const department = ref<Department | null>(null);
+const entryYear = ref('');
+const sequenceNumber = ref('');
+const phone = ref('');
 const email = ref('');
+const realName = ref('');
 const password = ref('');
 const confirmPassword = ref('');
-const realName = ref('');
-const phone = ref('');
 const isPwd = ref(true);
 const isConfirmPwd = ref(true);
 
@@ -242,16 +319,22 @@ const onRegister = async () => {
   try {
     // 构建注册数据
     const userData: {
-      email: string;
       password: string;
+      hospital_id: string;
+      employee_id: string;
+      email?: string;
       real_name?: string;
       phone?: string;
     } = {
-      email: email.value,
       password: password.value,
+      hospital_id: hospital.value!.id,
+      employee_id: `${department.value!.code}${entryYear.value}${sequenceNumber.value}`,
     };
 
     // 添加可选字段
+    if (email.value) {
+      userData.email = email.value;
+    }
     if (realName.value) {
       userData.real_name = realName.value;
     }
