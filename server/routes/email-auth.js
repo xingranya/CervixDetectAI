@@ -1,0 +1,163 @@
+const express = require('express');
+const router = express.Router();
+const { EmailCode, User } = require('../models');
+const emailService = require('../services/email.service');
+const { Op } = require('sequelize');
+
+// 常量配置
+const CODE_EXPIRE_MINUTES = 5; // 验证码有效期5分钟
+const SEND_INTERVAL_SECONDS = 60; // 发送间隔60秒
+const MAX_DAILY_SEND_COUNT = 10; // 每日最多10次
+
+/**
+ * POST /api/auth/email/send-code
+ * 发送邮箱验证码
+ */
+router.post('/send-code', async (req, res) => {
+  try {
+    const { email, type = 'register' } = req.body;
+
+    // 参数验证
+    if (!email) {
+      return res.status(400).json({ message: '邮箱地址不能为空' });
+    }
+
+    // 验证邮箱格式
+    if (!emailService.validateEmail(email)) {
+      return res.status(400).json({ message: '邮箱格式不正确' });
+    }
+
+    // 验证类型
+    if (!['register', 'reset_password'].includes(type)) {
+      return res.status(400).json({ message: '验证码类型不正确' });
+    }
+
+    // 业务逻辑验证
+    if (type === 'register') {
+      // 注册时检查邮箱是否已被注册
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: '该邮箱已被注册' });
+      }
+    } else if (type === 'reset_password') {
+      // 重置密码时检查邮箱是否存在
+      const existingUser = await User.findOne({ where: { email } });
+      if (!existingUser) {
+        return res.status(400).json({ message: '该邮箱未注册' });
+      }
+    }
+
+    // 频率限制：检查60秒内是否已发送
+    const oneMinuteAgo = new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000);
+    const recentCode = await EmailCode.findOne({
+      where: {
+        email,
+        created_at: {
+          [Op.gte]: oneMinuteAgo,
+        },
+      },
+    });
+
+    if (recentCode) {
+      const remainingSeconds = Math.ceil((recentCode.created_at.getTime() + SEND_INTERVAL_SECONDS * 1000 - Date.now()) / 1000);
+      return res.status(429).json({
+        message: `发送过于频繁，请${remainingSeconds}秒后再试`,
+        remainingSeconds,
+      });
+    }
+
+    // 频率限制：检查今日发送次数
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayCount = await EmailCode.count({
+      where: {
+        email,
+        created_at: {
+          [Op.gte]: todayStart,
+        },
+      },
+    });
+
+    if (todayCount >= MAX_DAILY_SEND_COUNT) {
+      return res.status(429).json({
+        message: `今日发送次数已达上限（${MAX_DAILY_SEND_COUNT}次）`,
+        dailyLimit: MAX_DAILY_SEND_COUNT,
+      });
+    }
+
+    // 生成验证码
+    const code = emailService.generateCode();
+
+    // 获取客户端信息
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    // 使之前的验证码失效
+    await EmailCode.invalidatePreviousCodes(email, type);
+
+    // 发送邮件
+    const sendResult = await emailService.sendVerifyCode(email, code, type);
+
+    if (!sendResult.success) {
+      return res.status(500).json({ message: sendResult.message });
+    }
+
+    // 保存验证码记录
+    await EmailCode.create({
+      email,
+      code,
+      biz_id: sendResult.bizId,
+      type,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
+
+    // 返回成功（不包含验证码）
+    res.json({
+      message: '验证码已发送到您的邮箱',
+      expiresIn: CODE_EXPIRE_MINUTES * 60, // 秒
+    });
+  } catch (error) {
+    console.error('[EmailAuth] 发送验证码失败:', error);
+    res.status(500).json({ message: '发送验证码失败，请稍后重试' });
+  }
+});
+
+/**
+ * POST /api/auth/email/verify
+ * 验证邮箱验证码（内部接口，供其他服务调用）
+ */
+router.post('/verify', async (req, res) => {
+  try {
+    const { email, code, type = 'register' } = req.body;
+
+    // 参数验证
+    if (!email || !code) {
+      return res.status(400).json({ message: '邮箱和验证码不能为空' });
+    }
+
+    // 查找有效验证码
+    const validCode = await EmailCode.findValidCode(email, code, type);
+
+    if (!validCode) {
+      return res.status(400).json({
+        message: '验证码无效或已过期',
+        valid: false,
+      });
+    }
+
+    // 标记验证码已使用
+    await validCode.markAsUsed();
+
+    res.json({
+      message: '验证成功',
+      valid: true,
+    });
+  } catch (error) {
+    console.error('[EmailAuth] 验证码校验失败:', error);
+    res.status(500).json({ message: '验证失败，请稍后重试' });
+  }
+});
+
+module.exports = router;

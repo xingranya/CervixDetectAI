@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
-const { User } = require('../models');
+const { User, EmailCode } = require('../models');
 const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -12,13 +13,13 @@ const router = express.Router();
  */
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, real_name, phone, hospital_id, employee_id } = req.body;
+    const { username, email, password, real_name, phone, hospital_id, employee_id, emailCode } = req.body;
 
-    // 基础验证
+    // 基础验证：邮箱和工号至少需要一个
     if ((!email && !employee_id) || !password) {
       return res.status(400).json({
         success: false,
-        message: '账号和密码为必填项',
+        message: '请填写邮箱或工号信息（至少需要一种），密码为必填项',
       });
     }
 
@@ -28,6 +29,31 @@ router.post('/register', async (req, res) => {
         success: false,
         message: '密码长度至少6位',
       });
+    }
+
+    // 邮箱验证码校验（如果提供了邮箱）
+    if (email && emailCode) {
+      const validCode = await EmailCode.findOne({
+        where: {
+          email,
+          code: emailCode,
+          type: 'register',
+          status: 'pending',
+          expires_at: {
+            [Op.gt]: new Date(),
+          },
+        },
+      });
+
+      if (!validCode) {
+        return res.status(400).json({
+          success: false,
+          message: '邮箱验证码无效或已过期',
+        });
+      }
+
+      // 标记验证码已使用
+      await validCode.update({ status: 'used' });
     }
 
     // 邮箱格式验证

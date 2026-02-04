@@ -9,6 +9,7 @@ const fs = require('fs');
 const analyzeRouter = require('./routes/analyze');
 const authRouter = require('./routes/auth');
 const smsAuthRouter = require('./routes/sms-auth');
+const emailAuthRouter = require('./routes/email-auth');
 const usersRouter = require('./routes/users');
 const patientsRouter = require('./routes/patients');
 const studiesRouter = require('./routes/studies');
@@ -18,7 +19,7 @@ const dashboardRouter = require('./routes/dashboard');
 const systemRouter = require('./routes/system');
 const settingsRouter = require('./routes/settings');
 const paymentRouter = require('./routes/payment');
-const { testConnection } = require('./config/sequelize');
+const { testConnection, syncDatabase } = require('./config/sequelize');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const swaggerUi = require('swagger-ui-express');
@@ -95,6 +96,7 @@ app.use('/uploads', express.static(uploadDir));
 
 app.use('/api/auth', authRouter);
 app.use('/api/auth/sms', smsAuthRouter);
+app.use('/api/auth/email', emailAuthRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/patients', patientsRouter);
 app.use('/api/studies', studiesRouter);
@@ -142,6 +144,12 @@ app.listen(PORT, async () => {
   try {
     await testConnection();
     console.log('✅ 数据库连接成功');
+
+    // 开发环境自动同步数据库表结构
+    if (process.env.NODE_ENV === 'development') {
+      await syncDatabase({ alter: true });
+      console.log('✅ 数据库表结构同步完成');
+    }
   } catch (error) {
     console.error('❌ 数据库连接失败:', error.message);
   }

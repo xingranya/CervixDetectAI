@@ -11,6 +11,7 @@ const AnalysisTask = require('./AnalysisTask');
 const AnalysisResult = require('./AnalysisResult');
 const MedicalReport = require('./MedicalReport');
 const SmsCode = require('./SmsCode');
+const EmailCode = require('./EmailCode');
 const Order = require('./Order');
 
 // 定义模型关系
@@ -80,5 +81,6 @@ module.exports = {
   AnalysisResult,
   MedicalReport,
   SmsCode,
+  EmailCode,
   Order,
 };

@@ -91,9 +91,10 @@ export const authAPI = {
 
   async register(userData: {
     password: string;
-    hospital_id: string;
-    employee_id: string;
+    hospital_id?: string;
+    employee_id?: string;
     email?: string;
+    emailCode?: string;
     real_name?: string;
     phone?: string;
   }) {
@@ -138,6 +139,17 @@ export const authAPI = {
 
   async resetPassword(phone: string, code: string, newPassword: string) {
     const { data } = await apiClient.post('/auth/sms/reset-password', { phone, code, newPassword });
+    return data;
+  },
+
+  // 邮箱验证相关接口
+  async sendEmailCode(email: string, type: 'register' | 'reset_password' = 'register') {
+    const { data } = await apiClient.post('/auth/email/send-code', { email, type });
+    return data;
+  },
+
+  async verifyEmailCode(email: string, code: string, type: 'register' | 'reset_password' = 'register') {
+    const { data } = await apiClient.post('/auth/email/verify', { email, code, type });
     return data;
   },
 };

@@ -1,0 +1,30 @@
+{
+  "name": "auto-wiki-generator",
+  "version": "1.0.0",
+  "description": "Automatically generate and update wiki documentation for CervixDetectAI project",
+  "main": "scripts/generator.js",
+  "scripts": {
+    "generate": "node scripts/generator.js",
+    "update": "node scripts/generator.js --update",
+    "watch": "nodemon scripts/generator.js --watch"
+  },
+  "keywords": [
+    "wiki",
+    "documentation",
+    "generator",
+    "automation",
+    "markdown"
+  ],
+  "author": "Qoder AI Assistant",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -90,9 +90,10 @@ export const useAuthStore = defineStore('auth', {
 
     async register(userData: {
       password: string;
-      hospital_id: string;
-      employee_id: string;
+      hospital_id?: string;
+      employee_id?: string;
       email?: string;
+      emailCode?: string;
       real_name?: string;
       phone?: string;
     }) {
