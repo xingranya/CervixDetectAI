@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CervixDetectAI 注册验证</title>
+  <style>
+    /* Quasar Design System */
+    :root {
+      --q-primary: #1976D2;
+      --q-primary-light: #42A5F5;
+      --q-secondary: #26A69A;
+      --q-accent: #9C27B0;
+      --q-positive: #21BA45;
+      --q-negative: #C10015;
+      --q-warning: #F2C037;
+      --q-info: #31CCEC;
+      --q-dark: #1d1d1d;
+      --q-dark-page: #121212;
+
+      /* Shadows */
+      --q-shadow-1: 0 1px 5px rgba(0,0,0,0.2), 0 2px 2px rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12);
+      --q-shadow-2: 0 1px 8px rgba(0,0,0,0.2), 0 3px 4px rgba(0,0,0,0.14), 0 3px 3px -2px rgba(0,0,0,0.12);
+      --q-shadow-3: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
+
+      /* Typography */
+      --q-font-family: 'Roboto', '-apple-system', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--q-font-family);
+      background: var(--q-dark-page);
+      padding: 20px;
+      line-height: 1.6;
+      color: var(--q-dark);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--q-shadow-3);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--q-primary) 0%, var(--q-primary-light) 100%);
+      padding: 48px 32px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 400;
+    }
+
+    /* Content */
+    .content {
+      padding: 48px 32px;
+    }
+
+    .greeting {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--q-dark);
+      margin-bottom: 16px;
+    }
+
+    .description {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    /* Code Card */
+    .code-card {
+      background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      margin: 32px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--q-primary) 0%, var(--q-primary-light) 100%);
+    }
+
+    .code-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--q-primary);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+    }
+
+    .code {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--q-primary);
+      letter-spacing: 8px;
+      font-family: 'Roboto Mono', 'Consolas', monospace;
+      line-height: 1;
+    }
+
+    /* Info Section */
+    .info-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .info-item {
+      background: #F5F5F5;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 3px solid var(--q-primary);
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--q-dark);
+    }
+
+    /* Alert */
+    .alert {
+      background: #FFF3E0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 32px 0;
+      border-left: 4px solid var(--q-warning);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .alert-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #E65100;
+      margin-bottom: 8px;
+    }
+
+    .alert-text {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .alert-text ul {
+      margin: 8px 0 0 20px;
+      padding: 0;
+    }
+
+    .alert-text li {
+      margin-bottom: 4px;
+    }
+
+    /* Footer */
+    .footer {
+      background: #F5F5F5;
+      padding: 24px 32px;
+      text-align: center;
+      border-top: 1px solid #E0E0E0;
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: #999;
+      line-height: 1.6;
+    }
+
+    .footer-divider {
+      width: 60px;
+      height: 2px;
+      background: var(--q-primary);
+      margin: 16px auto;
+      border-radius: 2px;
+    }
+
+    .footer-link {
+      color: var(--q-primary);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body {
+        padding: 0;
+      }
+
+      .email-container {
+        border-radius: 0;
+      }
+
+      .content {
+        padding: 32px 24px;
+      }
+
+      .code {
+        font-size: 36px;
+        letter-spacing: 4px;
+      }
+
+      .info-section {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">CervixDetectAI</div>
+      <div class="logo-subtitle">宫颈检测AI辅助诊断系统</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="greeting">邮箱验证码</div>
+
+      <p class="description">
+        您好，<br><br>
+        感谢您注册 <strong>CervixDetectAI</strong>！<br><br>
+        CervixDetectAI 是一款专业的宫颈检测AI辅助诊断系统，结合先进的人工智能技术和医学专业知识，为医生提供精准的诊断建议，帮助提升诊断效率和准确性。<br><br>
+        请使用下方的验证码完成邮箱验证，开启您的AI辅助诊断之旅。
+      </p>
+
+      <!-- Verification Code -->
+      <div class="code-card">
+        <div class="code-label">Verification Code</div>
+        <div class="code">{{code}}</div>
+      </div>
+
+      <!-- Info -->
+      <div class="info-section">
+        <div class="info-item">
+          <div class="info-label">有效期</div>
+          <div class="info-value">5分钟</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">用途</div>
+          <div class="info-value">注册账号验证</div>
+        </div>
+      </div>
+
+      <!-- Security Alert -->
+      <div class="alert">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <div class="alert-title">安全提示</div>
+          <div class="alert-text">
+            <ul>
+              <li>请勿将验证码告知他人</li>
+              <li>如非本人操作，请忽略此邮件</li>
+              <li>验证码将在5分钟后失效</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p class="description" style="font-size: 13px; color: #999;">
+        如果您没有注册 CervixDetectAI 账号，请忽略此邮件。
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-text">
+        本邮件由系统自动发送，请勿回复
+        <div class="footer-divider"></div>
+        &copy; 2024 CervixDetectAI. All rights reserved.<br>
+        <a href="https://hpvsc.icu" class="footer-link">hpvsc.icu</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
