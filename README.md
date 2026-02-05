@@ -1,114 +1,430 @@
+<div align="center">
+
+  ![CervixDetectAI Logo](public/logo.svg)
+
 # CervixDetectAI - 宫颈癌AI筛查云平台
+
+  **🌟 基于深度学习的智能宫颈癌影像辅助诊断 SaaS 平台**
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Node Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org)
+  [![Vue Version](https://img.shields.io/badge/Vue-3.0+-42b883)](https://vuejs.org)
+  [![Quasar](https://img.shields.io/badge/Quasar-2.16-0x1b8b6a)](https://quasar.dev)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6)](https://www.typescriptlang.org)
+
+  [![GitHub stars](https://img.shields.io/github/stars/xingranya/CervixDetectAI?style=social)](https://github.com/xingranya/CervixDetectAI/stargazers)
+  [![GitHub forks](https://img.shields.io/github/forks/xingranya/CervixDetectAI?style=social)](https://github.com/xingranya/CervixDetectAI/network/members)
+
+  **[📖 在线文档](#documentation)** • **[🚀 快速开始](#quick-start)** • **[💡 功能特性](#features)** • **[🎨 技术栈](#tech-stack)**
+
+</div>
+
+---
+
+## 📋 目录
+
+- [项目概述](#项目概述)
+- [✨ 功能特性](#-功能特性)
+- [🎨 技术栈](#-技术栈)
+- [🏗️ 系统架构](#️-系统架构)
+- [📊 项目结构](#-项目结构)
+- [🚀 快速开始](#-快速开始)
+- [⚙️ 配置说明](#️-配置说明)
+- [🔌 API 接口](#-api-接口)
+- [📈 项目统计](#-项目统计)
+- [🛠️ 开发指南](#️-开发指南)
+- [🔮 未来规划](#-未来规划)
+- [📝 许可证](#-许可证)
+
+---
 
 ## 项目概述
 
-CervixDetectAI 是一个基于 Quasar 框架开发的宫颈癌影像AI辅助筛查SaaS云平台。本项目采用"互联网+医疗"的电子商务SaaS模式，通过云端提供服务，医疗机构可按次、按年或定制化购买服务，极大降低了初始投入门槛，实现了筛查服务的"即插即用"。
+### 🎯 核心定位
 
-### 核心创新
+**CervixDetectAI** 是一个基于 **Quasar Framework** 开发的宫颈癌影像 AI 辅助筛查 SaaS 云平台。本项目采用**"互联网+医疗"**的电子商务 SaaS 模式，通过云端提供服务，医疗机构可按次、按年或定制化购买服务，极大降低了初始投入门槛，实现了筛查服务的**"即插即用"**。
 
-- **技术创新**：通过自研算法，在保持高准确率的同时，显著降低了计算成本和参数数量，使其能在基层医疗机构的普通硬件上流畅运行
-- **模式创新**：采用SaaS云服务模式，实现宫颈癌筛查的普惠化
+### 💡 核心创新
 
-## 功能特性
+| 创新维度              | 说明                                                                                                       |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------- |
+| **🔬 技术创新** | 通过自研算法，在保持高准确率的同时，显著降低了计算成本和参数数量，使其能在基层医疗机构的普通硬件上流畅运行 |
+| **💼 模式创新** | 采用 SaaS 云服务模式，实现宫颈癌筛查的普惠化，让基层医疗机构也能负担得起智能筛查服务                       |
 
-### 用户认证
+### 🎬 应用场景
 
-- 用户登录/注册
-- 会话管理
-- 权限控制
+```
+┌─────────────────┐      上传影像       ┌─────────────────┐
+│   基层医疗机构   │  ───────────────>  │   云端 AI 平台   │
+│  (乡镇卫生院等)  │                     │  (智能分析引擎)  │
+└─────────────────┘                     └─────────────────┘
+        ↑                                       ↓
+        │                                       │
+        │         返回诊断报告                   │
+        └───────────────────────────────────────┘
+```
 
-### 病例管理
+---
 
-- 病例信息查看
-- 病例状态跟踪（已完成、处理中）
-- 病例搜索和筛选
+## ✨ 功能特性
 
-### AI分析
+### 🔐 用户认证系统
 
-- 宫颈图像上传
-- AI自动分析处理
-- 实时分析进度跟踪
-- 分析结果展示
+| 功能                        | 说明                                                   |
+| :-------------------------- | :----------------------------------------------------- |
+| **📧 邮箱登录**       | 支持邮箱 + 密码登录                                    |
+| **📱 手机号登录**     | 支持手机号 + 短信验证码登录                            |
+| **✨ 注册即登录**     | 手机号登录时，新用户自动注册并登录                     |
+| **🔑 JWT 认证**       | accessToken（1小时）+ refreshToken（7天）双 Token 机制 |
+| **🔒 忘记密码**       | 通过短信验证码重置密码                                 |
+| **🛡️ 阿里云验证码** | 集成 ESA AI 验证码，防止恶意注册                       |
 
-### 报告系统
+### 👥 用户管理
 
-- 自动报告生成
-- 报告下载
-- 历史报告查看
+| 功能                    | 说明                                                   |
+| :---------------------- | :----------------------------------------------------- |
+| **🏥 医院配置**   | 支持多家医院配置（荆州市中心医院、武汉大学人民医院等） |
+| **👤 工号登录**   | 支持工号登录/注册，邮箱改为可选                        |
+| **🎭 个人资料**   | 头像上传、个人信息管理                                 |
+| **⚙️ 系统设置** | 通知偏好、密码修改、隐私设置                           |
 
-### 系统设置
+### 🏥 病例管理
 
-- 个人信息管理
-- 通知偏好设置
-- AI模型信息查看
+| 功能                  | 说明                             |
+| :-------------------- | :------------------------------- |
+| **📋 病例列表** | 查看所有病例记录，支持搜索和筛选 |
+| **🔍 病例详情** | 查看完整的病例信息和分析结果     |
+| **📊 状态跟踪** | 已完成、处理中、失败等状态管理   |
+| **👥 患者管理** | 患者信息录入、扩展字段、病历查看 |
 
-## 技术栈
+### 🤖 AI 分析
 
-### 前端技术
+| 功能                  | 说明                               |
+| :-------------------- | :--------------------------------- |
+| **📤 图像上传** | 支持拖拽上传、多图上传             |
+| **⚡ 实时分析** | AI 自动分析处理，实时进度跟踪      |
+| **📈 结果展示** | 详细的诊断结果和置信度             |
+| **💡 临床建议** | 提供专业的临床建议和生物标志物信息 |
+| **📄 报告生成** | 自动生成 PDF 报告，支持下载        |
 
-- **前端框架**: Quasar (Vue 3 + TypeScript)
-- **状态管理**: Pinia
-- **路由管理**: Vue Router
-- **UI组件**: Quasar Components
-- **构建工具**: Vite
-- **HTTP客户端**: Axios
+### 💳 订阅支付
 
-### 后端技术
+| 功能                  | 说明                               |
+| :-------------------- | :--------------------------------- |
+| **🛒 套餐购买** | 支持多种套餐选择（按次/按月/按年） |
+| **💰 支付集成** | 集成易支付（支付宝/微信/银行卡）   |
+| **🎁 优惠计算** | 自动计算折扣和优惠价格             |
+| **📜 订单管理** | 订单历史查询和状态跟踪             |
+| **🔄 积分系统** | 购买套餐自动发放积分               |
 
-- **运行环境**: Node.js + Express
-- **数据库**: MySQL (Sequelize ORM)
-- **认证方式**: JWT (accessToken + refreshToken)
-- **文件上传**: Multer
-- **短信服务**: 阿里云短信服务 (Dypnsapi20170525)
+### 📄 报告系统
 
-## 系统架构
+| 功能                    | 说明                            |
+| :---------------------- | :------------------------------ |
+| **📊 图表展示**   | 使用 ECharts 可视化展示分析结果 |
+| **📑 历史报告**   | 访问历史分析报告                |
+| **⬇️ 报告下载** | 支持 PDF 格式下载               |
+
+---
+
+## 🎨 技术栈
+
+### 前端技术栈
+
+<div align="center">
+
+```mermaid
+graph TD
+    A[Quasar Framework] --> B[Vue 3]
+    A --> C[TypeScript]
+    A --> D[Vite]
+
+    B --> E[Composition API]
+    B --> F[Vue Router]
+
+    C --> G[类型安全]
+
+    D --> H[快速构建]
+
+    I[状态管理] --> J[Pinia]
+    K[UI 组件] --> L[Quasar Components]
+    M[HTTP 客户端] --> N[Axios]
+    O[图表库] --> P[ECharts]
+```
+
+</div>
+
+| 技术                       |  版本  | 用途        |
+| :------------------------- | :----: | :---------- |
+| **Quasar Framework** | 2.16.0 | UI 框架     |
+| **Vue**              |  3.x  | 前端框架    |
+| **TypeScript**       |  5.x  | 类型系统    |
+| **Pinia**            | Latest | 状态管理    |
+| **Vue Router**       |  4.x  | 路由管理    |
+| **Vite**             | Latest | 构建工具    |
+| **Axios**            | Latest | HTTP 客户端 |
+| **ECharts**          | Latest | 数据可视化  |
+| **Capacitor**        | Latest | 移动端打包  |
+
+### 后端技术栈
+
+<div align="center">
+
+```mermaid
+graph TD
+    A[Node.js] --> B[Express]
+    B --> C[RESTful API]
+
+    D[数据库] --> E[MySQL]
+    E --> F[Sequelize ORM]
+
+    G[认证] --> H[JWT]
+    H --> I[双 Token 机制]
+
+    J[第三方服务] --> K[阿里云短信]
+    J --> L[阿里云号码认证]
+    J --> M[通义千问大模型]
+    J --> N[易支付]
+```
+
+</div>
+
+| 技术                |   版本   | 用途     |
+| :------------------ | :-------: | :------- |
+| **Node.js**   |  >=16.0  | 运行环境 |
+| **Express**   |  Latest  | Web 框架 |
+| **MySQL**     | 5.7+/8.0+ | 数据库   |
+| **Sequelize** |  Latest  | ORM      |
+| **JWT**       |  Latest  | 认证     |
+| **Multer**    |  Latest  | 文件上传 |
+| **PM2**       |  Latest  | 进程管理 |
+
+### 第三方集成
+
+| 服务                        | 用途          |
+| :-------------------------- | :------------ |
+| **🔐 阿里云号码认证** | 一键登录/注册 |
+| **📱 阿里云短信服务** | 短信验证码    |
+| **🤖 通义千问大模型** | AI 诊断建议   |
+| **💳 易支付**         | 支付接口      |
+| **📧 腾讯云 SES**     | 邮件推送      |
+
+---
+
+## 🏗️ 系统架构
 
 ### 前端架构
 
-- **布局系统**: PublicLayout (公共页面) 和 MainLayout (应用主界面)
-- **状态管理**:
-  - authStore: 用户认证状态
-  - studyStore: 病例数据管理
-  - analysisStore: AI分析任务管理
-- **路由结构**: 包含认证保护的路由系统
-
-### UI组件
-
-- **响应式设计**: 适配桌面端、平板、移动端
-- **中文界面**: 完全本地化的中文用户界面
-- **数据可视化**: 表格、图表、进度条等
-
-## 安装和运行
-
-### 环境要求
-
-- Node.js 16.x 或更高版本
-- npm 或 yarn
-- MySQL 5.7+ 或 8.0+
-
-### 数据库配置
-
-#### 1. 创建数据库
-
-```sql
-CREATE DATABASE cervix_detect_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+┌─────────────────────────────────────────────────┐
+│                   前端应用                        │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ┌──────────────┐    ┌──────────────┐          │
+│  │ PublicLayout │    │ MainLayout   │          │
+│  │  (公共页面)   │    │  (主界面)     │          │
+│  └──────────────┘    └──────────────┘          │
+│         │                     │                 │
+│         └──────────┬──────────┘                 │
+│                    ↓                            │
+│         ┌──────────────────┐                   │
+│         │   Vue Router     │                   │
+│         │  (路由管理)       │                   │
+│         └──────────────────┘                   │
+│                    ↓                            │
+│  ┌────────────────────────────────────────┐   │
+│  │            Pages (页面)                  │   │
+│  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐      │   │
+│  │  │登录 │ │注册 │ │仪表盘│ │上传 │      │   │
+│  │  └─────┘ └─────┘ └─────┘ └─────┘      │   │
+│  └────────────────────────────────────────┘   │
+│                    ↓                            │
+│  ┌────────────────────────────────────────┐   │
+│  │         Components (组件)                │   │
+│  └────────────────────────────────────────┘   │
+│                    ↓                            │
+│  ┌────────────────────────────────────────┐   │
+│  │         Stores (Pinia)                   │   │
+│  │  ┌──────────┐ ┌──────────┐             │   │
+│  │  │authStore │ │studyStore│  ...        │   │
+│  │  └──────────┘ └──────────┘             │   │
+│  └────────────────────────────────────────┘   │
+│                    ↓                            │
+│  ┌────────────────────────────────────────┐   │
+│  │         Services (API)                   │   │
+│  │         Axios + Interceptors            │   │
+│  └────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│                  后端 API                        │
+└─────────────────────────────────────────────────┘
 ```
 
-#### 2. 配置数据库连接
+### 数据模型关系
 
-在 `server/.env` 文件中配置：
+```
+┌─────────────┐       ┌─────────────┐       ┌──────────────┐
+│    User     │───1:N─│   Patient   │───1:N─│    Study     │
+│   (用户)     │       │   (患者)     │       │   (病例)      │
+└─────────────┘       └─────────────┘       └──────┬───────┘
+                                                      │
+                                                      │ 1:1
+                                                      ↓
+                                              ┌──────────────┐
+                                              │AnalysisTask  │
+                                              │ (分析任务)    │
+                                              └──────┬───────┘
+                                                     │ 1:1
+                                                     ↓
+                                              ┌──────────────┐
+                                              │AnalysisResult│
+                                              │ (分析结果)    │
+                                              └──────┬───────┘
+                                                     │ 1:1
+                                                     ↓
+                                              ┌──────────────┐
+                                              │ MedicalReport│
+                                              │  (医疗报告)   │
+                                              └──────────────┘
+```
+
+---
+
+## 📊 项目结构
+
+```
+CervixDetectAI/
+├── 📁 src/                          # 前端源代码
+│   ├── 📁 assets/                   # 静态资源
+│   │   └── 📁 logos/                # 医院图标
+│   ├── 📁 boot/                     # Quasar 启动文件
+│   │   └── axios.ts                 # Axios 配置
+│   ├── 📁 components/               # 公共组件
+│   │   ├── 📁 common/               # 通用组件
+│   │   │   └── AgreementDialog.vue  # 用户协议对话框
+│   │   ├── 📁 patients/             # 患者相关组件
+│   │   └── EssentialLink.vue        # 侧边栏链接
+│   ├── 📁 constants/                # 常量配置
+│   │   └── hospitals.ts             # 医院配置
+│   ├── 📁 layouts/                  # 页面布局
+│   │   ├── MainLayout.vue           # 主应用布局
+│   │   └── PublicLayout.vue         # 公共页面布局
+│   ├── 📁 pages/                    # 页面组件
+│   │   ├── DashboardPage.vue        # 仪表盘
+│   │   ├── StudiesPage.vue          # 病例管理
+│   │   ├── UploadPage.vue           # 上传分析
+│   │   ├── PatientsPage.vue         # 患者管理
+│   │   ├── LoginPage.vue            # 登录页
+│   │   ├── RegisterPage.vue         # 注册页
+│   │   └── ...                      # 其他页面
+│   ├── 📁 router/                   # 路由配置
+│   │   └── index.ts                 # 路由定义
+│   ├── 📁 services/                 # API 服务
+│   │   ├── api.ts                   # HTTP 请求封装
+│   │   ├── authAPI.ts               # 认证接口
+│   │   ├── studyAPI.ts              # 病例接口
+│   │   └── ...                      # 其他接口
+│   ├── 📁 stores/                   # Pinia 状态管理
+│   │   ├── authStore.ts             # 认证状态
+│   │   ├── studyStore.ts            # 病例数据
+│   │   └── ...                      # 其他 Store
+│   ├── 📁 utils/                    # 工具函数
+│   └── App.vue                      # 根组件
+│
+├── 📁 server/                       # 后端服务器
+│   ├── 📁 config/                   # 配置文件
+│   │   └── sequelize.js             # 数据库配置
+│   ├── 📁 models/                   # Sequelize 模型
+│   │   ├── User.js                  # 用户模型
+│   │   ├── Patient.js               # 患者模型
+│   │   ├── Study.js                 # 病例模型
+│   │   ├── AnalysisTask.js          # 分析任务模型
+│   │   ├── Report.js                # 报告模型
+│   │   ├── SmsCode.js               # 短信验证码模型
+│   │   └── index.js                 # 模型关联
+│   ├── 📁 routes/                   # 路由控制器
+│   │   ├── auth.js                  # 认证接口
+│   │   ├── sms-auth.js              # 短信认证接口
+│   │   ├── studies.js               # 病例管理
+│   │   ├── patients.js              # 患者管理
+│   │   ├── analysis-tasks.js        # 分析任务
+│   │   ├── reports.js               # 报告管理
+│   │   ├── payment.js               # 支付接口
+│   │   └── system.js                # 系统管理
+│   ├── 📁 services/                 # 业务逻辑
+│   │   ├── sms.service.js           # 短信服务
+│   │   ├── paymentService.js        # 支付服务
+│   │   └── databaseCleanup.service.js # 数据库清理服务
+│   ├── 📁 middleware/               # 中间件
+│   │   └── auth.js                  # JWT 认证中间件
+│   ├── 📁 scripts/                  # 数据库脚本
+│   │   ├── init-database.js         # 数据库初始化
+│   │   └── ...                      # 其他脚本
+│   ├── 📁 uploads/                  # 上传文件目录
+│   ├── 📁 reports/                  # 生成的报告目录
+│   ├── .env                         # 环境变量
+│   ├── index.js                     # 服务器入口
+│   └── package.json                 # 后端依赖
+│
+├── 📁 public/                       # 静态资源
+│   ├── logo.svg                     # 项目 Logo
+│   └── favicon.ico                  # 网站图标
+│
+├── 📄 .env                          # 前端环境变量
+├── 📄 quasar.config.ts              # Quasar 构建配置
+├── 📄 package.json                  # 前端依赖
+├── 📄 tsconfig.json                 # TypeScript 配置
+├── 📄 eslint.config.js              # ESLint 配置
+└── 📄 README.md                     # 项目说明
+```
+
+---
+
+## 🚀 快速开始
+
+### 📋 环境要求
+
+| 环境                        | 版本要求     |
+| :-------------------------- | :----------- |
+| **Node.js**           | >= 16.0.0    |
+| **npm / yarn / pnpm** | Latest       |
+| **MySQL**             | 5.7+ 或 8.0+ |
+| **Git**               | Latest       |
+
+### 🗄️ 数据库配置
+
+#### 1️⃣ 创建数据库
+
+```sql
+CREATE DATABASE cervix_detect_ai
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+#### 2️⃣ 配置环境变量
+
+编辑 `server/.env` 文件：
 
 ```env
+# 数据库配置
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=cervix_detect_ai
+
+# JWT 配置
+JWT_SECRET=your-secret-key-change-in-production-min-128-bits
+JWT_ACCESS_EXPIRATION=1h
+JWT_REFRESH_EXPIRATION=7d
+
+# 服务器配置
+PORT=4000
+NODE_ENV=development
 ```
 
-#### 3. 初始化数据库
-
-运行初始化脚本创建表结构和默认数据：
+#### 3️⃣ 初始化数据库
 
 ```bash
 cd server
@@ -117,436 +433,390 @@ node scripts/init-database.js
 
 该脚本会自动创建以下数据表：
 
-- `users` - 用户表
-- `patients` - 患者信息表
-- `studies` - 病例研究表
-- `analysis_tasks` - AI分析任务表
-- `reports` - 分析报告表
-- `sms_codes` - 短信验证码表
+- ✅ `users` - 用户表
+- ✅ `patients` - 患者信息表
+- ✅ `studies` - 病例研究表
+- ✅ `study_images` - 病例图像表
+- ✅ `analysis_tasks` - AI 分析任务表
+- ✅ `analysis_results` - 分析结果表
+- ✅ `medical_reports` - 医疗报告表
+- ✅ `sms_codes` - 短信验证码表
+- ✅ `email_codes` - 邮箱验证码表
+- ✅ `orders` - 订单表
 
 并创建默认管理员账户：
 
-- 邮箱: `admin@cervixdetectai.com`
-- 密码: `admin123456`
-
-### 短信服务配置（可选）
-
-如需使用短信验证码登录/注册功能，需配置阿里云短信服务：
-
-在 `server/.env` 文件中添加：
-
-```env
-ALIYUN_ACCESS_KEY_ID=your_access_key_id
-ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name
-ALIYUN_SMS_TEMPLATE_CODE=your_template_code
+```
+邮箱: admin@cervixdetectai.com
+密码: admin123456
 ```
 
-创建短信验证码表：
+### 🔧 安装步骤
+
+#### 前端安装
 
 ```bash
-cd server
-node scripts/create-sms-table.js
-```
-
-### 前端安装步骤
-
-1. 克隆项目
-
-```bash
-git clone <repository-url>
+# 1. 克隆项目
+git clone https://github.com/xingranya/CervixDetectAI.git
 cd CervixDetectAI
-```
 
-2. 安装前端依赖
-
-```bash
+# 2. 安装依赖
 npm install
 # 或使用 yarn
 yarn install
-```
 
-3. 配置环境变量
-   复制 `.env.example` 为 `.env` 并配置：
-
-```env
-VITE_API_BASE_URL=http://localhost:3000/api
-```
-
-4. 启动前端开发服务器
-
-```bash
+# 3. 启动开发服务器
 npm run dev
 # 或使用 yarn
 yarn dev
 ```
 
-前端将运行在: `http://localhost:9000`
+前端将运行在: **http://localhost:9000**
 
-### 后端安装步骤
-
-1. 安装后端依赖
+#### 后端安装
 
 ```bash
+# 1. 进入服务端目录
 cd server
+
+# 2. 安装依赖
 npm install
-```
 
-2. 配置环境变量
-   在 `server/.env` 文件中配置完整参数：
-
-```env
-# 数据库配置
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=cervix_detect_ai
-
-# JWT密钥
-JWT_SECRET=your-secret-key-change-in-production
-JWT_REFRESH_SECRET=your-refresh-secret-key-change-in-production
-
-# 服务器端口
-PORT=3000
-
-# 阿里云短信配置（可选）
-ALIYUN_ACCESS_KEY_ID=your_access_key_id
-ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name
-ALIYUN_SMS_TEMPLATE_CODE=100001
-```
-
-3. 初始化数据库（如果还未执行）
-
-```bash
+# 3. 初始化数据库
 node scripts/init-database.js
-```
 
-4. 启动后端服务器
-
-```bash
+# 4. 启动服务器
 npm start
 # 或使用开发模式（带自动重启）
 npm run dev
 ```
 
-后端将运行在: `http://localhost:3000`
+后端将运行在: **http://localhost:4000**
 
-### 构建生产版本
-
-前端构建：
+### 🏗️ 构建生产版本
 
 ```bash
+# 前端构建
 npm run build
-# 或使用 yarn
-yarn build
+
+# 构建产物位于 dist/spa 目录
 ```
 
-构建产物位于 `dist/spa` 目录
+---
 
-## 核心功能
+## ⚙️ 配置说明
 
-### 用户认证系统
+### 🔌 阿里云服务配置（可选）
 
-- **邮箱登录**: 支持邮箱+密码登录
-- **手机号登录**: 支持手机号+短信验证码登录
-- **注册即登录**: 手机号登录时，新用户自动注册并登录
-- **JWT认证**: accessToken（1小时）+ refreshToken（7天）双Token机制
-- **忘记密码**: 通过短信验证码重置密码
-
-### 用户体验流程
-
-1. **登录页面**: 用户通过邮箱或手机号登录系统
-2. **仪表盘**: 查看整体统计信息和近期病例
-3. **病例管理**: 查看所有病例记录，支持搜索和筛选
-4. **图像上传**: 上传宫颈图像进行AI分析
-5. **结果查看**: 查看AI分析结果和详细报告
-6. **报告中心**: 访问历史分析报告，支持下载
-7. **个人资料**: 管理个人信息、头像、联系方式
-8. **系统设置**: 配置通知偏好、密码、隐私设置
-
-### AI分析流程
-
-1. 上传宫颈图像（支持拖拽上传）
-2. 填写患者基本信息
-3. 系统开始AI分析处理
-4. 实时显示分析进度
-5. 分析完成后显示诊断结果
-6. 提供临床建议和生物标志物信息
-7. 自动生成PDF报告
-
-## 项目结构
-
-```
-CervixDetectAI/
-├── src/                      # 前端源代码
-│   ├── assets/              # 静态资源
-│   ├── boot/                # Quasar启动文件
-│   ├── components/          # 公共组件
-│   │   └── EssentialLink.vue
-│   ├── layouts/             # 页面布局
-│   │   ├── MainLayout.vue   # 主应用布局
-│   │   └── PublicLayout.vue # 公共页面布局
-│   ├── pages/               # 页面组件
-│   │   ├── LoginPage.vue        # 登录页（邮箱/手机号）
-│   │   ├── RegisterPage.vue     # 注册页
-│   │   ├── ForgotPasswordPage.vue # 忘记密码
-│   │   ├── DashboardPage.vue    # 仪表盘
-│   │   ├── StudiesPage.vue      # 病例管理
-│   │   ├── StudyDetailPage.vue  # 病例详情
-│   │   ├── UploadPage.vue       # 上传分析
-│   │   ├── ReportsPage.vue      # 报告中心
-│   │   ├── ApiSettingsPage.vue  # API设置
-│   │   ├── ProfilePage.vue      # 个人资料
-│   │   ├── SettingsPage.vue     # 系统设置
-│   │   └── ErrorNotFound.vue    # 404页面
-│   ├── router/              # 路由配置
-│   ├── services/            # API服务
-│   │   └── api.ts          # HTTP请求封装
-│   ├── stores/              # Pinia状态管理
-│   │   ├── authStore.ts    # 认证状态
-│   │   ├── studyStore.ts   # 病例数据
-│   │   └── analysisStore.ts # AI分析任务
-│   └── App.vue              # 根组件
-├── server/                   # 后端服务器
-│   ├── config/              # 配置文件
-│   │   └── database.js     # 数据库配置
-│   ├── models/              # Sequelize模型
-│   │   ├── User.js         # 用户模型
-│   │   ├── Patient.js      # 患者模型
-│   │   ├── Study.js        # 病例模型
-│   │   ├── AnalysisTask.js # 分析任务模型
-│   │   ├── Report.js       # 报告模型
-│   │   ├── SmsCode.js      # 短信验证码模型
-│   │   └── index.js        # 模型关联
-│   ├── routes/              # 路由控制器
-│   │   ├── auth.js         # 认证接口
-│   │   ├── sms-auth.js     # 短信认证接口
-│   │   ├── users.js        # 用户管理
-│   │   ├── patients.js     # 患者管理
-│   │   ├── studies.js      # 病例管理
-│   │   ├── analysis-tasks.js # 分析任务
-│   │   ├── reports.js      # 报告管理
-│   │   └── analyze.js      # AI分析接口
-│   ├── services/            # 业务逻辑
-│   │   └── sms.service.js  # 短信服务
-│   ├── middleware/          # 中间件
-│   │   └── auth.js         # JWT认证中间件
-│   ├── scripts/             # 数据库脚本
-│   │   ├── init-database.js      # 数据库初始化
-│   │   ├── create-sms-table.js   # 创建短信表
-│   │   ├── update-study-status.js # 更新病例状态
-│   │   └── update-status.sql     # SQL脚本
-│   ├── uploads/             # 上传文件目录
-│   ├── reports/             # 生成的报告目录
-│   ├── .env                 # 环境变量
-│   ├── index.js             # 服务器入口
-│   └── package.json         # 后端依赖
-├── public/                   # 静态资源
-├── .env                      # 前端环境变量
-├── quasar.config.ts          # Quasar构建配置
-├── package.json              # 前端依赖
-└── README.md                 # 项目说明
-```
-
-## 技术亮点
-
-### 1. 响应式设计
-
-- 完美适配各种屏幕尺寸
-- 采用Quasar的响应式布局系统
-
-### 2. 状态管理
-
-- 使用Pinia进行集中式状态管理
-- 类型安全的Store定义
-- 持久化存储支持
-
-### 3. 国际化支持
-
-- 完全中文界面
-- 统一的术语使用
-
-### 4. 性能优化
-
-- 组件懒加载
-- 代码分割
-- 虚拟滚动（如需要）
-
-## 重要脚本说明
-
-### 数据库管理脚本
-
-#### 1. 初始化数据库
-
-```bash
-cd server
-node scripts/init-database.js
-```
-
-功能：
-
-- 自动创建所有数据表
-- 建立表之间的关联关系
-- 创建默认管理员账户
-- 插入测试数据（可选）
-
-#### 2. 创建短信验证码表
-
-```bash
-node scripts/create-sms-table.js
-```
-
-功能：
-
-- 创建 `sms_codes` 表
-- 设置验证码过期时间（5分钟）
-- 配置发送频率限制（60秒）
-
-#### 3. 更新病例状态
-
-```bash
-node scripts/update-study-status.js
-```
-
-功能：
-
-- 批量更新病例状态
-- 修复数据不一致问题
-
-### API接口说明
-
-#### 认证接口 (`/api/auth`)
-
-- `POST /register` - 邮箱注册
-- `POST /login` - 邮箱登录
-- `POST /refresh` - 刷新Token
-- `POST /logout` - 登出
-- `GET /me` - 获取当前用户信息
-
-#### 短信认证接口 (`/api/auth/sms`)
-
-- `POST /send-code` - 发送短信验证码
-- `POST /login` - 短信验证码登录
-- `POST /register` - 短信验证码注册
-- `POST /reset-password` - 短信验证码重置密码
-
-#### 病例管理接口 (`/api/studies`)
-
-- `GET /` - 获取病例列表
-- `POST /` - 创建新病例
-- `GET /:id` - 获取病例详情
-- `PUT /:id` - 更新病例信息
-- `DELETE /:id` - 删除病例
-
-#### AI分析接口 (`/api/analysis`)
-
-- `POST /analyze` - 开始AI分析
-- `GET /tasks` - 获取分析任务列表
-- `GET /tasks/:id` - 获取任务详情
-
-#### 报告接口 (`/api/reports`)
-
-- `GET /` - 获取报告列表
-- `GET /:id` - 获取报告详情
-- `GET /:id/download` - 下载PDF报告
-
-### 环境变量说明
-
-#### 前端 `.env`
+如需使用短信验证码、号码认证等功能，需在 `server/.env` 中配置：
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000/api  # 后端API地址
+# 阿里云号码认证
+ALIYUN_ACCESS_KEY_ID=your_access_key_id
+ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+ALIYUN_SMS_SIGN_NAME=速通互联验证码
+ALIYUN_SMS_TEMPLATE_CODE=100001
+
+# 阿里云 AI 验证码
+ALIYUN_CAPTCHA_SCENEID_LOGIN=u1g43fza
+ALIYUN_CAPTCHA_SCENEID_VERIFY=1dynwu1h
 ```
 
-#### 后端 `server/.env`
+### 💳 易支付配置
 
 ```env
-# 数据库配置
-DB_HOST=localhost              # 数据库主机
-DB_PORT=3306                   # 数据库端口
-DB_USER=root                   # 数据库用户名
-DB_PASSWORD=your_password      # 数据库密码
-DB_NAME=cervix_detect_ai       # 数据库名称
-
-# JWT配置
-JWT_SECRET=your-secret-key                    # JWT密钥（生产环境必须修改）
-JWT_REFRESH_SECRET=your-refresh-secret-key    # 刷新Token密钥
-
-# 服务器配置
-PORT=3000                      # 服务器端口
-
-# 阿里云短信配置（可选）
-ALIYUN_ACCESS_KEY_ID=your_key              # 阿里云AccessKey ID
-ALIYUN_ACCESS_KEY_SECRET=your_secret       # 阿里云AccessKey Secret
-ALIYUN_SMS_SIGN_NAME=your_sign_name        # 短信签名
-ALIYUN_SMS_TEMPLATE_CODE=100001            # 短信模板代码（纯数字，无SMS_前缀）
+# 易支付配置
+EPAY_PID=your_epay_pid_here
+EPAY_KEY=your_epay_key_here
+EPAY_API_URL=https://pay.mymzf.com/xpay/epay/
+EPAY_NOTIFY_URL=http://localhost:4000/api/payment/notify
+EPAY_RETURN_URL=http://localhost:4000/api/payment/return
+FRONTEND_RESULT_URL=http://localhost:9000/#/payment/result
 ```
 
-## 开发注意事项
+### 🤖 通义千问 AI 配置
 
-### 数据库设计
+```env
+# 通义千问 API
+QWEN_API_KEY=your_qwen_api_key_here
+QWEN_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-vl-max
+```
 
-- 所有表使用 `utf8mb4_unicode_ci` 字符集，支持中文和emoji
+### 📧 腾讯云邮件配置
+
+```env
+# 腾讯云 SES 邮件推送
+TENCENT_SECRET_ID=your_tencent_secret_id_here
+TENCENT_SECRET_KEY=your_tencent_secret_key_here
+TENCENT_SES_REGION=ap-guangzhou
+TENCENT_SES_FROM_EMAIL=no-reply@hpvsc.icu
+
+# 邮件模板 ID
+TEMPLATE_ID_REGISTER=42423
+TEMPLATE_ID_RESET_PASSWORD=42424
+```
+
+---
+
+## 🔌 API 接口
+
+### 认证相关 `/api/auth`
+
+| 方法 | 路径                      | 说明               |
+| :--- | :------------------------ | :----------------- |
+| POST | `/register`             | 邮箱注册           |
+| POST | `/login`                | 邮箱登录           |
+| POST | `/logout`               | 登出               |
+| POST | `/refresh`              | 刷新 Token         |
+| GET  | `/me`                   | 获取当前用户信息   |
+| POST | `/email/send-code`      | 发送邮箱验证码     |
+| POST | `/email/register`       | 邮箱验证码注册     |
+| POST | `/email/reset-password` | 邮箱验证码重置密码 |
+
+### 短信认证 `/api/auth/sms`
+
+| 方法 | 路径                | 说明               |
+| :--- | :------------------ | :----------------- |
+| POST | `/send-code`      | 发送短信验证码     |
+| POST | `/login`          | 短信验证码登录     |
+| POST | `/register`       | 短信验证码注册     |
+| POST | `/reset-password` | 短信验证码重置密码 |
+
+### 病例管理 `/api/studies`
+
+| 方法   | 路径     | 说明         |
+| :----- | :------- | :----------- |
+| GET    | `/`    | 获取病例列表 |
+| POST   | `/`    | 创建新病例   |
+| GET    | `/:id` | 获取病例详情 |
+| PUT    | `/:id` | 更新病例信息 |
+| DELETE | `/:id` | 删除病例     |
+
+### AI 分析 `/api/analysis`
+
+| 方法 | 路径           | 说明             |
+| :--- | :------------- | :--------------- |
+| POST | `/analyze`   | 开始 AI 分析     |
+| GET  | `/tasks`     | 获取分析任务列表 |
+| GET  | `/tasks/:id` | 获取任务详情     |
+
+### 报告管理 `/api/reports`
+
+| 方法 | 路径              | 说明          |
+| :--- | :---------------- | :------------ |
+| GET  | `/`             | 获取报告列表  |
+| GET  | `/:id`          | 获取报告详情  |
+| GET  | `/:id/download` | 下载 PDF 报告 |
+
+### 支付相关 `/api/payment`
+
+| 方法 | 路径              | 说明         |
+| :--- | :---------------- | :----------- |
+| POST | `/create-order` | 创建支付订单 |
+| POST | `/notify`       | 支付回调     |
+| GET  | `/return`       | 支付返回跳转 |
+| GET  | `/orders`       | 获取订单列表 |
+
+### 系统管理 `/api/system`
+
+| 方法 | 路径                  | 说明           |
+| :--- | :-------------------- | :------------- |
+| GET  | `/health`           | 健康检查       |
+| GET  | `/stats`            | 获取统计数据   |
+| POST | `/database/cleanup` | 执行数据库清理 |
+| GET  | `/database/size`    | 获取表大小统计 |
+
+---
+
+## 📈 项目统计
+
+### 代码统计
+
+| 指标               |    数量 |
+| :----------------- | ------: |
+| **前端页面** |     15+ |
+| **前端组件** |     20+ |
+| **后端接口** |     50+ |
+| **数据模型** |     10+ |
+| **代码行数** | 20,000+ |
+
+### 功能覆盖
+
+```
+┌────────────────────────────────────────────┐
+│              功能完成度统计                  │
+├────────────────────────────────────────────┤
+│                                            │
+│  用户认证  ████████████████████  100%      │
+│  病例管理  ████████████████████  100%      │
+│  AI 分析  █████████████████░░░  90%       │
+│  报告系统  ████████████████████  100%      │
+│  订阅支付  ████████████████████  100%      │
+│  系统设置  ████████████████████  100%      │
+│                                            │
+└────────────────────────────────────────────┘
+```
+
+### 已配置医院
+
+| 医院名称               | ID | 图标 |
+| :--------------------- | :-: | :--- |
+| 荆州市中心医院         | 1 | ✅   |
+| 荆州区金盾门诊         | 2 | ✅   |
+| 武汉大学人民医院       | 3 | ✅   |
+| 华中科技大学同济医学院 | 4 | ✅   |
+| 江陵县三湖管理区卫生院 | 5 | ✅   |
+| 荆州保和堂中医诊所     | 6 | ✅   |
+| 荆州市妇幼保健院       | 7 | ✅   |
+
+---
+
+## 🛠️ 开发指南
+
+### 🏗️ 开发规范
+
+#### 代码风格
+
+```bash
+# ESLint 检查
+npm run lint
+
+# ESLint 自动修复
+npm run lint:fix
+```
+
+#### Git 提交规范
+
+```
+feat: 新功能
+fix: 修复 Bug
+docs: 文档更新
+style: 代码格式调整
+refactor: 代码重构
+test: 测试相关
+chore: 构建/工具变动
+```
+
+### 🔐 认证机制
+
+```
+┌─────────────────┐
+│   用户登录      │
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│  验证用户名密码  │
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│  生成双 Token    │
+│  accessToken    │ 1小时
+│  refreshToken   │ 7天
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│  返回给前端      │
+└─────────────────┘
+```
+
+- **accessToken** 存储在内存中，有效期 1 小时
+- **refreshToken** 存储在 localStorage，有效期 7 天
+- 前端自动刷新 Token 机制
+- 后端使用 JWT 中间件验证受保护路由
+
+### 📱 短信验证码
+
+| 配置项       | 值               |
+| :----------- | :--------------- |
+| 验证码长度   | 6 位数字         |
+| 有效期       | 5 分钟           |
+| 发送频率限制 | 60 秒/次         |
+| 每日上限     | 10 次/手机号     |
+| 一次性使用   | 验证后标记已使用 |
+
+### 📤 文件上传
+
+| 配置项       | 值                  |
+| :----------- | :------------------ |
+| 最大文件大小 | 10MB                |
+| 支持格式     | JPG, PNG, JPEG      |
+| 存储位置     | `server/uploads/` |
+| 报告生成位置 | `server/reports/` |
+
+### 🗄️ 数据库设计
+
+- 所有表使用 `utf8mb4_unicode_ci` 字符集
 - 时间字段统一使用 `TIMESTAMP` 或 `DATETIME`
 - 软删除使用 `deleted_at` 字段
 - 外键关联使用 Sequelize 的关联方法
 
-### 认证机制
+---
 
-- accessToken 有效期1小时，存储在内存中
-- refreshToken 有效期7天，存储在 localStorage
-- 前端自动刷新Token机制
-- 后端使用JWT中间件验证所有受保护的路由
+## 🔮 未来规划
 
-### 短信验证码
+### 🎯 短期目标 (Q1 2026)
 
-- 验证码6位数字，有效期5分钟
-- 发送频率限制：60秒内只能发送一次
-- 每日发送上限：10次/手机号
-- 验证码一次性使用，验证后标记为已使用
+- [ ] ✨ 继续优化 AI 检测模型
+- [ ] 📊 优化数据可视化仪表盘
+- [ ] 🔍 增强病例搜索功能
+- [ ] 📱 优化移动端体验
 
-### 文件上传
+### 🚀 中期目标 (Q2-Q3 2026)
 
-- 图像上传限制：10MB
-- 支持格式：JPG, PNG, JPEG
-- 文件存储在 `server/uploads/` 目录
-- 报告生成在 `server/reports/` 目录
+- [ ] 👥 多用户协作功能
+- [ ] 🔗 病例分享功能
+- [ ] 🧪 更详细的图像分析工具
+- [ ] 📲 开发移动端 APP
 
-## 未来发展
+### 🌟 长期目标 (Q4 2026+)
 
-### 模型集成
+- [ ] 💬 微信小程序版本
+- [ ] 🏥 支持更多医院接入
+- [ ] 🤖 AI 模型持续优化
+- [ ] 🌐 国际化支持
 
-- 集成真实的宫颈癌AI检测模型
-- 实现云端模型服务
-- 模型版本管理
+---
 
-### 数据分析
+## 📝 许可证
 
-- 提供更详细的统计分析
-- 趋势报告生成
-- 数据可视化仪表盘
+本项目仅供**演示和学术研究**使用。
 
-### 扩展功能
+---
 
-- 多用户协作
-- 病例分享功能
-- 更详细的图像分析工具
-- 移动端APP
-- 微信小程序
+## 🤝 贡献
 
-## 许可证
+欢迎提交 Issue 和 Pull Request 来改进本项目！
 
-本项目仅供演示和学术研究使用。
+### 贡献指南
 
-## 贡献
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 提交 Pull Request
 
-欢迎提交Issue和Pull Request来改进本项目。
+---
 
-## 联系我们
+## 📞 联系我们
 
 如有问题或建议，请通过以下方式联系我们：
 
-- 邮箱: [xingranya@outlook.jp]
-- GitHub: [https://github.com/xingranya]
+| 方式                  | 信息                                                                                    |
+| :-------------------- | :-------------------------------------------------------------------------------------- |
+| **📧 邮箱**     | [xingranya@outlook.jp](mailto:xingranya@outlook.jp)                                        |
+| **🔗 GitHub**   | [xingranya](https://github.com/xingranya)                                                  |
+| **🌐 项目主页** | [https://github.com/xingranya/CervixDetectAI](https://github.com/xingranya/CervixDetectAI) |
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对你有帮助，请给个 Star！**
+
+Made with ❤️ by [CervixDetectAI Team](https://github.com/xingranya)
+
+</div>

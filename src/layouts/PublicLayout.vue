@@ -3,10 +3,15 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Footer -->
+    <AppFooter />
   </q-layout>
 </template>
 
 <script setup lang="ts">
+import AppFooter from 'components/AppFooter.vue';
+
 // Public layout for login, registration, and other public-facing pages
 // Minimal layout without sidebar or header
 </script>

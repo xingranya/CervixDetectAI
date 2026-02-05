@@ -51,9 +51,10 @@ CervixDetectAI/
 
 1. **AI 检测分析** - 宫颈图像识别与辅助诊断（核心功能）
 2. **患者管理** - 患者信息录入、扩展字段、病历查看
-3. **用户中心** - 登录注册、阿里云号码认证、阿里云 AI 验证码安全验证、权限管理
+3. **用户中心** - 登录注册、邮箱验证码、阿里云号码认证、阿里云 AI 验证码安全验证、权限管理
 4. **订阅支付** - 会员订阅、价格展示、优惠计算、用户协议
 5. **报告生成** - PDF 导出、ECharts 图表展示
+6. **数据库维护** - 自动清理过期验证码和旧数据
 
 ## 关键配置文件
 
@@ -62,9 +63,27 @@ CervixDetectAI/
 | `package.json` | 前端依赖管理 |
 | `quasar.config.ts` | Quasar 框架配置 |
 | `server/package.json` | 后端依赖管理 |
+| `server/.env` | 后端环境变量（数据库、API 密钥等） |
 | `capacitor.config.json` | 移动端配置 |
 | `tsconfig.json` | TypeScript 配置 |
 | `eslint.config.js` | 代码规范 |
+
+### 关键环境变量
+
+#### 数据库同步
+```env
+DB_SYNC=false  # 是否自动同步表结构（生产环境建议 false）
+```
+
+#### 腾讯云邮件推送
+```env
+TENCENT_SECRET_ID=your_secret_id
+TENCENT_SECRET_KEY=your_secret_key
+TENCENT_SES_REGION=ap-guangzhou
+TENCENT_SES_FROM_EMAIL=no-reply@hpvsc.icu
+TEMPLATE_ID_REGISTER=42423
+TEMPLATE_ID_RESET_PASSWORD=42424
+```
 
 ## 常用命令
 
@@ -88,6 +107,22 @@ quasar build -m capacitor -T android  # Android 构建
 - API 请求统一通过 services 层处理
 
 ## 近期更新
+
+- **[2026-02-05] 邮箱验证码与数据库优化**
+  - 集成腾讯云 SES 邮件推送服务，支持邮箱验证码注册/登录/重置密码
+  - 新增 `EmailCode` 数据模型，记录邮箱验证码（6位数字，5分钟有效期）
+  - 新增 `server/routes/email-auth.js` 邮箱认证路由
+  - 新增 `server/services/tencentEmail.service.js` 邮件发送服务
+  - 登录/注册页面新增邮箱验证码模式切换
+  - 新增 `server/services/databaseCleanup.service.js` 数据库清理服务
+    - 自动清理过期验证码（7天）
+    - 自动清理旧分析任务（30天）
+    - 批量删除优化，避免内存溢出
+  - 新增系统管理 API (`/api/system/database/cleanup`, `/api/system/database/size`)
+  - 用户模型扩展：邮箱改为可选字段（`email` 字段 `allowNull: true`）
+  - 支持 DB_SYNC 环境变量控制数据库表结构自动同步
+  - 优化部署脚本 `scripts/deploy-menu.sh`，支持 SSH 连接复用
+  - 清理 6 个过时的数据库迁移脚本
 
 - **[2026-01-31] 用户系统增强与医院配置**
   - 用户模型扩展：新增 `hospital_id`（所属医院）和 `employee_id`（工号）字段
@@ -152,8 +187,12 @@ quasar build -m capacitor -T android  # Android 构建
 ### 后端数据模型关系
 
 ```
-Patient 1:N Study 1:N StudyImage
+User 1:N Patient 1:N Study 1:N StudyImage
               └── 1:1 AnalysisTask 1:1 AnalysisResult 1:1 MedicalReport
+
+EmailCode (邮箱验证码，独立模型)
+SmsCode (短信验证码，独立模型)
+Order (支付订单)
 ```
 
 ### API 服务特性
@@ -161,14 +200,81 @@ Patient 1:N Study 1:N StudyImage
 - 双 Token 认证 (Access + Refresh)
 - 401 自动刷新重试机制
 - 模块化封装 (authAPI, patientAPI, studyAPI 等)
+- **邮箱认证 API** (`/api/auth/email`)
+  - `POST /send-code` - 发送邮箱验证码
+  - `POST /register` - 邮箱验证码注册
+  - `POST /reset-password` - 邮箱验证码重置密码
+- **系统管理 API** (`/api/system`)
+  - `POST /database/cleanup` - 执行数据库清理
+  - `GET /database/size` - 获取表大小统计
 
 ### 第三方集成
 
 - 阿里云 DYPNS (号码认证)
 - 阿里云 ESA AI 验证码（登录/注册安全验证）
 - 阿里云 SMS (短信验证码)
+- **腾讯云 SES (邮箱验证码推送)**
 - 通义千问大模型 (AI 诊断建议)
 - Sharp (医学影像处理)
+- 易支付 (支付接口)
+
+---
+
+## 邮箱验证码功能详解
+
+### 数据模型
+
+**EmailCode 模型** (`server/models/EmailCode.js`)
+```javascript
+{
+  id: INTEGER (主键)
+  email: STRING (邮箱地址)
+  code: STRING (6位验证码)
+  type: ENUM ('register', 'reset_password')
+  expires_at: DATETIME (过期时间，5分钟)
+  used: BOOLEAN (是否已使用)
+  created_at: DATETIME
+  updated_at: DATETIME
+}
+```
+
+### 业务逻辑
+
+1. **发送验证码** - `POST /api/auth/email/send-code`
+   - 验证邮箱格式
+   - 检查发送频率（60秒限制）
+   - 生成 6 位数字验证码
+   - 调用腾讯云 SES API 发送邮件
+   - 保存到数据库（5分钟有效）
+
+2. **邮箱注册** - `POST /api/auth/email/register`
+   - 验证邮箱格式
+   - 验证验证码有效性
+   - 检查邮箱是否已注册
+   - 创建用户账户
+   - 标记验证码已使用
+
+3. **重置密码** - `POST /api/auth/email/reset-password`
+   - 验证邮箱格式
+   - 验证验证码有效性
+   - 更新用户密码
+   - 标记验证码已使用
+
+### 安全特性
+
+- ✅ 验证码 5 分钟自动过期
+- ✅ 60 秒发送频率限制
+- ✅ 验证码一次性使用（验证后标记 used）
+- ✅ 自动清理过期验证码（7天）
+- ✅ 批量删除优化（每次 1000 条）
+
+### 部署脚本
+
+**`scripts/deploy-menu.sh`** - 交互式部署工具
+- 支持 SSH 连接复用（ControlMaster）
+- 自动检测环境依赖（rsync, Node.js, PM2）
+- 8 项菜单选项：首次部署、快速更新、仅同步、查看状态等
+- Windows Git Bash 兼容
 
 ---
 

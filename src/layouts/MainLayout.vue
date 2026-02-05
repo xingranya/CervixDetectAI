@@ -103,6 +103,9 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Footer -->
+    <AppFooter />
   </q-layout>
 </template>
 
@@ -112,6 +115,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
 import EssentialLink from 'components/EssentialLink.vue';
+import AppFooter from 'components/AppFooter.vue';
 import { HOSPITALS } from 'src/constants/hospitals';
 
 const router = useRouter();
