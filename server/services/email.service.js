@@ -1,4 +1,5 @@
 const tencentcloud = require('tencentcloud-sdk-nodejs');
+const crypto = require('crypto');
 const SESClient = tencentcloud.ses.v20201002.Client;
 
 // 配置客户端
@@ -17,10 +18,10 @@ const clientConfig = {
 
 const sesClient = new SESClient(clientConfig);
 
-// 模板ID映射
+// 模板ID映射（移除默认值，强制配置）
 const TEMPLATE_IDS = {
-  register: parseInt(process.env.TEMPLATE_ID_REGISTER || '164623'),
-  reset_password: parseInt(process.env.TEMPLATE_ID_RESET_PASSWORD || '164624'),
+  register: process.env.TEMPLATE_ID_REGISTER ? parseInt(process.env.TEMPLATE_ID_REGISTER) : null,
+  reset_password: process.env.TEMPLATE_ID_RESET_PASSWORD ? parseInt(process.env.TEMPLATE_ID_RESET_PASSWORD) : null,
 };
 
 /**
@@ -28,11 +29,16 @@ const TEMPLATE_IDS = {
  */
 class TencentEmailService {
   /**
-   * 生成6位数字验证码
+   * 生成6位数字验证码（使用密码学安全的随机数）
    * @returns {string} 6位验证码
    */
   generateCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    // 使用 crypto.randomBytes 生成密码学安全的随机数
+    const randomBytes = crypto.randomBytes(3); // 3字节 = 24位，足够生成0-999999
+    const max = 1000000; // 6位数字最大值
+    const randomValue = randomBytes.readUIntBE(0, 3);
+    const code = 100000 + (randomValue % 900000); // 100000-999999
+    return code.toString();
   }
 
   /**

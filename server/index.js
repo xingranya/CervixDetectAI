@@ -145,8 +145,10 @@ app.listen(PORT, async () => {
     await testConnection();
     console.log('✅ 数据库连接成功');
 
-    // 开发环境自动同步数据库表结构
-    if (process.env.NODE_ENV === 'development') {
+    // 数据库同步（通过 DB_SYNC 环境变量控制）
+    // DB_SYNC=true 启用同步，DB_SYNC=false 或不设置则跳过
+    if (process.env.DB_SYNC === 'true') {
+      console.log('🔄 正在同步数据库表结构...');
       await syncDatabase({ alter: true });
       console.log('✅ 数据库表结构同步完成');
     }

@@ -111,6 +111,7 @@ router.post('/send-code', async (req, res) => {
       type,
       ip_address: ipAddress,
       user_agent: userAgent,
+      expires_at: new Date(Date.now() + CODE_EXPIRE_MINUTES * 60 * 1000),
     });
 
     // 返回成功（不包含验证码）
@@ -119,7 +120,11 @@ router.post('/send-code', async (req, res) => {
       expiresIn: CODE_EXPIRE_MINUTES * 60, // 秒
     });
   } catch (error) {
-    console.error('[EmailAuth] 发送验证码失败:', error);
+    console.error('[EmailAuth] 发送验证码失败:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
     res.status(500).json({ message: '发送验证码失败，请稍后重试' });
   }
 });
@@ -155,7 +160,11 @@ router.post('/verify', async (req, res) => {
       valid: true,
     });
   } catch (error) {
-    console.error('[EmailAuth] 验证码校验失败:', error);
+    console.error('[EmailAuth] 验证码校验失败:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
     res.status(500).json({ message: '验证失败，请稍后重试' });
   }
 });

@@ -25,8 +25,8 @@ const templateIdRegister = parseInt(process.env.TEMPLATE_ID_REGISTER || '0');
 const templateIdReset = parseInt(process.env.TEMPLATE_ID_RESET_PASSWORD || '0');
 
 console.log('2️⃣ 模板ID验证：');
-console.log('注册模板ID:', templateIdRegister, templateIdRegister === 164623 ? '✅ 正确' : '❌ 错误（应为164623）');
-console.log('重置密码模板ID:', templateIdReset, templateIdReset === 164624 ? '✅ 正确' : '❌ 错误（应为164624）');
+console.log('注册模板ID:', templateIdRegister, templateIdRegister > 0 ? '✅ 已配置' : '❌ 未配置');
+console.log('重置密码模板ID:', templateIdReset, templateIdReset > 0 ? '✅ 已配置' : '❌ 未配置');
 console.log('');
 
 // 3. 测试腾讯云SDK连接
@@ -58,7 +58,7 @@ try {
   console.log('');
 
   // 4. 测试发送邮件（如果环境变量都正确）
-  if (process.env.TENCENT_SECRET_ID && templateIdRegister === 164623) {
+  if (process.env.TENCENT_SECRET_ID && templateIdRegister > 0) {
     console.log('4️⃣ 发送测试邮件：');
     console.log('⚠️  注意：这会向你的邮箱发送一封测试邮件');
 
@@ -98,7 +98,7 @@ try {
       if (error.code === 'FailedOperation.InvalidTemplateID') {
         console.log('❌ 模板ID无效或未审核通过');
         console.log('   请检查：');
-        console.log('   1. 模板ID是否为 164623（注册）或 164624（重置密码）');
+        console.log('   1. 模板ID是否正确');
         console.log('   2. 模板是否已在腾讯云控制台审核通过');
         console.log('   3. 访问：https://console.cloud.tencent.com/ses');
       } else if (error.code === 'AuthFailure') {
@@ -124,8 +124,8 @@ try {
     console.log('请先配置环境变量：');
     console.log('1. TENCENT_SECRET_ID - 腾讯云SecretId');
     console.log('2. TENCENT_SECRET_KEY - 腾讯云SecretKey');
-    console.log('3. TEMPLATE_ID_REGISTER=164623 - 注册模板ID');
-    console.log('4. TEMPLATE_ID_RESET_PASSWORD=164624 - 重置密码模板ID');
+    console.log('3. TEMPLATE_ID_REGISTER - 注册模板ID');
+    console.log('4. TEMPLATE_ID_RESET_PASSWORD - 重置密码模板ID');
   }
 } catch (error) {
   console.log('❌ SES客户端创建失败：', error.message);

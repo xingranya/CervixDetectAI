@@ -379,8 +379,10 @@ const onEmailCaptchaSuccess = async () => {
     if (result.success || result.message) {
       $q.notify({
         type: 'positive',
-        message: result.message || '验证码已发送到您的邮箱',
+        message: '验证码已发送，若未收到请检查垃圾箱',
+        caption: '邮件已发送，5分钟内有效',
         position: 'top',
+        timeout: 5000,
       });
 
       // 开始倒计时
