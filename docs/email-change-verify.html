@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CervixDetectAI 密码重置</title>
+  <title>CervixDetectAI 更换邮箱</title>
   <style>
     /* Quasar Design System */
     :root {
@@ -13,7 +13,6 @@
       --q-accent: #9C27B0;
       --q-positive: #21BA45;
       --q-negative: #C10015;
-      --q-negative-light: #EF5350;
       --q-warning: #F2C037;
       --q-info: #31CCEC;
       --q-dark: #1d1d1d;
@@ -53,17 +52,49 @@
       box-shadow: var(--q-shadow-3);
     }
 
-    /* Header */
+    /* Header - Purple Theme for Email Change */
     .header {
-      background: linear-gradient(135deg, var(--q-negative) 0%, var(--q-negative-light) 100%);
+      background: linear-gradient(135deg, var(--q-accent) 0%, #BA68C8 100%);
       padding: 48px 32px;
       text-align: center;
       position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative circles */
+    .header::before {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      top: -100px;
+      right: -50px;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+      bottom: -75px;
+      left: -25px;
     }
 
     .header-icon {
       font-size: 48px;
       margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
     }
 
     .logo {
@@ -72,12 +103,16 @@
       color: white;
       margin-bottom: 8px;
       letter-spacing: -0.5px;
+      position: relative;
+      z-index: 1;
     }
 
     .logo-subtitle {
       font-size: 14px;
       color: rgba(255,255,255,0.9);
       font-weight: 400;
+      position: relative;
+      z-index: 1;
     }
 
     /* Content */
@@ -99,9 +134,58 @@
       line-height: 1.7;
     }
 
+    /* Email Change Info */
+    .email-change-info {
+      background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .email-change-info::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--q-accent) 0%, #BA68C8 100%);
+    }
+
+    .email-change-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px dashed rgba(156, 39, 176, 0.2);
+    }
+
+    .email-change-row:last-child {
+      border-bottom: none;
+    }
+
+    .email-change-label {
+      font-size: 13px;
+      color: var(--q-accent);
+      font-weight: 500;
+    }
+
+    .email-change-value {
+      font-size: 14px;
+      color: var(--q-dark);
+      font-weight: 600;
+    }
+
+    .old-email {
+      text-decoration: line-through;
+      color: #999;
+    }
+
     /* Code Card */
     .code-card {
-      background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+      background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
       border-radius: 12px;
       padding: 32px;
       text-align: center;
@@ -117,13 +201,13 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, var(--q-negative) 0%, var(--q-negative-light) 100%);
+      background: linear-gradient(90deg, var(--q-accent) 0%, #BA68C8 100%);
     }
 
     .code-label {
       font-size: 13px;
       font-weight: 500;
-      color: var(--q-negative);
+      color: var(--q-accent);
       text-transform: uppercase;
       letter-spacing: 1.5px;
       margin-bottom: 16px;
@@ -132,7 +216,7 @@
     .code {
       font-size: 48px;
       font-weight: 700;
-      color: var(--q-negative);
+      color: var(--q-accent);
       letter-spacing: 8px;
       font-family: 'Roboto Mono', 'Consolas', monospace;
       line-height: 1;
@@ -150,7 +234,7 @@
       background: #F5F5F5;
       padding: 16px;
       border-radius: 8px;
-      border-left: 3px solid var(--q-negative);
+      border-left: 3px solid var(--q-accent);
     }
 
     .info-label {
@@ -167,89 +251,93 @@
       color: var(--q-dark);
     }
 
-    /* Info Alert */
-    .info-alert {
-      background: #E3F2FD;
+    /* Steps */
+    .steps {
+      margin: 24px 0;
+    }
+
+    .step-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--q-accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-list {
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    .step-item {
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .step-item::before {
+      counter-increment: step-counter;
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--q-accent) 0%, #BA68C8 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Alert */
+    .alert {
+      background: #FFF3E0;
       border-radius: 8px;
       padding: 16px 20px;
-      margin: 24px 0;
-      border-left: 4px solid var(--q-primary);
+      margin: 32px 0;
+      border-left: 4px solid var(--q-warning);
       display: flex;
       align-items: flex-start;
       gap: 12px;
     }
 
-    .info-alert-icon {
+    .alert-icon {
       font-size: 20px;
       line-height: 1;
     }
 
-    .info-alert-content {
+    .alert-content {
       flex: 1;
     }
 
-    .info-alert-title {
+    .alert-title {
       font-size: 14px;
       font-weight: 600;
-      color: var(--q-primary);
+      color: #E65100;
       margin-bottom: 8px;
     }
 
-    .info-alert-text {
+    .alert-text {
       font-size: 13px;
       color: #666;
       line-height: 1.6;
     }
 
-    .info-alert-text ul {
+    .alert-text ul {
       margin: 8px 0 0 20px;
       padding: 0;
     }
 
-    .info-alert-text li {
-      margin-bottom: 4px;
-    }
-
-    /* Warning Alert */
-    .warning-alert {
-      background: #FFEBEE;
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin: 24px 0;
-      border-left: 4px solid var(--q-negative);
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .warning-alert-icon {
-      font-size: 20px;
-      line-height: 1;
-    }
-
-    .warning-alert-content {
-      flex: 1;
-    }
-
-    .warning-alert-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--q-negative);
-      margin-bottom: 8px;
-    }
-
-    .warning-alert-text {
-      font-size: 13px;
-      color: #666;
-      line-height: 1.6;
-    }
-
-    .warning-alert-text ul {
-      margin: 8px 0 0 20px;
-      padding: 0;
-    }
-
-    .warning-alert-text li {
+    .alert-text li {
       margin-bottom: 4px;
     }
 
@@ -270,7 +358,7 @@
     .footer-divider {
       width: 60px;
       height: 2px;
-      background: var(--q-negative);
+      background: var(--q-accent);
       margin: 16px auto;
       border-radius: 2px;
     }
@@ -302,6 +390,12 @@
       .info-section {
         grid-template-columns: 1fr;
       }
+
+      .email-change-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     }
   </style>
 </head>
@@ -309,25 +403,36 @@
   <div class="email-container">
     <!-- Header -->
     <div class="header">
-      <div class="header-icon">🔐</div>
+      <div class="header-icon">✉️</div>
       <div class="logo">CervixDetectAI</div>
-      <div class="logo-subtitle">密码重置验证</div>
+      <div class="logo-subtitle">更换邮箱验证</div>
     </div>
 
     <!-- Content -->
     <div class="content">
-      <div class="greeting">重置密码验证码</div>
+      <div class="greeting">更换邮箱验证码</div>
 
       <p class="description">
         您好，<br><br>
-        我们收到了您的密码重置请求。为了保障您的账号安全，我们需要验证您的身份。<br><br>
-        请使用下方的验证码完成身份验证，验证成功后您将设置新密码。重置后原密码将立即失效。<br><br>
-        如果您没有请求重置密码，请忽略此邮件，您的账号安全不受影响。
+        您正在将账号邮箱从 <span class="old-email">{{old_email}}</span> 更换为 <strong>{{new_email}}</strong>。<br><br>
+        请使用下方的验证码完成邮箱验证，验证成功后您的新邮箱将立即生效。
       </p>
+
+      <!-- Email Change Info -->
+      <div class="email-change-info">
+        <div class="email-change-row">
+          <span class="email-change-label">原邮箱</span>
+          <span class="email-change-value old-email">{{old_email}}</span>
+        </div>
+        <div class="email-change-row">
+          <span class="email-change-label">新邮箱</span>
+          <span class="email-change-value">{{new_email}}</span>
+        </div>
+      </div>
 
       <!-- Verification Code -->
       <div class="code-card">
-        <div class="code-label">Reset Code</div>
+        <div class="code-label">Verification Code</div>
         <div class="code">{{code}}</div>
       </div>
 
@@ -339,32 +444,31 @@
         </div>
         <div class="info-item">
           <div class="info-label">用途</div>
-          <div class="info-value">重置密码验证</div>
+          <div class="info-value">更换邮箱验证</div>
         </div>
       </div>
 
-      <!-- Info Alert -->
-      <div class="info-alert">
-        <div class="info-alert-icon">ℹ️</div>
-        <div class="info-alert-content">
-          <div class="info-alert-title">操作提示</div>
-          <div class="info-alert-text">
-            <ul>
-              <li>验证成功后，您将设置新密码</li>
-              <li>原密码将在设置新密码后失效</li>
-            </ul>
-          </div>
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step-title">
+          📋 更换流程
         </div>
+        <ol class="step-list">
+          <li class="step-item">输入此验证码验证新邮箱</li>
+          <li class="step-item">验证成功后，新邮箱将立即生效</li>
+          <li class="step-item">原邮箱将解除绑定，无法再用于登录</li>
+          <li class="step-item">后续通知将发送至新邮箱</li>
+        </ol>
       </div>
 
-      <!-- Warning Alert -->
-      <div class="warning-alert">
-        <div class="warning-alert-icon">⚠️</div>
-        <div class="warning-alert-content">
-          <div class="warning-alert-title">安全警告</div>
-          <div class="warning-alert-text">
+      <!-- Security Alert -->
+      <div class="alert">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <div class="alert-title">安全提示</div>
+          <div class="alert-text">
             <ul>
-              <li>请勿将验证码告知任何人（包括客服）</li>
+              <li>请勿将验证码告知他人</li>
               <li>如非本人操作，请立即联系客服</li>
               <li>验证码将在5分钟后失效</li>
             </ul>
@@ -373,7 +477,7 @@
       </div>
 
       <p class="description" style="font-size: 13px; color: #999;">
-        如果您没有请求重置密码，请忽略此邮件，您的账号安全不受影响。
+        如果您没有请求更换邮箱，请忽略此邮件，您的账号安全不受影响。
       </p>
     </div>
 
@@ -383,7 +487,7 @@
         本邮件由系统自动发送，请勿回复
         <div class="footer-divider"></div>
         &copy; 2026 CervixDetectAI. All rights reserved.<br>
-        <a href="https://hpvsc.icu" class="footer-link">hpvsc.icu</a> | 客服: support@hpvsc.icu<br>
+        <a href="https://hpvsc.icu" class="footer-link">hpvsc.icu</a><br>
         如不再接收此类邮件，请 <a href="{{unsubscribe}}" class="footer-link">退订</a>
       </div>
     </div>

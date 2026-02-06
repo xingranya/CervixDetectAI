@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CervixDetectAI 报告生成完成</title>
+  <style>
+    /* Quasar Design System */
+    :root {
+      --q-primary: #1976D2;
+      --q-primary-light: #42A5F5;
+      --q-secondary: #26A69A;
+      --q-accent: #9C27B0;
+      --q-positive: #21BA45;
+      --q-positive-light: #43A047;
+      --q-negative: #C10015;
+      --q-warning: #F2C037;
+      --q-info: #31CCEC;
+      --q-dark: #1d1d1d;
+      --q-dark-page: #121212;
+
+      /* Shadows */
+      --q-shadow-1: 0 1px 5px rgba(0,0,0,0.2), 0 2px 2px rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12);
+      --q-shadow-2: 0 1px 8px rgba(0,0,0,0.2), 0 3px 4px rgba(0,0,0,0.14), 0 3px 3px -2px rgba(0,0,0,0.12);
+      --q-shadow-3: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
+
+      /* Typography */
+      --q-font-family: 'Roboto', '-apple-system', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--q-font-family);
+      background: var(--q-dark-page);
+      padding: 20px;
+      line-height: 1.6;
+      color: var(--q-dark);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--q-shadow-3);
+    }
+
+    /* Header - Green Success Theme */
+    .header {
+      background: linear-gradient(135deg, var(--q-positive) 0%, var(--q-positive-light) 100%);
+      padding: 48px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Confetti effect */
+    .header::before {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      top: 20%;
+      left: 10%;
+      box-shadow:
+        50px 30px 0 rgba(255,255,255,0.2),
+        100px -20px 0 rgba(255,255,255,0.25),
+        200px 40px 0 rgba(255,255,255,0.2),
+        300px -10px 0 rgba(255,255,255,0.3),
+        400px 20px 0 rgba(255,255,255,0.2);
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      position: relative;
+      z-index: 1;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .success-icon-text {
+      font-size: 40px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 400;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Content */
+    .content {
+      padding: 48px 32px;
+    }
+
+    .greeting {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--q-dark);
+      margin-bottom: 16px;
+    }
+
+    .description {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    /* Report Card */
+    .report-card {
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--q-positive) 0%, var(--q-positive-light) 100%);
+    }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .report-icon {
+      font-size: 24px;
+    }
+
+    .report-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--q-positive);
+    }
+
+    .report-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(33, 186, 69, 0.2);
+    }
+
+    .report-row:last-child {
+      border-bottom: none;
+    }
+
+    .report-label {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .report-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--q-dark);
+    }
+
+    /* Action Button */
+    .action-button {
+      display: block;
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--q-positive) 0%, var(--q-positive-light) 100%);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 24px 0;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(33, 186, 69, 0.3);
+    }
+
+    .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(33, 186, 69, 0.4);
+    }
+
+    .action-button-icon {
+      margin-right: 8px;
+    }
+
+    /* Info Section */
+    .info-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .info-item {
+      background: #F5F5F5;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 3px solid var(--q-positive);
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--q-dark);
+    }
+
+    /* Result Badge */
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      margin: 4px;
+    }
+
+    .result-badge-success {
+      background: #E8F5E9;
+      color: var(--q-positive);
+    }
+
+    .result-badge-warning {
+      background: #FFF3E0;
+      color: #F57C00;
+    }
+
+    .result-badge-info {
+      background: #E3F2FD;
+      color: var(--q-primary);
+    }
+
+    /* Tips */
+    .tips {
+      background: #E8F5E9;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-left: 4px solid var(--q-positive);
+    }
+
+    .tips-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--q-positive);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tips-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .tips-list li {
+      font-size: 13px;
+      color: #666;
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .tips-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--q-positive);
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .footer {
+      background: #F5F5F5;
+      padding: 24px 32px;
+      text-align: center;
+      border-top: 1px solid #E0E0E0;
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: #999;
+      line-height: 1.6;
+    }
+
+    .footer-divider {
+      width: 60px;
+      height: 2px;
+      background: var(--q-positive);
+      margin: 16px auto;
+      border-radius: 2px;
+    }
+
+    .footer-link {
+      color: var(--q-primary);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body {
+        padding: 0;
+      }
+
+      .email-container {
+        border-radius: 0;
+      }
+
+      .content {
+        padding: 32px 24px;
+      }
+
+      .info-section {
+        grid-template-columns: 1fr;
+      }
+
+      .report-row {
+        flex-direction: column;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="success-icon">
+        <span class="success-icon-text">✓</span>
+      </div>
+      <div class="logo">CervixDetectAI</div>
+      <div class="logo-subtitle">报告生成完成</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="greeting">报告生成完成通知</div>
+
+      <p class="description">
+        您好，<br><br>
+        患者姓名 <strong>{{patient_name}}</strong> 的 AI 辅助诊断报告已生成完毕。<br><br>
+        分析任务编号：<strong>{{task_id}}</strong>
+      </p>
+
+      <!-- Report Card -->
+      <div class="report-card">
+        <div class="report-header">
+          <span class="report-icon">📄</span>
+          <span class="report-title">报告详情</span>
+        </div>
+        <div class="report-row">
+          <span class="report-label">患者姓名</span>
+          <span class="report-value">{{patient_name}}</span>
+        </div>
+        <div class="report-row">
+          <span class="report-label">分析时间</span>
+          <span class="report-value">{{analysis_time}}</span>
+        </div>
+        <div class="report-row">
+          <span class="report-label">报告编号</span>
+          <span class="report-value">{{report_id}}</span>
+        </div>
+        <div class="report-row">
+          <span class="report-label">AI 结果</span>
+          <span class="report-value">{{ai_result}}</span>
+        </div>
+      </div>
+
+      <!-- Download Button -->
+      <a href="https://hpvsc.icu/api/reports/{{report_id}}/download?token={{download_token}}" class="action-button">
+        <span class="action-button-icon">⬇️</span>
+        下载 PDF 报告
+      </a>
+
+      <!-- Info Section -->
+      <div class="info-section">
+        <div class="info-item">
+          <div class="info-label">报告格式</div>
+          <div class="info-value">PDF</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">文件大小</div>
+          <div class="info-value">{{file_size}}</div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="tips">
+        <div class="tips-title">
+          💡 温馨提示
+        </div>
+        <ul class="tips-list">
+          <li>报告链接有效期为 30 天，请及时下载</li>
+          <li>如需打印报告，建议使用 A4 纸张</li>
+          <li>如有疑问，请联系客服support@hpvsc.icu获取帮助</li>
+        </ul>
+      </div>
+
+      <p class="description" style="font-size: 13px; color: #999;">
+        本报告由 AI 辅助诊断系统生成，仅供临床参考，最终诊断请以医生意见为准。
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-text">
+        本邮件由系统自动发送，请勿回复
+        <div class="footer-divider"></div>
+        &copy; 2026 CervixDetectAI. All rights reserved.<br>
+        <a href="https://hpvsc.icu" class="footer-link">hpvsc.icu</a> | 客服邮箱: support@hpvsc.icu<br>
+        如不再接收此类邮件，请 <a href="{{unsubscribe}}" class="footer-link">退订</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
