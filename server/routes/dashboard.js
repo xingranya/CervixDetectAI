@@ -233,14 +233,9 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'admin';
 
-    console.log('【历史任务】开始查询任务列表');
-    console.log('【历史任务】用户ID:', userId, '是否管理员:', isAdmin);
-
-    // 构建查询条件：管理员看所有任务，普通用户看自己的任务或与自己相关的study的任务
+    // 构建查询条件：管理员看所有任务，普通用户看自己的任务
     let historyTasks;
     if (isAdmin) {
-      // 管理员查看所有任务
-      console.log('【历史任务】管理员模式：查询所有任务');
       historyTasks = await AnalysisTask.findAll({
         include: [
           {
@@ -262,7 +257,6 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
       });
     } else {
       // 普通用户：查询自己创建的任务 OR 关联到自己study的任务
-      console.log('【历史任务】普通用户模式：查询用户相关任务');
       historyTasks = await AnalysisTask.findAll({
         include: [
           {
@@ -299,8 +293,8 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
     console.log('【历史任务】查询结果数量:', historyTasks.length);
 
     // 如果结果为空且是普通用户，尝试查询所有任务（调试用）
-    if (historyTasks.length === 0 && !isAdmin) {
-      console.log('【历史任务】未找到用户任务，尝试查询所有任务（调试）');
+    if (historyTasks.length === 0 && !isAdmin && process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] 未找到历史任务，尝试查询所有任务');
       const allTasks = await AnalysisTask.findAll({
         include: [
           {
@@ -320,14 +314,8 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         order: [['created_at', 'DESC']],
         limit: 5,
       });
-      console.log('【历史任务】数据库中总任务数:', allTasks.length);
+      
       if (allTasks.length > 0) {
-        console.log('【历史任务】第一条任务的user_id:', allTasks[0].user_id);
-        console.log('【历史任务】第一条任务的study_id:', allTasks[0].study_id);
-        console.log('【历史任务】第一条任务的study.user_id:', allTasks[0].study?.user_id);
-
-        // 尝试修复null的user_id：如果任务的user_id为null但有study关联，则显示所有任务
-        console.log('【历史任务】检测到任务user_id为null，尝试显示所有有效任务');
         historyTasks = allTasks;
       }
     }
@@ -370,9 +358,8 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         };
       });
 
-    console.log('【历史任务】格式化后数量:', formattedTasks.length);
-    if (formattedTasks.length > 0) {
-      console.log('【历史任务】第一条数据:', JSON.stringify(formattedTasks[0], null, 2));
+    if (process.env.NODE_ENV === 'development' && formattedTasks.length > 0) {
+      console.log('[DEBUG] 历史任务数量:', formattedTasks.length);
     }
 
     res.json({
@@ -386,13 +373,10 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
     console.error('【历史任务】错误详情:', error.message);
     console.error('【历史任务】错误堆栈:', error.stack);
 
-    // 如果数据库查询失败，返回空数组而非500错误
-    res.json({
-      success: true,
-      data: {
-        tasks: [],
-      },
-      error: error.message, // 返回错误信息用于前端调试
+    res.status(500).json({
+      success: false,
+      message: '获取历史任务失败',
+      error: error.message,
     });
   }
 });

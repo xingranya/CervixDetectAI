@@ -21,9 +21,10 @@ const customLogger = (sql, timing) => {
     dbMonitorService.recordQuery(sql, timing);
   }
 
-  // 仅在开发环境或出错时打印到控制台
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Sequelize] ${sql} (${timing}ms)`);
+  // 仅在开发环境打印关键SQL信息，简化输出
+  if (process.env.NODE_ENV === 'development' && timing > 100) {
+    // 只显示慢查询（超过100ms）
+    console.log(`[DB Slow Query] ${timing}ms`);
   }
 };
 

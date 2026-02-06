@@ -411,7 +411,16 @@ const onEmailCaptchaSuccess = async () => {
     }
   } catch (error: unknown) {
     console.error('发送邮箱验证码失败:', error);
-    const errorMessage = error instanceof Error ? error.message : '发送验证码失败，请稍后重试';
+    let errorMessage = '发送验证码失败，请稍后重试';
+    // 解析后端返回的错误消息
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     $q.notify({
       type: 'negative',
       message: errorMessage,

@@ -529,9 +529,16 @@ ALIYUN_CAPTCHA_SCENEID_VERIFY=1dynwu1h
 EPAY_PID=your_epay_pid_here
 EPAY_KEY=your_epay_key_here
 EPAY_API_URL=https://pay.mymzf.com/xpay/epay/
-EPAY_NOTIFY_URL=http://localhost:4000/api/payment/notify
-EPAY_RETURN_URL=http://localhost:4000/api/payment/return
-FRONTEND_RESULT_URL=http://localhost:9000/#/payment/result
+EPAY_NOTIFY_URL=https://api.example.com/api/payment/notify
+EPAY_RETURN_URL=https://api.example.com/api/payment/return
+FRONTEND_RESULT_URL=https://app.example.com/#/payment/result
+```
+
+### 🌐 CORS 配置（生产推荐）
+
+```env
+# 允许的前端来源（逗号分隔）
+CORS_ORIGINS=https://app.example.com,https://admin.example.com
 ```
 
 ### 🤖 通义千问 AI 配置
@@ -560,6 +567,8 @@ TEMPLATE_ID_RESET_PASSWORD=42424
 ---
 
 ## 🔌 API 接口
+
+完整接口与字段说明以 **`/api-docs`**（Swagger UI）和 **`/openapi.yaml`** 为准。
 
 ### 认证相关 `/api/auth`
 

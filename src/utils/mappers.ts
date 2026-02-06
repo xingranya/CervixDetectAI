@@ -2,8 +2,16 @@
  * 数据映射和转换工具函数
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const SERVER_BASE_URL = API_BASE_URL.replace('/api', '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const getServerBaseUrl = (apiBaseUrl: string): string => {
+  if (!apiBaseUrl) return '';
+  const apiIndex = apiBaseUrl.indexOf('/api');
+  if (apiIndex === -1) {
+    return apiBaseUrl.replace(/\/$/, '');
+  }
+  return apiBaseUrl.slice(0, apiIndex);
+};
+const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
 /**
  * 处理图片 URL
@@ -67,9 +75,11 @@ export const deepClone = <T>(obj: T): T => {
  * 将对象转换为查询字符串
  * @param params 参数对象
  */
-export const toQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
+export const toQueryString = (
+  params: Record<string, string | number | boolean | undefined>,
+): string => {
   const parts: string[] = [];
-  Object.keys(params).forEach(key => {
+  Object.keys(params).forEach((key) => {
     const value = params[key];
     if (value !== undefined && value !== null) {
       parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);

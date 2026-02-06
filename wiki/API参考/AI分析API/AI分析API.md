@@ -130,9 +130,9 @@ SaveResult --> UpdateStatus["更新任务状态"]
 | **请求参数** | 无（使用请求体） |
 | **请求体** | `multipart/form-data`，包含`image`（文件）、`patientName`、`patientId`、`studyDate`、`modality`和可选的`description`字段。 |
 | **请求体JSON Schema** | 不适用（非JSON格式） |
-| **响应体JSON Schema** | `{ "taskId": "string", "studyId": "string", "status": "string", "estimatedTime": "number" }` |
+| **响应体JSON Schema** | `{ "success": true, "data": { "taskId": "string", "studyId": "string", "studyDbId": "number", "status": "string", "estimatedTime": "number" } }` |
 | **可能的HTTP状态码** | `200` (成功), `400` (请求错误), `500` (服务器错误) |
-| **错误信息** | `{ "error": "string", "details": "string" }` |
+| **错误信息** | `{ "success": false, "message": "string", "error": "string" }` |
 
 ### 查询任务状态
 根据任务ID查询当前分析任务的最新状态。
@@ -149,9 +149,9 @@ SaveResult --> UpdateStatus["更新任务状态"]
 | **请求参数** | `taskId` (路径参数) |
 | **请求体** | 无 |
 | **请求体JSON Schema** | 不适用 |
-| **响应体JSON Schema** | `{ "taskId": "string", "studyId": "string", "status": "'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'", "progress": "number", "result?": { ... }, "error?": "string" }` |
+| **响应体JSON Schema** | `{ "success": true, "data": { "taskId": "string", "studyId": "string", "status": "'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'", "progress": "number", "result?": { ... }, "error?": "string" } }` |
 | **可能的HTTP状态码** | `200` (成功), `404` (任务不存在), `500` (服务器错误) |
-| **错误信息** | `{ "error": "string", "taskId": "string" }` |
+| **错误信息** | `{ "success": false, "message": "string" }` |
 
 ### 根据studyId查询分析结果
 根据病例ID查询完整的分析结果，包括诊断信息和患者数据。
@@ -168,9 +168,9 @@ SaveResult --> UpdateStatus["更新任务状态"]
 | **请求参数** | `studyId` (路径参数) |
 | **请求体** | 无 |
 | **请求体JSON Schema** | 不适用 |
-| **响应体JSON Schema** | `{ "taskId": "string", "studyId": "string", "status": "...", "progress": "number", "studyInfo": { ... }, "result?": { ... }, "error?": "string", "createdAt": "string", "completedAt?": "string" }` |
+| **响应体JSON Schema** | `{ "success": true, "data": { "taskId": "string", "studyId": "string", "status": "...", "progress": "number", "studyInfo": { ... }, "result?": { ... }, "error?": "string", "createdAt": "string", "completedAt?": "string" } }` |
 | **可能的HTTP状态码** | `200` (成功), `404` (未找到), `500` (服务器错误) |
-| **错误信息** | `{ "error": "string", "studyId": "string" }` |
+| **错误信息** | `{ "success": false, "message": "string" }` |
 
 ### 创建分析任务
 创建一个新的分析任务，通常用于管理后台或高级工作流。

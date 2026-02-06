@@ -1398,10 +1398,14 @@ const result = await analysisTaskAPI.saveResult(1, {
 **响应体JSON Schema**
 ```json
 {
-  "taskId": "task_1234567890",
-  "studyId": "study_1234567890",
-  "status": "PENDING",
-  "estimatedTime": 30
+  "success": true,
+  "data": {
+    "taskId": "task_1234567890",
+    "studyId": "study_1234567890",
+    "studyDbId": 123,
+    "status": "PENDING",
+    "estimatedTime": 30
+  }
 }
 ```
 
@@ -1430,29 +1434,32 @@ const result = await analysisTaskAPI.saveResult(1, {
 **响应体JSON Schema**
 ```json
 {
-  "taskId": "task_1234567890",
-  "studyId": "study_1234567890",
-  "status": "SUCCESS",
-  "progress": 100,
-  "result": {
-    "diagnosis": "HSIL",
-    "confidence": 0.95,
-    "recommendations": ["阴道镜检查", "活检"],
-    "suspiciousAreas": [
-      {
-        "x": 100,
-        "y": 200,
-        "width": 50,
-        "height": 50,
-        "confidence": 0.98
-      }
-    ],
-    "biomarkers": {
-      "HPV": "阳性",
-      "p16": "阳性",
-      "Ki67": "高表达"
-    },
-    "detailedReport": "详细报告内容"
+  "success": true,
+  "data": {
+    "taskId": "task_1234567890",
+    "studyId": "study_1234567890",
+    "status": "SUCCESS",
+    "progress": 100,
+    "result": {
+      "diagnosis": "HSIL",
+      "confidence": 0.95,
+      "recommendations": ["阴道镜检查", "活检"],
+      "suspiciousAreas": [
+        {
+          "x": 100,
+          "y": 200,
+          "width": 50,
+          "height": 50,
+          "confidence": 0.98
+        }
+      ],
+      "biomarkers": {
+        "HPV": "阳性",
+        "p16": "阳性",
+        "Ki67": "高表达"
+      },
+      "detailedReport": "详细报告内容"
+    }
   }
 }
 ```
@@ -1481,40 +1488,43 @@ const result = await analysisTaskAPI.saveResult(1, {
 **响应体JSON Schema**
 ```json
 {
-  "taskId": "task_1234567890",
-  "studyId": "study_1234567890",
-  "status": "SUCCESS",
-  "progress": 100,
-  "studyInfo": {
-    "patientName": "张三",
-    "patientId": "P123456789",
-    "studyDate": "2024-01-01",
-    "modality": "宫颈细胞学检查",
-    "description": "常规检查",
-    "imageUrl": "/uploads/study-1234567890.jpg"
-  },
-  "result": {
-    "diagnosis": "HSIL",
-    "confidence": 0.95,
-    "recommendations": ["阴道镜检查", "活检"],
-    "suspiciousAreas": [
-      {
-        "x": 100,
-        "y": 200,
-        "width": 50,
-        "height": 50,
-        "confidence": 0.98
-      }
-    ],
-    "biomarkers": {
-      "HPV": "阳性",
-      "p16": "阳性",
-      "Ki67": "高表达"
+  "success": true,
+  "data": {
+    "taskId": "task_1234567890",
+    "studyId": "study_1234567890",
+    "status": "SUCCESS",
+    "progress": 100,
+    "studyInfo": {
+      "patientName": "张三",
+      "patientId": "P123456789",
+      "studyDate": "2024-01-01",
+      "modality": "宫颈细胞学检查",
+      "description": "常规检查",
+      "imageUrl": "/uploads/study-1234567890.jpg"
     },
-    "detailedReport": "详细报告内容"
-  },
-  "createdAt": "2024-01-01T00:00:00Z",
-  "completedAt": "2024-01-01T00:00:30Z"
+    "result": {
+      "diagnosis": "HSIL",
+      "confidence": 0.95,
+      "recommendations": ["阴道镜检查", "活检"],
+      "suspiciousAreas": [
+        {
+          "x": 100,
+          "y": 200,
+          "width": 50,
+          "height": 50,
+          "confidence": 0.98
+        }
+      ],
+      "biomarkers": {
+        "HPV": "阳性",
+        "p16": "阳性",
+        "Ki67": "高表达"
+      },
+      "detailedReport": "详细报告内容"
+    },
+    "createdAt": "2024-01-01T00:00:00Z",
+    "completedAt": "2024-01-01T00:00:30Z"
+  }
 }
 ```
 

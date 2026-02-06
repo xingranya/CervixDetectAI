@@ -272,20 +272,8 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    console.log('📡 [GET /api/studies] 接收到请求');
-    console.log('👤 [GET /api/studies] 用户信息:', { id: req.user.id, role: req.user.role });
-
     const { page = 1, limit = 10, patient_id, status, study_type, search } = req.query;
     const offset = (page - 1) * limit;
-
-    console.log('🔍 [GET /api/studies] 查询参数:', {
-      page,
-      limit,
-      patient_id,
-      status,
-      study_type,
-      search,
-    });
 
     const where = {};
 
@@ -302,15 +290,10 @@ router.get('/', authenticate, async (req, res) => {
       ];
     }
 
-    // 非管理员可以看到自己创建的病例 + 未分配用户的病例（匿名上传）
+    // 设置查询权限
     if (req.user.role !== 'admin') {
       where[Op.or] = [{ user_id: req.user.id }, { user_id: null }];
-      console.log('🔒 [GET /api/studies] 非管理员，查询自己的病例和未分配用户的病例');
-    } else {
-      console.log('🔓 [GET /api/studies] 管理员，查询所有病例');
     }
-
-    console.log('📊 [GET /api/studies] WHERE 条件:', where);
 
     const { count, rows } = await Study.findAndCountAll({
       where,
@@ -343,11 +326,9 @@ router.get('/', authenticate, async (req, res) => {
       order: [['study_date', 'DESC']],
     });
 
-    console.log('✅ [GET /api/studies] 查询结果: 总数 =', count, ', 返回 =', rows.length);
-    console.log(
-      '📊 [GET /api/studies] 病例数据:',
-      rows.map((r) => ({ id: r.id, study_id: r.study_id, status: r.status })),
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] 病例查询: 总数=${count}, 返回=${rows.length}`);
+    }
 
     res.json({
       success: true,

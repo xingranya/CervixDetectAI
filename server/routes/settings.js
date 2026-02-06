@@ -38,7 +38,10 @@ let logs = [
  *         description: 成功获取用户列表
  */
 router.get('/users', (req, res) => {
-  res.json(users);
+  res.json({
+    success: true,
+    data: { users },
+  });
 });
 
 /**
@@ -69,7 +72,11 @@ router.post('/users', (req, res) => {
     status: 'active',
   };
   users.push(newUser);
-  res.status(201).json(newUser);
+  res.status(201).json({
+    success: true,
+    message: '用户创建成功',
+    data: { user: newUser },
+  });
 });
 
 /**
@@ -83,7 +90,10 @@ router.post('/users', (req, res) => {
  *         description: 成功获取系统参数
  */
 router.get('/params', (req, res) => {
-  res.json(systemParams);
+  res.json({
+    success: true,
+    data: systemParams,
+  });
 });
 
 /**
@@ -104,7 +114,11 @@ router.get('/params', (req, res) => {
  */
 router.put('/params', (req, res) => {
   systemParams = { ...systemParams, ...req.body };
-  res.json(systemParams);
+  res.json({
+    success: true,
+    message: '参数更新成功',
+    data: systemParams,
+  });
 });
 
 /**
@@ -118,7 +132,10 @@ router.put('/params', (req, res) => {
  *         description: 成功获取日志
  */
 router.get('/logs', (req, res) => {
-  res.json(logs);
+  res.json({
+    success: true,
+    data: { logs },
+  });
 });
 
 /**
@@ -133,14 +150,17 @@ router.get('/logs', (req, res) => {
  */
 router.get('/ai-model', (req, res) => {
   res.json({
-    name: 'CervixNet-V3.2',
-    releaseDate: '2025-11-20',
-    accuracy: 0.967,
-    status: 'running',
-    performance: {
-      dates: ['11-01', '11-08', '11-15', '11-22', '11-29', '12-06', '12-12'],
-      accuracy: [0.912, 0.923, 0.935, 0.942, 0.951, 0.962, 0.967],
-      recall: [0.898, 0.905, 0.918, 0.927, 0.934, 0.945, 0.952],
+    success: true,
+    data: {
+      name: 'CervixNet-V3.2',
+      releaseDate: '2025-11-20',
+      accuracy: 0.967,
+      status: 'running',
+      performance: {
+        dates: ['11-01', '11-08', '11-15', '11-22', '11-29', '12-06', '12-12'],
+        accuracy: [0.912, 0.923, 0.935, 0.942, 0.951, 0.962, 0.967],
+        recall: [0.898, 0.905, 0.918, 0.927, 0.934, 0.945, 0.952],
+      },
     },
   });
 });

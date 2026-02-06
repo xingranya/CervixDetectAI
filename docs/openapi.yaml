@@ -1,0 +1,2299 @@
+openapi: 3.0.3
+info:
+  title: CervixDetectAI API
+  version: 1.0.0
+  description: OpenAPI specification for CervixDetectAI backend.
+servers:
+  - url: /api
+    description: Current host (recommended for production)
+  - url: https://{domain}/api
+    description: Custom domain
+    variables:
+      domain:
+        default: api.example.com
+  - url: http://localhost:4000/api
+    description: Local dev (4000)
+tags:
+  - name: Auth
+  - name: SmsAuth
+  - name: EmailAuth
+  - name: Users
+  - name: Patients
+  - name: Studies
+  - name: StudyImages
+  - name: Analyze
+  - name: AnalysisTasks
+  - name: Reports
+  - name: Dashboard
+  - name: System
+  - name: Settings
+  - name: Payment
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+      required:
+        - success
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          type: string
+      required:
+        - success
+        - message
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        pages:
+          type: integer
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          nullable: true
+        real_name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        hospital_id:
+          type: string
+          nullable: true
+        employee_id:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, doctor, user]
+        status:
+          type: string
+          enum: [active, disabled]
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UserPublic'
+        - type: object
+          properties:
+            subscription_type:
+              type: string
+              enum: [none, monthly, yearly, package]
+            subscription_expires_at:
+              type: string
+              format: date-time
+              nullable: true
+            remaining_credits:
+              type: integer
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+        patient_id:
+          type: string
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other]
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        sexual_history:
+          type: string
+          enum: [none, regular, irregular, multiple_partners, early_sexual_activity, other]
+        id_card:
+          type: string
+          nullable: true
+        medical_card_no:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        emergency_contact:
+          type: string
+          nullable: true
+        emergency_phone:
+          type: string
+          nullable: true
+        emergency_relation:
+          type: string
+          nullable: true
+        allergy_history:
+          type: string
+          nullable: true
+        medical_history:
+          type: string
+          nullable: true
+        family_history:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Study:
+      type: object
+      properties:
+        id:
+          type: integer
+        study_id:
+          type: string
+        patient_id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        study_date:
+          type: string
+          format: date-time
+        study_type:
+          type: string
+        description:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        doctor_name:
+          type: string
+          nullable: true
+        clinical_diagnosis:
+          type: string
+          nullable: true
+        symptoms:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, uploaded, processing, completed, failed]
+        priority:
+          type: string
+          enum: [normal, urgent, emergency]
+        uploaded_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    StudyImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        study_id:
+          type: integer
+        original_filename:
+          type: string
+        stored_filename:
+          type: string
+        file_path:
+          type: string
+        thumbnail_path:
+          type: string
+          nullable: true
+        file_size:
+          type: integer
+        mime_type:
+          type: string
+        file_format:
+          type: string
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        is_primary:
+          type: boolean
+        upload_status:
+          type: string
+          enum: [pending, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+    AnalysisTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: string
+        study_id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, SUCCESS, FAILED]
+        progress:
+          type: integer
+        ai_model_version:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AnalysisResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: integer
+        study_id:
+          type: integer
+        diagnosis:
+          type: string
+        confidence:
+          type: number
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        recommendations:
+          type: array
+          items:
+            type: string
+        suspicious_areas:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              location:
+                type: string
+              box_2d:
+                type: array
+                items:
+                  type: number
+              features:
+                type: array
+                items:
+                  type: string
+        biomarkers:
+          type: object
+          additionalProperties:
+            type: string
+        detailed_report:
+          type: string
+          nullable: true
+        raw_output:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MedicalReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        report_id:
+          type: string
+        study_id:
+          type: integer
+        analysis_result_id:
+          type: integer
+        patient_id:
+          type: integer
+        report_type:
+          type: string
+          enum: [preliminary, final, supplementary]
+        report_title:
+          type: string
+        file_path:
+          type: string
+        file_size:
+          type: integer
+        page_count:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, pending_review, approved, rejected]
+        download_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        out_trade_no:
+          type: string
+        trade_no:
+          type: string
+          nullable: true
+        type:
+          type: string
+        name:
+          type: string
+        money:
+          type: number
+        plan_type:
+          type: string
+        credits:
+          type: integer
+        status:
+          type: string
+          enum: [pending, paid, failed, expired]
+        pay_time:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaymentPublicOrder:
+      type: object
+      properties:
+        out_trade_no:
+          type: string
+        status:
+          type: string
+        name:
+          type: string
+        money:
+          type: number
+        plan_type:
+          type: string
+        credits:
+          type: integer
+        pay_time:
+          type: string
+          format: date-time
+          nullable: true
+    DashboardStats:
+      type: object
+      properties:
+        todayTotal:
+          type: integer
+        todayGrowth:
+          type: integer
+        highRiskCount:
+          type: integer
+        highRiskPercent:
+          type: integer
+        avgProcessTime:
+          type: number
+        timeImprovement:
+          type: number
+        completedToday:
+          type: integer
+        diagnosisStats:
+          type: object
+          additionalProperties:
+            type: integer
+    DashboardTask:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        progress:
+          type: integer
+        studyId:
+          type: integer
+        studyUniqueId:
+          type: string
+        patientName:
+          type: string
+    DashboardNotice:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        date:
+          type: string
+    SystemMetrics:
+      type: object
+      properties:
+        uptime:
+          type: number
+        qps:
+          type: number
+        avgResponseTime:
+          type: number
+        healthScore:
+          type: number
+        system:
+          type: object
+          properties:
+            memoryUsage:
+              type: object
+            cpuLoad:
+              type: array
+              items:
+                type: number
+            freeMem:
+              type: number
+            totalMem:
+              type: number
+    DashboardStatsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/DashboardStats'
+    DashboardPendingTasksResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardTask'
+    DashboardNoticesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                notices:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardNotice'
+    SystemMetricsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/SystemMetrics'
+    DatabaseTableSize:
+      type: object
+      properties:
+        table_name:
+          type: string
+        size_mb:
+          type: number
+        table_rows:
+          type: integer
+    DatabaseSizeResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/DatabaseTableSize'
+    DatabaseCleanupResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                summary:
+                  type: object
+                report:
+                  type: string
+    ReportListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                reports:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ReportMock'
+    ReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                report:
+                  $ref: '#/components/schemas/ReportMock'
+    SettingsUsersResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                users:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SettingsUser'
+    SettingsUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/SettingsUser'
+    SettingsParamsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/SystemParams'
+    SettingsLogsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                logs:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SystemLog'
+    SettingsModelResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/AiModelInfo'
+    SettingsUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+    SystemParams:
+      type: object
+      properties:
+        lowRiskThreshold:
+          type: number
+        highRiskThreshold:
+          type: number
+        includeSummary:
+          type: boolean
+        includeFollowUp:
+          type: boolean
+        requireReview:
+          type: boolean
+        analysisMode:
+          type: string
+        saveIntermediate:
+          type: boolean
+        diagnosticStandard:
+          type: string
+    SystemLog:
+      type: object
+      properties:
+        time:
+          type: string
+        message:
+          type: string
+    AiModelInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        releaseDate:
+          type: string
+        accuracy:
+          type: number
+        status:
+          type: string
+        performance:
+          type: object
+    ReportMock:
+      type: object
+      properties:
+        id:
+          type: string
+        patientName:
+          type: string
+        age:
+          type: integer
+        patientId:
+          type: string
+        date:
+          type: string
+        riskLevel:
+          type: string
+        status:
+          type: string
+        confidence:
+          type: number
+        recommendation:
+          type: string
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/UserPublic'
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+    UserResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+    UserListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                users:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/User'
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+    PatientListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                patients:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Patient'
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+    StudyListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                studies:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Study'
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+    AnalysisTaskListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AnalysisTask'
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+    PaymentCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                order:
+                  $ref: '#/components/schemas/Order'
+                payUrl:
+                  type: string
+    PaymentCheckResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PaymentPublicOrder'
+    PaymentOrdersResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                orders:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Order'
+                total:
+                  type: integer
+                page:
+                  type: integer
+                limit:
+                  type: integer
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                real_name:
+                  type: string
+                phone:
+                  type: string
+                hospital_id:
+                  type: string
+                employee_id:
+                  type: string
+                emailCode:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                email:
+                  type: string
+                hospital_id:
+                  type: string
+                employee_id:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStatsResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardPendingTasksResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/sms/send-code:
+    post:
+      tags: [SmsAuth]
+      summary: Send SMS code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                type:
+                  type: string
+                  enum: [login, register, reset_password]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardNoticesResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/sms/login:
+    post:
+      tags: [SmsAuth]
+      summary: SMS login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/sms/register:
+    post:
+      tags: [SmsAuth]
+      summary: SMS register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+                username:
+                  type: string
+                real_name:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/sms/reset-password:
+    post:
+      tags: [SmsAuth]
+      summary: Reset password by SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code, newPassword]
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsUsersResponse'
+
+  /auth/email/send-code:
+    post:
+      tags: [EmailAuth]
+      summary: Send email code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                type:
+                  type: string
+                  enum: [register, reset_password]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/email/verify:
+    post:
+      tags: [EmailAuth]
+      summary: Verify email code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                code:
+                  type: string
+                type:
+                  type: string
+                  enum: [register, reset_password]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    put:
+      tags: [Users]
+      summary: Update current user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                real_name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+  /users/me/password:
+    put:
+      tags: [Users]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password:
+                  type: string
+                new_password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+  /users/me/avatar:
+    post:
+      tags: [Users]
+      summary: Upload avatar
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: role
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    put:
+      tags: [Users]
+      summary: Update user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                real_name:
+                  type: string
+                phone:
+                  type: string
+                role:
+                  type: string
+                status:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    delete:
+      tags: [Users]
+      summary: Delete user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /patients:
+    post:
+      tags: [Patients]
+      summary: Create patient
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, gender]
+              properties:
+                name:
+                  type: string
+                gender:
+                  type: string
+                birth_date:
+                  type: string
+                  format: date
+                phone:
+                  type: string
+                sexual_history:
+                  type: string
+                id_card:
+                  type: string
+                medical_card_no:
+                  type: string
+                address:
+                  type: string
+                emergency_contact:
+                  type: string
+                emergency_phone:
+                  type: string
+                emergency_relation:
+                  type: string
+                allergy_history:
+                  type: string
+                medical_history:
+                  type: string
+                family_history:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsUserResponse'
+    get:
+      tags: [Patients]
+      summary: List patients
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: gender
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientListResponse'
+  /patients/{id}:
+    get:
+      tags: [Patients]
+      summary: Get patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsParamsResponse'
+    put:
+      tags: [Patients]
+      summary: Update patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsParamsResponse'
+    delete:
+      tags: [Patients]
+      summary: Delete patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsLogsResponse'
+  /patients/{id}/studies:
+    get:
+      tags: [Patients]
+      summary: List patient studies
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsModelResponse'
+
+  /studies:
+    post:
+      tags: [Studies]
+      summary: Create study
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patient_id, study_date, study_type]
+              properties:
+                patient_id:
+                  type: integer
+                study_date:
+                  type: string
+                  format: date-time
+                study_type:
+                  type: string
+                description:
+                  type: string
+                department:
+                  type: string
+                doctor_name:
+                  type: string
+                clinical_diagnosis:
+                  type: string
+                symptoms:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    get:
+      tags: [Studies]
+      summary: List studies
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: patient_id
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: study_type
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyListResponse'
+  /studies/{id}:
+    get:
+      tags: [Studies]
+      summary: Get study
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    put:
+      tags: [Studies]
+      summary: Update study
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    delete:
+      tags: [Studies]
+      summary: Delete study
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /studies/{id}/images:
+    post:
+      tags: [StudyImages]
+      summary: Upload study images
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /studies/{id}/images/{imageId}:
+    delete:
+      tags: [StudyImages]
+      summary: Delete study image
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: imageId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /analysis-tasks:
+    post:
+      tags: [AnalysisTasks]
+      summary: Create analysis task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [study_id]
+              properties:
+                study_id:
+                  type: integer
+                model_name:
+                  type: string
+                model_version:
+                  type: string
+                priority:
+                  type: string
+                  enum: [normal, urgent, emergency]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    get:
+      tags: [AnalysisTasks]
+      summary: List analysis tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: study_id
+          schema:
+            type: integer
+        - in: query
+          name: priority
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisTaskListResponse'
+  /analysis-tasks/{id}:
+    get:
+      tags: [AnalysisTasks]
+      summary: Get analysis task
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    delete:
+      tags: [AnalysisTasks]
+      summary: Delete analysis task
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /analysis-tasks/{id}/status:
+    put:
+      tags: [AnalysisTasks]
+      summary: Update analysis task status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                progress:
+                  type: integer
+                error_message:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /analysis-tasks/{id}/result:
+    post:
+      tags: [AnalysisTasks]
+      summary: Save analysis result
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [risk_level, diagnosis, confidence]
+              properties:
+                risk_level:
+                  type: string
+                diagnosis:
+                  type: string
+                confidence:
+                  type: number
+                detailed_report:
+                  type: string
+                recommendations:
+                  type: array
+                  items:
+                    type: string
+                biomarkers:
+                  type: object
+                suspicious_areas:
+                  type: array
+                  items:
+                    type: object
+                raw_output:
+                  type: object
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /analyze:
+    post:
+      tags: [Analyze]
+      summary: Upload image and create analyze task
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image, patientName, patientId, studyDate, modality]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                patientName:
+                  type: string
+                patientId:
+                  type: string
+                studyDate:
+                  type: string
+                modality:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /analyze/{taskId}:
+    get:
+      tags: [Analyze]
+      summary: Get analyze task status
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /analyze/study/{studyId}:
+    get:
+      tags: [Analyze]
+      summary: Get analysis by study id
+      parameters:
+        - in: path
+          name: studyId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /reports:
+    get:
+      tags: [Reports]
+      summary: List reports (mock)
+      parameters:
+        - in: query
+          name: patient
+          schema:
+            type: string
+        - in: query
+          name: riskLevel
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /reports/{id}:
+    get:
+      tags: [Reports]
+      summary: Get report (mock)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    put:
+      tags: [Reports]
+      summary: Update report (mock)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: period
+          schema:
+            type: string
+            enum: [today, week, month]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /dashboard/pending-tasks:
+    get:
+      tags: [Dashboard]
+      summary: Get pending tasks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /dashboard/notices:
+    get:
+      tags: [Dashboard]
+      summary: Get system notices
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /system/db-metrics:
+    get:
+      tags: [System]
+      summary: Get database metrics
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetricsResponse'
+  /system/database/cleanup:
+    post:
+      tags: [System]
+      summary: Run database cleanup
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseCleanupResponse'
+  /system/database/size:
+    get:
+      tags: [System]
+      summary: Get database table sizes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseSizeResponse'
+
+  /settings/users:
+    get:
+      tags: [Settings]
+      summary: List settings users (mock)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    post:
+      tags: [Settings]
+      summary: Create settings user (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /settings/params:
+    get:
+      tags: [Settings]
+      summary: Get system params (mock)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    put:
+      tags: [Settings]
+      summary: Update system params (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /settings/logs:
+    get:
+      tags: [Settings]
+      summary: Get system logs (mock)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /settings/ai-model:
+    get:
+      tags: [Settings]
+      summary: Get AI model info (mock)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /payment/create:
+    post:
+      tags: [Payment]
+      summary: Create payment order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planType, paymentMethod]
+              properties:
+                planType:
+                  type: string
+                paymentMethod:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentCreateResponse'
+  /payment/check/{out_trade_no}:
+    get:
+      tags: [Payment]
+      summary: Public order status
+      parameters:
+        - in: path
+          name: out_trade_no
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentCheckResponse'
+  /payment/status/{out_trade_no}:
+    get:
+      tags: [Payment]
+      summary: Order status (auth)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: out_trade_no
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentCheckResponse'
+  /payment/orders:
+    get:
+      tags: [Payment]
+      summary: List orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrdersResponse'
+  /payment/notify:
+    get:
+      tags: [Payment]
+      summary: Payment notify (GET)
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags: [Payment]
+      summary: Payment notify (POST)
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+  /payment/return:
+    get:
+      tags: [Payment]
+      summary: Payment return redirect
+      responses:
+        '302':
+          description: Redirect to front-end result page

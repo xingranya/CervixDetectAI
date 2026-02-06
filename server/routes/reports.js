@@ -113,7 +113,10 @@ router.get('/', (req, res) => {
     filtered = filtered.filter((r) => r.status === status);
   }
 
-  res.json(filtered);
+  res.json({
+    success: true,
+    data: { reports: filtered },
+  });
 });
 
 /**
@@ -135,9 +138,15 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const report = reports.find((r) => r.id === req.params.id);
   if (report) {
-    res.json(report);
+    res.json({
+      success: true,
+      data: { report },
+    });
   } else {
-    res.status(404).json({ error: 'Report not found' });
+    res.status(404).json({
+      success: false,
+      message: 'Report not found',
+    });
   }
 });
 
@@ -167,9 +176,16 @@ router.put('/:id', (req, res) => {
   const index = reports.findIndex((r) => r.id === req.params.id);
   if (index !== -1) {
     reports[index] = { ...reports[index], ...req.body };
-    res.json(reports[index]);
+    res.json({
+      success: true,
+      message: 'Report updated',
+      data: { report: reports[index] },
+    });
   } else {
-    res.status(404).json({ error: 'Report not found' });
+    res.status(404).json({
+      success: false,
+      message: 'Report not found',
+    });
   }
 });
 

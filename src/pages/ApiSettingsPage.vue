@@ -1272,10 +1272,10 @@ const processPayment = async () => {
     );
 
     // 跳转到支付页面
-    if (data.data && data.data.payUrl) {
+    if (data.success && data.data && data.data.payUrl) {
       window.location.href = data.data.payUrl;
     } else {
-      throw new Error('获取支付链接失败');
+      throw new Error(data.message || '获取支付链接失败');
     }
   } catch (error) {
     console.error('创建订单失败:', error);

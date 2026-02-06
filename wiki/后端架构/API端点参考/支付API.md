@@ -59,12 +59,12 @@
 **响应**:
 ```json
 {
-  "code": 200,
+  "success": true,
+  "message": "订单创建成功",
   "data": {
     "order": { ... },
     "payUrl": "https://pay.example.com/..."
-  },
-  "message": "订单创建成功"
+  }
 }
 ```
 
@@ -77,7 +77,8 @@
 **响应**:
 ```json
 {
-  "code": 200,
+  "success": true,
+  "message": "获取成功",
   "data": {
     "out_trade_no": "1769535136337887",
     "status": "paid",
@@ -86,8 +87,7 @@
     "plan_type": "test",
     "credits": 1,
     "pay_time": "2026-01-28T01:33:13.000Z"
-  },
-  "message": "获取成功"
+  }
 }
 ```
 

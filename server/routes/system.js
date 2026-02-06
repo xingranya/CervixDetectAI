@@ -50,9 +50,15 @@ router.get('/db-metrics', (req, res) => {
       },
     };
 
-    res.json(systemMetrics);
+    res.json({
+      success: true,
+      data: systemMetrics,
+    });
   } catch {
-    res.status(500).json({ error: '获取性能指标失败' });
+    res.status(500).json({
+      success: false,
+      message: '获取性能指标失败',
+    });
   }
 });
 
@@ -96,14 +102,14 @@ router.post('/database/cleanup', async (req, res) => {
 
     res.json({
       success: true,
-      summary,
-      report,
+      message: '清理完成',
+      data: { summary, report },
     });
   } catch (error) {
     console.error('[System] 数据库清理失败:', error);
     res.status(500).json({
       success: false,
-      error: error.message || '数据库清理失败',
+      message: error.message || '数据库清理失败',
     });
   }
 });
@@ -136,10 +142,16 @@ router.post('/database/cleanup', async (req, res) => {
 router.get('/database/size', async (req, res) => {
   try {
     const tableSizes = await databaseCleanupService.getTableSizes();
-    res.json(tableSizes);
+    res.json({
+      success: true,
+      data: tableSizes,
+    });
   } catch (error) {
     console.error('[System] 获取表大小失败:', error);
-    res.status(500).json({ error: '获取表大小失败' });
+    res.status(500).json({
+      success: false,
+      message: '获取表大小失败',
+    });
   }
 });
 

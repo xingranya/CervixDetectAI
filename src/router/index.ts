@@ -35,12 +35,12 @@ export default defineRouter(function (/* { store, ssrContext } */) {
   });
 
   // Global authentication guard
-  Router.beforeEach(async (to, from, next) => {
+  Router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
 
     // 刷新页面时，路由守卫可能先于 App.vue 执行，导致误判未登录
     if (!authStore.hasInitialized) {
-      await authStore.initializeAuth();
+      authStore.initializeAuth();
     }
 
     // If route requires authentication

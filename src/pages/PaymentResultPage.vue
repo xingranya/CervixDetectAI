@@ -124,7 +124,7 @@ const checkStatus = async () => {
 
     console.log('[PaymentResult] 查询结果:', data);
 
-    if (data.code === 200 && data.data) {
+    if (data.success && data.data) {
       order.value = data.data;
 
       if (order.value.status === 'paid') {
@@ -148,8 +148,9 @@ const checkStatus = async () => {
     console.error('[PaymentResult] 查询订单失败', error);
     if (!loading.value) {
       status.value = 'failed';
-      const axiosError = error as { response?: { data?: { error?: string } } };
-      errorMessage.value = axiosError.response?.data?.error || '查询失败';
+      const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+      errorMessage.value =
+        axiosError.response?.data?.message || axiosError.response?.data?.error || '查询失败';
     }
   } finally {
     checking.value = false;
@@ -232,7 +233,9 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .icon {

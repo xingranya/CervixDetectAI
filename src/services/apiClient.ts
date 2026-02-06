@@ -23,10 +23,10 @@ function redirectToLogin() {
     return `${base}/${path.replace(/^\/+/, '')}`;
   };
 
-  const loginPath =
-    routerMode === 'history'
-      ? joinPath(normalizedBase, 'login')
-      : joinPath(normalizedBase, '#/login');
+  const isHashMode = routerMode ? routerMode !== 'history' : window.location.hash.startsWith('#/');
+  const loginPath = isHashMode
+    ? joinPath(normalizedBase, '#/login')
+    : joinPath(normalizedBase, 'login');
   window.location.href = loginPath;
 }
 

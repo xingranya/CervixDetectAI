@@ -46,7 +46,10 @@ router.post('/create', authenticate, async (req, res, next) => {
     const userId = req.user.id;
 
     if (!planType || !paymentMethod) {
-      return res.status(400).json({ error: '参数不完整' });
+      return res.status(400).json({
+        success: false,
+        message: '参数不完整',
+      });
     }
 
     // 动态获取当前域名，支持多域名部署
@@ -57,9 +60,9 @@ router.post('/create', authenticate, async (req, res, next) => {
     const result = await paymentService.createOrder(userId, planType, paymentMethod, baseUrl);
 
     res.json({
-      code: 200,
+      success: true,
+      message: '订单创建成功',
       data: result,
-      message: '订单创建成功'
     });
   } catch (error) {
     next(error);
@@ -91,7 +94,8 @@ router.get('/check/:out_trade_no', async (req, res, next) => {
 
     // 只返回必要的非敏感信息
     res.json({
-      code: 200,
+      success: true,
+      message: '获取成功',
       data: {
         out_trade_no: order.out_trade_no,
         status: order.status,
@@ -99,9 +103,8 @@ router.get('/check/:out_trade_no', async (req, res, next) => {
         money: order.money,
         plan_type: order.plan_type,
         credits: order.credits,
-        pay_time: order.pay_time
+        pay_time: order.pay_time,
       },
-      message: '获取成功'
     });
   } catch (error) {
     next(error);
@@ -135,13 +138,16 @@ router.get('/status/:out_trade_no', authenticate, async (req, res, next) => {
 
     // 验证订单归属
     if (order.user_id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权访问此订单' });
+      return res.status(403).json({
+        success: false,
+        message: '无权访问此订单',
+      });
     }
 
     res.json({
-      code: 200,
+      success: true,
+      message: '获取成功',
       data: order,
-      message: '获取成功'
     });
   } catch (error) {
     next(error);
@@ -179,18 +185,18 @@ router.get('/orders', authenticate, async (req, res, next) => {
       where: { user_id: req.user.id },
       order: [['created_at', 'DESC']],
       limit,
-      offset
+      offset,
     });
 
     res.json({
-      code: 200,
+      success: true,
+      message: '获取成功',
       data: {
         orders: rows,
         total: count,
         page,
-        limit
+        limit,
       },
-      message: '获取成功'
     });
   } catch (error) {
     next(error);
@@ -240,22 +246,22 @@ router.post('/notify', async (req, res) => {
  *     tags: [Payment]
  */
 router.get('/return', async (req, res) => {
-    // 动态获取当前域名，支持多域名部署
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    let baseUrl = `${protocol}://${host}`;
+  // 动态获取当前域名，支持多域名部署
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  let baseUrl = `${protocol}://${host}`;
 
-    // NAT 环境：替换为外网端口
-    const externalPort = process.env.EXTERNAL_PORT;
-    if (externalPort) {
-      const url = new URL(baseUrl);
-      url.port = externalPort;
-      baseUrl = url.origin;
-    }
+  // NAT 环境：替换为外网端口
+  const externalPort = process.env.EXTERNAL_PORT;
+  if (externalPort) {
+    const url = new URL(baseUrl);
+    url.port = externalPort;
+    baseUrl = url.origin;
+  }
 
-    // 同步跳转：后端中转到前端 Hash Mode URL
-    const { out_trade_no } = req.query;
-    res.redirect(`${baseUrl}/#/payment/result?out_trade_no=${encodeURIComponent(out_trade_no)}`);
+  // 同步跳转：后端中转到前端 Hash Mode URL
+  const { out_trade_no } = req.query;
+  res.redirect(`${baseUrl}/#/payment/result?out_trade_no=${encodeURIComponent(out_trade_no)}`);
 });
 
 module.exports = router;

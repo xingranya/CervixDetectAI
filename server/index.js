@@ -20,47 +20,12 @@ const systemRouter = require('./routes/system');
 const settingsRouter = require('./routes/settings');
 const paymentRouter = require('./routes/payment');
 const { testConnection, syncDatabase } = require('./config/sequelize');
-const swaggerJsdoc = require('swagger-jsdoc');
-
 const swaggerUi = require('swagger-ui-express');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Swagger 配置
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'CervixDetectAI API 文档',
-      version: '1.0.0',
-      description: '宫颈病变智能风险评估与辅助诊断系统 API 接口文档',
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}/api`,
-        description: '本地开发服务器',
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  },
-  apis: ['./routes/*.js'], // 指定包含注解的路由文件
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+const openapiPath = path.resolve(__dirname, '..', 'docs', 'openapi.yaml');
 
 // 确保必要的目录存在
 const uploadDir = path.join(__dirname, process.env.UPLOAD_DIR || 'uploads');
@@ -75,15 +40,20 @@ if (!fs.existsSync(reportsDir)) {
 }
 
 // 中间件
+const defaultCorsOrigins = [
+  'http://localhost:9000',
+  'http://localhost:9001',
+  'http://localhost:9002',
+];
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0)
+  : defaultCorsOrigins;
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:9000',
-      'http://localhost:9001',
-      'http://localhost:9002',
-      'http://182.140.180.9:9001',
-      'http://182.140.180.9:26140',
-    ],
+    origin: corsOrigins,
     credentials: true,
   }),
 );
@@ -108,8 +78,24 @@ app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/payment', paymentRouter);
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger UI (load YAML from static endpoint)
+app.get('/openapi.yaml', (req, res) => {
+  res.sendFile(openapiPath);
+});
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: '/openapi.yaml',
+    },
+  }),
+);
+
+// 访问根路径时跳转到文档
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
 
 // 健康检查
 app.get('/health', (req, res) => {
@@ -121,14 +107,18 @@ app.get('/health', (req, res) => {
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
-    error: err.message || '服务器内部错误',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    success: false,
+    message: err.message || '服务器内部错误',
+    ...(process.env.NODE_ENV === 'development' && { error: err.stack }),
   });
 });
 
 // 404处理
 app.use((req, res) => {
-  res.status(404).json({ error: '接口不存在' });
+  res.status(404).json({
+    success: false,
+    message: '接口不存在',
+  });
 });
 
 // 启动服务器

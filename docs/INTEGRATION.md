@@ -12,6 +12,7 @@
 - **Backend Server**: `http://localhost:4000`
 - **Content-Type**: `application/json`
 - **认证方式**: Bearer Token (JWT)
+- **OpenAPI**: `/api-docs`（Swagger UI）, `/openapi.yaml`（规范文件）
 
 ### 2.2 现状与偏差说明（必读）
 
@@ -32,59 +33,157 @@
   - `patient`: string (可选，患者姓名或ID)
   - `riskLevel`: string (可选，low/medium/high)
   - `status`: string (可选，completed/pending/draft)
-- **Response**: `Report[]`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "reports": [
+        {
+          "id": "1",
+          "patientName": "张三",
+          "status": "completed",
+          "riskLevel": "low"
+        }
+      ]
+    }
+  }
+  ```
 
 #### 获取报告详情
 
 - **Endpoint**: `GET /reports/:id`
-- **Response**: `Report`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "report": {
+        "id": "1",
+        "patientName": "张三",
+        "riskLevel": "low",
+        "confidence": 0.98
+      }
+    }
+  }
+  ```
 
 #### 更新报告
 
 - **Endpoint**: `PUT /reports/:id`
 - **Body**: `Partial<Report>`
-- **Response**: `Report`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "Report updated",
+    "data": {
+      "report": { ... }
+    }
+  }
+  ```
 
 ### 2.4 系统设置 (Settings)（当前为演示数据）
 
 #### 获取用户列表
 
 - **Endpoint**: `GET /settings/users`
-- **Response**: `User[]`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "users": [
+        { "id": 1, "name": "Admin", "role": "admin" }
+      ]
+    }
+  }
+  ```
 
 #### 添加用户
 
 - **Endpoint**: `POST /settings/users`
 - **Body**: `{ name: string, role: string }`
-- **Response**: `User`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "用户创建成功",
+    "data": {
+      "user": { "id": 2, "name": "Doctor", "role": "doctor" }
+    }
+  }
+  ```
 
 #### 获取系统参数
 
 - **Endpoint**: `GET /settings/params`
-- **Response**: `SystemParams`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "lowRiskThreshold": 0.3,
+      "highRiskThreshold": 0.7
+    }
+  }
+  ```
 
 #### 更新系统参数
 
 - **Endpoint**: `PUT /settings/params`
 - **Body**: `Partial<SystemParams>`
-- **Response**: `SystemParams`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "参数更新成功",
+    "data": { ... }
+  }
+  ```
 
 #### 获取系统日志
 
 - **Endpoint**: `GET /settings/logs`
-- **Response**: `LogEntry[]`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "logs": []
+    }
+  }
+  ```
 
 #### 获取AI模型信息
 
 - **Endpoint**: `GET /settings/ai-model`
-- **Response**: `AIModelInfo`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "name": "CervixNet-V3.2",
+      "status": "running"
+    }
+  }
+  ```
 
 ### 2.5 数据库监控 (System)
 
 #### 获取数据库指标
 
 - **Endpoint**: `GET /system/db-metrics`
-- **Response**: `DbMetrics`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "healthScore": 98,
+      "connectionStatus": "connected"
+    }
+  }
+  ```
 
 ## 3. 数据结构
 

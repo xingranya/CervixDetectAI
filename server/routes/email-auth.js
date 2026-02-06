@@ -19,17 +19,26 @@ router.post('/send-code', async (req, res) => {
 
     // 参数验证
     if (!email) {
-      return res.status(400).json({ message: '邮箱地址不能为空' });
+      return res.status(400).json({
+        success: false,
+        message: '邮箱地址不能为空',
+      });
     }
 
     // 验证邮箱格式
     if (!emailService.validateEmail(email)) {
-      return res.status(400).json({ message: '邮箱格式不正确' });
+      return res.status(400).json({
+        success: false,
+        message: '邮箱格式不正确',
+      });
     }
 
     // 验证类型
     if (!['register', 'reset_password'].includes(type)) {
-      return res.status(400).json({ message: '验证码类型不正确' });
+      return res.status(400).json({
+        success: false,
+        message: '验证码类型不正确',
+      });
     }
 
     // 业务逻辑验证
@@ -37,13 +46,19 @@ router.post('/send-code', async (req, res) => {
       // 注册时检查邮箱是否已被注册
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({ message: '该邮箱已被注册' });
+        return res.status(400).json({
+          success: false,
+          message: '该邮箱已被注册',
+        });
       }
     } else if (type === 'reset_password') {
       // 重置密码时检查邮箱是否存在
       const existingUser = await User.findOne({ where: { email } });
       if (!existingUser) {
-        return res.status(400).json({ message: '该邮箱未注册' });
+        return res.status(400).json({
+          success: false,
+          message: '该邮箱未注册',
+        });
       }
     }
 
@@ -59,10 +74,13 @@ router.post('/send-code', async (req, res) => {
     });
 
     if (recentCode) {
-      const remainingSeconds = Math.ceil((recentCode.created_at.getTime() + SEND_INTERVAL_SECONDS * 1000 - Date.now()) / 1000);
+      const remainingSeconds = Math.ceil(
+        (recentCode.created_at.getTime() + SEND_INTERVAL_SECONDS * 1000 - Date.now()) / 1000,
+      );
       return res.status(429).json({
+        success: false,
         message: `发送过于频繁，请${remainingSeconds}秒后再试`,
-        remainingSeconds,
+        error: String(remainingSeconds),
       });
     }
 
@@ -81,8 +99,9 @@ router.post('/send-code', async (req, res) => {
 
     if (todayCount >= MAX_DAILY_SEND_COUNT) {
       return res.status(429).json({
+        success: false,
         message: `今日发送次数已达上限（${MAX_DAILY_SEND_COUNT}次）`,
-        dailyLimit: MAX_DAILY_SEND_COUNT,
+        error: String(MAX_DAILY_SEND_COUNT),
       });
     }
 
@@ -100,7 +119,10 @@ router.post('/send-code', async (req, res) => {
     const sendResult = await emailService.sendVerifyCode(email, code, type);
 
     if (!sendResult.success) {
-      return res.status(500).json({ message: sendResult.message });
+      return res.status(500).json({
+        success: false,
+        message: sendResult.message,
+      });
     }
 
     // 保存验证码记录
@@ -116,8 +138,11 @@ router.post('/send-code', async (req, res) => {
 
     // 返回成功（不包含验证码）
     res.json({
+      success: true,
       message: '验证码已发送到您的邮箱',
-      expiresIn: CODE_EXPIRE_MINUTES * 60, // 秒
+      data: {
+        expiresIn: CODE_EXPIRE_MINUTES * 60, // 秒
+      },
     });
   } catch (error) {
     console.error('[EmailAuth] 发送验证码失败:', {
@@ -125,7 +150,10 @@ router.post('/send-code', async (req, res) => {
       code: error.code,
       stack: error.stack,
     });
-    res.status(500).json({ message: '发送验证码失败，请稍后重试' });
+    res.status(500).json({
+      success: false,
+      message: '发送验证码失败，请稍后重试',
+    });
   }
 });
 
@@ -139,7 +167,10 @@ router.post('/verify', async (req, res) => {
 
     // 参数验证
     if (!email || !code) {
-      return res.status(400).json({ message: '邮箱和验证码不能为空' });
+      return res.status(400).json({
+        success: false,
+        message: '邮箱和验证码不能为空',
+      });
     }
 
     // 查找有效验证码
@@ -147,8 +178,8 @@ router.post('/verify', async (req, res) => {
 
     if (!validCode) {
       return res.status(400).json({
+        success: false,
         message: '验证码无效或已过期',
-        valid: false,
       });
     }
 
@@ -156,8 +187,11 @@ router.post('/verify', async (req, res) => {
     await validCode.markAsUsed();
 
     res.json({
+      success: true,
       message: '验证成功',
-      valid: true,
+      data: {
+        valid: true,
+      },
     });
   } catch (error) {
     console.error('[EmailAuth] 验证码校验失败:', {
@@ -165,7 +199,10 @@ router.post('/verify', async (req, res) => {
       code: error.code,
       stack: error.stack,
     });
-    res.status(500).json({ message: '验证失败，请稍后重试' });
+    res.status(500).json({
+      success: false,
+      message: '验证失败，请稍后重试',
+    });
   }
 });
 

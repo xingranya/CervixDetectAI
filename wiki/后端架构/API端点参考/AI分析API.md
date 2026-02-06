@@ -54,15 +54,24 @@ CervixDetectAI系统提供了一套完整的AI图像分析API，用于宫颈细�
 #### 成功响应（200 OK）
 ```json
 {
-  "taskId": "task_123e4567-e89b-12d3-a456-426614174000",
-  "studyId": "study_123e4567-e89b-12d3-a456-426614174001",
-  "studyDbId": 12345,
-  "status": "PENDING",
-  "estimatedTime": 30
+  "success": true,
+  "data": {
+    "taskId": "task_123e4567-e89b-12d3-a456-426614174000",
+    "studyId": "study_123e4567-e89b-12d3-a456-426614174001",
+    "studyDbId": 12345,
+    "status": "PENDING",
+    "estimatedTime": 30
+  }
 }
 ```
 
 #### 错误响应
+```json
+{
+  "success": false,
+  "message": "错误描述"
+}
+```
 - **400 Bad Request**: 缺少必填字段或文件格式不支持
 - **500 Internal Server Error**: 服务器内部错误
 
@@ -76,13 +85,24 @@ CervixDetectAI系统提供了一套完整的AI图像分析API，用于宫颈细�
 #### 响应数据结构
 ```json
 {
-  "taskId": "string",
-  "studyId": "string",
-  "studyDbId": "number",
-  "status": "PENDING|PROCESSING|SUCCESS|FAILED",
-  "progress": 0-100,
-  "result": { /* 诊断结果 */ },
-  "error": "string"
+  "success": true,
+  "data": {
+    "taskId": "string",
+    "studyId": "string",
+    "studyDbId": "number",
+    "status": "PENDING|PROCESSING|SUCCESS|FAILED",
+    "progress": 0-100,
+    "result": { /* 诊断结果 */ },
+    "error": "string"
+  }
+}
+```
+
+#### 错误响应
+```json
+{
+  "success": false,
+  "message": "任务不存在"
 }
 ```
 

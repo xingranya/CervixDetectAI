@@ -207,7 +207,9 @@ const updateChart = () => {
 const fetchMetrics = async () => {
   try {
     const response = await api.get('/system/db-metrics');
-    metrics.value = response.data;
+    if (response.data?.success && response.data.data) {
+      metrics.value = response.data.data;
+    }
     updateChart();
   } catch (error) {
     console.error('Failed to fetch DB metrics:', error);

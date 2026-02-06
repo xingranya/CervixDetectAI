@@ -2,6 +2,12 @@ import apiClient from './apiClient';
 
 const API_BASE_URL = apiClient.defaults.baseURL;
 
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
 export interface UploadImageRequest {
   image: File;
   patientName: string;
@@ -86,30 +92,41 @@ export async function uploadImage(data: UploadImageRequest): Promise<UploadImage
 
   console.log('📤 发送 POST 请求到:', `${API_BASE_URL}/analyze`);
 
-  const response = await apiClient.post<UploadImageResponse>('/analyze', formData, {
+  const response = await apiClient.post<ApiResponse<UploadImageResponse>>('/analyze', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
 
   console.log('✅ 上传响应:', response.data);
-  return response.data;
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.message || '上传失败');
+  }
+  return response.data.data;
 }
 
 /**
  * 查询任务状态
  */
 export async function getTaskStatus(taskId: string): Promise<TaskStatusResponse> {
-  const response = await apiClient.get<TaskStatusResponse>(`/analyze/${taskId}`);
-  return response.data;
+  const response = await apiClient.get<ApiResponse<TaskStatusResponse>>(`/analyze/${taskId}`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.message || '获取任务状态失败');
+  }
+  return response.data.data;
 }
 
 /**
  * 根据studyId查询分析结果
  */
 export async function getStudyAnalysis(studyId: string): Promise<StudyAnalysisResponse> {
-  const response = await apiClient.get<StudyAnalysisResponse>(`/analyze/study/${studyId}`);
-  return response.data;
+  const response = await apiClient.get<ApiResponse<StudyAnalysisResponse>>(
+    `/analyze/study/${studyId}`,
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.message || '获取分析结果失败');
+  }
+  return response.data.data;
 }
 
 /**

@@ -75,8 +75,9 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
     if (!req.file) {
       console.error('❌ 请求中未包含文件');
       return res.status(400).json({
-        error: '请求参数错误',
-        details: '缺少图像文件',
+        success: false,
+        message: '请求参数错误',
+        error: '缺少图像文件',
       });
     }
 
@@ -87,8 +88,9 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
       // 删除已上传的文件
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(400).json({
-        error: '请求参数错误',
-        details: '缺少必填字段：patientName、patientId、studyDate、modality',
+        success: false,
+        message: '请求参数错误',
+        error: '缺少必填字段：patientName、patientId、studyDate、modality',
       });
     }
 
@@ -183,11 +185,14 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
 
       // 返回结果
       res.status(200).json({
-        taskId,
-        studyId,
-        studyDbId: study.id,
-        status: 'PENDING',
-        estimatedTime: 30,
+        success: true,
+        data: {
+          taskId,
+          studyId,
+          studyDbId: study.id,
+          status: 'PENDING',
+          estimatedTime: 30,
+        },
       });
 
       // 异步执行分析 (传入数据库ID)
@@ -241,8 +246,9 @@ router.get('/:taskId', async (req, res) => {
 
     if (!task) {
       return res.status(404).json({
+        success: false,
+        message: '任务不存在',
         error: '任务不存在',
-        taskId,
       });
     }
 
@@ -272,10 +278,16 @@ router.get('/:taskId', async (req, res) => {
       response.error = task.error_message;
     }
 
-    res.json(response);
+    res.json({
+      success: true,
+      data: response,
+    });
   } catch (error) {
     console.error('查询任务状态失败:', error);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误',
+    });
   }
 });
 
@@ -298,7 +310,10 @@ router.get('/study/:studyId', async (req, res) => {
     });
 
     if (!study) {
-      return res.status(404).json({ error: '未找到该病例' });
+      return res.status(404).json({
+        success: false,
+        message: '未找到该病例',
+      });
     }
 
     const latestTask = await AnalysisTask.findOne({
@@ -319,11 +334,14 @@ router.get('/study/:studyId', async (req, res) => {
     if (!latestTask) {
       // 无任务记录
       return res.json({
-        taskId: `temp_${study.id}`,
-        studyId: String(study.id),
-        status: 'PENDING',
-        progress: 0,
-        studyInfo,
+        success: true,
+        data: {
+          taskId: `temp_${study.id}`,
+          studyId: String(study.id),
+          status: 'PENDING',
+          progress: 0,
+          studyInfo,
+        },
       });
     }
 
@@ -350,10 +368,16 @@ router.get('/study/:studyId', async (req, res) => {
       response.error = latestTask.error_message;
     }
 
-    res.json(response);
+    res.json({
+      success: true,
+      data: response,
+    });
   } catch (error) {
     console.error('查询病例分析失败:', error);
-    res.status(500).json({ error: '查询失败' });
+    res.status(500).json({
+      success: false,
+      message: '查询失败',
+    });
   }
 });
 

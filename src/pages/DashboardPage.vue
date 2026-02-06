@@ -405,19 +405,18 @@ const fetchPendingTasks = async () => {
         console.log('【前端】第一条任务:', pendingTasks.value[0]);
       } else {
         console.warn('【前端】历史任务列表为空');
-        if (response.error) {
-          console.error('【前端】后端错误信息:', response.error);
-          Notify.create({
-            type: 'warning',
-            message: `获取历史任务失败: ${response.error}`,
-            position: 'top',
-          });
-        }
       }
     } else {
+      pendingTasks.value = [];
       console.error('【前端】API返回失败:', response);
+      Notify.create({
+        type: 'warning',
+        message: response.message || response.error || '获取历史任务失败',
+        position: 'top',
+      });
     }
   } catch (error) {
+    pendingTasks.value = [];
     console.error('【前端】获取待处理任务失败:', error);
     Notify.create({
       type: 'negative',

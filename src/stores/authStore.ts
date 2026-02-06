@@ -141,8 +141,10 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Initialize auth from localStorage
-    initializeAuth() {
+    /**
+     * 从本地存储初始化认证状态
+     */
+    initializeAuth(): void {
       const token = getItem<string>(STORAGE_KEYS.ACCESS_TOKEN);
       const refreshToken = getItem<string>(STORAGE_KEYS.REFRESH_TOKEN);
       const user = getItem<User>(STORAGE_KEYS.USER_INFO);

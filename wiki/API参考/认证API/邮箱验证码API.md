@@ -67,29 +67,40 @@ POST /api/auth/email/send-code
 
 ```json
 {
+  "success": true,
   "message": "验证码已发送到您的邮箱",
-  "expiresIn": 300
+  "data": {
+    "expiresIn": 300
+  }
 }
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
+| `success` | `boolean` | 请求是否成功 |
 | `message` | `string` | 提示消息 |
-| `expiresIn` | `number` | 验证码有效期（秒），固定为 300（5分钟） |
+| `data.expiresIn` | `number` | 验证码有效期（秒），固定为 300（5分钟） |
 
 #### 错误响应
 
+```json
+{
+  "success": false,
+  "message": "错误描述"
+}
+```
+
 | HTTP 状态码 | 响应体 | 说明 |
 |------------|--------|------|
-| 400 Bad Request | `{"message": "邮箱地址不能为空"}` | 未提供邮箱地址 |
-| 400 Bad Request | `{"message": "邮箱格式不正确"}` | 邮箱格式无效 |
-| 400 Bad Request | `{"message": "验证码类型不正确"}` | 类型非 `register` 或 `reset_password` |
-| 400 Bad Request | `{"message": "该邮箱已被注册"}` | 注册时邮箱已存在 |
-| 400 Bad Request | `{"message": "该邮箱未注册"}` | 重置密码时邮箱不存在 |
-| 429 Too Many Requests | `{"message": "发送过于频繁，请30秒后再试", "remainingSeconds": 30}` | 60秒发送间隔限制 |
-| 429 Too Many Requests | `{"message": "今日发送次数已达上限（10次）", "dailyLimit": 10}` | 每日发送上限 |
-| 500 Internal Server Error | `{"message": "邮件模板未配置或审核未通过"}` | 腾讯云模板 ID 无效 |
-| 500 Internal Server Error | `{"message": "发送验证码失败，请稍后重试"}` | 服务器内部错误 |
+| 400 Bad Request | `{"success": false, "message": "邮箱地址不能为空"}` | 未提供邮箱地址 |
+| 400 Bad Request | `{"success": false, "message": "邮箱格式不正确"}` | 邮箱格式无效 |
+| 400 Bad Request | `{"success": false, "message": "验证码类型不正确"}` | 类型非 `register` 或 `reset_password` |
+| 400 Bad Request | `{"success": false, "message": "该邮箱已被注册"}` | 注册时邮箱已存在 |
+| 400 Bad Request | `{"success": false, "message": "该邮箱未注册"}` | 重置密码时邮箱不存在 |
+| 429 Too Many Requests | `{"success": false, "message": "发送过于频繁，请30秒后再试", "remainingSeconds": 30}` | 60秒发送间隔限制 |
+| 429 Too Many Requests | `{"success": false, "message": "今日发送次数已达上限（10次）", "dailyLimit": 10}` | 每日发送上限 |
+| 500 Internal Server Error | `{"success": false, "message": "邮件模板未配置或审核未通过"}` | 腾讯云模板 ID 无效 |
+| 500 Internal Server Error | `{"success": false, "message": "发送验证码失败，请稍后重试"}` | 服务器内部错误 |
 
 **Section sources**
 - [email-auth.js](../../server/routes/email-auth.js#L16-L125)
@@ -168,18 +179,31 @@ POST /api/auth/email/verify
 
 ```json
 {
+  "success": true,
   "message": "验证成功",
-  "valid": true
+  "data": {
+    "valid": true
+  }
 }
 ```
 
 #### 错误响应
 
+```json
+{
+  "success": false,
+  "message": "验证码无效或已过期",
+  "data": {
+    "valid": false
+  }
+}
+```
+
 | HTTP 状态码 | 响应体 | 说明 |
 |------------|--------|------|
-| 400 Bad Request | `{"message": "邮箱和验证码不能为空"}` | 参数缺失 |
-| 400 Bad Request | `{"message": "验证码无效或已过期", "valid": false}` | 验证码错误、已使用或已过期 |
-| 500 Internal Server Error | `{"message": "验证失败，请稍后重试"}` | 服务器内部错误 |
+| 400 Bad Request | `{"success": false, "message": "邮箱和验证码不能为空"}` | 参数缺失 |
+| 400 Bad Request | `{"success": false, "message": "验证码无效或已过期", "data": {"valid": false}}` | 验证码错误、已使用或已过期 |
+| 500 Internal Server Error | `{"success": false, "message": "验证失败，请稍后重试"}` | 服务器内部错误 |
 
 **Section sources**
 - [email-auth.js](../../server/routes/email-auth.js#L127-L161)
@@ -270,6 +294,7 @@ const recentCode = await EmailCode.findOne({
 **响应示例**：
 ```json
 {
+  "success": false,
   "message": "发送过于频繁，请30秒后再试",
   "remainingSeconds": 30
 }
@@ -298,6 +323,7 @@ const todayCount = await EmailCode.count({
 **响应示例**：
 ```json
 {
+  "success": false,
   "message": "今日发送次数已达上限（10次）",
   "dailyLimit": 10
 }

@@ -813,6 +813,7 @@ import { useAuthStore } from 'stores/authStore';
 import { userAPI } from 'src/services/api';
 import { HOSPITALS, DEPARTMENTS } from 'src/constants/hospitals';
 import { setItem, STORAGE_KEYS } from 'src/utils/storage';
+import { getImageUrl } from 'src/utils/mappers';
 
 const $q = useQuasar();
 const activeTab = ref('user_account');
@@ -842,15 +843,7 @@ const formattedLastLogin = computed(() => {
 
 // 头像 URL
 const avatarUrl = computed(() => {
-  if (!user.value?.avatar_url) return '';
-  const url = user.value.avatar_url;
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  if (import.meta.env.DEV) {
-    return `http://localhost:3000${url}`;
-  }
-  return url;
+  return getImageUrl(user.value?.avatar_url) || '';
 });
 
 // 用户名首字母

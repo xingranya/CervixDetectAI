@@ -114,6 +114,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/authStore';
 import { useQuasar } from 'quasar';
+import { getImageUrl } from 'src/utils/mappers';
 import EssentialLink from 'components/EssentialLink.vue';
 import AppFooter from 'components/AppFooter.vue';
 import { HOSPITALS } from 'src/constants/hospitals';
@@ -131,20 +132,12 @@ const userName = computed(() => {
 // 当前医院信息
 const currentHospital = computed(() => {
   if (!authStore.user?.hospital_id) return null;
-  return HOSPITALS.find(h => h.id === authStore.user?.hospital_id);
+  return HOSPITALS.find((h) => h.id === authStore.user?.hospital_id);
 });
 
 // 处理头像URL
 const avatarUrl = computed(() => {
-  if (!authStore.user?.avatar_url) return '';
-  const url = authStore.user.avatar_url;
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  if (import.meta.env.DEV) {
-    return `http://localhost:3000${url}`;
-  }
-  return url;
+  return getImageUrl(authStore.user?.avatar_url) || '';
 });
 
 // 用户名称首字母（用于默认头像）
