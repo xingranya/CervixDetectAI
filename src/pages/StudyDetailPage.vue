@@ -210,13 +210,13 @@
               <q-icon name="cloud_upload" size="xl" color="grey-5" class="q-mb-sm" />
               <div class="text-weight-bold text-grey-8">拖放影像文件至此</div>
               <div class="text-caption text-grey-6">或点击选择文件</div>
-              <div class="text-caption text-grey-5 q-mt-sm">支持 JPG, PNG, DICOM 格式</div>
+              <div class="text-caption text-grey-5 q-mt-sm">支持 JPG, PNG, TIFF, BMP 格式</div>
             </div>
             <input
               type="file"
               ref="fileInput"
               class="hidden"
-              accept=".jpg,.jpeg,.png,.dcm"
+              accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp"
               @change="handleFileUpload"
             />
           </q-card-section>

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { authAPI, userAPI } from 'src/services/api';
+import { getItem, removeItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -26,6 +27,8 @@ export const useAuthStore = defineStore('auth', {
     refreshToken: null as string | null,
     isAuthenticated: false,
     isAuthenticating: false,
+    // 标记是否已从本地存储初始化过（用于路由守卫避免刷新误判）
+    hasInitialized: false,
   }),
 
   getters: {
@@ -43,9 +46,10 @@ export const useAuthStore = defineStore('auth', {
       this.refreshToken = data.refreshToken;
       this.user = data.user;
       this.isAuthenticated = true;
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      this.hasInitialized = true;
+      setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
+      setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      setItem(STORAGE_KEYS.USER_INFO, data.user);
     },
 
     /**
@@ -54,7 +58,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async _handleAuthRequest(
       apiCall: () => Promise<any>,
-      defaultErrorMsg: string
+      defaultErrorMsg: string,
     ): Promise<{ success: boolean; error?: string }> {
       this.isAuthenticating = true;
       try {
@@ -75,16 +79,13 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async login(email: string, password: string) {
-      return this._handleAuthRequest(
-        () => authAPI.login(email, password),
-        '登录失败'
-      );
+      return this._handleAuthRequest(() => authAPI.login(email, password), '登录失败');
     },
 
     async employeeLogin(hospitalId: string, employeeId: string, password: string) {
       return this._handleAuthRequest(
         () => authAPI.employeeLogin(hospitalId, employeeId, password),
-        '工号登录失败'
+        '工号登录失败',
       );
     },
 
@@ -97,18 +98,12 @@ export const useAuthStore = defineStore('auth', {
       real_name?: string;
       phone?: string;
     }) {
-      return this._handleAuthRequest(
-        () => authAPI.register(userData),
-        '注册失败'
-      );
+      return this._handleAuthRequest(() => authAPI.register(userData), '注册失败');
     },
 
     // 短信验证码登录
     async smsLogin(phone: string, code: string) {
-      return this._handleAuthRequest(
-        () => authAPI.smsLogin(phone, code),
-        '短信登录失败'
-      );
+      return this._handleAuthRequest(() => authAPI.smsLogin(phone, code), '短信登录失败');
     },
 
     // 短信验证码注册
@@ -119,7 +114,7 @@ export const useAuthStore = defineStore('auth', {
     ) {
       return this._handleAuthRequest(
         () => authAPI.smsRegister(phone, code, userData),
-        '短信注册失败'
+        '短信注册失败',
       );
     },
 
@@ -139,7 +134,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await userAPI.getProfile();
         if (response.success) {
           this.user = response.data.user;
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          setItem(STORAGE_KEYS.USER_INFO, response.data.user);
         }
       } catch (error) {
         console.error('Failed to fetch user:', error);
@@ -148,16 +143,23 @@ export const useAuthStore = defineStore('auth', {
 
     // Initialize auth from localStorage
     initializeAuth() {
-      const token = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const userStr = localStorage.getItem('user');
+      const token = getItem<string>(STORAGE_KEYS.ACCESS_TOKEN);
+      const refreshToken = getItem<string>(STORAGE_KEYS.REFRESH_TOKEN);
+      const user = getItem<User>(STORAGE_KEYS.USER_INFO);
 
-      if (token && userStr) {
+      if (token && user && typeof user === 'object') {
         this.token = token;
         this.refreshToken = refreshToken;
-        this.user = JSON.parse(userStr);
+        this.user = user;
         this.isAuthenticated = true;
+      } else {
+        this.token = null;
+        this.refreshToken = null;
+        this.user = null;
+        this.isAuthenticated = false;
       }
+
+      this.hasInitialized = true;
     },
 
     // Method to set user data from existing token (e.g., on app initialization)
@@ -166,10 +168,11 @@ export const useAuthStore = defineStore('auth', {
       this.refreshToken = refreshToken;
       this.user = user;
       this.isAuthenticated = true;
+      this.hasInitialized = true;
 
-      localStorage.setItem('accessToken', token);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      setItem(STORAGE_KEYS.USER_INFO, user);
     },
 
     clearAuthData() {
@@ -178,9 +181,9 @@ export const useAuthStore = defineStore('auth', {
       this.refreshToken = null;
       this.isAuthenticated = false;
 
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      removeItem(STORAGE_KEYS.USER_INFO);
     },
   },
 });

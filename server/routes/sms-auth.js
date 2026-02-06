@@ -333,12 +333,12 @@ router.post('/register', async (req, res) => {
       }
     }
 
-    // 查找验证码（注意：登录/注册通用，都使用login类型）
+    // 查找验证码：兼容历史实现（登录/注册共用 login）与未来实现（register）
     const smsCode = await SmsCode.findOne({
       where: {
         phone,
         code,
-        type: 'login', // 登录/注册通用，都查找login类型
+        type: { [Op.in]: ['login', 'register'] },
         status: 'pending',
         expires_at: {
           [Op.gt]: new Date(),

@@ -4,10 +4,46 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
-const { Study, Patient, StudyImage, User, AnalysisTask, AnalysisResult } = require('../models');
+const {
+  Study,
+  Patient,
+  StudyImage,
+  User,
+  AnalysisTask,
+  AnalysisResult,
+  sequelize,
+} = require('../models');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+// 服务端根目录与上传目录
+const serverRootDir = path.resolve(__dirname, '..');
+const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
+
+/**
+ * 将数据库中存储的 file_path 解析为 uploads 目录下的绝对路径
+ * 仅允许解析到 uploads 目录，避免路径穿越造成误删/误读
+ * @param {string} storedPath 数据库中存储的路径（可能以 / 开头）
+ * @returns {string | null} 绝对路径；若解析失败返回 null
+ */
+function resolveUploadAbsolutePath(storedPath) {
+  if (!storedPath || typeof storedPath !== 'string') {
+    return null;
+  }
+
+  // 兼容历史数据：/uploads/... 与 uploads/... 两种形式
+  const trimmed = storedPath.replace(/^\/+/, '');
+  const absPath = path.resolve(serverRootDir, trimmed);
+
+  // 确保目标路径位于 uploads 目录下
+  const relativeToUploads = path.relative(uploadsRootDir, absPath);
+  if (relativeToUploads.startsWith('..') || path.isAbsolute(relativeToUploads)) {
+    return null;
+  }
+
+  return absPath;
+}
 
 // 配置multer用于影像文件上传
 const imageStorage = multer.diskStorage({
@@ -130,10 +166,16 @@ router.post('/', authenticate, async (req, res) => {
  * 上传影像文件
  */
 router.post('/:id/images', authenticate, uploadImages.array('images', 10), async (req, res) => {
+  let transaction;
   try {
-    const study = await Study.findByPk(req.params.id);
+    transaction = await sequelize.transaction();
+    const study = await Study.findByPk(req.params.id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
     if (!study) {
+      await transaction.rollback();
       // 清理已上传的文件
       if (req.files) {
         req.files.forEach((file) => fs.unlinkSync(file.path));
@@ -146,6 +188,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
 
     // 验证权限
     if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
+      await transaction.rollback();
       // 清理已上传的文件
       if (req.files) {
         req.files.forEach((file) => fs.unlinkSync(file.path));
@@ -157,6 +200,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     }
 
     if (!req.files || req.files.length === 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: '请上传影像文件',
@@ -165,19 +209,37 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
 
     // 保存影像信息到数据库
     const images = [];
-    for (const file of req.files) {
-      const image = await StudyImage.create({
-        study_id: study.id,
-        file_path: `/uploads/studies/${file.filename}`,
-        original_filename: file.originalname,
-        stored_filename: file.filename,
-        file_size: file.size,
-        mime_type: file.mimetype,
-        file_format: 'JPEG', // 默认格式
-      });
+    // 如果该病例还没有主图，则将本次上传的第一张图片设为主图
+    const existingPrimary = await StudyImage.findOne({
+      where: { study_id: study.id, is_primary: true },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    const shouldSetPrimary = !existingPrimary;
+
+    const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+    for (const [index, file] of uploadedFiles.entries()) {
+      const ext = path.extname(file.originalname).substring(1).toUpperCase();
+      const fileFormat = ext === 'JPG' ? 'JPEG' : ext || 'JPEG';
+      const isPrimary = shouldSetPrimary && index === 0;
+
+      const image = await StudyImage.create(
+        {
+          study_id: study.id,
+          file_path: `/uploads/studies/${file.filename}`,
+          original_filename: file.originalname,
+          stored_filename: file.filename,
+          file_size: file.size,
+          mime_type: file.mimetype,
+          file_format: fileFormat,
+          is_primary: isPrimary,
+        },
+        { transaction },
+      );
       images.push(image);
     }
 
+    await transaction.commit();
     res.json({
       success: true,
       message: `成功上传 ${images.length} 个影像文件`,
@@ -185,6 +247,9 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     });
   } catch (error) {
     console.error('上传影像错误:', error);
+    if (transaction) {
+      await transaction.rollback();
+    }
     // 清理已上传的文件
     if (req.files) {
       req.files.forEach((file) => {
@@ -517,13 +582,31 @@ router.delete('/:id/images/:imageId', authenticate, async (req, res) => {
     }
 
     // 删除文件
-    const filePath = path.join(__dirname, '..', image.file_path);
-    if (fs.existsSync(filePath)) {
+    const deletedWasPrimary = image.is_primary === true;
+    const filePath = resolveUploadAbsolutePath(image.file_path);
+    if (filePath && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
     // 删除数据库记录
     await image.destroy();
+
+    // 如果删除的是主图，尝试将最新一张图像设置为主图（避免后续任务找不到主图）
+    if (deletedWasPrimary) {
+      const remainingPrimary = await StudyImage.findOne({
+        where: { study_id: study.id, is_primary: true },
+      });
+
+      if (!remainingPrimary) {
+        const fallback = await StudyImage.findOne({
+          where: { study_id: study.id },
+          order: [['created_at', 'DESC']],
+        });
+        if (fallback) {
+          await fallback.update({ is_primary: true });
+        }
+      }
+    }
 
     res.json({
       success: true,

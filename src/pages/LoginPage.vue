@@ -122,14 +122,21 @@
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
               </div>
-              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+              <div
+                v-else-if="!captchaVerified"
+                class="text-caption text-orange text-center q-mt-xs"
+              >
                 请完成安全验证
               </div>
             </div>
           </q-form>
 
           <!-- 短信登录 -->
-          <q-form v-else-if="loginType === 'phone'" @submit.prevent="onSmsLogin" class="q-gutter-md">
+          <q-form
+            v-else-if="loginType === 'phone'"
+            @submit.prevent="onSmsLogin"
+            class="q-gutter-md"
+          >
             <q-input
               v-model="phone"
               outlined
@@ -227,7 +234,11 @@
           </q-form>
 
           <!-- 工号登录 -->
-          <q-form v-else-if="loginType === 'employee'" @submit="onEmployeeLogin" class="q-gutter-md">
+          <q-form
+            v-else-if="loginType === 'employee'"
+            @submit="onEmployeeLogin"
+            class="q-gutter-md"
+          >
             <q-select
               v-model="hospital"
               outlined
@@ -332,7 +343,10 @@
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
               </div>
-              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+              <div
+                v-else-if="!captchaVerified"
+                class="text-caption text-orange text-center q-mt-xs"
+              >
                 请完成安全验证
               </div>
             </div>
@@ -413,6 +427,8 @@ const onCaptchaSuccess = (token: string) => {
  * 验证码验证失败回调
  */
 const onCaptchaFail = (error: string) => {
+  // 避免第三方脚本在成功后再次回调失败，导致按钮“概率性置灰”
+  if (captchaVerified.value) return;
   captchaToken.value = '';
   captchaVerified.value = false;
   $q.notify({
@@ -645,7 +661,11 @@ const onEmployeeLogin = async () => {
   if (!hospital.value) return;
 
   try {
-    const result = await authStore.employeeLogin(hospital.value.id, employeeId.value, password.value);
+    const result = await authStore.employeeLogin(
+      hospital.value.id,
+      employeeId.value,
+      password.value,
+    );
 
     if (result.success) {
       $q.notify({

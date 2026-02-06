@@ -13,7 +13,12 @@
         <!-- 用户头像卡片 -->
         <q-card flat class="profile-card q-mb-lg">
           <q-card-section class="text-center q-pa-xl">
-            <q-avatar size="120px" class="q-mb-lg avatar-wrapper" color="primary" text-color="white">
+            <q-avatar
+              size="120px"
+              class="q-mb-lg avatar-wrapper"
+              color="primary"
+              text-color="white"
+            >
               <template v-if="avatarUrl">
                 <img :src="avatarUrl" alt="用户头像" />
               </template>
@@ -22,14 +27,20 @@
               </template>
             </q-avatar>
 
-            <div class="text-h5 text-weight-bold q-mb-sm">{{ user?.real_name || user?.username || '用户' }}</div>
+            <div class="text-h5 text-weight-bold q-mb-sm">
+              {{ user?.real_name || user?.username || '用户' }}
+            </div>
 
             <q-badge
-              :color="user?.role === 'admin' ? 'red' : user?.role === 'doctor' ? 'primary' : 'grey-6'"
+              :color="
+                user?.role === 'admin' ? 'red' : user?.role === 'doctor' ? 'primary' : 'grey-6'
+              "
               class="q-pa-sm"
               rounded
             >
-              {{ user?.role === 'doctor' ? '医生' : user?.role === 'admin' ? '管理员' : '普通用户' }}
+              {{
+                user?.role === 'doctor' ? '医生' : user?.role === 'admin' ? '管理员' : '普通用户'
+              }}
             </q-badge>
 
             <div class="q-mt-lg">
@@ -156,7 +167,7 @@
                       placeholder="example@email.com"
                       class="form-input"
                       :rules="[
-                        (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确'
+                        (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
                       ]"
                     >
                       <template v-slot:prepend>
@@ -173,9 +184,7 @@
                       placeholder="请输入手机号码"
                       class="form-input"
                       maxlength="11"
-                      :rules="[
-                        (val) => !val || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确'
-                      ]"
+                      :rules="[(val) => !val || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确']"
                     >
                       <template v-slot:prepend>
                         <q-icon name="phone" color="grey-6" />
@@ -211,12 +220,7 @@
 
                 <div class="row q-col-gutter-lg" v-if="user?.employee_id">
                   <div class="col-md-6 col-12">
-                    <q-field
-                      outlined
-                      label="工号"
-                      stack-label
-                      class="form-input readonly-field"
-                    >
+                    <q-field outlined label="工号" stack-label class="form-input readonly-field">
                       <template v-slot:prepend>
                         <q-icon name="badge" color="purple" />
                       </template>
@@ -332,7 +336,9 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-medium">修改密码</q-item-label>
-                  <q-item-label caption class="text-grey-6">定期更换密码以保护账户安全</q-item-label>
+                  <q-item-label caption class="text-grey-6"
+                    >定期更换密码以保护账户安全</q-item-label
+                  >
                 </q-item-section>
                 <q-item-section side>
                   <q-icon name="chevron_right" color="grey-5" />
@@ -379,7 +385,7 @@
               :type="showNewPwd ? 'text' : 'password'"
               :rules="[
                 (val) => !!val || '请输入新密码',
-                (val) => val.length >= 6 || '密码长度至少6位'
+                (val) => val.length >= 6 || '密码长度至少6位',
               ]"
               class="form-input"
             >
@@ -399,7 +405,7 @@
               :type="showConfirmPwd ? 'text' : 'password'"
               :rules="[
                 (val) => !!val || '请确认新密码',
-                (val) => val === passwordForm.newPassword || '两次输入的密码不一致'
+                (val) => val === passwordForm.newPassword || '两次输入的密码不一致',
               ]"
               class="form-input"
             >
@@ -413,8 +419,23 @@
             </q-input>
 
             <div class="row justify-end q-mt-lg q-pt-md">
-              <q-btn label="取消" flat color="grey-7" v-close-popup class="q-mr-md q-px-lg" rounded />
-              <q-btn label="确认修改" color="primary" type="submit" :loading="passwordLoading" rounded unelevated class="q-px-lg" />
+              <q-btn
+                label="取消"
+                flat
+                color="grey-7"
+                v-close-popup
+                class="q-mr-md q-px-lg"
+                rounded
+              />
+              <q-btn
+                label="确认修改"
+                color="primary"
+                type="submit"
+                :loading="passwordLoading"
+                rounded
+                unelevated
+                class="q-px-lg"
+              />
             </div>
           </q-form>
         </q-card-section>
@@ -429,6 +450,7 @@ import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/authStore';
 import { userAPI } from 'src/services/api';
 import { HOSPITALS, DEPARTMENTS } from 'src/constants/hospitals';
+import { setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
@@ -437,13 +459,13 @@ const user = computed(() => authStore.user);
 
 const currentHospital = computed(() => {
   if (!user.value?.hospital_id) return null;
-  return HOSPITALS.find(h => h.id === user.value?.hospital_id);
+  return HOSPITALS.find((h) => h.id === user.value?.hospital_id);
 });
 
 const currentDepartment = computed(() => {
   if (!user.value?.employee_id) return null;
   const deptCode = user.value.employee_id.substring(0, 2);
-  return DEPARTMENTS.find(d => d.code === deptCode);
+  return DEPARTMENTS.find((d) => d.code === deptCode);
 });
 
 const formattedRegisterDate = computed(() => {
@@ -500,7 +522,9 @@ const passwordForm = ref({
 });
 
 onMounted(async () => {
-  authStore.initializeAuth();
+  if (!authStore.hasInitialized) {
+    await authStore.initializeAuth();
+  }
   await loadUserData();
 });
 
@@ -535,7 +559,7 @@ const saveProfile = async () => {
 
     if (response.success) {
       authStore.user = response.data.user;
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      setItem(STORAGE_KEYS.USER_INFO, response.data.user);
       await loadUserData();
 
       $q.notify({

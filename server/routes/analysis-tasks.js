@@ -1,11 +1,75 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { AnalysisTask, AnalysisResult, Study, User, StudyImage } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
 
 const router = express.Router();
+
+// 服务端根目录与上传目录
+const serverRootDir = path.resolve(__dirname, '..');
+const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
+
+/**
+ * 将数据库中存储的 file_path 解析为 uploads 目录下的绝对路径
+ * 仅允许解析到 uploads 目录，避免路径穿越造成误读
+ * @param {string} storedPath 数据库中存储的路径（可能以 / 开头）
+ * @returns {string | null} 绝对路径；若解析失败返回 null
+ */
+function resolveUploadAbsolutePath(storedPath) {
+  if (!storedPath || typeof storedPath !== 'string') {
+    return null;
+  }
+
+  // 兼容历史数据：/uploads/... 与 uploads/... 两种形式
+  const trimmed = storedPath.replace(/^\/+/, '');
+  const absPath = path.resolve(serverRootDir, trimmed);
+
+  // 确保目标路径位于 uploads 目录下
+  const relativeToUploads = path.relative(uploadsRootDir, absPath);
+  if (relativeToUploads.startsWith('..') || path.isAbsolute(relativeToUploads)) {
+    return null;
+  }
+
+  return absPath;
+}
+
+/**
+ * 规范化任务状态（兼容历史值）
+ * - 允许值：PENDING/PROCESSING/SUCCESS/FAILED
+ * - 兼容值：running->PROCESSING, completed->SUCCESS, failed/cancelled->FAILED
+ * @param {unknown} inputStatus 状态输入
+ * @returns {'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | undefined}
+ */
+function normalizeTaskStatus(inputStatus) {
+  if (inputStatus === undefined || inputStatus === null) {
+    return undefined;
+  }
+
+  const normalized = String(inputStatus).trim().toUpperCase();
+  if (!normalized) {
+    return undefined;
+  }
+
+  switch (normalized) {
+    case 'PENDING':
+    case 'PROCESSING':
+    case 'SUCCESS':
+    case 'FAILED':
+      return normalized;
+    case 'RUNNING':
+      return 'PROCESSING';
+    case 'COMPLETED':
+      return 'SUCCESS';
+    case 'CANCELLED':
+    case 'CANCELED':
+      return 'FAILED';
+    default:
+      return undefined;
+  }
+}
 
 /**
  * POST /api/analysis-tasks
@@ -89,14 +153,30 @@ router.post('/', authenticate, async (req, res) => {
     (async () => {
       try {
         // 获取病例的原始图像
-        const studyImage = await StudyImage.findOne({
+        let studyImage = await StudyImage.findOne({
           where: { study_id: study.id, is_primary: true },
+          order: [['created_at', 'DESC']],
         });
 
+        // 兜底：历史数据可能没有 is_primary=true 的记录
+        if (!studyImage) {
+          studyImage = await StudyImage.findOne({
+            where: { study_id: study.id },
+            order: [['created_at', 'DESC']],
+          });
+        }
+
         if (studyImage && studyImage.file_path) {
-          // 构建绝对路径
-          const path = require('path');
-          const imagePath = path.join(__dirname, '..', studyImage.file_path);
+          // 解析为 uploads 目录下的绝对路径（兼容 /uploads/... 形式）
+          const imagePath = resolveUploadAbsolutePath(studyImage.file_path);
+          if (!imagePath) {
+            await task.update({
+              status: 'FAILED',
+              error_message: '图像路径解析失败，无法开始分析',
+              completed_at: new Date(),
+            });
+            return;
+          }
 
           console.log(
             `🚀 [POST /analysis-tasks] 触发后台分析: TaskID=${task.id}, Image=${imagePath}`,
@@ -118,11 +198,10 @@ router.post('/', authenticate, async (req, res) => {
     })();
   } catch (error) {
     console.error('创建分析任务错误:', error);
-    // Log error to file for debugging
-    const fs = require('fs');
-    const path = require('path');
-    const logPath = path.join(__dirname, '..', 'error.log');
-    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Create Task Error: ${error.stack}\n`);
+    // 参赛 core：不写入本地文件日志，避免同步 IO 阻塞
+    if (error && error.stack) {
+      console.error('创建分析任务错误堆栈:', error.stack);
+    }
 
     res.status(500).json({
       success: false,
@@ -277,10 +356,19 @@ router.put('/:id/status', authenticate, async (req, res) => {
     const updateData = {};
 
     if (status !== undefined) {
-      updateData.status = status;
-      if (status === 'running' && !task.started_at) {
+      const normalizedStatus = normalizeTaskStatus(status);
+      if (!normalizedStatus) {
+        return res.status(400).json({
+          success: false,
+          message: '任务状态不合法',
+        });
+      }
+
+      updateData.status = normalizedStatus;
+
+      if (normalizedStatus === 'PROCESSING' && !task.started_at) {
         updateData.started_at = new Date();
-      } else if (['completed', 'failed', 'cancelled'].includes(status)) {
+      } else if (['SUCCESS', 'FAILED'].includes(normalizedStatus)) {
         updateData.completed_at = new Date();
       }
     }
@@ -338,23 +426,63 @@ router.post('/:id/result', authenticate, async (req, res) => {
       });
     }
 
+    /**
+     * 兼容多版本的结果字段：
+     * - 新版（与 AnalysisResult 模型一致）：diagnosis / confidence / detailed_report
+     * - 旧版（历史字段）：primary_diagnosis / confidence_score / notes
+     */
     const {
       risk_level,
+      diagnosis,
+      confidence,
+      detailed_report,
+      raw_output,
+      // 旧字段兼容
       confidence_score,
       primary_diagnosis,
+      detailedReport,
+      notes,
+      // 通用字段
       recommendations,
       biomarkers,
       suspicious_areas,
-      notes,
     } = req.body;
 
+    const finalDiagnosis = diagnosis || primary_diagnosis;
+    const confidenceRaw = confidence ?? confidence_score;
+    const finalDetailedReport = detailed_report || detailedReport || notes || null;
+
+    const normalizeConfidence = (value) => {
+      const num = typeof value === 'number' ? value : Number(value);
+      if (!Number.isFinite(num)) return null;
+      // 兼容 0-100 百分比输入（仅允许整数百分比）
+      if (num > 1) {
+        if (num < 0 || num > 100 || !Number.isInteger(num)) return null;
+        return num / 100;
+      }
+      if (num < 0 || num > 1) return null;
+      return num;
+    };
+
     // 验证必填字段
-    if (!risk_level || confidence_score === undefined) {
+    if (!risk_level || confidenceRaw === undefined || !finalDiagnosis) {
       return res.status(400).json({
         success: false,
-        message: '风险等级和置信度为必填项',
+        message: '风险等级、诊断结论、置信度为必填项',
       });
     }
+
+    const finalConfidence = normalizeConfidence(confidenceRaw);
+    if (finalConfidence === null) {
+      return res.status(400).json({
+        success: false,
+        message: '置信度格式不正确（应为 0-1 小数或 0-100 百分比）',
+      });
+    }
+
+    const finalRecommendations = Array.isArray(recommendations) ? recommendations : [];
+    const finalBiomarkers = biomarkers && typeof biomarkers === 'object' ? biomarkers : null;
+    const finalSuspiciousAreas = Array.isArray(suspicious_areas) ? suspicious_areas : null;
 
     // 检查是否已存在结果
     const existingResult = await AnalysisResult.findOne({
@@ -365,13 +493,23 @@ router.post('/:id/result', authenticate, async (req, res) => {
       // 更新现有结果
       await existingResult.update({
         risk_level,
-        confidence_score,
-        primary_diagnosis,
-        recommendations,
-        biomarkers,
-        suspicious_areas,
-        notes,
+        diagnosis: finalDiagnosis,
+        confidence: finalConfidence,
+        recommendations: finalRecommendations,
+        biomarkers: finalBiomarkers,
+        suspicious_areas: finalSuspiciousAreas,
+        detailed_report: finalDetailedReport,
+        raw_output: raw_output && typeof raw_output === 'object' ? raw_output : null,
       });
+
+      // 同步任务状态（避免结果已写入但任务仍是非终态）
+      if (task.status !== 'SUCCESS') {
+        await task.update({
+          status: 'SUCCESS',
+          progress: 100,
+          completed_at: task.completed_at || new Date(),
+        });
+      }
 
       res.json({
         success: true,
@@ -382,18 +520,20 @@ router.post('/:id/result', authenticate, async (req, res) => {
       // 创建新结果
       const result = await AnalysisResult.create({
         task_id: task.id,
+        study_id: task.study_id,
         risk_level,
-        confidence_score,
-        primary_diagnosis,
-        recommendations,
-        biomarkers,
-        suspicious_areas,
-        notes,
+        diagnosis: finalDiagnosis,
+        confidence: finalConfidence,
+        recommendations: finalRecommendations,
+        biomarkers: finalBiomarkers,
+        suspicious_areas: finalSuspiciousAreas,
+        detailed_report: finalDetailedReport,
+        raw_output: raw_output && typeof raw_output === 'object' ? raw_output : null,
       });
 
       // 更新任务状态为已完成
       await task.update({
-        status: 'completed',
+        status: 'SUCCESS',
         progress: 100,
         completed_at: new Date(),
       });

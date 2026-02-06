@@ -944,6 +944,7 @@ import { ref, onMounted } from 'vue';
 import { useQuasar, date } from 'quasar';
 import { paymentAPI, userAPI } from 'src/services/api';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
+import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 const $q = useQuasar();
 
@@ -1216,7 +1217,7 @@ const handleSubscribe = (planType: 'monthly' | 'yearly') => {
 // 处理套餐包购买
 const handlePackagePurchase = (packageType: string, originalAmount: number) => {
   const packages: Record<string, { planName: string; credits: string }> = {
-    'test': { planName: '测试套餐', credits: '1次AI分析' },
+    test: { planName: '测试套餐', credits: '1次AI分析' },
     'package-10': { planName: '10次套餐包', credits: '10次AI分析' },
     'package-30': { planName: '30次套餐包', credits: '30次AI分析' },
     'package-50': { planName: '50次套餐包', credits: '50次AI分析' },
@@ -1292,7 +1293,7 @@ const processPayment = async () => {
 
 // 保存AI配置
 const saveAIConfig = () => {
-  localStorage.setItem('ai_engine_config', JSON.stringify(apiConfig.value));
+  setItem(STORAGE_KEYS.AI_CONFIG, apiConfig.value);
   $q.notify({
     type: 'positive',
     message: 'AI引擎配置已保存',
@@ -1317,7 +1318,7 @@ const resetAIConfig = () => {
 
 // 保存用户偏好
 const savePreferences = () => {
-  localStorage.setItem('user_preferences', JSON.stringify(preferences.value));
+  setItem(STORAGE_KEYS.USER_PREFERENCES, preferences.value);
   $q.notify({
     type: 'positive',
     message: '偏好设置已保存',
@@ -1328,22 +1329,14 @@ const savePreferences = () => {
 
 // 加载保存的配置
 const loadSavedConfig = () => {
-  const savedAIConfig = localStorage.getItem('ai_engine_config');
-  if (savedAIConfig) {
-    try {
-      apiConfig.value = JSON.parse(savedAIConfig);
-    } catch (e) {
-      console.error('加载AI配置失败:', e);
-    }
+  const savedAIConfig = getItem<typeof apiConfig.value>(STORAGE_KEYS.AI_CONFIG);
+  if (savedAIConfig && typeof savedAIConfig === 'object') {
+    apiConfig.value = { ...apiConfig.value, ...savedAIConfig };
   }
 
-  const savedPreferences = localStorage.getItem('user_preferences');
-  if (savedPreferences) {
-    try {
-      preferences.value = JSON.parse(savedPreferences);
-    } catch (e) {
-      console.error('加载偏好设置失败:', e);
-    }
+  const savedPreferences = getItem<typeof preferences.value>(STORAGE_KEYS.USER_PREFERENCES);
+  if (savedPreferences && typeof savedPreferences === 'object') {
+    preferences.value = { ...preferences.value, ...savedPreferences };
   }
 };
 

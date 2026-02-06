@@ -74,7 +74,7 @@
               <input
                 ref="fileInputRef"
                 type="file"
-                accept=".jpg,.jpeg,.png,.tiff"
+                accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp"
                 class="hidden"
                 @change="onFileChange"
               />
@@ -439,6 +439,33 @@ const clearFile = () => {
   }
 };
 
+/**
+ * 获取有效的患者业务编号（patient_id）
+ */
+const resolvePatientBusinessId = async (): Promise<string | null> => {
+  if (!selectedPatient.value) return null;
+  const directId = selectedPatient.value.patientId?.trim();
+  if (directId) {
+    return directId;
+  }
+
+  if (!selectedPatient.value.id) {
+    return null;
+  }
+
+  try {
+    const refreshed = await patientStore.loadPatientById(selectedPatient.value.id, true);
+    if (refreshed?.patientId?.trim()) {
+      selectedPatient.value = refreshed;
+      return refreshed.patientId.trim();
+    }
+  } catch (error) {
+    console.error('❌ [UploadPage] 刷新患者信息失败:', error);
+  }
+
+  return null;
+};
+
 // 上传并分析
 const uploadAndAnalyze = async () => {
   if (!selectedFile.value) {
@@ -455,6 +482,16 @@ const uploadAndAnalyze = async () => {
     $q.notify({
       type: 'warning',
       message: '请先选择患者',
+      position: 'top',
+    });
+    return;
+  }
+
+  const resolvedPatientId = await resolvePatientBusinessId();
+  if (!resolvedPatientId) {
+    $q.notify({
+      type: 'warning',
+      message: '患者编号缺失，请刷新患者信息后重试',
       position: 'top',
     });
     return;
@@ -484,7 +521,8 @@ const uploadAndAnalyze = async () => {
     const response = await uploadImage({
       image: selectedFile.value,
       patientName: selectedPatient.value.name,
-      patientId: String(selectedPatient.value.id),
+      // /api/analyze 使用 patient_id（业务号），不是数据库自增 id
+      patientId: resolvedPatientId,
       studyDate: studyInfo.value.studyDate,
       modality: studyInfo.value.modality,
       description: studyInfo.value.description,

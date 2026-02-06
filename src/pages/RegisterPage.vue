@@ -25,7 +25,9 @@
               option-label="name"
               option-value="id"
               label="所属医院（工号注册时必填）"
-              :rules="[(val) => (val || (!department && !entryYear && !sequenceNumber)) || '请选择所属医院']"
+              :rules="[
+                (val) => val || (!department && !entryYear && !sequenceNumber) || '请选择所属医院',
+              ]"
             >
               <template v-slot:prepend>
                 <q-icon name="local_hospital" />
@@ -65,7 +67,10 @@
                   mask="####"
                   :rules="[
                     (val) => !val || val.length === 4 || '4位年份',
-                    (val) => !val || (parseInt(val) > 1900 && parseInt(val) <= new Date().getFullYear()) || '无效年份'
+                    (val) =>
+                      !val ||
+                      (parseInt(val) > 1900 && parseInt(val) <= new Date().getFullYear()) ||
+                      '无效年份',
                   ]"
                 />
               </div>
@@ -79,7 +84,8 @@
                 />
               </div>
               <div class="col-12 q-mb-md text-caption text-grey">
-                预览工号: {{ department ? department.code : 'XX' }}{{ entryYear || 'YYYY' }}{{ sequenceNumber || 'NN' }}
+                预览工号: {{ department ? department.code : 'XX' }}{{ entryYear || 'YYYY'
+                }}{{ sequenceNumber || 'NN' }}
               </div>
             </div>
 
@@ -117,7 +123,10 @@
               lazy-rules
               :rules="[
                 (val) =>
-                  !val || val.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
+                  !val ||
+                  val.length === 0 ||
+                  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ||
+                  '邮箱格式不正确',
               ]"
             >
               <template v-slot:prepend>
@@ -274,7 +283,10 @@
               <div v-if="!agreeTerms" class="text-caption text-orange text-center q-mt-xs">
                 请先同意用户协议和隐私政策
               </div>
-              <div v-else-if="!captchaVerified" class="text-caption text-orange text-center q-mt-xs">
+              <div
+                v-else-if="!captchaVerified"
+                class="text-caption text-orange text-center q-mt-xs"
+              >
                 请完成安全验证
               </div>
             </div>
@@ -399,9 +411,7 @@ const onEmailCaptchaSuccess = async () => {
     }
   } catch (error: unknown) {
     console.error('发送邮箱验证码失败:', error);
-    const errorMessage = error instanceof Error
-      ? error.message
-      : '发送验证码失败，请稍后重试';
+    const errorMessage = error instanceof Error ? error.message : '发送验证码失败，请稍后重试';
     $q.notify({
       type: 'negative',
       message: errorMessage,
@@ -454,6 +464,8 @@ const onCaptchaSuccess = (token: string) => {
  * 验证码验证失败回调
  */
 const onCaptchaFail = (error: string) => {
+  // 避免第三方脚本在成功后再次回调失败，导致按钮“概率性置灰”
+  if (captchaVerified.value) return;
   captchaToken.value = '';
   captchaVerified.value = false;
   $q.notify({

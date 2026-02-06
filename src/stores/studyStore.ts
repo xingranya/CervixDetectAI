@@ -4,8 +4,21 @@ import { studyAPI, analysisTaskAPI } from 'src/services/api';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const SERVER_BASE_URL = API_BASE_URL.replace('/api', '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+/**
+ * 计算静态资源的服务端基础地址
+ */
+const getServerBaseUrl = (apiBaseUrl: string): string => {
+  if (!apiBaseUrl) return '';
+  const apiIndex = apiBaseUrl.indexOf('/api');
+  if (apiIndex === -1) {
+    return apiBaseUrl.replace(/\/$/, '');
+  }
+  return apiBaseUrl.slice(0, apiIndex);
+};
+
+const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
 /**
  * 将相对路径转换为完整URL
@@ -17,7 +30,8 @@ function getImageUrl(filePath: string | undefined): string | undefined {
     return filePath;
   }
   // 否则拼接服务器地址
-  return `${SERVER_BASE_URL}${filePath}`;
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${SERVER_BASE_URL}${normalizedPath}`;
 }
 
 export interface Study {
@@ -39,8 +53,8 @@ export interface Study {
   created_at: string;
   taskId?: string; // Backend task ID for tracking
   // 新增字段：报告中心所需
-  downloaded?: boolean; // 报告是否已下载
-  downloaded_at?: string; // 首次下载时间
+  downloaded?: boolean; // 报告是否已下载（后端可能未落库/可能为空）
+  downloaded_at?: string; // 首次下载时间（后端可能未落库/可能为空）
   diagnosis?: string; // 诊断结果（来自 analysisResult）
   riskLevel?: 'low' | 'medium' | 'high' | 'critical'; // 风险等级（来自 analysisResult）
 }

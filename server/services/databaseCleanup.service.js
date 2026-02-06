@@ -29,7 +29,9 @@ class DatabaseCleanupService {
    */
   async cleanupCodes() {
     try {
-      const cutoffDate = new Date(Date.now() - CLEANUP_CONFIG.codeRetentionDays * 24 * 60 * 60 * 1000);
+      const cutoffDate = new Date(
+        Date.now() - CLEANUP_CONFIG.codeRetentionDays * 24 * 60 * 60 * 1000,
+      );
 
       // 清理邮箱验证码
       const emailDeleted = await EmailCode.destroy({
@@ -54,7 +56,9 @@ class DatabaseCleanupService {
       const totalDeleted = emailDeleted + smsDeleted;
 
       if (totalDeleted > 0) {
-        console.log(`[DatabaseCleanup] 清理验证码记录: 邮箱 ${emailDeleted} 条, 短信 ${smsDeleted} 条`);
+        console.log(
+          `[DatabaseCleanup] 清理验证码记录: 邮箱 ${emailDeleted} 条, 短信 ${smsDeleted} 条`,
+        );
       }
 
       return { emailDeleted, smsDeleted, total: totalDeleted };
@@ -69,14 +73,16 @@ class DatabaseCleanupService {
    */
   async cleanupOldTasks() {
     try {
-      const cutoffDate = new Date(Date.now() - CLEANUP_CONFIG.taskRetentionDays * 24 * 60 * 60 * 1000);
+      const cutoffDate = new Date(
+        Date.now() - CLEANUP_CONFIG.taskRetentionDays * 24 * 60 * 60 * 1000,
+      );
 
       const deleted = await AnalysisTask.destroy({
         where: {
           created_at: {
             [Op.lt]: cutoffDate,
           },
-          status: ['completed', 'failed'], // 仅清理已完成或失败的任务
+          status: { [Op.in]: ['SUCCESS', 'FAILED'] }, // 仅清理已完成或失败的任务
         },
         limit: CLEANUP_CONFIG.batchSize,
       });

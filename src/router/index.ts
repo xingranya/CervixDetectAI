@@ -35,17 +35,22 @@ export default defineRouter(function (/* { store, ssrContext } */) {
   });
 
   // Global authentication guard
-  Router.beforeEach((to, from, next) => {
+  Router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
-    
+
+    // 刷新页面时，路由守卫可能先于 App.vue 执行，导致误判未登录
+    if (!authStore.hasInitialized) {
+      await authStore.initializeAuth();
+    }
+
     // If route requires authentication
-    if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (to.matched.some((record) => record.meta.requiresAuth)) {
       // Check if user is authenticated
       if (!authStore.isAuthenticated) {
         // Redirect to login page
         next({
           path: '/login',
-          query: { redirect: to.fullPath }
+          query: { redirect: to.fullPath },
         });
       } else {
         // User is authenticated, proceed

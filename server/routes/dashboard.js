@@ -74,7 +74,21 @@ router.get('/stats', authenticate, async (req, res) => {
           risk_level: {
             [Op.in]: ['high', 'critical'],
           },
+          ...(isAdmin ? {} : { '$study.user_id$': userId }),
         },
+        // 非管理员按用户口径过滤（避免统计全局数据导致不一致）
+        include: isAdmin
+          ? []
+          : [
+              {
+                model: Study,
+                as: 'study',
+                attributes: [],
+                required: true,
+              },
+            ],
+        distinct: true,
+        col: 'id',
       });
     } catch (error) {
       console.error('获取高风险病例数失败:', error.message);
@@ -146,6 +160,17 @@ router.get('/stats', authenticate, async (req, res) => {
     try {
       const riskDistribution = await AnalysisResult.findAll({
         attributes: ['diagnosis'],
+        where: isAdmin ? {} : { '$study.user_id$': userId },
+        include: isAdmin
+          ? []
+          : [
+              {
+                model: Study,
+                as: 'study',
+                attributes: [],
+                required: true,
+              },
+            ],
       });
 
       // 统计各诊断类型数量
@@ -233,7 +258,7 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
           },
         ],
         order: [['created_at', 'DESC']],
-        limit: 3,  // 限制最新3条记录
+        limit: 3, // 限制最新3条记录
       });
     } else {
       // 普通用户：查询自己创建的任务 OR 关联到自己study的任务
@@ -246,8 +271,8 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
             required: false,
             where: {
               [Op.or]: [
-                { user_id: userId },  // study属于该用户
-                { id: { [Op.ne]: null } },  // 或者只要有study就显示（宽松模式）
+                { user_id: userId }, // study属于该用户
+                { id: { [Op.ne]: null } }, // 或者只要有study就显示（宽松模式）
               ],
             },
             include: [
@@ -262,17 +287,17 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         ],
         where: {
           [Op.or]: [
-            { user_id: userId },  // 任务属于该用户
-            { '$study.user_id$': userId },  // 或者study属于该用户
+            { user_id: userId }, // 任务属于该用户
+            { '$study.user_id$': userId }, // 或者study属于该用户
           ],
         },
         order: [['created_at', 'DESC']],
-        limit: 3,  // 限制最新3条记录
+        limit: 3, // 限制最新3条记录
       });
     }
 
     console.log('【历史任务】查询结果数量:', historyTasks.length);
-    
+
     // 如果结果为空且是普通用户，尝试查询所有任务（调试用）
     if (historyTasks.length === 0 && !isAdmin) {
       console.log('【历史任务】未找到用户任务，尝试查询所有任务（调试）');
@@ -300,7 +325,7 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         console.log('【历史任务】第一条任务的user_id:', allTasks[0].user_id);
         console.log('【历史任务】第一条任务的study_id:', allTasks[0].study_id);
         console.log('【历史任务】第一条任务的study.user_id:', allTasks[0].study?.user_id);
-        
+
         // 尝试修复null的user_id：如果任务的user_id为null但有study关联，则显示所有任务
         console.log('【历史任务】检测到任务user_id为null，尝试显示所有有效任务');
         historyTasks = allTasks;
@@ -309,7 +334,7 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
 
     // 格式化任务数据
     const formattedTasks = historyTasks
-      .filter((task) => task.study)  // 过滤掉没有关联 study 的任务
+      .filter((task) => task.study) // 过滤掉没有关联 study 的任务
       .map((task) => {
         let statusText = '已完成';
         let icon = 'check_circle';
@@ -329,10 +354,10 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         }
 
         return {
-          id: task.id,  // 数据库主键ID
-          taskId: task.task_id,  // 任务唯一标识符
-          studyId: task.study.id,  // 病例数据库ID
-          studyUniqueId: task.study.study_id,  // 病例唯一标识符
+          id: task.id, // 数据库主键ID
+          taskId: task.task_id, // 任务唯一标识符
+          studyId: task.study.id, // 病例数据库ID
+          studyUniqueId: task.study.study_id, // 病例唯一标识符
           title: `患者${task.study.patient?.name || '未知'}风险评估报告 - ${statusText}`,
           description: `患者ID：${task.study.patient?.patient_id || '未知'} | 提交时间：${new Date(task.created_at).toLocaleString('zh-CN')}`,
           icon: icon,
@@ -360,14 +385,14 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
     console.error('【历史任务】获取历史任务错误:', error);
     console.error('【历史任务】错误详情:', error.message);
     console.error('【历史任务】错误堆栈:', error.stack);
-    
+
     // 如果数据库查询失败，返回空数组而非500错误
     res.json({
       success: true,
       data: {
         tasks: [],
       },
-      error: error.message,  // 返回错误信息用于前端调试
+      error: error.message, // 返回错误信息用于前端调试
     });
   }
 });

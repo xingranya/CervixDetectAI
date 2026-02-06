@@ -13,7 +13,8 @@ const router = express.Router();
  */
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, real_name, phone, hospital_id, employee_id, emailCode } = req.body;
+    const { username, email, password, real_name, phone, hospital_id, employee_id, emailCode } =
+      req.body;
 
     // 基础验证：邮箱和工号至少需要一个
     if ((!email && !employee_id) || !password) {
@@ -187,14 +188,8 @@ router.post('/login', async (req, res) => {
     }
 
     // 检查账号状态
-    if (user.status === 'inactive') {
-      return res.status(403).json({
-        success: false,
-        message: '账号未激活',
-      });
-    }
-
-    if (user.status === 'suspended') {
+    // User.status 枚举为 active/disabled；兼容历史值 inactive/suspended
+    if (user.status === 'disabled' || user.status === 'inactive' || user.status === 'suspended') {
       return res.status(403).json({
         success: false,
         message: '账号已被禁用',

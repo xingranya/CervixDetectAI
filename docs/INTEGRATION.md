@@ -13,7 +13,17 @@
 - **Content-Type**: `application/json`
 - **认证方式**: Bearer Token (JWT)
 
-### 2.2 报告中心 (Reports)
+### 2.2 现状与偏差说明（必读）
+
+- **真实已联通的核心链路**：
+  - **病例管理链路**：`POST /api/studies` → `POST /api/studies/:id/images` → `POST /api/analysis-tasks`
+  - **快捷上传链路**（UploadPage 使用）：`POST /api/analyze`（可匿名）→ `GET /api/analyze/:taskId` 轮询
+- **当前仍为演示/Mock 的模块**：
+  - **报告中心**：后端 `server/routes/reports.js` 为 Mock 数据；前端 PDF 由 `src/utils/pdfGenerator.ts`（`html2canvas + jspdf`）在浏览器端生成。
+  - **系统设置**：`/api/settings/*` 为演示数据，不保证持久化。
+- **统一返回格式**：后端多数接口返回 `{ success: boolean, message?: string, data?: any, error?: string }`，不使用 `{ error: string }` 单一格式。
+
+### 2.3 报告中心 (Reports)（当前为 Mock）
 
 #### 获取报告列表
 
@@ -35,7 +45,7 @@
 - **Body**: `Partial<Report>`
 - **Response**: `Report`
 
-### 2.3 系统设置 (Settings)
+### 2.4 系统设置 (Settings)（当前为演示数据）
 
 #### 获取用户列表
 
@@ -69,7 +79,7 @@
 - **Endpoint**: `GET /settings/ai-model`
 - **Response**: `AIModelInfo`
 
-### 2.4 数据库监控 (System)
+### 2.5 数据库监控 (System)
 
 #### 获取数据库指标
 
@@ -151,12 +161,14 @@ interface DbMetrics {
 
 ## 4. 联调注意事项
 
-1.  **Mock 数据**: 目前后端使用内存 Mock 数据，重启服务器后数据会重置。
-2.  **文件上传**: 影像上传接口 `/api/studies/upload` 仅支持 `.jpg`, `.png`, `.dcm` 格式。
+1.  **Mock 数据**: 目前后端仅 `reports/settings` 使用 Mock/演示数据；`patients/studies/analysis-tasks` 等为数据库数据。
+2.  **文件上传**:
+    - 病例影像上传：`POST /api/studies/:id/images`（保存到 `server/uploads/studies/`）
+    - 快捷上传：`POST /api/analyze`（保存到 `server/uploads/`）
 3.  **实时同步**:
     - 数据库监控页面每 5 秒轮询一次 `/api/system/db-metrics`。
     - 影像分析进度通过前端模拟轮询实现，实际生产环境应使用 WebSocket。
-4.  **错误处理**: 所有 API 均返回标准错误格式 `{ error: string }`，前端需统一处理。
+4.  **错误处理**: 推荐以 `success=false` 与 `message/error` 字段为准，前端统一提示即可。
 
 ## 5. 测试计划
 

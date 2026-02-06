@@ -22,7 +22,15 @@
     <div v-if="error" class="captcha-error q-mt-sm">
       <q-icon name="error_outline" color="negative" size="18px" />
       <span class="q-ml-xs text-negative text-caption">{{ error }}</span>
-      <q-btn flat dense size="sm" color="primary" label="重试" @click="initCaptcha" class="q-ml-sm" />
+      <q-btn
+        flat
+        dense
+        size="sm"
+        color="primary"
+        label="重试"
+        @click="initCaptcha"
+        class="q-ml-sm"
+      />
     </div>
   </div>
 </template>
@@ -82,6 +90,9 @@ const loading = ref(true);
 const error = ref('');
 const captchaInstance = ref<unknown>(null);
 const captchaElementId = `captcha-element-${props.instanceId}`;
+const lastVerifyParam = ref('');
+const hasSucceeded = ref(false);
+const captchaSessionId = ref(0);
 
 // 全局配置声明
 declare global {
@@ -102,9 +113,7 @@ const loadCaptchaScript = (): Promise<void> => {
     }
 
     // 检查是否正在加载
-    const existingScript = document.querySelector(
-      `script[src="${CAPTCHA_CONFIG.scriptUrl}"]`,
-    );
+    const existingScript = document.querySelector(`script[src="${CAPTCHA_CONFIG.scriptUrl}"]`);
     if (existingScript) {
       existingScript.addEventListener('load', () => resolve());
       existingScript.addEventListener('error', () => reject(new Error('验证码脚本加载失败')));
@@ -124,11 +133,32 @@ const loadCaptchaScript = (): Promise<void> => {
 };
 
 /**
+ * 统一规范化验证码 token
+ */
+const normalizeToken = (token: unknown): string => {
+  return typeof token === 'string' ? token.trim() : '';
+};
+
+/**
+ * 判断回调是否仍属于当前会话
+ */
+const isActiveSession = (sessionId: number): boolean => {
+  return sessionId === captchaSessionId.value;
+};
+
+/**
  * 初始化验证码
  */
-const initCaptcha = async () => {
+const initCaptcha = async (options?: { keepSession?: boolean } | Event) => {
+  const keepSession =
+    !!options &&
+    typeof options === 'object' &&
+    'keepSession' in options &&
+    (options as { keepSession?: boolean }).keepSession === true;
   loading.value = true;
   error.value = '';
+  lastVerifyParam.value = '';
+  hasSucceeded.value = false;
 
   try {
     // 1. 加载脚本
@@ -144,6 +174,49 @@ const initCaptcha = async () => {
 
     // 使用传入的 sceneId 或默认值
     const sceneIdToUse = props.sceneId || CAPTCHA_CONFIG.scene;
+
+    const sessionId = keepSession ? captchaSessionId.value : (captchaSessionId.value += 1);
+
+    const onCaptchaVerify = (captchaVerifyParam: string) => {
+      if (!isActiveSession(sessionId)) {
+        return {
+          captchaResult: false,
+          bizResult: false,
+          captchaVerifyParam: '',
+        };
+      }
+
+      const safeParam = normalizeToken(captchaVerifyParam);
+      lastVerifyParam.value = safeParam;
+      if (!safeParam) {
+        emitFailIfNotSucceeded('验证失败，请重试', sessionId);
+        return {
+          captchaResult: false,
+          bizResult: false,
+          captchaVerifyParam: '',
+        };
+      }
+
+      // 兜底：部分场景 onBizResultCallback 可能不触发，这里先上报一次成功
+      emitSuccessOnce(safeParam, sessionId);
+      // 返回验证参数，由父组件处理后端验证
+      return {
+        captchaResult: true,
+        bizResult: true,
+        captchaVerifyParam: safeParam,
+      };
+    };
+
+    const onBizResult = (bizResult: boolean, captchaVerifyParam: string) => {
+      if (!isActiveSession(sessionId)) return;
+
+      if (bizResult) {
+        const token = normalizeToken(captchaVerifyParam) || lastVerifyParam.value;
+        emitSuccessOnce(token, sessionId);
+      } else {
+        emitFailIfNotSucceeded('验证失败，请重试', sessionId);
+      }
+    };
 
     const instance = await window.initAliyunCaptcha({
       SceneId: sceneIdToUse,
@@ -175,34 +248,41 @@ const initCaptcha = async () => {
 };
 
 /**
- * 验证码验证回调
+ * 仅在首次成功时向父组件上报，避免第三方脚本重复回调导致状态来回切换
  */
-const onCaptchaVerify = (captchaVerifyParam: string) => {
-  // 返回验证参数，由父组件处理后端验证
-  return {
-    captchaResult: true,
-    bizResult: true,
-    captchaVerifyParam,
-  };
+const emitSuccessOnce = (token: string, sessionId: number) => {
+  if (!isActiveSession(sessionId) || hasSucceeded.value) return;
+  const safeToken = normalizeToken(token);
+  if (!safeToken) return;
+  hasSucceeded.value = true;
+  emit('success', safeToken);
 };
 
 /**
- * 业务结果回调
+ * 若已成功通过，则忽略后续失败回调，避免按钮状态“概率性置灰”
  */
-const onBizResult = (bizResult: boolean, captchaVerifyParam: string) => {
-  if (bizResult) {
-    emit('success', captchaVerifyParam);
-  } else {
-    emit('fail', '验证失败，请重试');
-  }
+const emitFailIfNotSucceeded = (message: string, sessionId: number) => {
+  if (!isActiveSession(sessionId) || hasSucceeded.value) return;
+  emit('fail', message);
 };
 
 /**
  * 重置验证码
  */
 const reset = () => {
-  if (captchaInstance.value && typeof (captchaInstance.value as { reset?: () => void }).reset === 'function') {
+  hasSucceeded.value = false;
+  lastVerifyParam.value = '';
+  // 标记新的会话，忽略旧回调
+  captchaSessionId.value += 1;
+  if (
+    captchaInstance.value &&
+    typeof (captchaInstance.value as { reset?: () => void }).reset === 'function'
+  ) {
     (captchaInstance.value as { reset: () => void }).reset();
+  }
+
+  if (props.visible) {
+    void initCaptcha({ keepSession: true });
   }
 };
 
@@ -210,7 +290,10 @@ const reset = () => {
  * 手动触发验证
  */
 const verify = () => {
-  if (captchaInstance.value && typeof (captchaInstance.value as { verify?: () => void }).verify === 'function') {
+  if (
+    captchaInstance.value &&
+    typeof (captchaInstance.value as { verify?: () => void }).verify === 'function'
+  ) {
     (captchaInstance.value as { verify: () => void }).verify();
   }
 };

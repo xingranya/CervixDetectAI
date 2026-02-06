@@ -5,6 +5,8 @@ import type { TaskStatusResponse } from 'src/services/apiService';
 export interface SuspiciousArea {
   box_2d?: number[];
   description?: string;
+  location?: string;
+  features?: string[];
 }
 
 export interface AnalysisResult {
@@ -12,11 +14,7 @@ export interface AnalysisResult {
   confidence: number;
   recommendations: string[];
   suspiciousAreas?: SuspiciousArea[];
-  biomarkers?: {
-    HPV: string;
-    p16: string;
-    Ki67: string;
-  };
+  biomarkers?: Record<string, string>;
   detailedReport?: string;
 }
 
@@ -159,20 +157,54 @@ export const useAnalysisStore = defineStore('analysis', {
     convertApiResult(apiResult: TaskStatusResponse['result']): AnalysisResult | undefined {
       if (!apiResult) return undefined;
 
-      // 将 string[] 转换为 SuspiciousArea[]
+      const confidence =
+        typeof apiResult.confidence === 'number'
+          ? apiResult.confidence
+          : Number(apiResult.confidence) || 0;
+
+      // 兼容两种可疑区域格式：
+      // 1) string[]：仅描述文本
+      // 2) object[]：包含 description/location/box_2d/features 等字段
       const suspiciousAreas: SuspiciousArea[] | undefined = apiResult.suspiciousAreas
-        ? apiResult.suspiciousAreas.map((desc: string) => ({
-            description: desc,
-            // API 返回的是描述文本，没有坐标信息
-            // box_2d 将在后端返回实际坐标时添加
-          }))
+        ? apiResult.suspiciousAreas
+            .map((item): SuspiciousArea | null => {
+              if (typeof item === 'string') {
+                return { description: item };
+              }
+              if (item && typeof item === 'object') {
+                const obj = item as {
+                  description?: unknown;
+                  location?: unknown;
+                  box_2d?: unknown;
+                  features?: unknown;
+                };
+
+                const area: SuspiciousArea = {};
+                if (typeof obj.description === 'string') area.description = obj.description;
+                if (typeof obj.location === 'string') area.location = obj.location;
+                if (Array.isArray(obj.box_2d) && obj.box_2d.every((n) => typeof n === 'number')) {
+                  area.box_2d = obj.box_2d;
+                }
+                if (
+                  Array.isArray(obj.features) &&
+                  obj.features.every((f) => typeof f === 'string')
+                ) {
+                  area.features = obj.features;
+                }
+
+                // 至少有一个字段才返回
+                return Object.keys(area).length > 0 ? area : null;
+              }
+              return null;
+            })
+            .filter((area): area is SuspiciousArea => area !== null)
         : undefined;
 
       // 使用展开运算符，只有当值存在时才添加可选属性
       return {
         diagnosis: apiResult.diagnosis,
-        confidence: apiResult.confidence,
-        recommendations: apiResult.recommendations,
+        confidence,
+        recommendations: apiResult.recommendations || [],
         ...(suspiciousAreas && { suspiciousAreas }),
         ...(apiResult.biomarkers && { biomarkers: apiResult.biomarkers }),
         ...(apiResult.detailedReport && { detailedReport: apiResult.detailedReport }),

@@ -19,6 +19,17 @@ export interface UploadImageResponse {
   estimatedTime: number;
 }
 
+/**
+ * 后端可疑区域数据结构（Qwen 输出）
+ * - 兼容历史：部分接口可能只返回字符串描述数组
+ */
+export interface ApiSuspiciousArea {
+  description?: string;
+  location?: string;
+  box_2d?: number[];
+  features?: string[];
+}
+
 export interface TaskStatusResponse {
   taskId: string;
   studyId: string;
@@ -28,14 +39,11 @@ export interface TaskStatusResponse {
   result?: {
     diagnosis: string;
     confidence: number;
-    suspiciousAreas: string[];
-    biomarkers: {
-      HPV: string;
-      p16: string;
-      Ki67: string;
-    };
-    recommendations: string[];
-    detailedReport: string;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    suspiciousAreas?: Array<string | ApiSuspiciousArea>;
+    biomarkers?: Record<string, string>;
+    recommendations?: string[];
+    detailedReport?: string;
   };
   error?: string;
 }

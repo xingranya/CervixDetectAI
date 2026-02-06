@@ -21,6 +21,12 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, '..', 'uploads');
+    // 确保目录存在（避免首次部署/清理后上传失败）
+    try {
+      require('fs').mkdirSync(uploadDir, { recursive: true });
+    } catch (e) {
+      return cb(e);
+    }
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -32,11 +38,18 @@ const storage = multer.diskStorage({
 
 // 文件过滤器
 const fileFilter = (req, file, cb) => {
-  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff'];
+  const allowedMimes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/tiff',
+    'image/bmp',
+    'image/x-ms-bmp',
+  ];
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('不支持的文件格式。请上传JPG、PNG或TIFF格式的图像。'), false);
+    cb(new Error('不支持的文件格式。请上传JPG、PNG、TIFF或BMP格式的图像。'), false);
   }
 };
 
@@ -45,7 +58,8 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: parseInt(process.env.MAX_IMAGE_SIZE) || 10485760, // 10MB
+    // 与前端/病例上传保持一致，默认 20MB（可用环境变量覆盖）
+    fileSize: parseInt(process.env.MAX_IMAGE_SIZE) || 20 * 1024 * 1024, // 20MB
   },
 });
 

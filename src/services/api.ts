@@ -1,77 +1,10 @@
 import axios from 'axios';
-import { handleError } from 'src/utils/errorHandler';
+import apiClient from 'src/services/apiClient';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 
-// API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-
-// Create axios instance
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor to add token
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-// Response interceptor to handle errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // If token expired, try to refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
-
-          localStorage.setItem('accessToken', data.data.accessToken);
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.data.accessToken}`;
-
-          // Update the authorization header for the retried request
-          originalRequest.headers['Authorization'] = `Bearer ${data.data.accessToken}`;
-
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-
-          handleError(refreshError, '登录已过期，请重新登录');
-
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        }
-      }
-    }
-
-    // Use unified error handler
-    handleError(error);
-
-    return Promise.reject(error);
-  },
-);
+// API Base URL（用于部分无需认证接口与日志输出）
+const API_BASE_URL = apiClient.defaults.baseURL || import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Auth API
 export const authAPI = {
@@ -148,7 +81,11 @@ export const authAPI = {
     return data;
   },
 
-  async verifyEmailCode(email: string, code: string, type: 'register' | 'reset_password' = 'register') {
+  async verifyEmailCode(
+    email: string,
+    code: string,
+    type: 'register' | 'reset_password' = 'register',
+  ) {
     const { data } = await apiClient.post('/auth/email/verify', { email, code, type });
     return data;
   },
@@ -387,8 +324,7 @@ export const paymentAPI = {
   createOrder: (planType: string, paymentMethod: string) =>
     apiClient.post('/payment/create', { planType, paymentMethod }),
 
-  getOrderStatus: (outTradeNo: string) =>
-    apiClient.get(`/payment/status/${outTradeNo}`),
+  getOrderStatus: (outTradeNo: string) => apiClient.get(`/payment/status/${outTradeNo}`),
 
   // 公开接口，不需要认证
   checkOrderStatus: (outTradeNo: string) =>
