@@ -6,14 +6,14 @@
     transition-hide="slide-down"
   >
     <q-toolbar class="justify-center">
-      <div class="row items-center q-gutter-sm text-caption">
+      <div class="row items-center text-caption app-footer__content">
         <span>© 2026 CervixDetectAI 云端智诊</span>
-        <span>|</span>
+        <span class="app-footer__separator">|</span>
         <a
           href="https://beian.miit.gov.cn/"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-grey-6"
+          class="text-grey-6 app-footer__link"
           style="text-decoration: none"
         >
           鄂ICP备2026006203号-2
@@ -22,6 +22,32 @@
     </q-toolbar>
   </q-footer>
 </template>
+
+<style scoped>
+.app-footer__content {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.app-footer__link {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .app-footer__content {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .app-footer__separator {
+    display: none;
+  }
+}
+</style>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
