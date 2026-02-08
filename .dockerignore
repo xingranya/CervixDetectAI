@@ -1,0 +1,10 @@
+node_modules
+server/node_modules
+dist
+server/uploads
+server/reports
+.git
+.vscode
+.env
+server/.env
+npm-debug.log

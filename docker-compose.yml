@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: cervix_detect_app
+    build: .
+    restart: always
+    ports:
+      - "4000:4000"
+    # 加载 server/.env 文件中的环境变量 (API Key, 邮件配置等)
+    env_file:
+      - ./server/.env
+    environment:
+      # 覆盖 .env 中的部分配置以适配 Docker 环境
+      - NODE_ENV=production
+      - DB_HOST=mysql_db
+      - DB_SYNC=true  # 确保容器启动时同步表结构
+    depends_on:
+      - mysql_db
+    volumes:
+      - ./server/uploads:/app/server/uploads
+      - ./server/reports:/app/server/reports
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: cervix_detect_db
+    restart: always
+    environment:
+      # 使用与 server/.env 中一致的密码
+      - MYSQL_ROOT_PASSWORD=xingran8
+      - MYSQL_DATABASE=cervix_detect_ai
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=xingran8
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  mysql_data:

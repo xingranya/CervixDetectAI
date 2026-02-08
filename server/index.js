@@ -25,7 +25,8 @@ const swaggerUi = require('swagger-ui-express');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-const openapiPath = path.resolve(__dirname, '..', 'docs', 'openapi.yaml');
+// OpenAPI 文档路径（放在 server/docs 目录下，方便部署）
+const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
 
 // 确保必要的目录存在
 const uploadDir = path.join(__dirname, process.env.UPLOAD_DIR || 'uploads');
@@ -78,7 +79,28 @@ app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/payment', paymentRouter);
 
-// Swagger UI (load YAML from static endpoint)
+// --- 新增：静态资源托管 (Docker/全栈部署模式) ---
+const distPath = path.join(__dirname, '../dist/spa');
+
+if (fs.existsSync(distPath)) {
+  console.log(`📦 静态资源托管开启: ${distPath}`);
+  // 1. 托管静态文件 (CSS, JS, Fonts, Images)
+  app.use(express.static(distPath));
+
+  // 2. 处理 SPA 前端路由 (所有非 API 请求都返回 index.html)
+  app.get('*', (req, res, next) => {
+    // 如果是 API 请求但没匹配到上面的路由，跳过（交给 404 处理）
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/reports')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  console.log('⚠️ 未找到前端构建产物，仅运行 API 服务');
+}
+// -----------------------
+
+// 错误处理中间件
 app.get('/openapi.yaml', (req, res) => {
   res.sendFile(openapiPath);
 });
