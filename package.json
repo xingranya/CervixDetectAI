@@ -17,7 +17,6 @@
   "dependencies": {
     "@alicloud/dypnsapi20170525": "^2.0.0",
     "@quasar/extras": "^1.16.4",
-    "agent-ui-annotation": "^0.2.0",
     "axios": "^1.2.1",
     "echarts": "^5.4.3",
     "html2canvas": "^1.4.1",
@@ -33,7 +32,9 @@
     "@types/node": "^20.5.9",
     "@vue/eslint-config-prettier": "^10.1.0",
     "@vue/eslint-config-typescript": "^14.4.0",
+    "agent-ui-annotation": "^0.6.1",
     "autoprefixer": "^10.4.2",
+    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.14.0",
     "eslint-plugin-vue": "^10.4.0",
     "globals": "^16.4.0",

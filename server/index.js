@@ -41,6 +41,16 @@ if (!fs.existsSync(reportsDir)) {
 }
 
 // 中间件
+// 生产环境安全头设置
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+  });
+}
+
 const defaultCorsOrigins = [
   'http://localhost:9000',
   'http://localhost:9001',
@@ -79,8 +89,10 @@ app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/payment', paymentRouter);
 
-// --- 新增：静态资源托管 (Docker/全栈部署模式) ---
-const distPath = path.join(__dirname, '../dist/spa');
+// 使用环境变量配置前端构建路径，便于服务器部署
+const distPath = process.env.FRONTEND_DIST_PATH 
+  ? path.resolve(process.env.FRONTEND_DIST_PATH)
+  : path.join(__dirname, '../../dist/spa');
 
 if (fs.existsSync(distPath)) {
   console.log(`📦 静态资源托管开启: ${distPath}`);
@@ -88,11 +100,7 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
   // 2. 处理 SPA 前端路由 (所有非 API 请求都返回 index.html)
-  app.get('*', (req, res, next) => {
-    // 如果是 API 请求但没匹配到上面的路由，跳过（交给 404 处理）
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/reports')) {
-      return next();
-    }
+  app.get(/^(?!\/(api|uploads|reports)).*$/, (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
@@ -148,10 +156,12 @@ app.listen(PORT, async () => {
   console.log(`🚀 CervixDetectAI 后端服务已启动`);
   console.log(`📡 服务地址: http://localhost:${PORT}`);
   console.log(`🏥 API基础路径: http://localhost:${PORT}/api`);
+  console.log(`📁 前端资源路径: ${distPath}`);
   console.log(`💾 上传目录: ${uploadDir}`);
   console.log(`📄 报告目录: ${reportsDir}`);
-  console.log(`🤖 通义千问模型: ${process.env.QWEN_MODEL}`);
-
+  console.log(`🤖 通义千问模型: ${process.env.QWEN_MODEL || '未配置'}`);
+  console.log(`🔧 运行环境: ${process.env.NODE_ENV || 'development'}`);
+  
   // 测试数据库连接
   try {
     await testConnection();

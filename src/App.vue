@@ -2,15 +2,17 @@
   <router-view />
 
   <!-- 仅在开发环境渲染标注工具 -->
-  <DevAnnotationTool v-if="isDev" />
+  <Suspense v-if="isDev">
+    <DevAnnotationTool />
+  </Suspense>
 </template>
 
 <script setup lang="ts">
 import { defineAsyncComponent, onMounted } from 'vue';
 import { useAuthStore } from 'stores/authStore';
 
-// Quasar 中 process.env.DEV 是布尔值，构建时会被静态替换
-const isDev = process.env.DEV;
+// 使用 import.meta.env 获取 Vite 环境变量
+const isDev = import.meta.env.DEV;
 
 const authStore = useAuthStore();
 
