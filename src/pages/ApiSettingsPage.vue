@@ -248,67 +248,335 @@
           </q-card-section>
         </q-card>
 
-        <!-- 服务偏好设置 -->
+        <!-- 服务偏好设置 (UI优化版) -->
         <q-card flat bordered>
           <q-card-section>
-            <div class="text-h6 q-mb-md">服务偏好设置</div>
-            <q-form class="q-gutter-md">
-              <div class="q-gutter-sm">
-                <q-toggle v-model="preferences.enableNotification" label="启用智能提醒" left-label>
-                  <q-tooltip>分析完成后通过系统通知提醒您</q-tooltip>
-                </q-toggle>
-                <div class="text-caption text-grey-6 q-ml-md">
-                  分析完成、报告生成、订阅到期等重要事件的实时提醒
+            <div class="row items-center justify-between q-mb-md">
+              <div class="text-h6">
+                <q-icon name="tune" color="primary" class="q-mr-sm" />
+                服务偏好设置
+              </div>
+              <q-btn flat round icon="restart_alt" color="grey-7" size="sm" @click="resetPreferences">
+                <q-tooltip>恢复默认设置</q-tooltip>
+              </q-btn>
+            </div>
+
+            <div class="row q-col-gutter-lg">
+              <!-- 左列：通知与分析 -->
+              <div class="col-12 col-md-6">
+                <div class="text-subtitle2 text-primary q-mb-sm">
+                  <q-icon name="notifications" class="q-mr-xs" />
+                  智能通知中心
                 </div>
+                <q-list separator class="rounded-borders bg-grey-1">
+                  <q-item tag="label" v-ripple>
+                    <q-item-section>
+                      <q-item-label>启用全渠道通知</q-item-label>
+                      <q-item-label caption>分析完成、异常预警等重要消息</q-item-label>
+                    </q-item-section>
+                    <q-item-section side top>
+                      <q-toggle v-model="preferences.notifications.enable" color="primary" />
+                    </q-item-section>
+                  </q-item>
+
+                  <q-slide-transition>
+                    <div v-show="preferences.notifications.enable">
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label class="text-caption text-grey-7 q-mb-xs"
+                            >通知渠道</q-item-label
+                          >
+                          <div class="q-gutter-sm">
+                            <q-checkbox
+                              v-model="preferences.notifications.channels"
+                              val="email"
+                              label="邮件"
+                              dense
+                              size="sm"
+                            />
+                            <q-checkbox
+                              v-model="preferences.notifications.channels"
+                              val="sms"
+                              label="短信"
+                              dense
+                              size="sm"
+                            />
+                            <q-checkbox
+                              v-model="preferences.notifications.channels"
+                              val="browser"
+                              label="浏览器推送"
+                              dense
+                              size="sm"
+                            />
+                            <q-checkbox
+                              v-model="preferences.notifications.channels"
+                              val="wechat"
+                              label="微信服务号"
+                              dense
+                              size="sm"
+                            />
+                          </div>
+                        </q-item-section>
+                      </q-item>
+
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label class="text-caption text-grey-7 q-mb-xs"
+                            >接收内容</q-item-label
+                          >
+                          <q-select
+                            v-model="preferences.notifications.types"
+                            multiple
+                            filled
+                            dense
+                            options-dense
+                            emit-value
+                            map-options
+                            :options="[
+                              { label: '分析完成报告', value: 'analysis' },
+                              { label: '高风险病变预警', value: 'alert' },
+                              { label: '系统安全通知', value: 'security' },
+                              { label: '周度/月度汇总', value: 'report' },
+                              { label: '营销与优惠', value: 'marketing' },
+                            ]"
+                            label="选择通知类型"
+                          >
+                            <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                              <q-item v-bind="itemProps">
+                                <q-item-section>
+                                  <q-item-label>{{ opt.label }}</q-item-label>
+                                </q-item-section>
+                                <q-item-section side>
+                                  <q-toggle
+                                    :model-value="selected"
+                                    @update:model-value="toggleOption(opt)"
+                                  />
+                                </q-item-section>
+                              </q-item>
+                            </template>
+                          </q-select>
+                        </q-item-section>
+                      </q-item>
+
+                      <q-item tag="label" v-ripple>
+                        <q-item-section>
+                          <q-item-label>免打扰模式</q-item-label>
+                          <q-item-label caption>夜间 (22:00 - 08:00) 仅接收紧急预警</q-item-label>
+                        </q-item-section>
+                        <q-item-section side>
+                          <q-toggle
+                            v-model="preferences.notifications.dndMode"
+                            color="indigo"
+                            icon="nightlight"
+                          />
+                        </q-item-section>
+                      </q-item>
+                    </div>
+                  </q-slide-transition>
+                </q-list>
+
+                <div class="text-subtitle2 text-primary q-mt-md q-mb-sm">
+                  <q-icon name="science" class="q-mr-xs" />
+                  分析与诊断习惯
+                </div>
+                <q-card flat bordered class="bg-grey-1">
+                  <q-card-section class="q-pa-sm">
+                    <q-toggle
+                      v-model="preferences.analysis.autoStart"
+                      label="上传后自动开始分析"
+                      dense
+                      class="q-mb-sm"
+                    />
+                    <q-toggle
+                      v-model="preferences.analysis.aiSecondOpinion"
+                      label="启用AI第二诊疗意见"
+                      dense
+                      color="purple"
+                    />
+
+                    <q-separator class="q-my-sm" />
+
+                    <div class="row q-col-gutter-sm">
+                      <div class="col-6">
+                        <q-select
+                          v-model="preferences.analysis.roiStyle"
+                          filled
+                          dense
+                          options-dense
+                          emit-value
+                          map-options
+                          label="病灶标记样式"
+                          :options="[
+                            { label: '矩形框 (Box)', value: 'box' },
+                            { label: '轮廓遮罩 (Mask)', value: 'mask' },
+                            { label: '热力图 (Heatmap)', value: 'heatmap' },
+                            { label: '混合显示 (Hybrid)', value: 'hybrid' },
+                          ]"
+                        />
+                      </div>
+                      <div class="col-6">
+                        <q-select
+                          v-model="preferences.analysis.heatmapColor"
+                          filled
+                          dense
+                          options-dense
+                          emit-value
+                          map-options
+                          label="热力图配色"
+                          :options="[
+                            { label: '经典红蓝 (Jet)', value: 'jet' },
+                            { label: '医学灰阶 (Gray)', value: 'gray' },
+                            { label: '警告红黄 (Hot)', value: 'hot' },
+                            { label: '荧光绿 (Viridis)', value: 'viridis' },
+                          ]"
+                        />
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
               </div>
 
-              <div class="q-gutter-sm q-mt-md">
-                <q-toggle
-                  v-model="preferences.enableReportHistory"
-                  label="启用报告历史保存"
-                  left-label
-                >
-                  <q-tooltip>永久保存所有分析报告</q-tooltip>
-                </q-toggle>
-                <div class="text-caption text-grey-6 q-ml-md">
-                  自动保存所有历史报告，支持随时查看和下载
+              <!-- 右列：报告、隐私与订阅 -->
+              <div class="col-12 col-md-6">
+                <div class="text-subtitle2 text-primary q-mb-sm">
+                  <q-icon name="assignment" class="q-mr-xs" />
+                  报告与导出配置
                 </div>
-              </div>
+                <q-list separator class="rounded-borders bg-grey-1">
+                  <q-item>
+                    <q-item-section>
+                      <q-item-label>自动保存历史记录</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-toggle v-model="preferences.reports.autoSave" color="green" />
+                    </q-item-section>
+                  </q-item>
 
-              <div class="q-gutter-sm q-mt-md">
-                <q-toggle v-model="preferences.autoRenewal" label="自动续费" left-label>
-                  <q-tooltip>订阅到期时自动续费</q-tooltip>
-                </q-toggle>
-                <div class="text-caption text-grey-6 q-ml-md">
-                  订阅到期前自动续费，确保服务不中断
+                  <q-item>
+                    <q-item-section>
+                      <div class="row q-col-gutter-sm">
+                        <div class="col-6">
+                          <q-select
+                            v-model="preferences.reports.defaultFormat"
+                            filled
+                            dense
+                            label="默认导出格式"
+                            :options="[
+                              { label: 'PDF 专业版', value: 'pdf_pro' },
+                              { label: 'PDF 精简版', value: 'pdf_lite' },
+                              { label: 'Word 文档', value: 'docx' },
+                              { label: 'Excel 数据表', value: 'xlsx' },
+                            ]"
+                          />
+                        </div>
+                        <div class="col-6">
+                          <q-select
+                            v-model="preferences.reports.imageQuality"
+                            filled
+                            dense
+                            label="影像存档质量"
+                            :options="[
+                              { label: '无损原始图 (RAW)', value: 'lossless' },
+                              { label: '高质量 (High)', value: 'high' },
+                              { label: '标准压缩 (Standard)', value: 'standard' },
+                            ]"
+                          />
+                        </div>
+                      </div>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item>
+                    <q-item-section>
+                      <q-input
+                        v-model="preferences.reports.watermarkText"
+                        filled
+                        dense
+                        label="自定义报告水印"
+                        placeholder="例如: 仅供内部参考"
+                      >
+                        <template v-slot:append>
+                          <q-toggle v-model="preferences.reports.watermark" dense color="teal" />
+                        </template>
+                      </q-input>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+
+                <div class="text-subtitle2 text-primary q-mt-md q-mb-sm">
+                  <q-icon name="security" class="q-mr-xs" />
+                  隐私与安全
                 </div>
-              </div>
+                <q-card flat bordered class="bg-grey-1">
+                  <q-card-section class="q-pa-sm">
+                    <div class="row items-center justify-between q-mb-sm">
+                      <div class="text-body2">患者敏感信息脱敏</div>
+                      <q-toggle v-model="preferences.privacy.desensitization" color="red" dense />
+                    </div>
+                    <div class="text-caption text-grey-7 q-mb-sm">
+                      在导出报告和演示模式中自动隐藏患者姓名、身份证号
+                    </div>
 
-              <q-input
-                v-model="preferences.reportPreference"
-                outlined
-                type="textarea"
-                label="报告偏好设置（可选）"
-                hint="自定义报告中希望特别关注的内容和展示方式"
-                rows="3"
-                class="q-mt-md"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="description" />
-                </template>
-              </q-input>
+                    <q-separator class="q-my-sm" />
 
-              <div class="row q-mt-md">
-                <q-space />
-                <q-btn
-                  unelevated
-                  color="primary"
-                  label="保存偏好"
-                  no-caps
-                  @click="savePreferences"
+                    <div class="row items-center justify-between">
+                      <div class="text-body2">敏感操作二次验证</div>
+                      <q-toggle v-model="preferences.privacy.mfa" color="orange" dense />
+                    </div>
+                  </q-card-section>
+                </q-card>
+
+                <div class="text-subtitle2 text-primary q-mt-md q-mb-sm">
+                  <q-icon name="account_balance_wallet" class="q-mr-xs" />
+                  订阅与账单
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-6">
+                    <q-card flat bordered class="bg-grey-1">
+                      <q-card-section class="q-pa-sm row items-center justify-between">
+                        <div class="text-body2">自动续费</div>
+                        <q-toggle v-model="preferences.billing.autoRenewal" color="primary" dense />
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                  <div class="col-6">
+                    <q-card flat bordered class="bg-grey-1">
+                      <q-card-section class="q-pa-sm row items-center justify-between">
+                        <div class="text-body2">余额预警</div>
+                        <q-toggle
+                          v-model="preferences.billing.lowBalanceAlert"
+                          color="warning"
+                          dense
+                        />
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                </div>
+                <q-input
+                  v-if="preferences.billing.lowBalanceAlert"
+                  v-model.number="preferences.billing.threshold"
+                  filled
+                  dense
+                  type="number"
+                  label="预警阈值 (元)"
+                  class="q-mt-sm"
+                  prefix="¥"
                 />
               </div>
-            </q-form>
+            </div>
+
+            <div class="row q-mt-lg">
+              <q-space />
+              <q-btn
+                unelevated
+                color="primary"
+                label="保存所有偏好设置"
+                icon="save"
+                no-caps
+                @click="savePreferences"
+                class="full-width-xs"
+              />
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -583,33 +851,121 @@
               <q-icon name="workspace_premium" color="purple" class="q-mr-sm" />
               资质认证
             </div>
+
+            <!-- 软著展示 (置顶优化) -->
+            <div class="q-gutter-y-sm q-mb-md">
+              <div
+                class="bg-purple-1 rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
+              >
+                <div class="row items-center relative-position" style="z-index: 1">
+                  <q-icon name="verified" color="purple" size="sm" class="q-mr-sm col-auto" />
+                  <div class="col">
+                    <div
+                      class="text-subtitle2 text-purple-9 text-weight-bold"
+                      style="line-height: 1.2"
+                    >
+                      宫颈智能阅片与分级管理系统
+                      <q-badge color="purple-3" text-color="purple-9" class="q-ml-xs" align="top"
+                        >V1.0.0</q-badge
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="row q-mt-xs text-caption text-purple-8 q-pl-lg relative-position"
+                  style="z-index: 1"
+                >
+                  <div class="col-12 row items-center" style="line-height: 1.5">
+                    <span class="q-mr-sm text-weight-bold opacity-70">登记号</span>
+                    <span class="text-weight-medium">2026SR0224083</span>
+                  </div>
+                  <div class="col-12 row items-center" style="line-height: 1.5">
+                    <span class="q-mr-sm text-weight-bold opacity-70">证书号</span>
+                    <span class="text-weight-medium">软著登字第17438364号</span>
+                  </div>
+                </div>
+                <!-- 装饰背景 -->
+                <q-icon
+                  name="copyright"
+                  class="absolute-bottom-right text-purple-2"
+                  size="48px"
+                  style="bottom: -12px; right: -8px; transform: rotate(-15deg)"
+                />
+              </div>
+
+              <div
+                class="bg-purple-1 rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
+              >
+                <div class="row items-center relative-position" style="z-index: 1">
+                  <q-icon name="verified" color="purple" size="sm" class="q-mr-sm col-auto" />
+                  <div class="col">
+                    <div
+                      class="text-subtitle2 text-purple-9 text-weight-bold"
+                      style="line-height: 1.2"
+                    >
+                      宫颈护航智能辅助筛查系统
+                      <q-badge color="purple-3" text-color="purple-9" class="q-ml-xs" align="top"
+                        >V1.0.0</q-badge
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="row q-mt-xs text-caption text-purple-8 q-pl-lg relative-position"
+                  style="z-index: 1"
+                >
+                  <div class="col-12 row items-center" style="line-height: 1.5">
+                    <span class="q-mr-sm text-weight-bold opacity-70">登记号</span>
+                    <span class="text-weight-medium">2026SR0207339</span>
+                  </div>
+                  <div class="col-12 row items-center" style="line-height: 1.5">
+                    <span class="q-mr-sm text-weight-bold opacity-70">证书号</span>
+                    <span class="text-weight-medium">软著登字第17421620号</span>
+                  </div>
+                </div>
+                <!-- 装饰背景 -->
+                <q-icon
+                  name="copyright"
+                  class="absolute-bottom-right text-purple-2"
+                  size="48px"
+                  style="bottom: -12px; right: -8px; transform: rotate(-15deg)"
+                />
+              </div>
+            </div>
+
+            <q-separator spaced />
+
             <q-list dense>
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon color="positive" name="check_circle" />
+              <q-item class="q-px-none">
+                <q-item-section avatar style="min-width: 32px">
+                  <q-icon color="positive" name="check_circle" size="xs" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption class="text-body2"> NMPA三类医疗器械认证 </q-item-label>
+                  <q-item-label caption class="text-body2 text-grey-8">
+                    NMPA三类医疗器械认证
+                  </q-item-label>
                 </q-item-section>
               </q-item>
 
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon color="positive" name="check_circle" />
+              <q-item class="q-px-none">
+                <q-item-section avatar style="min-width: 32px">
+                  <q-icon color="positive" name="check_circle" size="xs" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption class="text-body2">
+                  <q-item-label caption class="text-body2 text-grey-8">
                     ISO 13485医疗器械质量管理体系
                   </q-item-label>
                 </q-item-section>
               </q-item>
 
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon color="positive" name="check_circle" />
+              <q-item class="q-px-none">
+                <q-item-section avatar style="min-width: 32px">
+                  <q-icon color="positive" name="check_circle" size="xs" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption class="text-body2"> 国家重点研发计划项目支持 </q-item-label>
+                  <q-item-label caption class="text-body2 text-grey-8">
+                    国家重点研发计划项目支持
+                  </q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -1048,10 +1404,34 @@ const modelOptions = [
 
 // 用户偏好设置
 const preferences = ref({
-  enableNotification: true,
-  enableReportHistory: true,
-  autoRenewal: false,
-  reportPreference: '',
+  notifications: {
+    enable: true,
+    channels: ['email', 'browser'] as string[],
+    types: ['analysis', 'alert', 'security'] as string[],
+    dndMode: false,
+  },
+  analysis: {
+    autoStart: true,
+    aiSecondOpinion: false,
+    roiStyle: 'box',
+    heatmapColor: 'jet',
+  },
+  reports: {
+    autoSave: true,
+    defaultFormat: { label: 'PDF 专业版', value: 'pdf_pro' },
+    imageQuality: { label: '高质量 (High)', value: 'high' },
+    watermark: false,
+    watermarkText: '',
+  },
+  privacy: {
+    desensitization: true,
+    mfa: false,
+  },
+  billing: {
+    autoRenewal: false,
+    lowBalanceAlert: true,
+    threshold: 50,
+  },
 });
 
 // 订阅状态信息
@@ -1324,6 +1704,45 @@ const savePreferences = () => {
     message: '偏好设置已保存',
     position: 'top',
     icon: 'check_circle',
+  });
+};
+
+// 重置用户偏好为默认值
+const resetPreferences = () => {
+  preferences.value = {
+    notifications: {
+      enable: true,
+      channels: ['email', 'browser'],
+      types: ['analysis', 'alert', 'security'],
+      dndMode: false,
+    },
+    analysis: {
+      autoStart: true,
+      aiSecondOpinion: false,
+      roiStyle: 'box',
+      heatmapColor: 'jet',
+    },
+    reports: {
+      autoSave: true,
+      defaultFormat: { label: 'PDF 专业版', value: 'pdf_pro' },
+      imageQuality: { label: '高质量 (High)', value: 'high' },
+      watermark: false,
+      watermarkText: '',
+    },
+    privacy: {
+      desensitization: true,
+      mfa: false,
+    },
+    billing: {
+      autoRenewal: false,
+      lowBalanceAlert: true,
+      threshold: 50,
+    },
+  };
+  $q.notify({
+    type: 'info',
+    message: '已恢复默认偏好设置',
+    position: 'top',
   });
 };
 
