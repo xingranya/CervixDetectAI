@@ -1,0 +1,228 @@
+// 设计令牌系统 (Design Tokens)
+// 使用 --app-* 前缀确保命名隔离，这些变量默认惰性，只有被显式引用才会生效
+
+:root {
+  // 语义化颜色
+  --app-bg-primary: #ffffff;
+  --app-bg-secondary: #f8fafc;
+  --app-bg-tertiary: #f1f5f9;
+  --app-surface: #ffffff;
+  --app-text-primary: #1e293b;
+  --app-text-secondary: #64748b;
+  --app-text-tertiary: #94a3b8;
+  --app-border-default: #e2e8f0;
+  --app-border-light: #f1f5f9;
+  --app-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --app-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+
+  // 间距
+  --app-space-xs: 4px;
+  --app-space-sm: 8px;
+  --app-space-md: 16px;
+  --app-space-lg: 24px;
+  --app-space-xl: 32px;
+
+  // 圆角
+  --app-radius-sm: 4px;
+  --app-radius-md: 8px;
+  --app-radius-lg: 12px;
+  --app-radius-xl: 16px;
+
+  // 过渡
+  --app-transition-fast: 0.15s ease;
+  --app-transition-normal: 0.2s ease;
+
+  // 医学诊断颜色
+  --app-diagnosis-normal: #86efac;
+  --app-diagnosis-ascus: #fde047;
+  --app-diagnosis-lsil: #fdba74;
+  --app-diagnosis-hsil: #f87171;
+  --app-diagnosis-scc: #dc2626;
+
+  // 趋势 / 链接 / 主色弱化背景
+  --app-trend-negative: #ef4444;
+  --app-link-color: #1976d2;
+  --app-primary-soft-bg: #e3f2fd;
+
+  // Dashboard 专用
+  --app-dashboard-page-bg: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+  --app-dashboard-banner-bg: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  --app-dashboard-banner-border: #90caf9;
+  --app-dashboard-banner-text: #0b4f7f;
+
+  // Quasar 组件覆盖令牌
+  --app-card-bg: #ffffff;
+  --app-page-bg: #f8fafc;
+  --app-separator-color: #e2e8f0;
+  --app-item-hover-bg: rgba(0, 0, 0, 0.04);
+  --app-field-control-color: #1e293b;
+  --app-field-label-color: #64748b;
+  --app-field-border-color: #cbd5e1;
+  --app-field-border-hover: #94a3b8;
+  --app-table-bg: #ffffff;
+  --app-table-header-color: #64748b;
+  --app-table-hover-bg: rgba(0, 0, 0, 0.02);
+  --app-table-footer-color: #64748b;
+  --app-chip-bg: #f1f5f9;
+  --app-dialog-bg: #ffffff;
+
+  // 通用背景色令牌（替代硬编码）
+  --app-bg-white: #ffffff;
+  --app-bg-grey-1: #f8fafc;
+  --app-bg-grey-2: #f1f5f9;
+  --app-bg-grey-3: #e2e8f0;
+  --app-bg-blue-1: #e0f2fe;
+  --app-bg-blue-2: #bae6fd;
+  --app-bg-green-1: #dcfce7;
+  --app-bg-green-2: #bbf7d0;
+  --app-bg-red-1: #fee2e2;
+  --app-bg-orange-1: #ffedd5;
+  --app-bg-purple-1: #f3e8ff;
+  --app-bg-teal-1: #ccfbf1;
+  --app-bg-cyan-1: #cffafe;
+  --app-bg-amber-1: #fef3c7;
+  --app-bg-blue-50: #f0f9ff;
+  --app-bg-grey-50: #f8fafc;
+
+  // 文字颜色令牌
+  --app-text-dark: #1e293b;
+  --app-text-grey-5: #64748b;
+  --app-text-grey-6: #94a3b8;
+  --app-text-grey-7: #cbd5e1;
+  --app-text-grey-8: #94a3b8;
+  --app-text-grey-9: #cbd5e1;
+  --app-text-blue-10: #60a5fa;
+
+  // 边框颜色令牌
+  --app-border-blue-2: #93c5fd;
+  --app-border-dashed: #cbd5e1;
+  --app-soft-divider: #e2e8f0;
+
+  // 悬浮状态背景
+  --app-hover-bg: rgba(0, 0, 0, 0.04);
+  --app-hover-bg-dark: rgba(255, 255, 255, 0.03);
+
+  // 提升层背景
+  --app-elevated-bg: #f8fafc;
+  --app-elevated-hover-bg: #f1f5f9;
+
+  // 只读字段
+  --app-readonly-bg: #f8fafc;
+  --app-readonly-border: #e2e8f0;
+
+  // 上传区
+  --app-upload-bg: #f8fafc;
+  --app-upload-border: #cbd5e1;
+  --app-upload-border-hover: #94a3b8;
+  --app-upload-accent-hover-bg: #e8f6f5;
+  --app-upload-accent-hover-border: #8bb7c2;
+
+  // 图片面板悬浮阴影
+  --app-image-panel-hover-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+
+  // 页脚
+  --app-footer-bg: #f8fafc;
+  --app-footer-border: #e2e8f0;
+}
+
+// 暗色模式覆盖（仅在 body.body--dark 时生效）
+body.body--dark {
+  --app-bg-primary: #121212;
+  --app-bg-secondary: #1e1e1e;
+  --app-bg-tertiary: #2a2a2a;
+  --app-surface: #1e1e1e;
+  --app-text-primary: #e2e8f0;
+  --app-text-secondary: #94a3b8;
+  --app-text-tertiary: #64748b;
+  --app-border-default: #334155;
+  --app-border-light: #1e293b;
+  --app-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --app-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+
+  // Quasar 组件暗色令牌
+  --app-card-bg: #1e1e1e;
+  --app-page-bg: #121212;
+  --app-separator-color: #334155;
+  --app-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --app-field-control-color: #e2e8f0;
+  --app-field-label-color: #94a3b8;
+  --app-field-border-color: #475569;
+  --app-field-border-hover: #64748b;
+  --app-table-bg: #1e1e1e;
+  --app-table-header-color: #94a3b8;
+  --app-table-hover-bg: rgba(255, 255, 255, 0.03);
+  --app-table-footer-color: #94a3b8;
+  --app-chip-bg: #2a2a2a;
+  --app-dialog-bg: #1e1e1e;
+
+  // 暗色背景令牌
+  --app-bg-white: #1e1e1e;
+  --app-bg-grey-1: #1e1e1e;
+  --app-bg-grey-2: #1e1e1e;
+  --app-bg-grey-3: #1e1e1e;
+  --app-bg-blue-1: #172136;
+  --app-bg-blue-2: #1a2940;
+  --app-bg-green-1: #14261a;
+  --app-bg-green-2: #1a3324;
+  --app-bg-red-1: #2a1419;
+  --app-bg-orange-1: #2a1f14;
+  --app-bg-purple-1: #1f1429;
+  --app-bg-teal-1: #142625;
+  --app-bg-cyan-1: #142526;
+  --app-bg-amber-1: #2a2414;
+  --app-bg-blue-50: #172136;
+  --app-bg-grey-50: #1e1e1e;
+
+  // 暗色文字令牌（确保在 #121212 / #1e1e1e 背景上满足 WCAG AA 4.5:1 对比度）
+  --app-text-dark: #e2e8f0;
+  --app-text-grey-5: #94a3b8;
+  --app-text-grey-6: #94a3b8;
+  --app-text-grey-7: #cbd5e1;
+  --app-text-grey-8: #cbd5e1;
+  --app-text-grey-9: #e2e8f0;
+  --app-text-blue-10: #90caf9;
+
+  // 暗色边框令牌
+  --app-border-blue-2: #1e3a5f;
+  --app-border-dashed: #475569;
+  --app-soft-divider: #2a2a2a;
+
+  // 暗色趋势 / 链接 / 主色弱化背景
+  --app-trend-negative: #fca5a5;
+  --app-link-color: #42a5f5;
+  --app-primary-soft-bg: #1a2332;
+
+  // Dashboard 专用（暗色）
+  --app-dashboard-page-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  --app-dashboard-banner-bg: linear-gradient(135deg, #0c2d48 0%, #0e3a5e 100%);
+  --app-dashboard-banner-border: #1e5a8a;
+  --app-dashboard-banner-text: #bae6fd;
+
+  // 暗色悬浮状态
+  --app-hover-bg: rgba(255, 255, 255, 0.05);
+  --app-hover-bg-dark: rgba(255, 255, 255, 0.03);
+
+  // 暗色提升层背景
+  --app-elevated-bg: #252525;
+  --app-elevated-hover-bg: #2a2a2a;
+
+  // 暗色只读字段背景
+  --app-readonly-bg: #252525;
+  --app-readonly-border: #334155;
+
+  // 暗色上传区
+  --app-upload-bg: #1e1e1e;
+  --app-upload-border: #475569;
+  --app-upload-border-hover: #64748b;
+  --app-upload-accent-hover-bg: #1a2e2d;
+  --app-upload-accent-hover-border: #375a64;
+
+  // 暗色图片面板悬浮阴影
+  --app-image-panel-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  // 暗色页脚
+  --app-footer-bg: #0a0a0a;
+  --app-footer-border: #1e293b;
+}

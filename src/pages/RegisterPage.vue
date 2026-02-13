@@ -607,3 +607,11 @@ const onRegister = async () => {
   text-decoration: underline;
 }
 </style>
+
+<style lang="scss">
+body.body--dark {
+  .agreement-link {
+    color: var(--app-link-color) !important;
+  }
+}
+</style>

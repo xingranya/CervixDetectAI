@@ -256,7 +256,14 @@
                 <q-icon name="tune" color="primary" class="q-mr-sm" />
                 服务偏好设置
               </div>
-              <q-btn flat round icon="restart_alt" color="grey-7" size="sm" @click="resetPreferences">
+              <q-btn
+                flat
+                round
+                icon="restart_alt"
+                color="grey-7"
+                size="sm"
+                @click="resetPreferences"
+              >
                 <q-tooltip>恢复默认设置</q-tooltip>
               </q-btn>
             </div>
@@ -2002,5 +2009,37 @@ onMounted(() => {
 
 .agreement-link:hover {
   text-decoration: underline;
+}
+</style>
+
+<style lang="scss">
+body.body--dark {
+  // 支付摘要区域暗色适配
+  .payment-summary {
+    background: var(--app-elevated-bg) !important;
+  }
+
+  .summary-row.total {
+    border-top-color: var(--app-border-default) !important;
+  }
+
+  .summary-row.discount-row {
+    background: linear-gradient(90deg, rgba(33, 186, 69, 0.15) 0%, transparent 100%) !important;
+  }
+
+  // 协议和支付相关暗色适配
+  .agreement-section {
+    background: var(--app-elevated-bg) !important;
+  }
+
+  .agreement-link {
+    color: var(--q-primary) !important;
+  }
+
+  // 套餐包卡片 hover
+  .package-card:hover {
+    border-color: var(--q-primary) !important;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+  }
 }
 </style>

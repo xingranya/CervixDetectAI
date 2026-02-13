@@ -245,8 +245,10 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { useStudyStore } from 'stores/studyStore';
+import { useThemeStore } from 'stores/themeStore';
 import { dashboardAPI } from 'src/services/api';
 import * as echarts from 'echarts';
+import type { EChartsOption } from 'echarts';
 import { Notify } from 'quasar';
 
 interface Task {
@@ -285,6 +287,7 @@ interface SystemNotice {
 const router = useRouter();
 const authStore = useAuthStore();
 const studyStore = useStudyStore();
+const themeStore = useThemeStore();
 
 const chartContainer = ref<HTMLElement>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -528,15 +531,23 @@ const updateChartData = () => {
           { value: 5, name: '可疑癌/SCC', itemStyle: { color: '#dc2626' } },
         ];
 
-  const option = {
+  const isDark = themeStore.isDark;
+
+  const option: EChartsOption = {
     tooltip: {
       trigger: 'item',
       formatter: '{a} <br/>{b}: {c}例 ({d}%)',
+      ...(isDark && {
+        backgroundColor: '#1e1e1e',
+        borderColor: '#334155',
+        textStyle: { color: '#e2e8f0' },
+      }),
     },
     legend: {
       orient: 'horizontal',
       bottom: 0,
       data: finalChartData.map((item) => item.name),
+      ...(isDark && { textStyle: { color: '#94a3b8' } }),
     },
     series: [
       {
@@ -547,12 +558,13 @@ const updateChartData = () => {
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 6,
-          borderColor: '#fff',
+          borderColor: isDark ? '#1e293b' : '#fff',
           borderWidth: 2,
         },
         label: {
           show: true,
           formatter: '{b}: {d}%',
+          color: isDark ? '#e2e8f0' : '#64748b',
         },
         emphasis: {
           label: {
@@ -563,6 +575,9 @@ const updateChartData = () => {
         },
         labelLine: {
           show: true,
+          lineStyle: {
+            color: isDark ? '#94a3b8' : '#cbd5e1',
+          },
         },
         data: finalChartData,
       },
@@ -571,6 +586,14 @@ const updateChartData = () => {
 
   chartInstance.setOption(option);
 };
+
+// 监听暗色模式变化，重新渲染图表
+watch(
+  () => themeStore.isDark,
+  () => {
+    updateChartData();
+  },
+);
 
 // 监听时间周期变化，重新获取数据
 watch(activeStatsPeriod, () => {
@@ -850,6 +873,113 @@ onUnmounted(() => {
 
   .quick-actions-grid {
     grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<!-- 暗色模式适配：必须用非 scoped 样式块，否则 :global() 优先级低于 scoped 原始规则 -->
+<style lang="scss">
+body.body--dark {
+  .dashboard-page {
+    background: var(--app-dashboard-page-bg);
+  }
+
+  .page-header {
+    border-bottom-color: var(--app-border-default);
+  }
+
+  .welcome-banner {
+    background: var(--app-dashboard-banner-bg);
+    border-color: var(--app-dashboard-banner-border);
+    color: var(--app-dashboard-banner-text);
+  }
+
+  .modern-card {
+    background: var(--app-surface);
+    border-color: var(--app-border-default);
+    box-shadow: var(--app-shadow-md);
+
+    &:hover {
+      box-shadow: var(--app-shadow-lg);
+    }
+
+    .card-header {
+      border-bottom-color: var(--app-soft-divider);
+    }
+  }
+
+  .stat-card {
+    background: var(--app-elevated-bg);
+    border-color: var(--app-border-default);
+
+    &:hover {
+      background: var(--app-elevated-hover-bg);
+    }
+  }
+
+  .stat-value {
+    color: var(--app-text-primary);
+  }
+
+  .stat-title,
+  .stat-unit {
+    color: var(--app-text-secondary);
+  }
+
+  .stat-trend {
+    &.positive {
+      color: var(--app-diagnosis-normal);
+    }
+
+    &.negative {
+      color: var(--app-trend-negative);
+    }
+
+    &.neutral {
+      color: var(--app-text-secondary);
+    }
+  }
+
+  .task-item {
+    border-color: var(--app-border-default);
+    background-color: var(--app-elevated-bg);
+
+    &:hover {
+      border-color: var(--app-border-dashed);
+      background-color: var(--app-elevated-hover-bg);
+    }
+  }
+
+  .task-icon {
+    background-color: var(--app-surface);
+    border-color: var(--app-border-default);
+  }
+
+  .action-card {
+    border-color: var(--app-border-default);
+    background-color: var(--app-elevated-bg);
+
+    &:hover {
+      border-color: var(--q-primary);
+      background-color: var(--app-elevated-hover-bg);
+    }
+  }
+
+  .notice-item {
+    background-color: var(--app-elevated-bg);
+    border-top-color: var(--app-border-default);
+    border-right-color: var(--app-border-default);
+    border-bottom-color: var(--app-border-default);
+
+    &:hover {
+      background-color: var(--app-elevated-hover-bg);
+    }
+  }
+
+  .notice-meta {
+    .text-grey-7 {
+      color: var(--app-text-grey-7) !important;
+    }
   }
 }
 </style>

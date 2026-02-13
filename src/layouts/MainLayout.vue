@@ -21,6 +21,8 @@
         </q-toolbar-title>
 
         <div class="q-gutter-sm row items-center no-wrap">
+          <ThemeToggle />
+
           <!-- User Profile Dropdown -->
           <q-btn
             dense
@@ -117,6 +119,7 @@ import { useQuasar } from 'quasar';
 import { getImageUrl } from 'src/utils/mappers';
 import EssentialLink from 'components/EssentialLink.vue';
 import AppFooter from 'components/AppFooter.vue';
+import ThemeToggle from 'src/components/common/ThemeToggle.vue';
 import { HOSPITALS } from 'src/constants/hospitals';
 
 const router = useRouter();

@@ -668,3 +668,27 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
   opacity: 0;
 }
 </style>
+
+<style lang="scss">
+body.body--dark {
+  .upload-zone {
+    border-color: var(--app-upload-border);
+    background: var(--app-upload-bg);
+
+    &:hover {
+      border-color: var(--q-primary);
+      background: var(--app-elevated-bg);
+    }
+
+    &--active {
+      border-color: var(--q-primary);
+      background: var(--app-primary-soft-bg);
+    }
+
+    &--has-file {
+      border-color: var(--q-positive);
+      background: var(--app-upload-bg);
+    }
+  }
+}
+</style>

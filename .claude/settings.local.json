@@ -17,7 +17,13 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat\\(analyzer\\): 增强AI标注模拟与代码优化\n\n- 重构 ImageAnalyzer 使用真实医学术语模拟检测结果\n- 添加宫颈病变分类标签\\(NILM/LSIL/HSIL等\\)及权重配置\n- 实现基于置信度的风险等级颜色区分\n- 修复 ESLint consistent-type-imports 和 Promise 相关警告\n- 优化 apiClient 类型导入和错误处理\nEOF\n\\)\")",
       "WebFetch(domain:help.aliyun.com)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat\\(ui\\): 优化用户协议对话框与登录页面\n\n- 用户协议对话框改为响应式弹窗（桌面端700px居中，移动端全屏）\n- 移除登录页无效的\"记住我\"复选框\n- 修复协议页面返回按钮在新标签页场景下的异常行为\n- 更新 CLAUDE.md 和 wiki 文档\nEOF\n\\)\")",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "mcp__context7__query-docs",
+      "Bash(npm run -s lint)",
+      "Bash(node:*)",
+      "Bash(npm run -s type-check)",
+      "Bash(npm run -s build)"
     ]
-  }
+  },
+  "outputStyle": "Structural Thinking"
 }

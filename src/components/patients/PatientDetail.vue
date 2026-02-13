@@ -189,3 +189,21 @@ const getSexualHistoryLabel = (value: string): string => {
   }
 }
 </style>
+
+<style lang="scss">
+body.body--dark {
+  .patient-detail {
+    .detail-label {
+      color: var(--app-text-tertiary) !important;
+    }
+
+    .detail-value {
+      color: var(--app-text-primary) !important;
+    }
+
+    .section-title {
+      color: var(--q-primary) !important;
+    }
+  }
+}
+</style>

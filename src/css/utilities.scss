@@ -1,0 +1,18 @@
+// 通用组件样式类（可选使用，不自动应用到现有组件）
+
+.card-base {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-lg);
+  transition: all var(--app-transition-normal);
+}
+
+.card-elevated {
+  @extend .card-base;
+  box-shadow: var(--app-shadow-md);
+
+  &:hover {
+    box-shadow: var(--app-shadow-lg);
+    transform: translateY(-2px);
+  }
+}

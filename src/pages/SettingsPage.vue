@@ -808,6 +808,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import { useThemeStore } from 'stores/themeStore';
 import * as echarts from 'echarts';
 import { useAuthStore } from 'stores/authStore';
 import { userAPI } from 'src/services/api';
@@ -817,6 +818,7 @@ import { getImageUrl } from 'src/utils/mappers';
 
 const $q = useQuasar();
 const activeTab = ref('user_account');
+const themeStore = useThemeStore();
 
 // Auth Store
 const authStore = useAuthStore();
@@ -1081,22 +1083,35 @@ let chartInstance: echarts.ECharts | null = null;
 const initChart = () => {
   if (performanceChartRef.value) {
     chartInstance = echarts.init(performanceChartRef.value);
+
+    // 根据暗色模式设置颜色
+    const isDark = themeStore.isDark;
+    const axisColor = isDark ? '#475569' : '#cbd5e1';
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
     const option = {
       color: ['#375A64', '#64748b'],
       tooltip: { trigger: 'axis' },
-      legend: { data: ['准确率', '召回率'], top: '5%' },
+      legend: {
+        data: ['准确率', '召回率'],
+        top: '5%',
+        textStyle: { color: textColor },
+      },
       grid: { left: '3%', right: '4%', bottom: '3%', top: '20%', containLabel: true },
       xAxis: {
         type: 'category',
         boundaryGap: false,
         data: ['11-01', '11-08', '11-15', '11-22', '11-29', '12-06', '12-12'],
-        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLine: { lineStyle: { color: axisColor } },
+        axisLabel: { color: textColor },
       },
       yAxis: {
         type: 'value',
         min: 0.85,
         max: 1.0,
-        splitLine: { lineStyle: { color: '#e2e8f0', type: 'dashed' } },
+        splitLine: { lineStyle: { color: gridColor, type: 'dashed' } },
+        axisLabel: { color: textColor },
       },
       series: [
         {
@@ -1118,6 +1133,32 @@ const initChart = () => {
     chartInstance.setOption(option);
   }
 };
+
+// 监听暗色模式变化，仅更新配色不重新初始化实例
+watch(
+  () => themeStore.isDark,
+  () => {
+    if (chartInstance && performanceChartRef.value) {
+      // 根据暗色模式重新计算颜色
+      const isDark = themeStore.isDark;
+      const axisColor = isDark ? '#475569' : '#cbd5e1';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+
+      chartInstance.setOption({
+        legend: { textStyle: { color: textColor } },
+        xAxis: {
+          axisLine: { lineStyle: { color: axisColor } },
+          axisLabel: { color: textColor },
+        },
+        yAxis: {
+          splitLine: { lineStyle: { color: gridColor } },
+          axisLabel: { color: textColor },
+        },
+      });
+    }
+  },
+);
 
 onMounted(() => {
   // Delay chart init to ensure tab is rendered if active

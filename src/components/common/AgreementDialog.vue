@@ -452,3 +452,15 @@ const openFullPrivacy = () => {
   }
 }
 </style>
+
+<style lang="scss">
+body.body--dark {
+  .dialog-actions {
+    background: var(--app-elevated-bg) !important;
+  }
+
+  .agreement-dialog {
+    background: var(--app-surface);
+  }
+}
+</style>

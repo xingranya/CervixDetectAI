@@ -1,1 +1,364 @@
 // app global css in SCSS form
+
+// 设计令牌系统 - 仅供新代码使用，不影响现有组件
+@use './design-tokens';
+@use './utilities';
+
+// =============================================================
+// 全局暗色模式适配
+// 统一处理所有页面的通用暗色覆盖，避免逐页面重复编写
+// 仅在 body.body--dark 时生效，亮色模式完全不受影响
+// =============================================================
+
+body.body--dark {
+  // ---- Quasar 组件全局覆盖 ----
+
+  // q-card 默认白色背景
+  .q-card {
+    background: var(--app-card-bg);
+    border-color: var(--app-border-default);
+  }
+
+  // q-tab-panels 面板背景
+  .q-tab-panels,
+  .q-tab-panel {
+    background: transparent;
+  }
+
+  // q-page 默认背景
+  .q-page {
+    background: var(--app-bg-primary);
+  }
+
+  // q-separator 分隔线
+  .q-separator {
+    background: var(--app-separator-color);
+  }
+
+  // q-item hover
+  .q-item:hover {
+    background: var(--app-item-hover-bg);
+  }
+
+  // q-field 输入框
+  .q-field__control,
+  .q-field__native,
+  .q-field__prefix,
+  .q-field__suffix,
+  .q-field__input {
+    color: var(--app-field-control-color);
+  }
+
+  .q-field__label {
+    color: var(--app-field-label-color);
+  }
+
+  .q-field--outlined .q-field__control:before {
+    border-color: var(--app-field-border-color);
+  }
+
+  .q-field--outlined .q-field__control:hover:before {
+    border-color: var(--app-field-border-hover);
+  }
+
+  // q-tabs 标签栏
+  .q-tabs--not-scrollable .q-tabs__content {
+    border-color: var(--app-border-default);
+  }
+
+  // q-table 表格
+  .q-table {
+    background: var(--app-table-bg);
+    color: var(--app-text-primary);
+
+    th {
+      color: var(--app-table-header-color);
+    }
+
+    tbody tr:hover {
+      background: var(--app-table-hover-bg);
+    }
+
+    .q-table__bottom {
+      border-top-color: var(--app-border-default);
+      color: var(--app-table-footer-color);
+    }
+  }
+
+  .q-table--bordered {
+    border-color: var(--app-border-default);
+  }
+
+  // q-chip
+  .q-chip--dense {
+    background: var(--app-chip-bg);
+  }
+
+  // q-dialog 弹窗
+  .q-dialog__inner > .q-card {
+    background: var(--app-dialog-bg);
+  }
+
+  // ---- 通用颜色工具类覆盖（Quasar 工具类使用 !important，故此处保持） ----
+
+  .bg-white {
+    background-color: var(--app-bg-white) !important;
+  }
+
+  .bg-grey-1 {
+    background-color: var(--app-bg-grey-1) !important;
+  }
+
+  .bg-grey-2 {
+    background-color: var(--app-bg-grey-2) !important;
+  }
+
+  .bg-grey-3 {
+    background-color: var(--app-bg-grey-3) !important;
+  }
+
+  .bg-blue-1 {
+    background-color: var(--app-bg-blue-1) !important;
+  }
+
+  .bg-blue-2 {
+    background-color: var(--app-bg-blue-2) !important;
+  }
+
+  .bg-green-1 {
+    background-color: var(--app-bg-green-1) !important;
+  }
+
+  .bg-green-2 {
+    background-color: var(--app-bg-green-2) !important;
+  }
+
+  .bg-red-1 {
+    background-color: var(--app-bg-red-1) !important;
+  }
+
+  .bg-orange-1 {
+    background-color: var(--app-bg-orange-1) !important;
+  }
+
+  .bg-purple-1 {
+    background-color: var(--app-bg-purple-1) !important;
+  }
+
+  .bg-teal-1 {
+    background-color: var(--app-bg-teal-1) !important;
+  }
+
+  .bg-cyan-1 {
+    background-color: var(--app-bg-cyan-1) !important;
+  }
+
+  .bg-amber-1 {
+    background-color: var(--app-bg-amber-1) !important;
+  }
+
+  .bg-blue-50 {
+    background-color: var(--app-bg-blue-50) !important;
+  }
+
+  .bg-grey-50 {
+    background-color: var(--app-bg-grey-50) !important;
+  }
+
+  .text-dark {
+    color: var(--app-text-dark) !important;
+  }
+
+  .text-grey-5 {
+    color: var(--app-text-grey-5) !important;
+  }
+
+  .text-grey-6 {
+    color: var(--app-text-grey-6) !important;
+  }
+
+  .text-grey-7 {
+    color: var(--app-text-grey-7) !important;
+  }
+
+  .text-grey-8 {
+    color: var(--app-text-grey-8) !important;
+  }
+
+  .text-grey-9 {
+    color: var(--app-text-grey-9) !important;
+  }
+
+  .text-grey {
+    color: var(--app-text-secondary) !important;
+  }
+
+  .text-blue-10 {
+    color: var(--app-text-blue-10) !important;
+  }
+
+  // ---- 通用组件样式暗色 ----
+
+  .border-bottom {
+    border-bottom-color: var(--app-border-default);
+  }
+
+  .border-bottom-light {
+    border-bottom-color: var(--app-border-light);
+  }
+
+  // 各页面 profile-card / settings 卡片
+  .profile-card {
+    background: var(--app-surface);
+    border-color: var(--app-border-default);
+  }
+
+  // 信息项
+  .info-item {
+    border-bottom-color: var(--app-soft-divider);
+  }
+
+  .info-label {
+    color: var(--app-text-tertiary);
+  }
+
+  .info-value {
+    color: var(--app-text-primary);
+  }
+
+  // 统计盒子
+  .stat-label {
+    color: var(--app-text-secondary);
+  }
+
+  // 表单区块
+  .form-section-title {
+    color: var(--app-text-tertiary);
+    border-bottom-color: var(--app-soft-divider);
+  }
+
+  .form-actions {
+    border-top-color: var(--app-soft-divider);
+  }
+
+  // 只读字段
+  .readonly-field .q-field__control {
+    background-color: var(--app-readonly-bg);
+  }
+
+  .readonly-field .q-field__control:before {
+    border-color: var(--app-readonly-border);
+  }
+
+  // 安全设置列表
+  .security-item:hover {
+    background-color: var(--app-elevated-bg);
+  }
+
+  // 密码对话框
+  .password-dialog {
+    background: var(--app-surface);
+  }
+
+  // border-blue-2
+  .border-blue-2 {
+    border-color: var(--app-border-blue-2);
+  }
+
+  // ---- 上传页面 ----
+  .upload-area {
+    border-color: var(--app-upload-border);
+    background-color: var(--app-upload-bg);
+
+    &:hover {
+      background-color: var(--app-elevated-bg);
+      border-color: var(--app-upload-border-hover);
+    }
+  }
+
+  // ---- 登录/注册页面 ----
+  .auth-page,
+  .login-page,
+  .register-page {
+    background: var(--app-bg-primary);
+  }
+
+  // ---- StudyDetailPage ----
+  .border-light {
+    border-color: var(--app-border-default);
+  }
+
+  .border-top-light {
+    border-top-color: var(--app-border-default);
+  }
+
+  .border-dashed {
+    border-color: var(--app-border-dashed);
+  }
+
+  // ---- 公告/通知 ----
+  .notice-item {
+    background-color: var(--app-elevated-bg);
+    border-color: var(--app-border-default);
+
+    &:hover {
+      background-color: var(--app-elevated-hover-bg);
+    }
+  }
+
+  // ---- 协议弹窗内容区 ----
+  .agreement-content {
+    background: var(--app-elevated-bg);
+  }
+
+  // ---- 页脚 ----
+  .app-footer {
+    background: var(--app-footer-bg);
+    border-top-color: var(--app-footer-border);
+  }
+
+  // ---- Quasar 文字颜色工具类暗色适配 ----
+  // Quasar 的 text-grey-N 在暗色模式下不自动适配，需手动覆盖
+  .text-grey-7 {
+    color: var(--app-text-grey-7) !important;
+  }
+
+  .text-grey-8 {
+    color: var(--app-text-grey-8) !important;
+  }
+
+  .text-grey-9 {
+    color: var(--app-text-grey-9) !important;
+  }
+
+  .text-dark {
+    color: var(--app-text-dark) !important;
+  }
+
+  // ---- Quasar 背景工具类暗色适配 ----
+  // 使用分层 token 保持视觉层级（surface < elevated-bg）
+  .bg-white {
+    background-color: var(--app-surface) !important;
+  }
+
+  .bg-grey-1 {
+    background-color: var(--app-elevated-bg) !important;
+  }
+
+  // ---- 通用边框类暗色适配 ----
+  .border-bottom {
+    border-bottom-color: var(--app-border-default) !important;
+  }
+
+  .border-bottom-light {
+    border-bottom-color: var(--app-border-light) !important;
+  }
+
+  .border-top-light {
+    border-top-color: var(--app-border-light) !important;
+  }
+
+  .border-light {
+    border-color: var(--app-border-default) !important;
+  }
+}

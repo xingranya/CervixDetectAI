@@ -372,3 +372,66 @@ onUnmounted(() => {
   background: #e3f2fd;
 }
 </style>
+
+<style lang="scss">
+body.body--dark {
+  .payment-result-page {
+    background: var(--app-bg-primary) !important;
+  }
+
+  .result-card {
+    background: var(--app-surface) !important;
+    box-shadow: var(--app-shadow-lg) !important;
+  }
+
+  .spinner {
+    border-color: var(--app-border-default) !important;
+    border-top-color: var(--q-primary) !important;
+  }
+
+  .title {
+    color: var(--app-text-primary) !important;
+  }
+
+  .subtitle {
+    color: var(--app-text-secondary) !important;
+  }
+
+  .hint {
+    color: var(--app-text-tertiary) !important;
+  }
+
+  .order-name {
+    color: var(--app-text-secondary) !important;
+  }
+
+  .info-list {
+    background: var(--app-elevated-bg) !important;
+  }
+
+  .info-item {
+    border-bottom-color: var(--app-border-default) !important;
+
+    .label {
+      color: var(--app-text-tertiary) !important;
+    }
+
+    .value {
+      color: var(--app-text-primary) !important;
+    }
+  }
+
+  .btn.outline {
+    background: var(--app-surface) !important;
+    border-color: var(--q-primary) !important;
+
+    &:hover {
+      background: var(--app-primary-soft-bg) !important;
+    }
+  }
+
+  .btn.primary:disabled {
+    background: var(--app-border-default) !important;
+  }
+}
+</style>

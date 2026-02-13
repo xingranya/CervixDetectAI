@@ -864,6 +864,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
+import { useThemeStore } from 'stores/themeStore';
 import * as echarts from 'echarts';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
@@ -874,6 +875,7 @@ const $q = useQuasar();
 const route = useRoute();
 const studyStore = useStudyStore();
 const analysisStore = useAnalysisStore();
+const themeStore = useThemeStore();
 
 // State
 const selectedPatient = ref(null);
@@ -1315,8 +1317,9 @@ const initChart = () => {
   }
 };
 
-const updateChart = () => {
-  if (!chartInstance) return;
+// 根据暗色模式创建图表配置
+const createChartOption = () => {
+  const isDark = themeStore.isDark;
 
   // 使用真实的AI分析结果数据
   const result = analysisResult.value;
@@ -1326,19 +1329,13 @@ const updateChart = () => {
   if (result?.suspiciousAreas && result.suspiciousAreas.length > 0) {
     chartData = result.suspiciousAreas.slice(0, 5).map(() => {
       const confidence = (result.confidence || 0.85) * 100;
-      // 根据置信度设置颜色
       let color = '#375A64';
       if (confidence >= 90) color = '#ef4444';
       else if (confidence >= 75) color = '#f59e0b';
-
-      return {
-        value: Math.round(confidence),
-        itemStyle: { color },
-      };
+      return { value: Math.round(confidence), itemStyle: { color } };
     });
     categories = result.suspiciousAreas.slice(0, 5).map((_, i) => `区域${i + 1}`);
   } else {
-    // 默认模拟数据
     chartData = [
       { value: 92, itemStyle: { color: '#ef4444' } },
       { value: 78, itemStyle: { color: '#f59e0b' } },
@@ -1347,23 +1344,29 @@ const updateChart = () => {
     categories = ['区域1', '区域2', '区域3'];
   }
 
-  const option = {
+  return {
     tooltip: { trigger: 'axis' },
     grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
       data: categories,
-      axisLine: { lineStyle: { color: '#ccc' } },
+      axisLine: { lineStyle: { color: isDark ? '#475569' : '#ccc' } },
+      axisLabel: { color: isDark ? '#94a3b8' : '#333' },
     },
-    yAxis: { type: 'value', max: 100, splitLine: { lineStyle: { type: 'dashed' } } },
-    series: [
-      {
-        data: chartData,
-        type: 'bar',
-        barWidth: '40%',
-      },
-    ],
+    yAxis: {
+      type: 'value',
+      max: 100,
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#e0e0e0', type: 'dashed' } },
+      axisLabel: { color: isDark ? '#94a3b8' : '#666' },
+    },
+    series: [{ data: chartData, type: 'bar', barWidth: '40%' }],
   };
+};
+
+// 更新图表
+const updateChart = () => {
+  if (!chartInstance) return;
+  const option = createChartOption();
   chartInstance.setOption(option);
 };
 
@@ -1375,6 +1378,17 @@ watch(
     updateChart();
   },
   { deep: true },
+);
+
+// 监听暗色模式变化，重新渲染图表
+watch(
+  () => themeStore.isDark,
+  () => {
+    if (chartInstance) {
+      const option = createChartOption();
+      chartInstance.setOption(option);
+    }
+  },
 );
 
 // 监听study变化，确保数据同步
@@ -1781,6 +1795,24 @@ onUnmounted(() => {
   }
   100% {
     transform: scale(1);
+  }
+}
+</style>
+
+<style lang="scss">
+body.body--dark {
+  // 以下规则为 StudyDetailPage 页面特有，全局 app.scss 未覆盖
+  .annotated-view-container {
+    border-color: var(--app-border-default) !important;
+  }
+
+  .upload-area:hover {
+    background-color: var(--app-upload-accent-hover-bg) !important;
+    border-color: var(--app-upload-accent-hover-border) !important;
+  }
+
+  .image-panel-wrapper:hover {
+    box-shadow: var(--app-image-panel-hover-shadow) !important;
   }
 }
 </style>
