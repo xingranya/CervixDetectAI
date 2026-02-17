@@ -22,7 +22,9 @@
       "Bash(npm run -s lint)",
       "Bash(node:*)",
       "Bash(npm run -s type-check)",
-      "Bash(npm run -s build)"
+      "Bash(npm run -s build)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" clean:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" status:*)"
     ]
   },
   "outputStyle": "Structural Thinking"

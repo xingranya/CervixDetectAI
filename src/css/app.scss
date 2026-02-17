@@ -3,6 +3,7 @@
 // 设计令牌系统 - 仅供新代码使用，不影响现有组件
 @use './design-tokens';
 @use './utilities';
+@use './auth';
 
 // =============================================================
 // 全局暗色模式适配
@@ -10,7 +11,32 @@
 // 仅在 body.body--dark 时生效，亮色模式完全不受影响
 // =============================================================
 
+// ---- Auth 页面 Quasar 框架级暗色修正 ----
+// Quasar 在 body.body--dark 上设置 background: var(--q-dark-page) (#121212)
+// 同时 .q-dark 类（加到 q-layout 上）设置 background: var(--q-dark) (#1d1d1d)
+// 这些不透明背景会覆盖 AuthSplitLayout 的暗色渐变，导致灰蒙蒙遮罩
+// 需要让 auth 页面的 q-layout → q-page-container 层级背景透明
+// 但不要覆盖 auth-split-layout 自己的深色渐变背景
+body.body--dark .public-layout--auth {
+  background: transparent !important;
+
+  .q-page-container {
+    background: transparent !important;
+  }
+}
+
 body.body--dark {
+  // ---- Auth 页面背景处理 ----
+  // 对于非认证页面，使用默认深色背景
+  // 对于认证页面，让 AuthSplitLayout 组件自己管理深色渐变背景
+  background-color: #121212;
+
+  // ---- 修复：确保非认证页面布局撑满视口 ----
+  // 注意：认证页面不需要这些，因为 AuthSplitLayout 已经有 min-height: 100vh
+  .q-layout:not(.public-layout--auth) {
+    min-height: 100vh !important;
+  }
+
   // ---- Quasar 组件全局覆盖 ----
 
   // q-card 默认白色背景
@@ -25,8 +51,8 @@ body.body--dark {
     background: transparent;
   }
 
-  // q-page 默认背景
-  .q-page {
+  // q-page 默认背景（排除 auth 页面，其自行管理暗色渐变）
+  .q-page:not(.auth-split-layout) {
     background: var(--app-bg-primary);
   }
 
@@ -277,11 +303,8 @@ body.body--dark {
   }
 
   // ---- 登录/注册页面 ----
-  .auth-page,
-  .login-page,
-  .register-page {
-    background: var(--app-bg-primary);
-  }
+  // auth 页面由 AuthSplitLayout.vue 自行管理暗色渐变背景
+  // 无需在此处覆盖，否则会用纯色 #121212 替代精美的暗色渐变
 
   // ---- StudyDetailPage ----
   .border-light {

@@ -27,7 +27,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   /** 初始化主题：从 localStorage 读取偏好，监听系统主题变化 */
   function initTheme(): void {
-    const saved = (localStorage.getItem('app_theme_preference') as ThemeMode) || 'system';
+    const saved = (localStorage.getItem('app_theme_preference') as ThemeMode) || 'light';
     setTheme(saved);
 
     // 监听系统主题变化（仅在 system 模式下自动切换）

@@ -1,0 +1,87 @@
+// 认证页统一视觉语言
+// 注意：auth-page 的背景由 AuthSplitLayout.vue 自行管理（含暗色渐变）
+// 不在此处设置 .q-page 背景，否则会覆盖渐变
+
+.auth-form {
+  .q-field__label {
+    color: var(--app-text-secondary);
+  }
+
+  .q-field--outlined .q-field__control {
+    background: var(--app-bg-secondary);
+    border-radius: var(--app-radius-md);
+  }
+
+  .q-field--outlined .q-field__control:before {
+    border-color: var(--app-border-default);
+  }
+
+  .q-field--outlined .q-field__control:hover:before {
+    border-color: var(--app-field-border-hover);
+  }
+}
+
+.auth-login-tabs {
+  border-bottom: 1px solid var(--app-border-light);
+
+  .q-tab {
+    color: var(--app-text-tertiary);
+    font-weight: 500;
+  }
+
+  .q-tab--active {
+    color: var(--q-primary);
+    font-weight: 600;
+  }
+}
+
+.auth-login-tip {
+  color: var(--app-text-secondary);
+}
+
+.auth-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.auth-warning-text {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: #f57c00;
+}
+
+.auth-agreement-link {
+  color: var(--app-link-color);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-agreement-link:hover {
+  text-decoration: underline;
+}
+
+.auth-dual-channel-tabs {
+  margin-bottom: 8px;
+
+  .q-tab {
+    color: var(--app-text-secondary);
+  }
+
+  .q-tab--active {
+    color: var(--q-primary);
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-page {
+    .auth-workspace-shell {
+      border-radius: var(--app-radius-lg);
+      box-shadow: var(--app-shadow-md);
+    }
+  }
+}

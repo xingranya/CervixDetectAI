@@ -1,7 +1,7 @@
 <template>
   <q-footer
     v-model="footerVisible"
-    class="bg-grey-1 text-grey-6"
+    class="app-footer"
     transition-show="slide-up"
     transition-hide="slide-down"
   >
@@ -13,7 +13,7 @@
           href="https://beian.miit.gov.cn/"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-grey-6 app-footer__link"
+          class="app-footer__link"
           style="text-decoration: none"
         >
           鄂ICP备2026006203号-2
@@ -24,6 +24,14 @@
 </template>
 
 <style scoped>
+/* 基础样式（scoped 保护，避免污染其他元素） */
+.app-footer {
+  background: #f9fafb;
+  color: #6b7280;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(6px);
+}
+
 .app-footer__content {
   display: inline-flex;
   flex-wrap: wrap;
@@ -35,6 +43,7 @@
 
 .app-footer__link {
   white-space: nowrap;
+  color: #6b7280;
 }
 
 @media (max-width: 480px) {
@@ -46,6 +55,43 @@
   .app-footer__separator {
     display: none;
   }
+}
+
+</style>
+
+<!-- 全局样式（深色模式和认证页面特殊样式） -->
+<style>
+/* 深色模式 */
+body.body--dark .app-footer {
+  background: rgba(10, 10, 10, 0.85) !important;
+  color: rgba(226, 232, 240, 0.78) !important;
+  border-top-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+body.body--dark .app-footer__link {
+  color: rgba(226, 232, 240, 0.86) !important;
+}
+
+/* 认证页面特殊样式 - 浅色模式 */
+body:not(.body--dark) .public-layout--auth .app-footer {
+  background: rgba(219, 234, 254, 0.88) !important;
+  color: #475569 !important;
+  border-top-color: rgba(37, 99, 235, 0.14) !important;
+}
+
+body:not(.body--dark) .public-layout--auth .app-footer__link {
+  color: #334155 !important;
+}
+
+/* 认证页面特殊样式 - 深色模式 */
+body.body--dark .public-layout--auth .app-footer {
+  background: rgba(15, 23, 42, 0.78) !important;
+  color: rgba(226, 232, 240, 0.78) !important;
+  border-top-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+body.body--dark .public-layout--auth .app-footer__link {
+  color: rgba(226, 232, 240, 0.86) !important;
 }
 </style>
 
