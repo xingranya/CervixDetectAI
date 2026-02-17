@@ -20,9 +20,13 @@
           indicator-color="primary"
           align="justify"
         >
-          <q-tab name="email" label="邮箱通道" />
+          <q-tab name="email" label="邮箱通道" disable />
           <q-tab name="phone" label="短信通道" />
         </q-tabs>
+
+        <q-banner rounded class="auth-disabled-channel-banner">
+          邮箱找回通道暂不可用，请使用短信通道完成密码重置。
+        </q-banner>
 
         <q-form
           v-if="resetChannel === 'email'"
@@ -37,7 +41,7 @@
             lazy-rules
             :rules="[
               (val) => (val && val.length > 0) || '邮箱为必填项',
-              (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
+              (val) => EMAIL_PATTERN.test(val) || '邮箱格式不正确',
             ]"
           >
             <template #prepend>
@@ -64,6 +68,7 @@
                 flat
                 dense
                 color="primary"
+                no-caps
                 @click="handleSendEmailCode"
               />
             </template>
@@ -128,6 +133,7 @@
                 flat
                 dense
                 color="primary"
+                no-caps
                 @click="sendSmsCode"
               />
             </template>
@@ -139,7 +145,10 @@
             label="新密码"
             :type="showNewPassword ? 'text' : 'password'"
             lazy-rules
-            :rules="[(val) => (val && val.length >= 6) || '密码长度至少6位']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入新密码',
+              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+            ]"
           >
             <template #prepend>
               <q-icon name="lock" />
@@ -212,7 +221,7 @@ import { authAPI } from 'src/services/api';
 const $q = useQuasar();
 const router = useRouter();
 
-const resetChannel = ref<'email' | 'phone'>('email');
+const resetChannel = ref<'email' | 'phone'>('phone');
 
 const email = ref('');
 const emailCode = ref('');
@@ -233,15 +242,15 @@ const smsCountdown = ref(0);
 const resettingPassword = ref(false);
 const smsTimer = ref<number | null>(null);
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+
 const emailCountdownText = computed(() =>
   emailCountdown.value > 0 ? `${emailCountdown.value}秒后重试` : '获取验证码',
 );
 
 const canSendEmailCode = computed(
-  () =>
-    emailCountdown.value === 0 &&
-    !sendingEmailCode.value &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value),
+  () => emailCountdown.value === 0 && !sendingEmailCode.value && EMAIL_PATTERN.test(email.value),
 );
 
 const smsCountdownText = computed(() =>
@@ -409,6 +418,15 @@ const onResetByPhone = async () => {
     return;
   }
 
+  if (newPassword.value.length < MIN_PASSWORD_LENGTH) {
+    $q.notify({
+      type: 'warning',
+      message: `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+      position: 'top',
+    });
+    return;
+  }
+
   if (newPassword.value !== confirmPassword.value) {
     $q.notify({
       type: 'warning',
@@ -458,40 +476,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
-/* 深色模式下输入框样式 */
-:global(body.body--dark) .auth-form :deep(.q-field__control) {
-  background: rgba(30, 41, 59, 0.6) !important;
-}
 
-:global(body.body--dark) .auth-form :deep(.q-field__control):before {
-  border-color: rgba(148, 163, 184, 0.3) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__control):hover:before {
-  border-color: rgba(148, 163, 184, 0.5) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__native),
-:global(body.body--dark) .auth-form :deep(.q-field__input) {
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__label) {
-  color: #cbd5e1 !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-icon) {
-  color: #94a3b8 !important;
-}
-
-/* 深色模式下 select 下拉选项 */
-:global(body.body--dark) .q-menu :deep(.q-item) {
-  background: rgba(30, 41, 59, 0.95) !important;
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .q-menu :deep(.q-item:hover) {
-  background: rgba(51, 65, 85, 0.8) !important;
-}
-</style>

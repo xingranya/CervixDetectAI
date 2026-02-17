@@ -22,6 +22,7 @@
 }
 
 .auth-login-tabs {
+  margin-bottom: 10px;
   border-bottom: 1px solid var(--app-border-light);
 
   .q-tab {
@@ -31,12 +32,22 @@
 
   .q-tab--active {
     color: var(--q-primary);
-    font-weight: 600;
+    font-weight: 700;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
   }
 }
 
 .auth-login-tip {
+  text-align: center;
   color: var(--app-text-secondary);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.auth-agreement-wrapper {
+  margin-top: 6px;
 }
 
 .auth-footer-links {
@@ -64,6 +75,15 @@
   text-decoration: underline;
 }
 
+.auth-captcha-wrapper {
+  margin-top: 10px;
+}
+
+.auth-captcha-verified {
+  margin-top: 10px;
+  text-align: center;
+}
+
 .auth-dual-channel-tabs {
   margin-bottom: 8px;
 
@@ -77,11 +97,110 @@
   }
 }
 
-@media (max-width: 1023px) {
-  .auth-page {
-    .auth-workspace-shell {
-      border-radius: var(--app-radius-lg);
-      box-shadow: var(--app-shadow-md);
+.auth-disabled-channel-banner {
+  margin-bottom: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+  color: #9a3412;
+}
+
+body.body--dark {
+  .auth-form {
+    .q-field__control {
+      background: rgba(30, 41, 59, 0.6);
     }
+
+    .q-field__control:before {
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .q-field__control:hover:before {
+      border-color: rgba(148, 163, 184, 0.5);
+    }
+
+    .q-field__native,
+    .q-field__input {
+      color: #f8fafc;
+    }
+
+    .q-field__label {
+      color: #cbd5e1;
+    }
+
+    .q-icon {
+      color: #94a3b8;
+    }
+  }
+
+  .auth-login-tabs {
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+
+    .q-tab {
+      color: #cbd5e1;
+    }
+
+    .q-tab--active {
+      background: rgba(51, 65, 85, 0.62);
+      color: #f8fafc;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .login-page .auth-login-brand-meta {
+    background: rgba(15, 23, 42, 0.86);
+    border-color: rgba(148, 163, 184, 0.32);
+  }
+
+  .login-page .auth-login-brand-meta__name {
+    color: #f8fafc;
+  }
+
+  .login-page .auth-login-brand-meta__team {
+    color: #cbd5e1;
+  }
+
+  .login-page .auth-login-brand-meta__team strong {
+    color: #60a5fa;
+  }
+
+  .login-page .auth-login-cta {
+    color: #f8fafc;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+    border-color: rgba(96, 165, 250, 0.52);
+    box-shadow:
+      0 12px 26px rgba(30, 64, 175, 0.36),
+      0 2px 10px rgba(15, 23, 42, 0.38);
+  }
+
+  .login-page .auth-login-cta:not([disabled]):hover {
+    filter: brightness(1.06);
+    box-shadow:
+      0 16px 34px rgba(37, 99, 235, 0.44),
+      0 4px 14px rgba(15, 23, 42, 0.44);
+  }
+
+  .login-page .auth-login-cta[disabled],
+  .login-page .auth-login-cta:disabled {
+    color: rgba(226, 232, 240, 0.72);
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    border-color: rgba(148, 163, 184, 0.34);
+    box-shadow: none;
+  }
+
+  .auth-select-menu .q-item {
+    background: rgba(30, 41, 59, 0.95);
+    color: #f8fafc;
+  }
+
+  .auth-select-menu .q-item:hover {
+    background: rgba(51, 65, 85, 0.8);
+  }
+
+  .auth-disabled-channel-banner {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: rgba(251, 191, 36, 0.12);
+    color: #fde68a;
   }
 }

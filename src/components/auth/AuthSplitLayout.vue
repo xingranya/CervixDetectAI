@@ -29,13 +29,21 @@
    BASE THEME (Light Mode Default)
    ========================================= */
 .auth-split-layout {
+  --auth-shared-bg: linear-gradient(100deg, #f0f9ff 0%, #e0f2fe 52%, #f8fafc 100%);
+  --auth-workspace-overlay: linear-gradient(
+    90deg,
+    rgba(240, 249, 255, 0) 0%,
+    rgba(248, 250, 252, 0.32) 36%,
+    rgba(255, 255, 255, 0.64) 100%
+  );
+
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr;
   position: relative;
   overflow: hidden;
   /* Light Mode Background */
-  background: linear-gradient(100deg, #f0f9ff 0%, #e0f2fe 54%, #f8fafc 100%);
+  background: var(--auth-shared-bg);
   color: #0f172a;
 }
 
@@ -74,11 +82,14 @@
   padding: 20px;
   position: relative;
   z-index: 1;
+  background: transparent;
 }
 
 .workspace-content-wrapper {
   width: 100%;
   max-width: 480px;
+  position: relative;
+  z-index: 1;
   animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -106,12 +117,7 @@
   }
 
   .auth-split-layout__workspace-panel {
-    background: linear-gradient(
-      90deg,
-      rgba(248, 250, 252, 0.12) 0%,
-      rgba(248, 250, 252, 0.38) 36%,
-      rgba(255, 255, 255, 0.68) 100%
-    );
+    background: var(--auth-workspace-overlay);
     backdrop-filter: blur(14px);
   }
 }
@@ -120,31 +126,34 @@
    DARK MODE OVERRIDES (Quasar body--dark)
    ========================================= */
 body.body--dark .auth-split-layout {
-  background: linear-gradient(100deg, #020617 0%, #0f172a 54%, #1e293b 100%) !important;
-  color: #f8fafc !important;
+  --auth-shared-bg: linear-gradient(100deg, #020617 0%, #0f172a 52%, #1e293b 100%);
+  --auth-workspace-overlay: linear-gradient(
+    90deg,
+    rgba(2, 6, 23, 0) 0%,
+    rgba(15, 23, 42, 0.54) 38%,
+    rgba(15, 23, 42, 0.86) 100%
+  );
+
+  background: var(--auth-shared-bg);
+  color: #f8fafc;
 }
 
 body.body--dark .auth-background-mesh {
   background-image:
     linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px) !important;
-  opacity: 0.55 !important;
+    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+  opacity: 0.55;
 }
 
 body.body--dark .auth-background-glow {
   background:
     radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.1), transparent 40%) !important;
+    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.1), transparent 40%);
 }
 
 @media (min-width: 1024px) {
   body.body--dark .auth-split-layout__workspace-panel {
-    background: linear-gradient(
-      90deg,
-      rgba(2, 6, 23, 0.34) 0%,
-      rgba(15, 23, 42, 0.68) 38%,
-      rgba(15, 23, 42, 0.88) 100%
-    ) !important;
+    background: var(--auth-workspace-overlay);
     backdrop-filter: blur(14px);
   }
 }

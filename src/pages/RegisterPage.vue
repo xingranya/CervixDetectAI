@@ -23,6 +23,7 @@
             option-label="name"
             option-value="id"
             label="所属医院（工号注册时必填）"
+            popup-content-class="auth-select-menu"
             :rules="[(val) => val || (!department && !entryYear && !sequenceNumber) || '请选择所属医院']"
           >
             <template #prepend>
@@ -52,6 +53,7 @@
                 option-label="name"
                 option-value="code"
                 label="科室"
+                popup-content-class="auth-select-menu"
               />
             </div>
             <div class="col-6 col-sm-4">
@@ -139,6 +141,7 @@
                 flat
                 dense
                 color="primary"
+                no-caps
                 @click="handleSendEmailCode"
               />
             </template>
@@ -158,7 +161,10 @@
             label="密码"
             :type="isPwd ? 'password' : 'text'"
             lazy-rules
-            :rules="[(val) => (val && val.length > 0) || '请输入密码', (val) => val.length >= 6 || '密码长度至少6位']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入密码',
+              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+            ]"
           >
             <template #prepend>
               <q-icon name="lock" />
@@ -282,7 +288,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { useQuasar } from 'quasar';
@@ -307,12 +313,16 @@ const email = ref('');
 const emailCode = ref('');
 const emailCountdown = ref(0);
 const sendingEmailCode = ref(false);
+const emailCountdownTimer = ref<number | null>(null);
 const showEmailCaptcha = ref(false);
 const realName = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const isPwd = ref(true);
 const isConfirmPwd = ref(true);
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
 
 // 协议相关状态
 const agreeTerms = ref(false);
@@ -325,12 +335,12 @@ const captchaVerified = ref(false);
 
 // 计算属性：邮箱格式是否有效
 const isValidEmail = computed(() => {
-  return email.value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value);
+  return email.value && EMAIL_PATTERN.test(email.value);
 });
 
 // 计算属性：是否可以发送邮箱验证码
 const canSendEmailCode = computed(() => {
-  return isValidEmail.value && emailCountdown.value === 0;
+  return isValidEmail.value && emailCountdown.value === 0 && !sendingEmailCode.value;
 });
 
 // 计算属性：邮箱验证码倒计时文本
@@ -416,15 +426,22 @@ const onEmailCaptchaFail = (error: string) => {
   });
 };
 
-/**
- * 开始邮箱验证码倒计时
- */
+const clearEmailCountdownTimer = (): void => {
+  if (emailCountdownTimer.value !== null) {
+    window.clearInterval(emailCountdownTimer.value);
+    emailCountdownTimer.value = null;
+  }
+};
+
 const startEmailCountdown = () => {
+  clearEmailCountdownTimer();
   emailCountdown.value = 60;
-  const timer = setInterval(() => {
+
+  emailCountdownTimer.value = window.setInterval(() => {
     emailCountdown.value--;
     if (emailCountdown.value <= 0) {
-      clearInterval(timer);
+      emailCountdown.value = 0;
+      clearEmailCountdownTimer();
     }
   }, 1000);
 };
@@ -467,11 +484,24 @@ const showAgreement = (tab: 'agreement' | 'privacy') => {
   showAgreementDialog.value = true;
 };
 
+onBeforeUnmount(() => {
+  clearEmailCountdownTimer();
+});
+
 const onRegister = async () => {
   try {
     // 验证：邮箱和工号至少需要一个
     const hasEmail = !!email.value;
     const hasEmployeeId = !!(department.value && entryYear.value && sequenceNumber.value);
+
+    if (password.value.length < MIN_PASSWORD_LENGTH) {
+      $q.notify({
+        type: 'warning',
+        message: `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+        position: 'top',
+      });
+      return;
+    }
 
     if (!hasEmail && !hasEmployeeId) {
       $q.notify({
@@ -574,63 +604,5 @@ const onRegister = async () => {
 
 .auth-employee-preview {
   padding: 2px 2px 0;
-}
-
-.auth-captcha-wrapper {
-  margin-top: 10px;
-}
-
-.auth-captcha-verified {
-  margin-top: 10px;
-}
-
-.auth-warning-text {
-  margin-top: 6px;
-  text-align: center;
-  font-size: 12px;
-  color: #f57c00;
-}
-
-.auth-footer-links {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 深色模式下输入框样式 */
-:global(body.body--dark) .auth-form :deep(.q-field__control) {
-  background: rgba(30, 41, 59, 0.6) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__control):before {
-  border-color: rgba(148, 163, 184, 0.3) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__control):hover:before {
-  border-color: rgba(148, 163, 184, 0.5) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__native),
-:global(body.body--dark) .auth-form :deep(.q-field__input) {
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__label) {
-  color: #cbd5e1 !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-icon) {
-  color: #94a3b8 !important;
-}
-
-/* 深色模式下 select 下拉选项 */
-:global(body.body--dark) .q-menu :deep(.q-item) {
-  background: rgba(30, 41, 59, 0.95) !important;
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .q-menu :deep(.q-item:hover) {
-  background: rgba(51, 65, 85, 0.8) !important;
 }
 </style>

@@ -24,10 +24,11 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
         </div>
       </slot>
 
-      <div class="text-center">
+      <div class="auth-workspace-shell__title-block text-center">
         <h2 class="auth-workspace-shell__title">{{ props.title }}</h2>
         <p v-if="props.subtitle" class="auth-workspace-shell__subtitle">
-          {{ props.subtitle }}
+          <q-icon name="shield" size="14px" class="auth-workspace-shell__subtitle-icon" />
+          <span>{{ props.subtitle }}</span>
         </p>
       </div>
     </header>
@@ -76,6 +77,13 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
   height: 48px;
 }
 
+.auth-workspace-shell__title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 .auth-workspace-shell__title {
   margin: 0;
   font-size: 1.75rem;
@@ -86,10 +94,21 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
 }
 
 .auth-workspace-shell__subtitle {
-  margin: 8px 0 0;
-  color: #64748b;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.68), rgba(239, 246, 255, 0.92));
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-workspace-shell__subtitle-icon {
+  color: #2563eb;
 }
 
 .auth-workspace-shell__content {
@@ -108,11 +127,11 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
    DARK MODE OVERRIDES (Quasar body--dark)
    ========================================= */
 body.body--dark .auth-workspace-shell {
-  background: rgba(15, 23, 42, 0.92) !important;
-  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow:
     0 20px 40px -8px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(148, 163, 184, 0.08) !important;
+    0 0 0 1px rgba(148, 163, 184, 0.08);
 }
 
 body.body--dark .auth-workspace-shell__title {
@@ -120,7 +139,13 @@ body.body--dark .auth-workspace-shell__title {
 }
 
 body.body--dark .auth-workspace-shell__subtitle {
-  color: #94a3b8;
+  color: #bfdbfe;
+  border-color: rgba(96, 165, 250, 0.34);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.24), rgba(30, 58, 138, 0.16));
+}
+
+body.body--dark .auth-workspace-shell__subtitle-icon {
+  color: #93c5fd;
 }
 
 @media (max-width: 600px) {

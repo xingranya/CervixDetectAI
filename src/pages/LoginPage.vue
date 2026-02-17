@@ -51,7 +51,10 @@
             label="邮箱"
             type="email"
             lazy-rules
-            :rules="[(val) => (val && val.length > 0) || '请输入您的邮箱']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入您的邮箱',
+              (val) => EMAIL_PATTERN.test(val) || '请输入正确的邮箱格式',
+            ]"
           >
             <template #prepend>
               <q-icon name="email" />
@@ -65,7 +68,10 @@
             label="密码"
             :type="isPwd ? 'password' : 'text'"
             lazy-rules
-            :rules="[(val) => (val && val.length > 0) || '请输入您的密码']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入您的密码',
+              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+            ]"
           >
             <template #prepend>
               <q-icon name="key" />
@@ -243,6 +249,7 @@
             option-label="name"
             option-value="id"
             label="所属医院"
+            popup-content-class="auth-select-menu"
             :rules="[(val) => !!val || '请选择医院']"
           >
             <template #prepend>
@@ -269,7 +276,10 @@
             rounded
             label="员工编号"
             lazy-rules
-            :rules="[(val) => (val && val.length > 0) || '请输入工号']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入工号',
+              (val) => EMPLOYEE_ID_PATTERN.test(val) || '工号需为4-32位字母、数字、下划线或中划线',
+            ]"
           >
             <template #prepend>
               <q-icon name="badge" />
@@ -283,7 +293,10 @@
             label="安全密码"
             :type="isPwd ? 'password' : 'text'"
             lazy-rules
-            :rules="[(val) => (val && val.length > 0) || '请输入密码']"
+            :rules="[
+              (val) => (val && val.length > 0) || '请输入密码',
+              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+            ]"
           >
             <template #prepend>
               <q-icon name="key" />
@@ -364,7 +377,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import AuthBrandPanel from 'src/components/auth/AuthBrandPanel.vue';
@@ -390,6 +403,11 @@ const employeeId = ref('');
 const isPwd = ref(true);
 const countdown = ref(0);
 const isSendingSms = ref(false);
+const smsCountdownTimer = ref<number | null>(null);
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMPLOYEE_ID_PATTERN = /^[A-Za-z0-9_-]{4,32}$/;
+const MIN_PASSWORD_LENGTH = 6;
 
 const agreeTerms = ref(false);
 const showAgreementDialog = ref(false);
@@ -401,6 +419,98 @@ const captchaRef = ref<InstanceType<typeof AliCaptcha> | null>(null);
 
 const showSmsCaptchaDialog = ref(false);
 const smsCaptchaRef = ref<InstanceType<typeof AliCaptcha> | null>(null);
+
+const resolveSafeRedirect = (queryRedirect: unknown): string => {
+  if (typeof queryRedirect !== 'string') {
+    return '/app';
+  }
+
+  const trimmedRedirect = queryRedirect.trim();
+  if (!trimmedRedirect.startsWith('/')) {
+    return '/app';
+  }
+
+  if (trimmedRedirect.startsWith('//') || trimmedRedirect.includes('://')) {
+    return '/app';
+  }
+
+  if (trimmedRedirect.startsWith('/#')) {
+    const hashPath = trimmedRedirect.slice(2);
+    return hashPath.startsWith('/') ? hashPath : '/app';
+  }
+
+  if (trimmedRedirect.startsWith('#/')) {
+    const hashPath = trimmedRedirect.slice(1);
+    return hashPath.startsWith('/') ? hashPath : '/app';
+  }
+
+  return trimmedRedirect;
+};
+
+const navigateAfterLogin = async (): Promise<void> => {
+  const redirectPath = resolveSafeRedirect(router.currentRoute.value.query.redirect);
+  const navigationResult = await router.push(redirectPath);
+
+  if (navigationResult && redirectPath !== '/app') {
+    await router.push('/app');
+  }
+};
+
+const resetCommonAuthState = (): void => {
+  agreeTerms.value = false;
+  captchaToken.value = '';
+  captchaVerified.value = false;
+  showAgreementDialog.value = false;
+};
+
+const resetEmailLoginState = (): void => {
+  email.value = '';
+  password.value = '';
+  captchaRef.value?.reset();
+};
+
+const resetEmployeeLoginState = (): void => {
+  hospital.value = null;
+  employeeId.value = '';
+  password.value = '';
+  captchaRef.value?.reset();
+};
+
+const resetPhoneLoginState = (): void => {
+  phone.value = '';
+  smsCode.value = '';
+  isSendingSms.value = false;
+  countdown.value = 0;
+  showSmsCaptchaDialog.value = false;
+  smsCaptchaRef.value?.reset();
+  clearSmsCountdownTimer();
+};
+
+watch(
+  loginType,
+  (newType, oldType) => {
+    if (newType === oldType) {
+      return;
+    }
+
+    resetCommonAuthState();
+
+    if (oldType === 'email') {
+      resetEmailLoginState();
+      return;
+    }
+
+    if (oldType === 'employee') {
+      resetEmployeeLoginState();
+      return;
+    }
+
+    if (oldType === 'phone') {
+      resetPhoneLoginState();
+    }
+  },
+  { flush: 'post' },
+);
 
 const onCaptchaSuccess = (token: string) => {
   captchaToken.value = token;
@@ -440,8 +550,7 @@ const triggerSmsCaptcha = () => {
   showSmsCaptchaDialog.value = true;
 };
 
-const onSmsCaptchaSuccess = (token: string) => {
-  console.log('📱 短信验证码图像复原验证成功:', token);
+const onSmsCaptchaSuccess = () => {
   showSmsCaptchaDialog.value = false;
   void sendSmsCode();
 };
@@ -471,8 +580,28 @@ const countdownText = computed(() => {
 });
 
 const canSendSms = computed(
-  () => countdown.value === 0 && !isSendingSms.value && phone.value.length === 11,
+  () => countdown.value === 0 && !isSendingSms.value && /^1[3-9]\d{9}$/.test(phone.value),
 );
+
+const clearSmsCountdownTimer = (): void => {
+  if (smsCountdownTimer.value !== null) {
+    window.clearInterval(smsCountdownTimer.value);
+    smsCountdownTimer.value = null;
+  }
+};
+
+const startSmsCountdown = (): void => {
+  clearSmsCountdownTimer();
+  countdown.value = 60;
+
+  smsCountdownTimer.value = window.setInterval(() => {
+    countdown.value -= 1;
+    if (countdown.value <= 0) {
+      countdown.value = 0;
+      clearSmsCountdownTimer();
+    }
+  }, 1000);
+};
 
 const sendSmsCode = async () => {
   if (!canSendSms.value) return;
@@ -489,7 +618,6 @@ const sendSmsCode = async () => {
 
   isSendingSms.value = true;
   try {
-    console.log('📱 发送短信验证码到:', phone.value);
     const response = await authAPI.sendSmsCode(phone.value, 'login');
 
     if (response.success) {
@@ -499,13 +627,7 @@ const sendSmsCode = async () => {
         position: 'top',
       });
 
-      countdown.value = 60;
-      const timer = setInterval(() => {
-        countdown.value -= 1;
-        if (countdown.value <= 0) {
-          clearInterval(timer);
-        }
-      }, 1000);
+      startSmsCountdown();
     } else {
       $q.notify({
         type: 'negative',
@@ -529,6 +651,28 @@ const sendSmsCode = async () => {
 };
 
 const onSubmit = async () => {
+  if (authStore.isAuthenticating) {
+    return;
+  }
+
+  if (!EMAIL_PATTERN.test(email.value)) {
+    $q.notify({
+      type: 'warning',
+      message: '请输入正确的邮箱格式',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (password.value.length < MIN_PASSWORD_LENGTH) {
+    $q.notify({
+      type: 'warning',
+      message: `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+      position: 'top',
+    });
+    return;
+  }
+
   try {
     const result = await authStore.login(email.value, password.value);
 
@@ -538,8 +682,7 @@ const onSubmit = async () => {
         message: '登录成功',
         position: 'top',
       });
-      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
-      void router.push(redirectPath);
+      await navigateAfterLogin();
     } else {
       $q.notify({
         type: 'negative',
@@ -558,6 +701,10 @@ const onSubmit = async () => {
 };
 
 const onSmsLogin = async () => {
+  if (authStore.isAuthenticating) {
+    return;
+  }
+
   if (!phone.value || !smsCode.value) {
     $q.notify({
       type: 'warning',
@@ -568,12 +715,9 @@ const onSmsLogin = async () => {
   }
 
   try {
-    console.log('📱 短信登录/注册:', phone.value, smsCode.value);
-
     let result = await authStore.smsLogin(phone.value, smsCode.value);
 
     if (!result.success && result.error?.includes('未注册')) {
-      console.log('📝 手机号未注册，自动注册...');
       $q.notify({
         type: 'info',
         message: '检测到新用户，正在为您注册...',
@@ -589,8 +733,7 @@ const onSmsLogin = async () => {
         message: '登录成功',
         position: 'top',
       });
-      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
-      void router.push(redirectPath);
+      await navigateAfterLogin();
     } else {
       $q.notify({
         type: 'negative',
@@ -612,7 +755,31 @@ const onSmsLogin = async () => {
 };
 
 const onEmployeeLogin = async () => {
-  if (!hospital.value) return;
+  if (authStore.isAuthenticating) {
+    return;
+  }
+
+  if (!hospital.value) {
+    return;
+  }
+
+  if (!EMPLOYEE_ID_PATTERN.test(employeeId.value)) {
+    $q.notify({
+      type: 'warning',
+      message: '工号需为4-32位字母、数字、下划线或中划线',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (password.value.length < MIN_PASSWORD_LENGTH) {
+    $q.notify({
+      type: 'warning',
+      message: `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+      position: 'top',
+    });
+    return;
+  }
 
   try {
     const result = await authStore.employeeLogin(
@@ -627,8 +794,7 @@ const onEmployeeLogin = async () => {
         message: '登录成功',
         position: 'top',
       });
-      const redirectPath = (router.currentRoute.value.query.redirect as string) || '/app';
-      void router.push(redirectPath);
+      await navigateAfterLogin();
     } else {
       $q.notify({
         type: 'negative',
@@ -645,6 +811,12 @@ const onEmployeeLogin = async () => {
     });
   }
 };
+
+onBeforeUnmount(() => {
+  clearSmsCountdownTimer();
+  captchaRef.value?.reset();
+  smsCaptchaRef.value?.reset();
+});
 </script>
 
 <style scoped>
@@ -677,6 +849,11 @@ const onEmployeeLogin = async () => {
   color: var(--app-text-primary);
 }
 
+.auth-login-brand-meta__team :deep(strong) {
+  color: var(--q-primary);
+  font-weight: 700;
+}
+
 .auth-login-brand-meta__team {
   margin: 4px 0 0;
   font-size: 0.76rem;
@@ -684,131 +861,9 @@ const onEmployeeLogin = async () => {
   color: var(--app-text-secondary);
 }
 
-:global(body.body--dark) .auth-login-brand-meta {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(148, 163, 184, 0.32);
-}
-
-:global(body.body--dark) .auth-login-brand-meta__name {
-  color: #f8fafc;
-}
-
-:global(body.body--dark) .auth-login-brand-meta__team {
-  color: #cbd5e1;
-}
-
-.auth-login-tabs {
-  margin-bottom: 10px;
-}
-
-/* 浅色模式下 tab 激活态 */
-.auth-login-tabs :deep(.q-tab--active) {
-  background: #ffffff;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
-}
-
-/* 深色模式下输入框样式 */
-:global(body.body--dark) .auth-form :deep(.q-field__control) {
-  background: rgba(30, 41, 59, 0.6) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__control):before {
-  border-color: rgba(148, 163, 184, 0.3) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__control):hover:before {
-  border-color: rgba(148, 163, 184, 0.5) !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__native),
-:global(body.body--dark) .auth-form :deep(.q-field__input) {
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-field__label) {
-  color: #cbd5e1 !important;
-}
-
-:global(body.body--dark) .auth-form :deep(.q-icon) {
-  color: #94a3b8 !important;
-}
-
-/* 深色模式下 select 下拉选项 */
-:global(body.body--dark) .q-menu :deep(.q-item) {
-  background: rgba(30, 41, 59, 0.95) !important;
-  color: #f8fafc !important;
-}
-
-:global(body.body--dark) .q-menu :deep(.q-item:hover) {
-  background: rgba(51, 65, 85, 0.8) !important;
-}
-
-:global(body.body--dark) .auth-login-tabs {
-  background: rgba(15, 23, 42, 0.72) !important;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-}
-
-:global(body.body--dark) .auth-login-tabs .q-tab {
-  color: #cbd5e1;
-}
-
-:global(body.body--dark) .auth-login-tabs .q-tab--active {
-  background: rgba(51, 65, 85, 0.62) !important;
-  color: #f8fafc;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.auth-login-tip {
-  text-align: center;
-  color: var(--app-text-secondary);
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-.auth-agreement-wrapper {
-  margin-top: 6px;
-}
-
-.auth-agreement-link {
-  color: var(--app-link-color);
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.auth-agreement-link:hover {
-  text-decoration: underline;
-}
-
-.auth-captcha-wrapper {
-  margin-top: 10px;
-}
-
-.auth-captcha-verified {
-  text-align: center;
-  margin-top: 10px;
-}
-
-.auth-warning-text {
-  margin-top: 6px;
-  text-align: center;
-  font-size: 12px;
-  color: #f57c00;
-}
-
-.auth-footer-links {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-}
-
 .auth-login-cta {
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 52%, #1e40af 100%) !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 52%, #1e40af 100%);
   border: 1px solid rgba(37, 99, 235, 0.46);
   box-shadow:
     0 10px 24px rgba(37, 99, 235, 0.28),
@@ -844,30 +899,6 @@ const onEmployeeLogin = async () => {
   border-color: rgba(59, 130, 246, 0.26);
   box-shadow: none;
   filter: none;
-}
-
-:global(body.body--dark) .auth-login-cta {
-  color: #f8fafc;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%) !important;
-  border-color: rgba(96, 165, 250, 0.52);
-  box-shadow:
-    0 12px 26px rgba(30, 64, 175, 0.36),
-    0 2px 10px rgba(15, 23, 42, 0.38);
-}
-
-:global(body.body--dark) .auth-login-cta:not([disabled]):hover {
-  filter: brightness(1.06);
-  box-shadow:
-    0 16px 34px rgba(37, 99, 235, 0.44),
-    0 4px 14px rgba(15, 23, 42, 0.44);
-}
-
-:global(body.body--dark) .auth-login-cta[disabled],
-:global(body.body--dark) .auth-login-cta:disabled {
-  color: rgba(226, 232, 240, 0.72);
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  border-color: rgba(148, 163, 184, 0.34);
-  box-shadow: none;
 }
 
 .bg-gradient-primary {

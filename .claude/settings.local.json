@@ -24,7 +24,11 @@
       "Bash(npm run -s type-check)",
       "Bash(npm run -s build)",
       "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" clean:*)",
-      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" status:*)"
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" status:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" log:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" diff:*)",
+      "Bash(git show:*)",
+      "Bash(git -C \"/e/HTML+CSS/CervixDetectAI\" diff:*)"
     ]
   },
   "outputStyle": "Structural Thinking"

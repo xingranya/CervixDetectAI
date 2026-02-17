@@ -77,11 +77,11 @@ const defaultCopyrights: BrandCopyrightItem[] = [
   },
 ];
 
-const precisionRate = ref(99.82);
-const partnerCount = ref(412);
-const dailyLoad = ref(1284);
-const loadChange = ref(12);
-const loadBars = ref<number[]>([44, 58, 53, 78, 66, 90]);
+const precisionRate = ref(99.55);
+const partnerCount = ref(10);
+const dailyLoad = ref(32);
+const loadChange = ref(2);
+const loadBars = ref<number[]>([8, 11, 14, 16, 18, 21]);
 const turnoverRate = ref(92);
 const recallRate = ref(96);
 const updatedAt = ref(new Date());
@@ -102,20 +102,19 @@ const randomInt = (min: number, max: number): number => {
 
 const updateRealtimeData = (): void => {
   precisionRate.value = Number(
-    clampNumber(precisionRate.value + randomDelta(0.12), 99.55, 99.95).toFixed(2),
+    clampNumber(precisionRate.value + randomDelta(0.02), 99.52, 99.68).toFixed(2),
   );
-  partnerCount.value = Math.round(clampNumber(partnerCount.value + randomInt(-1, 2), 408, 468));
 
-  const loadIncrease = randomInt(8, 30);
-  dailyLoad.value += loadIncrease;
-  loadChange.value = Math.round(clampNumber(loadIncrease / 2 + randomInt(4, 10), 6, 28));
+  const loadIncrease = randomInt(0, 2);
+  dailyLoad.value = Math.round(clampNumber(dailyLoad.value + loadIncrease, 0, 9999));
+  loadChange.value = loadIncrease === 0 ? 0 : randomInt(1, 3);
 
-  const lastBar = loadBars.value[loadBars.value.length - 1] ?? 88;
-  const nextBar = Math.round(clampNumber(lastBar + randomInt(-8, 12), 38, 100));
+  const lastBar = loadBars.value[loadBars.value.length - 1] ?? 18;
+  const nextBar = Math.round(clampNumber(lastBar + randomInt(-2, 3), 6, 26));
   loadBars.value = [...loadBars.value.slice(1), nextBar];
 
-  turnoverRate.value = Math.round(clampNumber(turnoverRate.value + randomDelta(2.2), 86, 97));
-  recallRate.value = Math.round(clampNumber(recallRate.value + randomDelta(2.2), 92, 99));
+  turnoverRate.value = Math.round(clampNumber(turnoverRate.value + randomDelta(0.7), 88, 95));
+  recallRate.value = Math.round(clampNumber(recallRate.value + randomDelta(0.6), 93, 98));
 
   updatedAt.value = new Date();
 };
@@ -139,12 +138,20 @@ const loadChangeText = computed(() => {
   return `${Math.abs(loadChange.value)}%`;
 });
 
+const animatedLoadDisplay = ref(formattedDailyLoad.value);
+const animatedPrecisionDisplay = ref(precisionRate.value.toFixed(2));
+
+const syncAnimatedDisplays = (): void => {
+  animatedLoadDisplay.value = formattedDailyLoad.value;
+  animatedPrecisionDisplay.value = precisionRate.value.toFixed(2);
+};
+
 const realtimeMetrics = computed<BrandRealtimeMetric[]>(() => {
   return [
     {
       label: '病例周转效率',
       value: turnoverRate.value,
-      description: '采集到报告平均 27 分钟',
+      description: '采集到报告平均 3 分钟',
       color: '#38bdf8', // Light Blue
     },
     {
@@ -161,7 +168,11 @@ const accuracyProgress = computed(() => {
 });
 
 onMounted(() => {
-  realtimeTimer = window.setInterval(updateRealtimeData, 1400);
+  syncAnimatedDisplays();
+  realtimeTimer = window.setInterval(() => {
+    updateRealtimeData();
+    syncAnimatedDisplays();
+  }, 1600);
 });
 
 onBeforeUnmount(() => {
@@ -223,7 +234,9 @@ onBeforeUnmount(() => {
               <q-icon name="analytics" class="icon" />
             </div>
             <div class="hud-card-value-row">
-              <span class="value">{{ formattedDailyLoad }}</span>
+              <Transition name="flip-clock" mode="out-in">
+                <span :key="animatedLoadDisplay" class="value value--flip">{{ animatedLoadDisplay }}</span>
+              </Transition>
               <div class="trend" :class="loadChangePositive ? 'trend-up' : 'trend-down'">
                 <q-icon :name="loadChangePositive ? 'arrow_upward' : 'arrow_downward'" />
                 {{ loadChangeText }}
@@ -246,7 +259,11 @@ onBeforeUnmount(() => {
               <q-icon name="verified" class="icon" />
             </div>
             <div class="hud-card-value-row">
-              <span class="value accent-value">{{ precisionRate.toFixed(2) }}<small>%</small></span>
+              <Transition name="flip-clock" mode="out-in">
+                <span :key="animatedPrecisionDisplay" class="value accent-value value--flip"
+                  >{{ animatedPrecisionDisplay }}<small>%</small></span
+                >
+              </Transition>
             </div>
             <div class="hud-progress-bar">
               <div class="progress-fill" :style="{ width: `${accuracyProgress}%` }"></div>
@@ -326,8 +343,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   padding: 40px 48px;
-  /* Light Mode Background */
-  background: linear-gradient(90deg, #f0f9ff 0%, #e8f4fe 72%, #e3f2fd 100%);
+  /* 与 AuthSplitLayout 共享背景，避免左右分栏出现割裂线 */
+  background: transparent;
   color: #0f172a; /* Slate 900 */
 }
 
@@ -427,11 +444,15 @@ onBeforeUnmount(() => {
 }
 
 .hero-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  line-height: 1.1;
-  margin: 0 0 12px;
+  font-size: clamp(2.56rem, 3.5vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.03;
+  margin: 0 0 14px;
+  letter-spacing: -0.02em;
   color: #0f172a;
+  text-shadow:
+    0 8px 24px rgba(37, 99, 235, 0.18),
+    0 2px 6px rgba(15, 23, 42, 0.14);
 }
 
 .hero-subtitle {
@@ -512,6 +533,31 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 
+.value--flip {
+  min-width: 3.8ch;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+
+.flip-clock-enter-active,
+.flip-clock-leave-active {
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.72, 0.18, 1),
+    opacity 0.35s ease;
+  transform-origin: center;
+}
+
+.flip-clock-enter-from {
+  opacity: 0;
+  transform: perspective(520px) rotateX(-88deg) translateY(-0.14em);
+}
+
+.flip-clock-leave-to {
+  opacity: 0;
+  transform: perspective(520px) rotateX(88deg) translateY(0.14em);
+}
+
 .value {
   font-size: 1.8rem;
   font-weight: 700;
@@ -522,7 +568,7 @@ onBeforeUnmount(() => {
 .trend {
   font-size: 0.8rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 2px;
 }
@@ -745,7 +791,7 @@ onBeforeUnmount(() => {
    DARK MODE OVERRIDES (Quasar body--dark)
    ========================================= */
 body.body--dark .auth-brand-panel {
-  background: linear-gradient(135deg, #020617 0%, #0f172a 100%) !important;
+  background: transparent !important;
   color: #f8fafc !important;
 }
 
@@ -776,6 +822,9 @@ body.body--dark .hero-badge {
 
 body.body--dark .hero-title {
   color: #f8fafc;
+  text-shadow:
+    0 10px 26px rgba(2, 132, 199, 0.32),
+    0 2px 8px rgba(15, 23, 42, 0.5);
 }
 
 body.body--dark .hero-subtitle {
