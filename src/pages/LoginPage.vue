@@ -28,11 +28,11 @@
           active-color="primary"
           indicator-color="transparent"
           align="justify"
-          inline-label
+          :inline-label="!isCompactTabs"
         >
-          <q-tab name="employee" icon="badge" label="工号登录" />
-          <q-tab name="email" icon="mail" label="电子邮箱" />
-          <q-tab name="phone" icon="smartphone" label="移动终端" />
+          <q-tab name="employee" icon="badge" :label="isCompactTabs ? '工号' : '工号登录'" />
+          <q-tab name="email" icon="mail" :label="isCompactTabs ? '邮箱' : '电子邮箱'" />
+          <q-tab name="phone" icon="smartphone" :label="isCompactTabs ? '短信' : '移动终端'" />
         </q-tabs>
 
         <div class="auth-login-tip auth-login-tip--stable">
@@ -51,7 +51,7 @@
           <q-form
             v-if="loginType === 'email'"
             key="email"
-            class="auth-form q-gutter-md"
+            class="auth-form q-gutter-y-md"
             @submit="onSubmit"
           >
             <q-input
@@ -153,7 +153,7 @@
           <q-form
             v-else-if="loginType === 'phone'"
             key="phone"
-            class="auth-form q-gutter-md"
+            class="auth-form q-gutter-y-md"
             @submit.prevent="onSmsLogin"
           >
             <q-input
@@ -260,7 +260,7 @@
           <q-form
             v-else
             key="employee"
-            class="auth-form q-gutter-md"
+            class="auth-form q-gutter-y-md"
             @submit="onEmployeeLogin"
           >
             <q-select
@@ -607,6 +607,8 @@ const canSendSms = computed(
   () => countdown.value === 0 && !isSendingSms.value && /^1[3-9]\d{9}$/.test(phone.value),
 );
 
+const isCompactTabs = computed(() => $q.screen.width < 420);
+
 const clearSmsCountdownTimer = (): void => {
   if (smsCountdownTimer.value !== null) {
     window.clearInterval(smsCountdownTimer.value);
@@ -925,7 +927,53 @@ onBeforeUnmount(() => {
   filter: none;
 }
 
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+@media (max-width: 600px) {
+  .auth-login-brand-meta {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .auth-login-brand-meta__logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .auth-login-brand-meta__name {
+    font-size: 0.86rem;
+  }
+
+  .auth-login-brand-meta__team {
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .auth-login-tabs {
+    padding: 2px !important;
+  }
+
+  .auth-login-tabs :deep(.q-tab) {
+    min-height: 34px;
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+
+  .auth-login-tabs :deep(.q-tab__content) {
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .auth-login-tabs :deep(.q-tab__icon) {
+    margin-right: 2px;
+    font-size: 16px;
+  }
+
+  .auth-login-tabs :deep(.q-tab__label) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 </style>

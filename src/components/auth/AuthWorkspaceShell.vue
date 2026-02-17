@@ -50,6 +50,7 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
 .auth-workspace-shell {
   width: 100%;
   max-width: 460px;
+  box-sizing: border-box;
   max-height: calc(100vh - 48px);
   overflow: auto;
   /* Light Mode Glass Card */
@@ -118,7 +119,6 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
 }
 
 .auth-workspace-shell__footer {
@@ -153,16 +153,35 @@ body.body--dark .auth-workspace-shell__subtitle-icon {
   color: #93c5fd;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1023px) {
   .auth-workspace-shell {
     max-height: none;
     overflow: visible;
-    padding: 24px 20px;
-    border-radius: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-workspace-shell {
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+    padding: 16px 10px;
+    border-radius: 16px;
   }
 
   .auth-workspace-shell__title {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+  }
+
+  .auth-workspace-shell__subtitle {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 6px 8px;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    white-space: normal;
   }
 }
 </style>

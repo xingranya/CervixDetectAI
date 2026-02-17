@@ -88,6 +88,7 @@
 .workspace-content-wrapper {
   width: 100%;
   max-width: 480px;
+  margin: 0 auto;
   position: relative;
   z-index: 1;
   animation: workspace-enter var(--app-motion-duration-enter, 250ms) cubic-bezier(0.16, 1, 0.3, 1);
@@ -101,6 +102,42 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-split-layout {
+    overflow-y: auto;
+  }
+
+  .auth-split-layout__workspace-panel {
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-split-layout {
+    overflow-y: auto;
+  }
+
+  .auth-split-layout__workspace-panel {
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    padding: 8px;
+  }
+
+  .workspace-content-wrapper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
   }
 }
 
