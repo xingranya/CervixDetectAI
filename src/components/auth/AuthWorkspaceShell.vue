@@ -49,6 +49,9 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
    ========================================= */
 .auth-workspace-shell {
   width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
   /* Light Mode Glass Card */
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(203, 213, 225, 0.85);
@@ -57,10 +60,10 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
     0 22px 42px -10px rgba(148, 163, 184, 0.18),
     0 0 0 1px rgba(148, 163, 184, 0.08);
   color: #1e293b;
-  padding: 40px 32px;
+  padding: 32px 28px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -81,15 +84,15 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .auth-workspace-shell__title {
   margin: 0;
-  font-size: 1.75rem;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.82rem;
+  line-height: 1.15;
+  font-weight: 760;
+  letter-spacing: -0.015em;
   color: #0f172a;
 }
 
@@ -114,11 +117,12 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
 .auth-workspace-shell__content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  flex: 1;
 }
 
 .auth-workspace-shell__footer {
-  padding-top: 8px;
+  padding-top: 4px;
   display: flex;
   justify-content: center;
 }
@@ -136,6 +140,7 @@ body.body--dark .auth-workspace-shell {
 
 body.body--dark .auth-workspace-shell__title {
   color: #f8fafc;
+  text-shadow: 0 4px 12px rgba(14, 116, 144, 0.22);
 }
 
 body.body--dark .auth-workspace-shell__subtitle {
@@ -150,6 +155,8 @@ body.body--dark .auth-workspace-shell__subtitle-icon {
 
 @media (max-width: 600px) {
   .auth-workspace-shell {
+    max-height: none;
+    overflow: visible;
     padding: 24px 20px;
     border-radius: 20px;
   }

@@ -3,8 +3,8 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :maximized="$q.screen.lt.sm"
-    transition-show="scale"
-    transition-hide="scale"
+    transition-show="fade"
+    transition-hide="fade"
   >
     <q-card class="agreement-dialog">
       <!-- 对话框头部 -->

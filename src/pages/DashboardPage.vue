@@ -644,7 +644,11 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border: 1px solid #bae6fd;
   color: #0c4a6e;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
@@ -664,7 +668,11 @@ onUnmounted(() => {
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -1px rgba(0, 0, 0, 0.03);
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
     box-shadow:
@@ -693,7 +701,11 @@ onUnmounted(() => {
   padding: 16px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
   background-color: #f8fafc;
 
   &:hover {
@@ -731,7 +743,11 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 20px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
     background: #ffffff;
@@ -803,7 +819,11 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 20px;
   text-align: center;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
   cursor: pointer;
   background-color: #f8fafc;
 
@@ -830,7 +850,11 @@ onUnmounted(() => {
   border-top: 1px solid #e2e8f0;
   border-right: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition:
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
     background-color: #ffffff;

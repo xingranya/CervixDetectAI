@@ -431,8 +431,8 @@
                     <div class="col-12 col-md-6">
                       <div class="text-subtitle2 text-grey-7">客服邮箱</div>
                       <div class="text-body1">
-                        <a href="mailto:support@cervixdetect.ai" class="text-primary">
-                          support@cervixdetect.ai
+                        <a href="mailto:support@hpvsc.icu" class="text-primary">
+                          support@hpvsc.icu
                         </a>
                       </div>
                     </div>

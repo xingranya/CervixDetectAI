@@ -28,7 +28,11 @@
       "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" log:*)",
       "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" diff:*)",
       "Bash(git show:*)",
-      "Bash(git -C \"/e/HTML+CSS/CervixDetectAI\" diff:*)"
+      "Bash(git -C \"/e/HTML+CSS/CervixDetectAI\" diff:*)",
+      "WebFetch(domain:quasar.dev)",
+      "Bash(npm run lint)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(awk:*)"
     ]
   },
   "outputStyle": "Structural Thinking"

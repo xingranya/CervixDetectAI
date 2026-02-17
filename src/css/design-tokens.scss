@@ -34,6 +34,35 @@
   --app-transition-fast: 0.15s ease;
   --app-transition-normal: 0.2s ease;
 
+  // ===== Motion 动画基础变量 =====
+  // 持续时间（医疗场景：稳重克制，避免过慢或过快）
+  --app-motion-duration-fast: 150ms;
+  --app-motion-duration-normal: 200ms;
+  --app-motion-duration-slow: 300ms;
+  --app-motion-duration-enter: 250ms;
+  --app-motion-duration-exit: 200ms;
+
+  // 缓动曲线（自然流畅，减少突兀感）
+  --app-motion-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --app-motion-ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --app-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --app-motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  // 位移距离（克制，避免过度晃动）
+  --app-motion-distance-xs: 4px;
+  --app-motion-distance-sm: 8px;
+  --app-motion-distance-md: 16px;
+  --app-motion-distance-lg: 24px;
+  --app-motion-distance-enter: 12px;
+
+  // 缩放比例（微交互反馈）
+  --app-motion-scale-press: 0.98;
+  --app-motion-scale-hover: 1.02;
+  --app-motion-scale-enter: 0.96;
+
+  // 阴影过渡（按压反馈）
+  --app-motion-shadow-transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
   // 医学诊断颜色
   --app-diagnosis-normal: #86efac;
   --app-diagnosis-ascus: #fde047;

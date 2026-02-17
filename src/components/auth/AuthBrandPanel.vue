@@ -79,9 +79,9 @@ const defaultCopyrights: BrandCopyrightItem[] = [
 
 const precisionRate = ref(99.55);
 const partnerCount = ref(10);
-const dailyLoad = ref(32);
-const loadChange = ref(2);
-const loadBars = ref<number[]>([8, 11, 14, 16, 18, 21]);
+const dailyLoad = ref(5);
+const loadChange = ref(1);
+const loadBars = ref<number[]>([6, 7, 8, 9, 10, 11]);
 const turnoverRate = ref(92);
 const recallRate = ref(96);
 const updatedAt = ref(new Date());
@@ -105,12 +105,12 @@ const updateRealtimeData = (): void => {
     clampNumber(precisionRate.value + randomDelta(0.02), 99.52, 99.68).toFixed(2),
   );
 
-  const loadIncrease = randomInt(0, 2);
+  const loadIncrease = randomInt(0, 1);
   dailyLoad.value = Math.round(clampNumber(dailyLoad.value + loadIncrease, 0, 9999));
-  loadChange.value = loadIncrease === 0 ? 0 : randomInt(1, 3);
+  loadChange.value = loadIncrease === 0 ? 0 : 1;
 
-  const lastBar = loadBars.value[loadBars.value.length - 1] ?? 18;
-  const nextBar = Math.round(clampNumber(lastBar + randomInt(-2, 3), 6, 26));
+  const lastBar = loadBars.value[loadBars.value.length - 1] ?? 10;
+  const nextBar = Math.round(clampNumber(lastBar + randomInt(-1, 1), 4, 18));
   loadBars.value = [...loadBars.value.slice(1), nextBar];
 
   turnoverRate.value = Math.round(clampNumber(turnoverRate.value + randomDelta(0.7), 88, 95));
@@ -172,7 +172,7 @@ onMounted(() => {
   realtimeTimer = window.setInterval(() => {
     updateRealtimeData();
     syncAnimatedDisplays();
-  }, 1600);
+  }, 2500);
 });
 
 onBeforeUnmount(() => {
@@ -234,9 +234,11 @@ onBeforeUnmount(() => {
               <q-icon name="analytics" class="icon" />
             </div>
             <div class="hud-card-value-row">
-              <Transition name="flip-clock" mode="out-in">
-                <span :key="animatedLoadDisplay" class="value value--flip">{{ animatedLoadDisplay }}</span>
-              </Transition>
+              <span class="value-slot">
+                <Transition name="metric-flip">
+                  <span :key="animatedLoadDisplay" class="value value--flip-elegant">{{ animatedLoadDisplay }}</span>
+                </Transition>
+              </span>
               <div class="trend" :class="loadChangePositive ? 'trend-up' : 'trend-down'">
                 <q-icon :name="loadChangePositive ? 'arrow_upward' : 'arrow_downward'" />
                 {{ loadChangeText }}
@@ -259,11 +261,13 @@ onBeforeUnmount(() => {
               <q-icon name="verified" class="icon" />
             </div>
             <div class="hud-card-value-row">
-              <Transition name="flip-clock" mode="out-in">
-                <span :key="animatedPrecisionDisplay" class="value accent-value value--flip"
-                  >{{ animatedPrecisionDisplay }}<small>%</small></span
-                >
-              </Transition>
+              <span class="value-slot value-slot--percent">
+                <Transition name="metric-flip">
+                  <span :key="animatedPrecisionDisplay" class="value accent-value value--flip-elegant"
+                    >{{ animatedPrecisionDisplay }}<small>%</small></span
+                  >
+                </Transition>
+              </span>
             </div>
             <div class="hud-progress-bar">
               <div class="progress-fill" :style="{ width: `${accuracyProgress}%` }"></div>
@@ -533,30 +537,54 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 
-.value--flip {
-  min-width: 3.8ch;
+.value-slot {
+  position: relative;
   display: inline-flex;
+  min-width: 4.2ch;
+  min-height: 1.92rem;
   align-items: baseline;
   justify-content: flex-start;
+  perspective: 560px;
 }
 
-.flip-clock-enter-active,
-.flip-clock-leave-active {
+.value-slot--percent {
+  min-width: 6.2ch;
+}
+
+.value--flip-elegant {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-flip-enter-active,
+.metric-flip-leave-active {
   transition:
-    transform 0.45s cubic-bezier(0.2, 0.72, 0.18, 1),
-    opacity 0.35s ease;
-  transform-origin: center;
+    transform 280ms cubic-bezier(0.22, 0.68, 0.2, 1),
+    opacity 220ms var(--app-motion-ease-default),
+    filter 220ms var(--app-motion-ease-default);
+  transform-origin: 50% 58%;
+  backface-visibility: hidden;
 }
 
-.flip-clock-enter-from {
-  opacity: 0;
-  transform: perspective(520px) rotateX(-88deg) translateY(-0.14em);
+.metric-flip-leave-active {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.flip-clock-leave-to {
+.metric-flip-enter-from {
   opacity: 0;
-  transform: perspective(520px) rotateX(88deg) translateY(0.14em);
+  filter: blur(1px);
+  transform: rotateX(-62deg) translateY(14%) scale(0.985);
 }
+
+.metric-flip-leave-to {
+  opacity: 0;
+  filter: blur(1px);
+  transform: rotateX(62deg) translateY(-14%) scale(1.015);
+}
+
 
 .value {
   font-size: 1.8rem;

@@ -127,7 +127,8 @@ export default defineConfig((/* ctx */) => {
 
     // animations: 'all', // --- includes all animations
     // https://v2.quasar.dev/options/animations
-    animations: [],
+    // 医疗稳重场景：仅保留存在于 Quasar extras 的轻量动画
+    animations: ['fadeIn', 'fadeOut', 'zoomIn', 'zoomOut'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#sourcefiles
     // sourceFiles: {

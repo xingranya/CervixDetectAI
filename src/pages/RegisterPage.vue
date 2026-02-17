@@ -229,7 +229,7 @@
             <span class="q-ml-xs text-positive">验证已通过</span>
           </div>
 
-          <q-dialog v-model="showEmailCaptcha" persistent>
+          <q-dialog v-model="showEmailCaptcha" persistent transition-show="fade" transition-hide="fade">
             <q-card style="min-width: 350px">
               <q-card-section>
                 <div class="text-h6">安全验证</div>
@@ -257,7 +257,7 @@
               unelevated
               rounded
               size="lg"
-              class="full-width"
+              class="full-width auth-primary-cta"
               type="submit"
               :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
             >

@@ -2,6 +2,55 @@
 // 注意：auth-page 的背景由 AuthSplitLayout.vue 自行管理（含暗色渐变）
 // 不在此处设置 .q-page 背景，否则会覆盖渐变
 
+.auth-channel-stage {
+  position: relative;
+  min-height: 360px;
+}
+
+.login-page .auth-channel-stage {
+  min-height: 430px;
+}
+
+.auth-login-tip--stable {
+  min-height: 18px;
+}
+
+.auth-channel-enter-active,
+.auth-channel-leave-active {
+  transition: opacity var(--app-motion-duration-fast) var(--app-motion-ease-default);
+}
+
+.auth-channel-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.auth-channel-enter-from,
+.auth-channel-leave-to {
+  opacity: 0;
+}
+
+.auth-primary-cta,
+.auth-login-cta {
+  transition:
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-fast) var(--app-motion-ease-default),
+    filter var(--app-motion-duration-fast) var(--app-motion-ease-default);
+  will-change: transform, box-shadow, filter;
+}
+
+.auth-primary-cta:not([disabled]):hover,
+.auth-login-cta:not([disabled]):hover {
+  transform: translateY(-1px);
+}
+
+.auth-primary-cta:not([disabled]):active,
+.auth-login-cta:not([disabled]):active {
+  transform: translateY(0);
+}
+
 .auth-form {
   .q-field__label {
     color: var(--app-text-secondary);

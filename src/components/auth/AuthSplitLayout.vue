@@ -77,9 +77,9 @@
 
 .auth-split-layout__workspace-panel {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  padding: 24px 20px;
   position: relative;
   z-index: 1;
   background: transparent;
@@ -90,13 +90,13 @@
   max-width: 480px;
   position: relative;
   z-index: 1;
-  animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: workspace-enter var(--app-motion-duration-enter, 250ms) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slide-up {
+@keyframes workspace-enter {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;

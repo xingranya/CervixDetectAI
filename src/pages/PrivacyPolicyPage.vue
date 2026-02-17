@@ -546,8 +546,8 @@
                 <p><strong>行使权利的方式：</strong></p>
                 <p>
                   您可以通过系统设置页面自助操作，或通过
-                  <a href="mailto:support@cervixdetect.ai" class="text-primary"
-                    >support@cervixdetect.ai</a
+                  <a href="mailto:support@hpvsc.icu" class="text-primary"
+                    >support@hpvsc.icu</a
                   >
                   联系我们行使上述权利。我们将在<strong>15个工作日</strong>内响应您的请求。
                 </p>

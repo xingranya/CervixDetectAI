@@ -8,7 +8,7 @@
     </template>
 
     <template #workspace>
-      <AuthWorkspaceShell title="工作台登录" subtitle="请通过受信任的医疗终端访问平台系统">
+      <AuthWorkspaceShell title="工作台安全登录" subtitle="请通过受信任的医疗终端访问平台系统">
         <template #mobile-logo>
           <div class="auth-login-brand-meta">
             <img src="/logo.svg" alt="CervixDetect AI" class="auth-login-brand-meta__logo" />
@@ -35,333 +35,357 @@
           <q-tab name="phone" icon="smartphone" label="移动终端" />
         </q-tabs>
 
-        <div v-if="loginType === 'phone'" class="auth-login-tip">
-          输入手机号和验证码，新用户将自动注册
+        <div class="auth-login-tip auth-login-tip--stable">
+          {{
+            loginType === 'phone'
+              ? '输入手机号和验证码，新用户将自动注册'
+              : loginType === 'employee'
+                ? '请选择所属医院并输入工号'
+                : ' '
+          }}
         </div>
-        <div v-else-if="loginType === 'employee'" class="auth-login-tip">
-          请选择所属医院并输入工号
-        </div>
 
-        <!-- 邮箱登录 -->
-        <q-form v-if="loginType === 'email'" class="auth-form q-gutter-md" @submit="onSubmit">
-          <q-input
-            v-model="email"
-            outlined
-            rounded
-            label="邮箱"
-            type="email"
-            lazy-rules
-            :rules="[
-              (val) => (val && val.length > 0) || '请输入您的邮箱',
-              (val) => EMAIL_PATTERN.test(val) || '请输入正确的邮箱格式',
-            ]"
+        <div class="auth-channel-stage">
+          <transition name="auth-channel">
+          <!-- 邮箱登录 -->
+          <q-form
+            v-if="loginType === 'email'"
+            key="email"
+            class="auth-form q-gutter-md"
+            @submit="onSubmit"
           >
-            <template #prepend>
-              <q-icon name="email" />
-            </template>
-          </q-input>
-
-          <q-input
-            v-model="password"
-            outlined
-            rounded
-            label="密码"
-            :type="isPwd ? 'password' : 'text'"
-            lazy-rules
-            :rules="[
-              (val) => (val && val.length > 0) || '请输入您的密码',
-              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
-            ]"
-          >
-            <template #prepend>
-              <q-icon name="key" />
-            </template>
-            <template #append>
-              <q-icon
-                :name="isPwd ? 'visibility_off' : 'visibility'"
-                class="cursor-pointer"
-                @click="isPwd = !isPwd"
-              />
-            </template>
-          </q-input>
-
-          <div class="row items-center q-mt-sm">
-            <q-space />
-            <q-btn flat dense no-caps color="grey-7" label="找回密码" to="/forgot-password" />
-          </div>
-
-          <div class="auth-agreement-wrapper">
-            <q-checkbox v-model="agreeTerms" dense>
-              <span class="text-body2 text-grey-8">
-                我已阅读并同意
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
-                  《用户协议》
-                </span>
-                和
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
-                  《隐私政策》
-                </span>
-              </span>
-            </q-checkbox>
-          </div>
-
-          <div v-if="agreeTerms && !captchaVerified" class="auth-captcha-wrapper">
-            <div class="auth-login-tip">请完成安全验证</div>
-            <AliCaptcha
-              ref="captchaRef"
-              instance-id="login-email"
-              @success="onCaptchaSuccess"
-              @fail="onCaptchaFail"
-            />
-          </div>
-
-          <div v-if="captchaVerified" class="auth-captcha-verified">
-            <q-icon name="verified" color="positive" size="20px" />
-            <span class="q-ml-xs text-positive">验证已通过</span>
-          </div>
-
-          <div class="q-mt-md">
-            <q-btn
-              class="full-width auth-login-cta"
-              :loading="authStore.isAuthenticating"
-              unelevated
+            <q-input
+              v-model="email"
+              outlined
               rounded
-              size="lg"
-              type="submit"
-              :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
+              label="邮箱"
+              type="email"
+              lazy-rules
+              :rules="[
+                (val) => (val && val.length > 0) || '请输入您的邮箱',
+                (val) => EMAIL_PATTERN.test(val) || '请输入正确的邮箱格式',
+              ]"
             >
-              <span v-if="!authStore.isAuthenticating">进入云端工作站</span>
-              <q-spinner-hourglass v-else />
-            </q-btn>
+              <template #prepend>
+                <q-icon name="email" />
+              </template>
+            </q-input>
 
-            <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
-            <div v-else-if="!captchaVerified" class="auth-warning-text">请完成安全验证</div>
-          </div>
-        </q-form>
-
-        <!-- 短信登录 -->
-        <q-form
-          v-else-if="loginType === 'phone'"
-          class="auth-form q-gutter-md"
-          @submit.prevent="onSmsLogin"
-        >
-          <q-input
-            v-model="phone"
-            outlined
-            rounded
-            label="手机号"
-            type="tel"
-            maxlength="11"
-            lazy-rules
-            :rules="[(val) => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
-          >
-            <template #prepend>
-              <q-icon name="phone" />
-            </template>
-          </q-input>
-
-          <q-input
-            v-model="smsCode"
-            outlined
-            rounded
-            label="验证码"
-            maxlength="6"
-            lazy-rules
-            :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
-          >
-            <template #prepend>
-              <q-icon name="shield" />
-            </template>
-            <template #append>
-              <q-btn
-                :label="countdownText"
-                :disable="!canSendSms"
-                :loading="isSendingSms"
-                flat
-                dense
-                color="primary"
-                no-caps
-                @click="triggerSmsCaptcha"
-              />
-            </template>
-          </q-input>
-
-          <q-dialog v-model="showSmsCaptchaDialog" persistent @hide="onSmsCaptchaDialogHide">
-            <q-card style="min-width: 320px">
-              <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6">安全验证</div>
-                <q-space />
-                <q-btn icon="close" flat round dense v-close-popup />
-              </q-card-section>
-              <q-card-section class="text-center">
-                <div class="text-caption text-grey-6 q-mb-md">请完成图像验证后发送验证码</div>
-                <AliCaptcha
-                  v-if="showSmsCaptchaDialog"
-                  ref="smsCaptchaRef"
-                  instance-id="login-sms"
-                  scene-id="1dynwu1h"
-                  @success="onSmsCaptchaSuccess"
-                  @fail="onSmsCaptchaFail"
+            <q-input
+              v-model="password"
+              outlined
+              rounded
+              label="密码"
+              :type="isPwd ? 'password' : 'text'"
+              lazy-rules
+              :rules="[
+                (val) => (val && val.length > 0) || '请输入您的密码',
+                (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+              ]"
+            >
+              <template #prepend>
+                <q-icon name="key" />
+              </template>
+              <template #append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
                 />
-              </q-card-section>
-            </q-card>
-          </q-dialog>
+              </template>
+            </q-input>
 
-          <div class="auth-agreement-wrapper">
-            <q-checkbox v-model="agreeTerms" dense>
-              <span class="text-body2 text-grey-8">
-                我已阅读并同意
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
-                  《用户协议》
+            <div class="row items-center q-mt-sm">
+              <q-space />
+              <q-btn flat dense no-caps color="grey-7" label="找回密码" to="/forgot-password" />
+            </div>
+
+            <div class="auth-agreement-wrapper">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
                 </span>
-                和
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
-                  《隐私政策》
-                </span>
-              </span>
-            </q-checkbox>
-          </div>
+              </q-checkbox>
+            </div>
 
-          <div class="q-mt-md">
-            <q-btn
-              class="full-width auth-login-cta"
-              :loading="authStore.isAuthenticating"
-              unelevated
-              rounded
-              size="lg"
-              type="submit"
-              :disabled="!agreeTerms || authStore.isAuthenticating"
-            >
-              <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
-              <q-spinner-hourglass v-else />
-            </q-btn>
-            <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
-          </div>
-        </q-form>
-
-        <!-- 工号登录 -->
-        <q-form v-else class="auth-form q-gutter-md" @submit="onEmployeeLogin">
-          <q-select
-            v-model="hospital"
-            outlined
-            rounded
-            :options="HOSPITALS"
-            option-label="name"
-            option-value="id"
-            label="所属医院"
-            popup-content-class="auth-select-menu"
-            :rules="[(val) => !!val || '请选择医院']"
-          >
-            <template #prepend>
-              <q-icon name="local_hospital" />
-            </template>
-            <template #option="scope">
-              <q-item v-bind="scope.itemProps">
-                <q-item-section avatar>
-                  <q-avatar v-if="scope.opt.iconUrl" size="24px" class="hospital-logo">
-                    <img :src="scope.opt.iconUrl" :alt="scope.opt.name" />
-                  </q-avatar>
-                  <q-icon v-else :name="scope.opt.icon" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ scope.opt.name }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-
-          <q-input
-            v-model="employeeId"
-            outlined
-            rounded
-            label="员工编号"
-            lazy-rules
-            :rules="[
-              (val) => (val && val.length > 0) || '请输入工号',
-              (val) => EMPLOYEE_ID_PATTERN.test(val) || '工号需为4-32位字母、数字、下划线或中划线',
-            ]"
-          >
-            <template #prepend>
-              <q-icon name="badge" />
-            </template>
-          </q-input>
-
-          <q-input
-            v-model="password"
-            outlined
-            rounded
-            label="安全密码"
-            :type="isPwd ? 'password' : 'text'"
-            lazy-rules
-            :rules="[
-              (val) => (val && val.length > 0) || '请输入密码',
-              (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
-            ]"
-          >
-            <template #prepend>
-              <q-icon name="key" />
-            </template>
-            <template #append>
-              <q-icon
-                :name="isPwd ? 'visibility_off' : 'visibility'"
-                class="cursor-pointer"
-                @click="isPwd = !isPwd"
+            <div v-if="agreeTerms && !captchaVerified" class="auth-captcha-wrapper">
+              <div class="auth-login-tip">请完成安全验证</div>
+              <AliCaptcha
+                ref="captchaRef"
+                instance-id="login-email"
+                @success="onCaptchaSuccess"
+                @fail="onCaptchaFail"
               />
-            </template>
-          </q-input>
+            </div>
 
-          <div class="auth-agreement-wrapper">
-            <q-checkbox v-model="agreeTerms" dense>
-              <span class="text-body2 text-grey-8">
-                我已阅读并同意
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
-                  《用户协议》
-                </span>
-                和
-                <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
-                  《隐私政策》
-                </span>
-              </span>
-            </q-checkbox>
-          </div>
+            <div v-if="captchaVerified" class="auth-captcha-verified">
+              <q-icon name="verified" color="positive" size="20px" />
+              <span class="q-ml-xs text-positive">验证已通过</span>
+            </div>
 
-          <div v-if="agreeTerms && !captchaVerified" class="auth-captcha-wrapper">
-            <div class="auth-login-tip">请完成安全验证</div>
-            <AliCaptcha
-              ref="captchaRef"
-              instance-id="login-employee"
-              @success="onCaptchaSuccess"
-              @fail="onCaptchaFail"
-            />
-          </div>
+            <div class="q-mt-md">
+              <q-btn
+                class="full-width auth-login-cta"
+                :loading="authStore.isAuthenticating"
+                unelevated
+                rounded
+                size="lg"
+                type="submit"
+                :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
+              >
+                <span v-if="!authStore.isAuthenticating">进入云端工作站</span>
+                <q-spinner-hourglass v-else />
+              </q-btn>
 
-          <div v-if="captchaVerified" class="auth-captcha-verified">
-            <q-icon name="verified" color="positive" size="20px" />
-            <span class="q-ml-xs text-positive">验证已通过</span>
-          </div>
+              <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
+              <div v-else-if="!captchaVerified" class="auth-warning-text">请完成安全验证</div>
+            </div>
+          </q-form>
 
-          <div class="q-mt-md">
-            <q-btn
-              class="full-width auth-login-cta"
-              :loading="authStore.isAuthenticating"
-              unelevated
+          <!-- 短信登录 -->
+          <q-form
+            v-else-if="loginType === 'phone'"
+            key="phone"
+            class="auth-form q-gutter-md"
+            @submit.prevent="onSmsLogin"
+          >
+            <q-input
+              v-model="phone"
+              outlined
               rounded
-              size="lg"
-              type="submit"
-              :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
+              label="手机号"
+              type="tel"
+              maxlength="11"
+              lazy-rules
+              :rules="[(val) => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
             >
-              <span v-if="!authStore.isAuthenticating">进入云端工作站</span>
-              <q-spinner-hourglass v-else />
-            </q-btn>
-            <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
-            <div v-else-if="!captchaVerified" class="auth-warning-text">请完成安全验证</div>
-          </div>
-        </q-form>
+              <template #prepend>
+                <q-icon name="phone" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="smsCode"
+              outlined
+              rounded
+              label="验证码"
+              maxlength="6"
+              lazy-rules
+              :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
+            >
+              <template #prepend>
+                <q-icon name="shield" />
+              </template>
+              <template #append>
+                <q-btn
+                  :label="countdownText"
+                  :disable="!canSendSms"
+                  :loading="isSendingSms"
+                  flat
+                  dense
+                  color="primary"
+                  no-caps
+                  @click="triggerSmsCaptcha"
+                />
+              </template>
+            </q-input>
+
+            <q-dialog
+              v-model="showSmsCaptchaDialog"
+              persistent
+              transition-show="fade"
+              transition-hide="fade"
+              @hide="onSmsCaptchaDialogHide"
+            >
+              <q-card style="min-width: 320px">
+                <q-card-section class="row items-center q-pb-none">
+                  <div class="text-h6">安全验证</div>
+                  <q-space />
+                  <q-btn icon="close" flat round dense v-close-popup />
+                </q-card-section>
+                <q-card-section class="text-center">
+                  <div class="text-caption text-grey-6 q-mb-md">请完成图像验证后发送验证码</div>
+                  <AliCaptcha
+                    v-if="showSmsCaptchaDialog"
+                    ref="smsCaptchaRef"
+                    instance-id="login-sms"
+                    scene-id="1dynwu1h"
+                    @success="onSmsCaptchaSuccess"
+                    @fail="onSmsCaptchaFail"
+                  />
+                </q-card-section>
+              </q-card>
+            </q-dialog>
+
+            <div class="auth-agreement-wrapper">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
+                </span>
+              </q-checkbox>
+            </div>
+
+            <div class="q-mt-md">
+              <q-btn
+                class="full-width auth-login-cta"
+                :loading="authStore.isAuthenticating"
+                unelevated
+                rounded
+                size="lg"
+                type="submit"
+                :disabled="!agreeTerms || authStore.isAuthenticating"
+              >
+                <span v-if="!authStore.isAuthenticating">登录 / 注册</span>
+                <q-spinner-hourglass v-else />
+              </q-btn>
+              <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
+            </div>
+          </q-form>
+
+          <!-- 工号登录 -->
+          <q-form
+            v-else
+            key="employee"
+            class="auth-form q-gutter-md"
+            @submit="onEmployeeLogin"
+          >
+            <q-select
+              v-model="hospital"
+              outlined
+              rounded
+              :options="HOSPITALS"
+              option-label="name"
+              option-value="id"
+              label="所属医院"
+              popup-content-class="auth-select-menu"
+              :rules="[(val) => !!val || '请选择医院']"
+            >
+              <template #prepend>
+                <q-icon name="local_hospital" />
+              </template>
+              <template #option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar>
+                    <q-avatar v-if="scope.opt.iconUrl" size="24px" class="hospital-logo">
+                      <img :src="scope.opt.iconUrl" :alt="scope.opt.name" />
+                    </q-avatar>
+                    <q-icon v-else :name="scope.opt.icon" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+
+            <q-input
+              v-model="employeeId"
+              outlined
+              rounded
+              label="员工编号"
+              lazy-rules
+              :rules="[
+                (val) => (val && val.length > 0) || '请输入工号',
+                (val) => EMPLOYEE_ID_PATTERN.test(val) || '工号需为4-32位字母、数字、下划线或中划线',
+              ]"
+            >
+              <template #prepend>
+                <q-icon name="badge" />
+              </template>
+            </q-input>
+
+            <q-input
+              v-model="password"
+              outlined
+              rounded
+              label="安全密码"
+              :type="isPwd ? 'password' : 'text'"
+              lazy-rules
+              :rules="[
+                (val) => (val && val.length > 0) || '请输入密码',
+                (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+              ]"
+            >
+              <template #prepend>
+                <q-icon name="key" />
+              </template>
+              <template #append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
+                />
+              </template>
+            </q-input>
+
+            <div class="auth-agreement-wrapper">
+              <q-checkbox v-model="agreeTerms" dense>
+                <span class="text-body2 text-grey-8">
+                  我已阅读并同意
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('agreement')">
+                    《用户协议》
+                  </span>
+                  和
+                  <span class="auth-agreement-link" @click.stop.prevent="showAgreement('privacy')">
+                    《隐私政策》
+                  </span>
+                </span>
+              </q-checkbox>
+            </div>
+
+            <div v-if="agreeTerms && !captchaVerified" class="auth-captcha-wrapper">
+              <div class="auth-login-tip">请完成安全验证</div>
+              <AliCaptcha
+                ref="captchaRef"
+                instance-id="login-employee"
+                @success="onCaptchaSuccess"
+                @fail="onCaptchaFail"
+              />
+            </div>
+
+            <div v-if="captchaVerified" class="auth-captcha-verified">
+              <q-icon name="verified" color="positive" size="20px" />
+              <span class="q-ml-xs text-positive">验证已通过</span>
+            </div>
+
+            <div class="q-mt-md">
+              <q-btn
+                class="full-width auth-login-cta"
+                :loading="authStore.isAuthenticating"
+                unelevated
+                rounded
+                size="lg"
+                type="submit"
+                :disabled="!agreeTerms || !captchaVerified || authStore.isAuthenticating"
+              >
+                <span v-if="!authStore.isAuthenticating">进入云端工作站</span>
+                <q-spinner-hourglass v-else />
+              </q-btn>
+              <div v-if="!agreeTerms" class="auth-warning-text">请先同意用户协议和隐私政策</div>
+              <div v-else-if="!captchaVerified" class="auth-warning-text">请完成安全验证</div>
+            </div>
+          </q-form>
+        </transition>
+      </div>
 
         <template #footer>
           <div class="auth-footer-links">
             <span class="text-grey-6">首次使用？</span>
-            <q-btn flat dense no-caps color="primary" to="/register" label="提交机构入驻申请" />
+            <q-btn flat dense no-caps color="primary" to="/register" label="开始注册" />
           </div>
         </template>
       </AuthWorkspaceShell>
@@ -869,9 +893,9 @@ onBeforeUnmount(() => {
     0 10px 24px rgba(37, 99, 235, 0.28),
     0 2px 8px rgba(30, 64, 175, 0.2);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-fast) var(--app-motion-ease-default),
+    filter var(--app-motion-duration-fast) var(--app-motion-ease-default);
 }
 
 .auth-login-cta :deep(.q-focus-helper),

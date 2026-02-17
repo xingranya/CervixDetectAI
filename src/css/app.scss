@@ -385,3 +385,57 @@ body.body--dark {
     border-color: var(--app-border-default) !important;
   }
 }
+
+// =============================================================
+// 全局可复用动效工具类与 Keyframes
+// 医疗稳重场景：克制、流畅、不过度
+// =============================================================
+
+// ---- Keyframes 定义 ----
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-slide-up-soft {
+  from {
+    opacity: 0;
+    transform: translateY(var(--app-motion-distance-enter, 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ---- 工具类：淡入 ----
+.app-motion-fade-in {
+  animation: app-fade-in var(--app-motion-duration-enter, 250ms)
+    var(--app-motion-ease-enter, cubic-bezier(0, 0, 0.2, 1)) forwards;
+  will-change: opacity;
+}
+
+// ---- 工具类：柔和上滑 ----
+.app-motion-slide-up-soft {
+  animation: app-slide-up-soft var(--app-motion-duration-enter, 250ms)
+    var(--app-motion-ease-enter, cubic-bezier(0, 0, 0.2, 1)) forwards;
+  will-change: opacity, transform;
+}
+
+// ---- 工具类：按压反馈（仅 transform/box-shadow）----
+.app-motion-press {
+  transition: transform var(--app-motion-duration-fast, 150ms)
+      var(--app-motion-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--app-motion-duration-fast, 150ms)
+      var(--app-motion-ease-default, cubic-bezier(0.4, 0, 0.2, 1));
+  will-change: transform, box-shadow;
+
+  &:active {
+    transform: scale(var(--app-motion-scale-press, 0.98));
+    box-shadow: var(--app-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+  }
+}

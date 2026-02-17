@@ -210,7 +210,7 @@
               <template v-slot:prepend>
                 <q-icon name="event" color="primary" />
               </template>
-              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-popup-proxy cover transition-show="fade" transition-hide="fade">
                 <q-date
                   v-model="studyInfo.studyDate"
                   mask="YYYY-MM-DD"
@@ -262,7 +262,12 @@
     </div>
 
     <!-- 新增患者对话框 -->
-    <q-dialog v-model="showAddPatientDialog" persistent>
+    <q-dialog
+      v-model="showAddPatientDialog"
+      persistent
+      transition-show="fade"
+      transition-hide="fade"
+    >
       <q-card style="min-width: 500px; max-width: 600px">
         <q-card-section class="row items-center bg-primary text-white">
           <q-icon name="person_add" size="sm" class="q-mr-sm" />
@@ -614,11 +619,15 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
     border-color: var(--q-primary);
     background: #f0f7ff;
+    box-shadow: var(--app-shadow-sm);
   }
 
   &--active {
@@ -660,7 +669,7 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--app-motion-duration-normal) var(--app-motion-ease-default);
 }
 
 .fade-enter-from,
@@ -678,6 +687,7 @@ body.body--dark {
     &:hover {
       border-color: var(--q-primary);
       background: var(--app-elevated-bg);
+      box-shadow: var(--app-shadow-sm);
     }
 
     &--active {
