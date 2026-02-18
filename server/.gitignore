@@ -3,3 +3,4 @@ node_modules/
 uploads/
 reports/
 *.log
+.env(服务器)
