@@ -293,7 +293,7 @@ DATETIME deleted_at
 }
 analysis_results {
 BIGINT id PK
-BIGINT task_id UK FK
+BIGINT task_id FK
 BIGINT study_id FK
 STRING(255) diagnosis
 DECIMAL(5,4) confidence
