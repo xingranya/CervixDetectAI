@@ -1,0 +1,68 @@
+name: Sync Wiki to GitHub Wiki
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'wiki/**'
+      - '.github/workflows/wiki-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wiki-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    env:
+      WIKI_BRANCH: master
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate wiki source directory
+        run: |
+          if [ ! -d "wiki" ]; then
+            echo "未找到 wiki/ 目录，跳过同步。"
+            exit 0
+          fi
+
+      - name: Validate token
+        run: |
+          if [ -z "${{ secrets.WIKI_SYNC_TOKEN }}" ]; then
+            echo "缺少仓库 Secret: WIKI_SYNC_TOKEN"
+            echo "请在 Settings > Secrets and variables > Actions 中添加。"
+            exit 1
+          fi
+
+      - name: Clone GitHub Wiki repository
+        env:
+          WIKI_REMOTE: https://x-access-token:${{ secrets.WIKI_SYNC_TOKEN }}@github.com/${{ github.repository }}.wiki.git
+        run: |
+          git clone "$WIKI_REMOTE" wiki-repo
+
+      - name: Sync wiki files
+        run: |
+          rsync -av --delete --exclude='.git/' wiki/ wiki-repo/
+
+      - name: Commit and push changes
+        working-directory: wiki-repo
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki 无变更，结束。"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -m "docs(wiki): sync from ${GITHUB_REPOSITORY}@${GITHUB_SHA::7}"
+          git push origin "${WIKI_BRANCH}"

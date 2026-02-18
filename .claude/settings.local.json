@@ -32,7 +32,20 @@
       "WebFetch(domain:quasar.dev)",
       "Bash(npm run lint)",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(command -v ls)",
+      "Bash(command:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI\" ls-files:*)",
+      "Bash(git --version)",
+      "Bash(python:*)",
+      "Bash(git clone:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" rev-parse:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" remote:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" status:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" branch:*)",
+      "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" add:*)",
+      "Bash(git -C:*)",
+      "mcp__playwright__browser_run_code"
     ]
   },
   "outputStyle": "Structural Thinking"
