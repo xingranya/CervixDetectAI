@@ -1,15 +1,13 @@
 # AI分析API
 
-<cite>
-**本文档引用的文件**
-- [apiService.ts](file://src/services/apiService.ts)
-- [api.ts](file://src/services/api.ts)
-- [analyze.js](file://server/routes/analyze.js)
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-</cite>
+> **本文档引用的文件**
+> - [apiService.ts](file://src/services/apiService.ts)
+> - [api.ts](file://src/services/api.ts)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
 
 ## 目录
 1. [简介](#简介)

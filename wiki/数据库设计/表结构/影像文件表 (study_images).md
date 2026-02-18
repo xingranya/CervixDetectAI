@@ -1,11 +1,9 @@
 # 影像文件表 (study_images)
 
-<cite>
-**本文档中引用的文件**  
-- [StudyImage.js](file://server/models/StudyImage.js)
-- [studies.js](file://server/routes/studies.js)
-- [analyze.js](file://server/routes/analyze.js)
-</cite>
+> **本文档中引用的文件**  
+> - [StudyImage.js](file://server/models/StudyImage.js)
+> - [studies.js](file://server/routes/studies.js)
+> - [analyze.js](file://server/routes/analyze.js)
 
 ## 目录
 1. [简介](#简介)

@@ -1,18 +1,16 @@
 # PDF报告生成说明
 
-<cite>
-**本文引用的文件**
-- [pdfGenerator.ts](file://src/utils/pdfGenerator.ts)
-- [pdfFonts.ts](file://src/utils/pdfFonts.ts)
-- [ReportsPage.vue](file://src/pages/ReportsPage.vue)
-- [reports.js](file://server/routes/reports.js)
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [index.js](file://server/models/index.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [api.ts](file://src/services/api.ts)
-- [报告管理API.md](file://wiki/后端架构/API端点参考/报告管理API.md)
-- [报告生成服务.md](file://wiki/后端架构/业务逻辑层/报告生成服务.md)
-</cite>
+> **本文引用的文件**
+> - [pdfGenerator.ts](file://src/utils/pdfGenerator.ts)
+> - [pdfFonts.ts](file://src/utils/pdfFonts.ts)
+> - [ReportsPage.vue](file://src/pages/ReportsPage.vue)
+> - [reports.js](file://server/routes/reports.js)
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [index.js](file://server/models/index.js)
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [api.ts](file://src/services/api.ts)
+> - [报告管理API.md](file://wiki/后端架构/API端点参考/报告管理API.md)
+> - [报告生成服务.md](file://wiki/后端架构/业务逻辑层/报告生成服务.md)
 
 ## 目录
 1. [简介](#简介)

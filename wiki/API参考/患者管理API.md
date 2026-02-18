@@ -1,13 +1,11 @@
 # 患者管理API
 
-<cite>
-**本文档引用的文件**   
-- [patients.js](file://server/routes/patients.js)
-- [Patient.js](file://server/models/Patient.js)
-- [Study.js](file://server/models/Study.js)
-- [auth.js](file://server/middleware/auth.js)
-- [api.ts](file://src/services/api.ts)
-</cite>
+> **本文档引用的文件**   
+> - [patients.js](file://server/routes/patients.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [Study.js](file://server/models/Study.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [api.ts](file://src/services/api.ts)
 
 ## 目录
 

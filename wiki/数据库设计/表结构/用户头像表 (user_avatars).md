@@ -1,12 +1,10 @@
 # 用户头像表 (user_avatars)
 
-<cite>
-**本文档引用的文件**  
-- [UserAvatar.js](file://server/models/UserAvatar.js) - *更新了字段定义，新增large_url和small_url*
-- [users.js](file://server/routes/users.js) - *更新了头像上传流程，增加图片元数据存储*
-- [User.js](file://server/models/User.js) - *用户模型，与头像表存在外键关系*
-- [init-database.js](file://server/scripts/init-database.js) - *数据库初始化脚本，包含表结构更新逻辑*
-</cite>
+> **本文档引用的文件**  
+> - [UserAvatar.js](file://server/models/UserAvatar.js) - *更新了字段定义，新增large_url和small_url*
+> - [users.js](file://server/routes/users.js) - *更新了头像上传流程，增加图片元数据存储*
+> - [User.js](file://server/models/User.js) - *用户模型，与头像表存在外键关系*
+> - [init-database.js](file://server/scripts/init-database.js) - *数据库初始化脚本，包含表结构更新逻辑*
 
 ## 更新摘要
 **变更内容**   

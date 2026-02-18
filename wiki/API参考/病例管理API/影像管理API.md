@@ -1,12 +1,10 @@
 # 影像管理API
 
-<cite>
-**Referenced Files in This Document**  
-- [studies.js](file://server/routes/studies.js)
-- [StudyImage.js](file://server/models/StudyImage.js)
-- [Study.js](file://server/models/Study.js)
-- [auth.js](file://server/middleware/auth.js)
-</cite>
+> **Referenced Files in This Document**  
+> - [studies.js](file://server/routes/studies.js)
+> - [StudyImage.js](file://server/models/StudyImage.js)
+> - [Study.js](file://server/models/Study.js)
+> - [auth.js](file://server/middleware/auth.js)
 
 ## 目录
 1. [简介](#简介)

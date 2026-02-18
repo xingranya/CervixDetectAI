@@ -1,20 +1,18 @@
 # AI分析同步创建说明
 
-<cite>
-**本文引用的文件**
-- [server/index.js](file://server/index.js)
-- [server/routes/analyze.js](file://server/routes/analyze.js)
-- [server/services/qwenService.js](file://server/services/qwenService.js)
-- [src/services/apiService.ts](file://src/services/apiService.ts)
-- [src/stores/analysisStore.ts](file://src/stores/analysisStore.ts)
-- [src/pages/UploadPage.vue](file://src/pages/UploadPage.vue)
-- [src/router/routes.ts](file://src/router/routes.ts)
-- [server/models/AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [server/models/AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [server/config/sequelize.js](file://server/config/sequelize.js)
-- [wiki/后端架构/业务逻辑层/AI分析服务.md](file://wiki/后端架构/业务逻辑层/AI分析服务.md)
-- [wiki/后端架构/外部集成/通义千问AI集成.md](file://wiki/后端架构/外部集成/通义千问AI集成.md)
-</cite>
+> **本文引用的文件**
+> - [server/index.js](file://server/index.js)
+> - [server/routes/analyze.js](file://server/routes/analyze.js)
+> - [server/services/qwenService.js](file://server/services/qwenService.js)
+> - [src/services/apiService.ts](file://src/services/apiService.ts)
+> - [src/stores/analysisStore.ts](file://src/stores/analysisStore.ts)
+> - [src/pages/UploadPage.vue](file://src/pages/UploadPage.vue)
+> - [src/router/routes.ts](file://src/router/routes.ts)
+> - [server/models/AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [server/models/AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [server/config/sequelize.js](file://server/config/sequelize.js)
+> - [wiki/后端架构/业务逻辑层/AI分析服务.md](file://wiki/后端架构/业务逻辑层/AI分析服务.md)
+> - [wiki/后端架构/外部集成/通义千问AI集成.md](file://wiki/后端架构/外部集成/通义千问AI集成.md)
 
 ## 目录
 1. [简介](#简介)

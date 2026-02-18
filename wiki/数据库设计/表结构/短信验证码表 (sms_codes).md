@@ -1,12 +1,10 @@
 # 短信验证码表 (sms_codes)
 
-<cite>
-**本文档引用的文件**
-- [SmsCode.js](file://server/models/SmsCode.js)
-- [sms.service.js](file://server/services/sms.service.js)
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [create-sms-table.js](file://server/scripts/create-sms-table.js)
-</cite>
+> **本文档引用的文件**
+> - [SmsCode.js](file://server/models/SmsCode.js)
+> - [sms.service.js](file://server/services/sms.service.js)
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [create-sms-table.js](file://server/scripts/create-sms-table.js)
 
 ## 目录
 1. [简介](#简介)

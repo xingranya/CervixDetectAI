@@ -1,11 +1,9 @@
 # AI分析任务API
 
-<cite>
-**本文档引用的文件**  
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [auth.js](file://server/middleware/auth.js)
-</cite>
+> **本文档引用的文件**  
+> - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [auth.js](file://server/middleware/auth.js)
 
 ## 目录
 1. [简介](#简介)

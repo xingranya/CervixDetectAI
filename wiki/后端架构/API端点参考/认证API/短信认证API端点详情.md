@@ -1,14 +1,12 @@
 # 短信认证API
 
-<cite>
-**本文档引用文件**  
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [sms.service.js](file://server/services/sms.service.js)
-- [SmsCode.js](file://server/models/SmsCode.js)
-- [create-sms-table.js](file://server/scripts/create-sms-table.js)
-- [api.ts](file://src/services/api.ts)
-- [LoginPage.vue](file://src/pages/LoginPage.vue)
-</cite>
+> **本文档引用文件**  
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [sms.service.js](file://server/services/sms.service.js)
+> - [SmsCode.js](file://server/models/SmsCode.js)
+> - [create-sms-table.js](file://server/scripts/create-sms-table.js)
+> - [api.ts](file://src/services/api.ts)
+> - [LoginPage.vue](file://src/pages/LoginPage.vue)
 
 ## 目录
 1. [简介](#简介)

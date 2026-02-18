@@ -1,14 +1,12 @@
 # 报告管理API
 
-<cite>
-**本文档引用的文件**  
-- [reports.js](file://server/routes/reports.js) - *更新了PDF下载功能*
-- [MedicalReport.js](file://server/models/MedicalReport.js) - *新增PDF存储字段*
-- [api.ts](file://src/services/api.ts) - *更新了API客户端*
-- [ReportsPage.vue](file://src/pages/ReportsPage.vue) - *前端报告页面*
-- [pdfGenerator.ts](file://src/utils/pdfGenerator.ts) - *新增PDF生成工具*
-- [pdfFonts.ts](file://src/utils/pdfFonts.ts) - *新增中文字体支持*
-</cite>
+> **本文档引用的文件**  
+> - [reports.js](file://server/routes/reports.js) - *更新了PDF下载功能*
+> - [MedicalReport.js](file://server/models/MedicalReport.js) - *新增PDF存储字段*
+> - [api.ts](file://src/services/api.ts) - *更新了API客户端*
+> - [ReportsPage.vue](file://src/pages/ReportsPage.vue) - *前端报告页面*
+> - [pdfGenerator.ts](file://src/utils/pdfGenerator.ts) - *新增PDF生成工具*
+> - [pdfFonts.ts](file://src/utils/pdfFonts.ts) - *新增中文字体支持*
 
 ## 更新摘要
 **变更内容**   

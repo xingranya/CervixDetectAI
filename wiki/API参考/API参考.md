@@ -1,24 +1,22 @@
 # API参考
 
-<cite>
-**本文档中引用的文件**   
-- [auth.js](file://server/routes/auth.js)
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [users.js](file://server/routes/users.js)
-- [studies.js](file://server/routes/studies.js)
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
-- [analyze.js](file://server/routes/analyze.js)
-- [reports.js](file://server/routes/reports.js)
-- [api.ts](file://src/services/api.ts)
-- [User.js](file://server/models/User.js)
-- [Study.js](file://server/models/Study.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [Patient.js](file://server/models/Patient.js)
-- [StudyImage.js](file://server/models/StudyImage.js)
-- [SmsCode.js](file://server/models/SmsCode.js)
-</cite>
+> **本文档中引用的文件**   
+> - [auth.js](file://server/routes/auth.js)
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [users.js](file://server/routes/users.js)
+> - [studies.js](file://server/routes/studies.js)
+> - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [reports.js](file://server/routes/reports.js)
+> - [api.ts](file://src/services/api.ts)
+> - [User.js](file://server/models/User.js)
+> - [Study.js](file://server/models/Study.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [StudyImage.js](file://server/models/StudyImage.js)
+> - [SmsCode.js](file://server/models/SmsCode.js)
 
 ## 目录
 1. [认证API](#认证api)

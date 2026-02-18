@@ -1,15 +1,13 @@
 # 分析任务表 (analysis_tasks)
 
-<cite>
-**本文档引用的文件**
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [analyze.js](file://server/routes/analyze.js)
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
-- [Study.js](file://server/models/Study.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [analysisStore.ts](file://src/stores/analysisStore.ts)
-</cite>
+> **本文档引用的文件**
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
+> - [Study.js](file://server/models/Study.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [analysisStore.ts](file://src/stores/analysisStore.ts)
 
 ## 目录
 1. [简介](#简介)

@@ -1,11 +1,9 @@
 # 报告管理API
 
-<cite>
-**本文档引用的文件**   
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [reports.js](file://server/routes/reports.js)
-- [api.ts](file://src/services/api.ts)
-</cite>
+> **本文档引用的文件**   
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [reports.js](file://server/routes/reports.js)
+> - [api.ts](file://src/services/api.ts)
 
 ## 目录
 1. [简介](#简介)

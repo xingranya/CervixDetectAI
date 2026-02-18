@@ -1,14 +1,12 @@
 # 医疗报告表 (medical_reports)
 
-<cite>
-**本文档引用的文件**
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [reports.js](file://server/routes/reports.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [Study.js](file://server/models/Study.js)
-- [User.js](file://server/models/User.js)
-- [Patient.js](file://server/models/Patient.js)
-</cite>
+> **本文档引用的文件**
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [reports.js](file://server/routes/reports.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [Study.js](file://server/models/Study.js)
+> - [User.js](file://server/models/User.js)
+> - [Patient.js](file://server/models/Patient.js)
 
 ## 目录
 1. [项目结构](#项目结构)

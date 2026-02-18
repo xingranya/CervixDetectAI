@@ -1,13 +1,11 @@
 # 邮箱认证API
 
-<cite>
-**本文档引用文件**  
-- [auth.js](file://server/routes/auth.js)
-- [auth.js](file://server/middleware/auth.js)
-- [User.js](file://server/models/User.js)
-- [jwt.js](file://server/utils/jwt.js)
-- [apiService.ts](file://src/services/apiService.ts)
-</cite>
+> **本文档引用文件**  
+> - [auth.js](file://server/routes/auth.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [User.js](file://server/models/User.js)
+> - [jwt.js](file://server/utils/jwt.js)
+> - [apiService.ts](file://src/services/apiService.ts)
 
 ## 目录
 1. [简介](#简介)

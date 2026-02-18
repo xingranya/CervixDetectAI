@@ -1,20 +1,18 @@
 # 数据模型与ORM映射
 
-<cite>
-**Referenced Files in This Document**   
-- [User.js](file://server/models/User.js)
-- [Patient.js](file://server/models/Patient.js)
-- [Study.js](file://server/models/Study.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [StudyImage.js](file://server/models/StudyImage.js)
-- [SmsCode.js](file://server/models/SmsCode.js)
-- [UserAvatar.js](file://server/models/UserAvatar.js)
-- [index.js](file://server/models/index.js)
-- [database.js](file://server/config/database.js)
-- [sequelize.js](file://server/config/sequelize.js)
-</cite>
+> **Referenced Files in This Document**   
+> - [User.js](file://server/models/User.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [Study.js](file://server/models/Study.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [StudyImage.js](file://server/models/StudyImage.js)
+> - [SmsCode.js](file://server/models/SmsCode.js)
+> - [UserAvatar.js](file://server/models/UserAvatar.js)
+> - [index.js](file://server/models/index.js)
+> - [database.js](file://server/config/database.js)
+> - [sequelize.js](file://server/config/sequelize.js)
 
 ## 目录
 1. [项目结构](#项目结构)

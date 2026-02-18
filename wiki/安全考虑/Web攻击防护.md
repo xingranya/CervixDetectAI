@@ -1,15 +1,13 @@
 # Web攻击防护
 
-<cite>
-**Referenced Files in This Document**   
-- [server/middleware/auth.js](file://server/middleware/auth.js)
-- [server/utils/jwt.js](file://server/utils/jwt.js)
-- [server/routes/sms-auth.js](file://server/routes/sms-auth.js)
-- [src/pages/LoginPage.vue](file://src/pages/LoginPage.vue)
-- [src/pages/RegisterPage.vue](file://src/pages/RegisterPage.vue)
-- [src/stores/authStore.ts](file://src/stores/authStore.ts)
-- [server/routes/auth.js](file://server/routes/auth.js)
-</cite>
+> **Referenced Files in This Document**   
+> - [server/middleware/auth.js](file://server/middleware/auth.js)
+> - [server/utils/jwt.js](file://server/utils/jwt.js)
+> - [server/routes/sms-auth.js](file://server/routes/sms-auth.js)
+> - [src/pages/LoginPage.vue](file://src/pages/LoginPage.vue)
+> - [src/pages/RegisterPage.vue](file://src/pages/RegisterPage.vue)
+> - [src/stores/authStore.ts](file://src/stores/authStore.ts)
+> - [server/routes/auth.js](file://server/routes/auth.js)
 
 ## Table of Contents
 1. [XSS攻击防护](#xss攻击防护)

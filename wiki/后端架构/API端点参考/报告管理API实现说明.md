@@ -1,12 +1,10 @@
 # 报告管理API
 
-<cite>
-**本文档引用的文件**  
-- [reports.js](file://server/routes/reports.js)
-- [MedicalReport.js](file://server/models/MedicalReport.js)
-- [api.ts](file://src/services/api.ts)
-- [ReportsPage.vue](file://src/pages/ReportsPage.vue)
-</cite>
+> **本文档引用的文件**  
+> - [reports.js](file://server/routes/reports.js)
+> - [MedicalReport.js](file://server/models/MedicalReport.js)
+> - [api.ts](file://src/services/api.ts)
+> - [ReportsPage.vue](file://src/pages/ReportsPage.vue)
 
 ## 目录
 1. [简介](#简介)

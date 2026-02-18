@@ -1,16 +1,14 @@
 # 邮箱认证API
 
-<cite>
-**本文档引用的文件**  
-- [auth.js](file://server/routes/auth.js)
-- [auth.js](file://server/middleware/auth.js)
-- [jwt.js](file://server/utils/jwt.js)
-- [User.js](file://server/models/User.js)
-- [api.ts](file://src/services/api.ts)
-- [authStore.ts](file://src/stores/authStore.ts)
-- [RegisterPage.vue](file://src/pages/RegisterPage.vue)
-- [LoginPage.vue](file://src/pages/LoginPage.vue)
-</cite>
+> **本文档引用的文件**  
+> - [auth.js](file://server/routes/auth.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [jwt.js](file://server/utils/jwt.js)
+> - [User.js](file://server/models/User.js)
+> - [api.ts](file://src/services/api.ts)
+> - [authStore.ts](file://src/stores/authStore.ts)
+> - [RegisterPage.vue](file://src/pages/RegisterPage.vue)
+> - [LoginPage.vue](file://src/pages/LoginPage.vue)
 
 ## 目录
 1. [简介](#简介)

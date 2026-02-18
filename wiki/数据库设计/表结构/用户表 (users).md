@@ -1,16 +1,14 @@
 # 用户表 (users)
 
-<cite>
-**本文档中引用的文件**  
-- [User.js](file://server/models/User.js)
-- [UserAvatar.js](file://server/models/UserAvatar.js)
-- [auth.js](file://server/middleware/auth.js)
-- [auth.js](file://server/routes/auth.js)
-- [users.js](file://server/routes/users.js)
-- [jwt.js](file://server/utils/jwt.js)
-- [database.js](file://server/config/database.js)
-- [sequelize.js](file://server/config/sequelize.js)
-</cite>
+> **本文档中引用的文件**  
+> - [User.js](file://server/models/User.js)
+> - [UserAvatar.js](file://server/models/UserAvatar.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [auth.js](file://server/routes/auth.js)
+> - [users.js](file://server/routes/users.js)
+> - [jwt.js](file://server/utils/jwt.js)
+> - [database.js](file://server/config/database.js)
+> - [sequelize.js](file://server/config/sequelize.js)
 
 ## 目录
 1. [简介](#简介)

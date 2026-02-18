@@ -1,14 +1,12 @@
 # AI分析结果API
 
-<cite>
-**本文档引用的文件**   
-- [analyze.js](file://server/routes/analyze.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [Study.js](file://server/models/Study.js)
-- [StudyImage.js](file://server/models/StudyImage.js)
-</cite>
+> **本文档引用的文件**   
+> - [analyze.js](file://server/routes/analyze.js)
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [Study.js](file://server/models/Study.js)
+> - [StudyImage.js](file://server/models/StudyImage.js)
 
 ## 目录
 1. [简介](#简介)

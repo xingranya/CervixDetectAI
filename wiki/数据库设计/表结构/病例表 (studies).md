@@ -1,14 +1,12 @@
 # 病例表 (studies)
 
-<cite>
-**本文档引用文件**  
-- [Study.js](file://server/models/Study.js)
-- [studies.js](file://server/routes/studies.js)
-- [Patient.js](file://server/models/Patient.js)
-- [User.js](file://server/models/User.js)
-- [update-study-status.js](file://server/scripts/update-study-status.js)
-- [update-status.sql](file://server/scripts/update-status.sql)
-</cite>
+> **本文档引用文件**  
+> - [Study.js](file://server/models/Study.js)
+> - [studies.js](file://server/routes/studies.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [User.js](file://server/models/User.js)
+> - [update-study-status.js](file://server/scripts/update-study-status.js)
+> - [update-status.sql](file://server/scripts/update-status.sql)
 
 ## 目录
 1. [简介](#简介)

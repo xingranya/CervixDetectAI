@@ -1,11 +1,9 @@
 # 阿里云 AI 验证码集成
 
-<cite>
-**Referenced Files in This Document**
-- [AliCaptcha.vue](file://src/components/common/AliCaptcha.vue)
-- [LoginPage.vue](file://src/pages/LoginPage.vue)
-- [RegisterPage.vue](file://src/pages/RegisterPage.vue)
-</cite>
+> **Referenced Files in This Document**
+> - [AliCaptcha.vue](file://src/components/common/AliCaptcha.vue)
+> - [LoginPage.vue](file://src/pages/LoginPage.vue)
+> - [RegisterPage.vue](file://src/pages/RegisterPage.vue)
 
 ## 目录
 1. [简介](#简介)

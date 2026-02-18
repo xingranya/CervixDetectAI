@@ -1,17 +1,15 @@
 # API端点参考
 
-<cite>
-**Referenced Files in This Document**   
-- [auth.js](file://server/routes/auth.js)
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [studies.js](file://server/routes/studies.js)
-- [analyze.js](file://server/routes/analyze.js)
-- [reports.js](file://server/routes/reports.js)
-- [authStore.ts](file://src/stores/authStore.ts)
-- [api.ts](file://src/services/api.ts)
-- [studyStore.ts](file://src/stores/studyStore.ts)
-- [ReportsPage.vue](file://src/pages/ReportsPage.vue)
-</cite>
+> **Referenced Files in This Document**   
+> - [auth.js](file://server/routes/auth.js)
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [studies.js](file://server/routes/studies.js)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [reports.js](file://server/routes/reports.js)
+> - [authStore.ts](file://src/stores/authStore.ts)
+> - [api.ts](file://src/services/api.ts)
+> - [studyStore.ts](file://src/stores/studyStore.ts)
+> - [ReportsPage.vue](file://src/pages/ReportsPage.vue)
 
 ## 目录
 1. [简介](#简介)

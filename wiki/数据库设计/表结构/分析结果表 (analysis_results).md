@@ -1,16 +1,14 @@
 # 分析结果表 (analysis_results)
 
-<cite>
-**本文档引用文件**   
-- [AnalysisResult.js](file://server/models/AnalysisResult.js)
-- [qwenService.js](file://server/services/qwenService.js)
-- [analyze.js](file://server/routes/analyze.js)
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
-- [reports.js](file://server/routes/reports.js)
-- [StudyDetailPage.vue](file://src/pages/StudyDetailPage.vue)
-- [analysisStore.ts](file://src/stores/analysisStore.ts)
-- [database-feature-expansion.md](file://.qoder/quests/database-feature-expansion.md)
-</cite>
+> **本文档引用文件**   
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js)
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
+> - [reports.js](file://server/routes/reports.js)
+> - [StudyDetailPage.vue](file://src/pages/StudyDetailPage.vue)
+> - [analysisStore.ts](file://src/stores/analysisStore.ts)
+> - [database-feature-expansion.md](file://.qoder/quests/database-feature-expansion.md)
 
 ## 目录
 1. [表结构概览](#表结构概览)

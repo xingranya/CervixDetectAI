@@ -1,14 +1,12 @@
 # AI分析服务
 
-<cite>
-**本文档引用的文件**   
-- [qwenService.js](file://server/services/qwenService.js) - *新增generatePrompt功能，根据检查方式生成优化提示词*
-- [analyze.js](file://server/routes/analyze.js) - *更新以支持传递检查方式参数*
-- [.env](file://server/.env) - *环境变量配置*
-- [AnalysisTask.js](file://server/models/AnalysisTask.js) - *分析任务模型*
-- [AnalysisResult.js](file://server/models/AnalysisResult.js) - *分析结果模型*
-- [index.js](file://server/index.js) - *应用入口文件*
-</cite>
+> **本文档引用的文件**   
+> - [qwenService.js](file://server/services/qwenService.js) - *新增generatePrompt功能，根据检查方式生成优化提示词*
+> - [analyze.js](file://server/routes/analyze.js) - *更新以支持传递检查方式参数*
+> - [.env](file://server/.env) - *环境变量配置*
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js) - *分析任务模型*
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js) - *分析结果模型*
+> - [index.js](file://server/index.js) - *应用入口文件*
 
 ## 更新摘要
 **主要变更**   

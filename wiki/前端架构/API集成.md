@@ -1,15 +1,13 @@
 # API集成
 
-<cite>
-**本文档引用的文件**
-- [axios.ts](file://src/boot/axios.ts)
-- [api.ts](file://src/services/api.ts)
-- [apiService.ts](file://src/services/apiService.ts)
-- [authStore.ts](file://src/stores/authStore.ts)
-- [UploadPage.vue](file://src/pages/UploadPage.vue)
-- [LoginPage.vue](file://src/pages/LoginPage.vue)
-- [quasar.config.ts](file://quasar.config.ts) - *新增开发服务器代理配置*
-</cite>
+> **本文档引用的文件**
+> - [axios.ts](file://src/boot/axios.ts)
+> - [api.ts](file://src/services/api.ts)
+> - [apiService.ts](file://src/services/apiService.ts)
+> - [authStore.ts](file://src/stores/authStore.ts)
+> - [UploadPage.vue](file://src/pages/UploadPage.vue)
+> - [LoginPage.vue](file://src/pages/LoginPage.vue)
+> - [quasar.config.ts](file://quasar.config.ts) - *新增开发服务器代理配置*
 
 ## 目录
 

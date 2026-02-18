@@ -1,14 +1,12 @@
 # 病例API
 
-<cite>
-**本文档引用的文件**  
-- [api.ts](file://src\services\api.ts)
-- [studies.js](file://server\routes\studies.js)
-- [Study.js](file://server\models\Study.js)
-- [StudyImage.js](file://server\models\StudyImage.js)
-- [auth.js](file://server\middleware\auth.js)
-- [studyStore.ts](file://src\stores\studyStore.ts)
-</cite>
+> **本文档引用的文件**  
+> - [api.ts](file://src\services\api.ts)
+> - [studies.js](file://server\routes\studies.js)
+> - [Study.js](file://server\models\Study.js)
+> - [StudyImage.js](file://server\models\StudyImage.js)
+> - [auth.js](file://server\middleware\auth.js)
+> - [studyStore.ts](file://src\stores\studyStore.ts)
 
 ## 目录
 1. [简介](#简介)

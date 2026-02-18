@@ -1,14 +1,12 @@
 # AI分析API
 
-<cite>
-**本文档引用的文件**  
-- [analyze.js](file://server/routes/analyze.js) - *已重构以先保存数据库再返回响应*
-- [AnalysisTask.js](file://server/models/AnalysisTask.js) - *分析任务数据模型*
-- [Study.js](file://server/models/Study.js) - *病例数据模型*
-- [AnalysisResult.js](file://server/models/AnalysisResult.js) - *分析结果数据模型*
-- [apiService.ts](file://src/services/apiService.ts) - *前端API服务*
-- [analysisStore.ts](file://src/stores/analysisStore.ts) - *前端状态管理*
-</cite>
+> **本文档引用的文件**  
+> - [analyze.js](file://server/routes/analyze.js) - *已重构以先保存数据库再返回响应*
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js) - *分析任务数据模型*
+> - [Study.js](file://server/models/Study.js) - *病例数据模型*
+> - [AnalysisResult.js](file://server/models/AnalysisResult.js) - *分析结果数据模型*
+> - [apiService.ts](file://src/services/apiService.ts) - *前端API服务*
+> - [analysisStore.ts](file://src/stores/analysisStore.ts) - *前端状态管理*
 
 ## 更新摘要
 **变更内容**  

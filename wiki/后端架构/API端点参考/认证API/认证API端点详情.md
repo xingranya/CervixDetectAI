@@ -1,14 +1,12 @@
 # 认证API
 
-<cite>
-**本文档中引用的文件**  
-- [auth.js](file://server/routes/auth.js)
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [auth.js](file://server/middleware/auth.js)
-- [jwt.js](file://server/utils/jwt.js)
-- [User.js](file://server/models/User.js)
-- [SmsCode.js](file://server/models/SmsCode.js)
-</cite>
+> **本文档中引用的文件**  
+> - [auth.js](file://server/routes/auth.js)
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [jwt.js](file://server/utils/jwt.js)
+> - [User.js](file://server/models/User.js)
+> - [SmsCode.js](file://server/models/SmsCode.js)
 
 ## 目录
 1. [简介](#简介)

@@ -1,11 +1,9 @@
 # 邮箱验证码 API
 
-<cite>
-**本文档引用文件**
-- [email-auth.js](../../server/routes/email-auth.js)
-- [email.service.js](../../server/services/email.service.js)
-- [EmailCode.js](../../server/models/EmailCode.js)
-</cite>
+> **本文档引用文件**
+> - [email-auth.js](../../server/routes/email-auth.js)
+> - [email.service.js](../../server/services/email.service.js)
+> - [EmailCode.js](../../server/models/EmailCode.js)
 
 ## 目录
 1. [API 概述](#api-概述)

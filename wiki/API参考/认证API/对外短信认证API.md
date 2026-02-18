@@ -1,10 +1,8 @@
 # 短信认证 API
 
-<cite>
-**Referenced Files**
-- [sms-auth.js](file://server/routes/sms-auth.js)
-- [api.ts](file://src/services/api.ts)
-</cite>
+> **Referenced Files**
+> - [sms-auth.js](file://server/routes/sms-auth.js)
+> - [api.ts](file://src/services/api.ts)
 
 ## 概述
 提供基于短信验证码的认证服务，包括验证码发送、短信登录、注册和密码重置。

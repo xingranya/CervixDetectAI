@@ -1,16 +1,14 @@
 # 病例管理API
 
-<cite>
-**本文档中引用的文件**  
-- [studies.js](file://server/routes/studies.js)
-- [Study.js](file://server/models/Study.js)
-- [Patient.js](file://server/models/Patient.js)
-- [AnalysisTask.js](file://server/models/AnalysisTask.js)
-- [StudyImage.js](file://server/models/StudyImage.js)
-- [User.js](file://server/models/User.js)
-- [auth.js](file://server/middleware/auth.js)
-- [index.js](file://server/models/index.js)
-</cite>
+> **本文档中引用的文件**  
+> - [studies.js](file://server/routes/studies.js)
+> - [Study.js](file://server/models/Study.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [AnalysisTask.js](file://server/models/AnalysisTask.js)
+> - [StudyImage.js](file://server/models/StudyImage.js)
+> - [User.js](file://server/models/User.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [index.js](file://server/models/index.js)
 
 ## 更新摘要
 **变更内容**  

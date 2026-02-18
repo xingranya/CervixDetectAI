@@ -1,11 +1,9 @@
 # 患者表 (patients)
 
-<cite>
-**本文档引用的文件**  
-- [Patient.js](file://server/models/Patient.js)
-- [patients.js](file://server/routes/patients.js)
-- [User.js](file://server/models/User.js)
-</cite>
+> **本文档引用的文件**  
+> - [Patient.js](file://server/models/Patient.js)
+> - [patients.js](file://server/routes/patients.js)
+> - [User.js](file://server/models/User.js)
 
 ## 目录
 

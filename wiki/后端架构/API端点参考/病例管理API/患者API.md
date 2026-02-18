@@ -1,12 +1,10 @@
 # 患者API
 
-<cite>
-**本文档中引用的文件**  
-- [patients.js](file://server/routes/patients.js)
-- [Patient.js](file://server/models/Patient.js)
-- [auth.js](file://server/middleware/auth.js)
-- [studies.js](file://server/routes/studies.js)
-</cite>
+> **本文档中引用的文件**  
+> - [patients.js](file://server/routes/patients.js)
+> - [Patient.js](file://server/models/Patient.js)
+> - [auth.js](file://server/middleware/auth.js)
+> - [studies.js](file://server/routes/studies.js)
 
 ## 目录
 

@@ -1,13 +1,11 @@
 # 用户管理API
 
-<cite>
-**本文档引用文件**  
-- [users.js](file://server/routes/users.js) - *使用sharp处理图像并生成多个尺寸*
-- [auth.js](file://server/middleware/auth.js) - *权限验证机制*
-- [User.js](file://server/models/User.js) - *用户模型定义*
-- [UserAvatar.js](file://server/models/UserAvatar.js) - *头像多尺寸版本存储*
-- [jwt.js](file://server/utils/jwt.js) - *JWT令牌处理*
-</cite>
+> **本文档引用文件**  
+> - [users.js](file://server/routes/users.js) - *使用sharp处理图像并生成多个尺寸*
+> - [auth.js](file://server/middleware/auth.js) - *权限验证机制*
+> - [User.js](file://server/models/User.js) - *用户模型定义*
+> - [UserAvatar.js](file://server/models/UserAvatar.js) - *头像多尺寸版本存储*
+> - [jwt.js](file://server/utils/jwt.js) - *JWT令牌处理*
 
 ## 更新摘要
 **变更内容**  

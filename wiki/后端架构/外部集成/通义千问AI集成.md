@@ -1,12 +1,10 @@
 # 通义千问AI集成
 
-<cite>
-**Referenced Files in This Document**   
-- [qwenService.js](file://server/services/qwenService.js)
-- [.env](file://server/.env)
-- [analyze.js](file://server/routes/analyze.js)
-- [ApiSettingsPage.vue](file://src/pages/ApiSettingsPage.vue)
-</cite>
+> **Referenced Files in This Document**   
+> - [qwenService.js](file://server/services/qwenService.js)
+> - [.env](file://server/.env)
+> - [analyze.js](file://server/routes/analyze.js)
+> - [ApiSettingsPage.vue](file://src/pages/ApiSettingsPage.vue)
 
 ## 目录
 1. [项目结构](#项目结构)

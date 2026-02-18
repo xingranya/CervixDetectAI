@@ -1,10 +1,8 @@
 # 邮箱验证码表 (email_codes)
 
-<cite>
-**本文档引用的文件**
-- [EmailCode.js](../../server/models/EmailCode.js)
-- [email-auth.js](../../server/routes/email-auth.js)
-</cite>
+> **本文档引用的文件**
+> - [EmailCode.js](../../server/models/EmailCode.js)
+> - [email-auth.js](../../server/routes/email-auth.js)
 
 ## 目录
 1. [表概述](#表概述)
