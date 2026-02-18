@@ -20,37 +20,43 @@ jobs:
   sync-wiki:
     runs-on: ubuntu-latest
     env:
+      SOURCE_BRANCH: ${{ github.ref_name }}
       WIKI_BRANCH: master
     steps:
-      - name: Checkout source repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Validate wiki source directory
+      - name: Show debug context
         run: |
-          if [ ! -d "wiki" ]; then
-            echo "未找到 wiki/ 目录，跳过同步。"
-            exit 0
-          fi
+          echo "repo=${GITHUB_REPOSITORY}"
+          echo "ref=${GITHUB_REF}"
+          echo "ref_name=${GITHUB_REF_NAME}"
+          git --version
 
       - name: Validate token
         run: |
           if [ -z "${{ secrets.WIKI_SYNC_TOKEN }}" ]; then
-            echo "缺少仓库 Secret: WIKI_SYNC_TOKEN"
+            echo "::error::缺少仓库 Secret: WIKI_SYNC_TOKEN"
             echo "请在 Settings > Secrets and variables > Actions 中添加。"
             exit 1
+          fi
+
+      - name: Clone source repository (without checkout action)
+        env:
+          SOURCE_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        run: |
+          git clone --depth 1 --branch "${SOURCE_BRANCH}" "${SOURCE_REMOTE}" source-repo
+          if [ ! -d "source-repo/wiki" ]; then
+            echo "未找到 source-repo/wiki 目录，跳过同步。"
+            exit 0
           fi
 
       - name: Clone GitHub Wiki repository
         env:
           WIKI_REMOTE: https://x-access-token:${{ secrets.WIKI_SYNC_TOKEN }}@github.com/${{ github.repository }}.wiki.git
         run: |
-          git clone "$WIKI_REMOTE" wiki-repo
+          git clone "${WIKI_REMOTE}" wiki-repo
 
       - name: Sync wiki files
         run: |
-          rsync -av --delete --exclude='.git/' wiki/ wiki-repo/
+          rsync -av --delete --exclude='.git/' source-repo/wiki/ wiki-repo/
 
       - name: Commit and push changes
         working-directory: wiki-repo
