@@ -1770,7 +1770,7 @@ const loadSavedConfig = () => {
 const loadUserSubscription = async () => {
   try {
     const response = await userAPI.getProfile();
-    const user = response.data;
+    const user = response.data.user;
 
     // 根据后端返回的数据更新订阅状态
     const now = new Date();

@@ -13,9 +13,9 @@ export interface AnalysisResult {
   diagnosis: string;
   confidence: number;
   recommendations: string[];
-  suspiciousAreas?: SuspiciousArea[];
-  biomarkers?: Record<string, string>;
-  detailedReport?: string;
+  suspiciousAreas?: SuspiciousArea[] | undefined;
+  biomarkers?: Record<string, string> | undefined;
+  detailedReport?: string | undefined;
 }
 
 export interface AnalysisTask {
@@ -98,7 +98,7 @@ export const useAnalysisStore = defineStore('analysis', {
 
         if (response.success && response.data.tasks) {
           // 更新任务列表
-          const tasks: AnalysisTask[] = response.data.tasks.map((task: ApiTaskResponse) => {
+          const tasks: AnalysisTask[] = (response.data.tasks as ApiTaskResponse[]).map((task) => {
             // 标准化状态为大写（后端可能返回大写或小写）
             const normalizedStatus = (task.status || '').toUpperCase();
             let status: AnalysisTask['status'];

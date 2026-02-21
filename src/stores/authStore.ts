@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
 import { authAPI, userAPI } from 'src/services/api';
+import type { AuthData } from 'src/services/api';
 import { getItem, removeItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface User {
   id: number;
@@ -57,9 +56,9 @@ export const useAuthStore = defineStore('auth', {
      * 封装了 loading 状态、错误处理和成功后的数据保存
      */
     async _handleAuthRequest(
-      apiCall: () => Promise<any>,
+      apiCall: () => Promise<{ success: boolean; data: AuthData; message?: string }>,
       defaultErrorMsg: string,
-    ): Promise<{ success: boolean; error?: string }> {
+    ): Promise<{ success: boolean; error?: string | undefined }> {
       this.isAuthenticating = true;
       try {
         const response = await apiCall();
@@ -70,8 +69,9 @@ export const useAuthStore = defineStore('auth', {
         } else {
           return { success: false, error: response.message };
         }
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || defaultErrorMsg;
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        const errorMessage = err.response?.data?.message || defaultErrorMsg;
         return { success: false, error: errorMessage };
       } finally {
         this.isAuthenticating = false;

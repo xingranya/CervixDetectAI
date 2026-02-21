@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
 import type { AnalysisResult } from './analysisStore';
 import { studyAPI, analysisTaskAPI } from 'src/services/api';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { StudyRaw } from 'src/services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -41,22 +40,22 @@ export interface Study {
   patientName: string;
   patientId: string;
   studyDate: string; // ISO date string
-  status: 'pending' | 'completed' | 'processing' | 'failed';
+  status: 'pending' | 'completed' | 'processing' | 'failed' | 'uploaded';
   study_type: string;
   modality: string;
   bodyPart: string;
-  description?: string;
+  description?: string | undefined;
   imageUrl?: string; // URL to the medical image
-  images?: Array<{ id: number; file_path: string; original_filename: string }>;
+  images?: Array<{ id: number; file_path: string; original_filename: string }> | undefined;
   analysisResult?: AnalysisResult; // Result from AI analysis
   uploadedAt: string; // ISO date string
   created_at: string;
   taskId?: string; // Backend task ID for tracking
-  // 新增字段：报告中心所需
-  downloaded?: boolean; // 报告是否已下载（后端可能未落库/可能为空）
-  downloaded_at?: string; // 首次下载时间（后端可能未落库/可能为空）
-  diagnosis?: string; // 诊断结果（来自 analysisResult）
-  riskLevel?: 'low' | 'medium' | 'high' | 'critical'; // 风险等级（来自 analysisResult）
+  // 报告中心所需字段
+  downloaded?: boolean;
+  downloaded_at?: string | undefined;
+  diagnosis?: string | undefined;
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
 }
 
 export const useStudyStore = defineStore('study', {
@@ -99,7 +98,7 @@ export const useStudyStore = defineStore('study', {
 
         if (response.success) {
           // Map backend data to frontend format
-          this.studies = response.data.studies.map((study: any) => {
+          this.studies = response.data.studies.map((study: StudyRaw) => {
             const imageUrl = getImageUrl(study.images?.[0]?.file_path);
             return {
               id: study.id,
@@ -130,10 +129,10 @@ export const useStudyStore = defineStore('study', {
         } else {
           console.error('❌ [fetchStudies] API 返回失败:', response);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
         console.error('❌ [fetchStudies] 请求失败:', error);
-        console.error('❌ [fetchStudies] 错误详情:', error.response?.data);
-        this.error = error.response?.data?.message || '获取病例列表失败';
+        this.error = err.response?.data?.message || '获取病例列表失败';
         throw error;
       } finally {
         this.loading = false;
@@ -166,8 +165,8 @@ export const useStudyStore = defineStore('study', {
               confidence: latestResult.confidence || 0,
               recommendations: latestResult.recommendations || [],
               suspiciousAreas: latestResult.suspicious_areas || [],
-              biomarkers: latestResult.biomarkers || undefined,
-              detailedReport: latestResult.detailed_report || undefined,
+              biomarkers: latestResult.biomarkers,
+              detailedReport: latestResult.detailed_report,
             };
           }
 
@@ -196,17 +195,17 @@ export const useStudyStore = defineStore('study', {
             riskLevel: latestResult?.risk_level,
           };
 
-          // Check for active tasks
-          if (response.data.study.analysis_tasks?.length > 0) {
-            // Sort by created_at desc
-            const tasks = response.data.study.analysis_tasks.sort(
-              (a: any, b: any) =>
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          // 检查是否有进行中的任务
+          const analysisTasks = response.data.study.analysis_tasks;
+          if (analysisTasks && analysisTasks.length > 0) {
+            // 按创建时间倒序排列
+            const tasks = [...analysisTasks].sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
             );
             const latestTask = tasks[0];
             if (latestTask && ['PENDING', 'PROCESSING'].includes(latestTask.status)) {
-              study.taskId = latestTask.task_id; // Use the string task_id
-              study.status = 'processing'; // Ensure status is processing
+              study.taskId = latestTask.task_id;
+              study.status = 'processing';
             }
           }
 
@@ -222,8 +221,9 @@ export const useStudyStore = defineStore('study', {
 
           return study;
         }
-      } catch (error: any) {
-        this.error = error.response?.data?.message || '获取病例详情失败';
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        this.error = err.response?.data?.message || '获取病例详情失败';
         throw error;
       } finally {
         this.loading = false;
@@ -289,8 +289,9 @@ export const useStudyStore = defineStore('study', {
 
           return newStudy;
         }
-      } catch (error: any) {
-        this.error = error.response?.data?.message || '创建病例失败';
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        this.error = err.response?.data?.message || '创建病例失败';
         throw error;
       } finally {
         this.loading = false;
@@ -317,7 +318,7 @@ export const useStudyStore = defineStore('study', {
         if (this.currentStudy && this.currentStudy.id === studyId) {
           this.currentStudy = updatedStudy;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('更新病例状态失败:', error);
       }
     },
@@ -351,8 +352,9 @@ export const useStudyStore = defineStore('study', {
         if (this.currentStudy?.id === studyId) {
           this.currentStudy = null;
         }
-      } catch (error: any) {
-        this.error = error.response?.data?.message || '删除病例失败';
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        this.error = err.response?.data?.message || '删除病例失败';
         throw error;
       }
     },
@@ -382,8 +384,9 @@ export const useStudyStore = defineStore('study', {
           return true;
         }
         return false;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || '上传影像失败';
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        this.error = err.response?.data?.message || '上传影像失败';
         throw error;
       } finally {
         this.loading = false;
