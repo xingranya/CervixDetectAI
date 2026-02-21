@@ -7,6 +7,7 @@
 ## 技术栈
 
 ### 前端
+
 - **框架**: Vue 3 + Quasar Framework v2.16.0
 - **构建工具**: Vite
 - **语言**: TypeScript
@@ -18,6 +19,7 @@
 - **PDF 生成**: html2canvas + jspdf
 
 ### 后端
+
 - **运行时**: Node.js
 - **位置**: `/server` 目录
 - **认证服务**: 阿里云号码认证 (@alicloud/dypnsapi)
@@ -58,24 +60,26 @@ CervixDetectAI/
 
 ## 关键配置文件
 
-| 文件 | 用途 |
-|------|------|
-| `package.json` | 前端依赖管理 |
-| `quasar.config.ts` | Quasar 框架配置 |
-| `server/package.json` | 后端依赖管理 |
-| `server/.env` | 后端环境变量（数据库、API 密钥等） |
-| `capacitor.config.json` | 移动端配置 |
-| `tsconfig.json` | TypeScript 配置 |
-| `eslint.config.js` | 代码规范 |
+| 文件                    | 用途                               |
+| ----------------------- | ---------------------------------- |
+| `package.json`          | 前端依赖管理                       |
+| `quasar.config.ts`      | Quasar 框架配置                    |
+| `server/package.json`   | 后端依赖管理                       |
+| `server/.env`           | 后端环境变量（数据库、API 密钥等） |
+| `capacitor.config.json` | 移动端配置                         |
+| `tsconfig.json`         | TypeScript 配置                    |
+| `eslint.config.js`      | 代码规范                           |
 
 ### 关键环境变量
 
 #### 数据库同步
+
 ```env
 DB_SYNC=false  # 是否自动同步表结构（生产环境建议 false）
 ```
 
 #### 腾讯云邮件推送
+
 ```env
 TENCENT_SECRET_ID=your_secret_id
 TENCENT_SECRET_KEY=your_secret_key
@@ -93,7 +97,7 @@ quasar dev              # 启动开发服务器
 quasar build            # 生产构建
 
 # 后端开发
-cd server && npm start  # 启动后端服务
+cd server && bun run dev  # 启动后端服务
 
 # 移动端
 quasar build -m capacitor -T android  # Android 构建
@@ -109,12 +113,20 @@ quasar build -m capacitor -T android  # Android 构建
 ## 协作偏好（前端迭代）
 
 - 与我沟通统一使用简体中文。
-- 不要主动运行开发服务器（如 `npm run dev` / `quasar dev`），由我自行启动验证。
+- 不要主动运行开发服务器（如 `bun run dev` / `quasar dev`），由我自行启动验证。
 - 登录/认证页动画要求：医疗稳重风格，避免生硬跳动与“假翻页”效果。
 - AuthBrandPanel 的“今日处理量”展示偏好：起始值从 `5` 开始，节奏偏慢（默认按 10 秒级变化，除非我临时指定）。
 - 登录页 footer 的注册引导文案优先使用“开始注册”这类直接表达。
 
 ## 近期更新
+
+- **[2026-02-20] 平台体验与生态规划升级**
+  - 全面支持全局暗色模式 (Dark Mode) 及相关组件的响应式样式适配
+  - 重构登录、注册、找回密码页面，支持多通道验证并优化交互流程
+  - 优化服务偏好设置界面及个性化偏好管理功能
+  - 优化生产环境安全头与静态资源托管配置，并扩展环境安全指南
+  - 补充多阶段项目生态规划文档 (`phase-4-ecosystem.md`) 与邮件 HTML 模板
+  - 集成与规范 Swagger API 接口文档，优化 GitHub Wiki 自动同步工作流
 
 - **[2026-02-05] 邮箱验证码与数据库优化**
   - 集成腾讯云 SES 邮件推送服务，支持邮箱验证码注册/登录/重置密码
@@ -185,12 +197,12 @@ quasar build -m capacitor -T android  # Android 构建
 
 ### 前端核心页面
 
-| 页面 | 功能 | 路径 |
-|------|------|------|
-| UploadPage | 病例创建与影像上传 | src/pages/UploadPage.vue |
-| StudyDetailPage | AI诊断结论展示 | src/pages/StudyDetailPage.vue |
-| StudiesPage | 病例中心 | src/pages/StudiesPage.vue |
-| PatientsPage | 患者管理 | src/pages/PatientsPage.vue |
+| 页面            | 功能               | 路径                          |
+| --------------- | ------------------ | ----------------------------- |
+| UploadPage      | 病例创建与影像上传 | src/pages/UploadPage.vue      |
+| StudyDetailPage | AI诊断结论展示     | src/pages/StudyDetailPage.vue |
+| StudiesPage     | 病例中心           | src/pages/StudiesPage.vue     |
+| PatientsPage    | 患者管理           | src/pages/PatientsPage.vue    |
 
 ### 后端数据模型关系
 
@@ -233,6 +245,7 @@ Order (支付订单)
 ### 数据模型
 
 **EmailCode 模型** (`server/models/EmailCode.js`)
+
 ```javascript
 {
   id: INTEGER (主键)
@@ -279,6 +292,7 @@ Order (支付订单)
 ### 部署脚本
 
 **`scripts/deploy-menu.sh`** - 交互式部署工具
+
 - 支持 SSH 连接复用（ControlMaster）
 - 自动检测环境依赖（rsync, Node.js, PM2）
 - 8 项菜单选项：首次部署、快速更新、仅同步、查看状态等

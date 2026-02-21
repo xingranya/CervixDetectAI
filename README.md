@@ -385,12 +385,12 @@ CervixDetectAI/
 
 ### 📋 环境要求
 
-| 环境                  | 版本要求     |
-| :-------------------- | :----------- |
-| **Node.js**           | >= 20.0.0    |
-| **npm / yarn / pnpm** | Latest       |
-| **MySQL**             | 5.7+ 或 8.0+ |
-| **Git**               | Latest       |
+| 环境        | 版本要求     |
+| :---------- | :----------- |
+| **Node.js** | >= 20.0.0    |
+| **Bun**     | Latest       |
+| **MySQL**   | 5.7+ 或 8.0+ |
+| **Git**     | Latest       |
 
 ### 🗄️ 数据库配置
 
@@ -453,6 +453,18 @@ node scripts/init-database.js
 
 ### 🔧 安装步骤
 
+#### 0. 安装 Bun 环境
+
+本项目使用 Bun 作为包管理器和极速运行环境，请先确保系统已全局安装 Bun：
+
+```bash
+# macOS / Linux / WSL
+curl -fsSL https://bun.com/install | bash
+
+# Windows (PowerShell)
+powershell -c "irm bun.sh/install.ps1 | iex"
+```
+
 #### 前端安装
 
 ```bash
@@ -461,14 +473,10 @@ git clone https://github.com/xingranya/CervixDetectAI.git
 cd CervixDetectAI
 
 # 2. 安装依赖
-npm install
-# 或使用 yarn
-yarn install
+bun install
 
 # 3. 启动开发服务器
-npm run dev
-# 或使用 yarn
-yarn dev
+bun run dev
 ```
 
 前端将运行在: **http://localhost:9000**
@@ -480,15 +488,15 @@ yarn dev
 cd server
 
 # 2. 安装依赖
-npm install
+bun install
 
 # 3. 初始化数据库
-node scripts/init-database.js
+bun scripts/init-database.js
 
 # 4. 启动服务器
-npm start
-# 或使用开发模式（带自动重启）
-npm run dev
+bun start
+# 或使用开发模式
+bun run dev
 ```
 
 后端将运行在: **http://localhost:4000**
@@ -497,7 +505,7 @@ npm run dev
 
 ```bash
 # 前端构建
-npm run build
+bun run build
 
 # 构建产物位于 dist/spa 目录
 ```
@@ -689,10 +697,10 @@ TEMPLATE_ID_RESET_PASSWORD=42424
 
 ```bash
 # ESLint 检查
-npm run lint
+bun run lint
 
 # ESLint 自动修复
-npm run lint:fix
+bun run lint:fix
 ```
 
 #### Git 提交规范

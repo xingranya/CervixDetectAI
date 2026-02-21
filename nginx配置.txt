@@ -58,6 +58,20 @@
   application/xml+rss image/svg+xml;
 
       # API 反向代理
+      location ^~ /uploads {
+      proxy_pass http://localhost:4000/uploads;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      expires 7d;
+  }
+
+  # 代理报告文件到后端
+      location ^~ /reports {
+      proxy_pass http://localhost:4000/reports;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      expires 7d;
+  }
       location /api/ {
           proxy_pass http://127.0.0.1:4000/api/;
           proxy_http_version 1.1;
@@ -71,18 +85,6 @@
           proxy_cache_bypass $http_upgrade;
       }
 
-      # 上传文件
-      location /uploads/ {
-          alias /www/wwwroot/CervixDetectAI/server/uploads/;
-          expires 30d;
-          access_log off;
-      }
-
-      # 报告文件
-      location /reports/ {
-          alias /www/wwwroot/CervixDetectAI/server/reports/;
-          expires 7d;
-      }
 
       # 字体文件
       location /fonts/ {

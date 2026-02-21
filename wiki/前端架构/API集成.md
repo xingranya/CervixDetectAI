@@ -1,13 +1,14 @@
 # API集成
 
 > **本文档引用的文件**
+>
 > - [axios.ts](file://src/boot/axios.ts)
 > - [api.ts](file://src/services/api.ts)
 > - [apiService.ts](file://src/services/apiService.ts)
 > - [authStore.ts](file://src/stores/authStore.ts)
 > - [UploadPage.vue](file://src/pages/UploadPage.vue)
 > - [LoginPage.vue](file://src/pages/LoginPage.vue)
-> - [quasar.config.ts](file://quasar.config.ts) - *新增开发服务器代理配置*
+> - [quasar.config.ts](file://quasar.config.ts) - _新增开发服务器代理配置_
 
 ## 目录
 
@@ -673,7 +674,7 @@ const uploadAndAnalyze = async () => {
     let errorMessage = '上传失败，请重试';
     if (error instanceof Error) {
       if (error.message.includes('Network Error') || error.message.includes('timeout')) {
-        errorMessage = '❌ 无法连接到后端服务，请确保后端已启动（运行: cd server && npm start）';
+        errorMessage = '❌ 无法连接到后端服务，请确保后端已启动（运行: cd server && bun start）';
       } else {
         errorMessage = `❌ 上传失败: ${error.message}`;
       }
@@ -739,7 +740,7 @@ try {
   let errorMessage = '上传失败，请重试';
   if (error instanceof Error) {
     if (error.message.includes('Network Error') || error.message.includes('timeout')) {
-      errorMessage = '❌ 无法连接到后端服务，请确保后端已启动（运行: cd server && npm start）';
+      errorMessage = '❌ 无法连接到后端服务，请确保后端已启动（运行: cd server && bun start）';
     } else {
       errorMessage = `❌ 上传失败: ${error.message}`;
     }
