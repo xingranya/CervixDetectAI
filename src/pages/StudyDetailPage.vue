@@ -857,6 +857,16 @@
         </q-card>
       </div>
     </div>
+    <!-- AI 追问对话 FAB -->
+    <q-page-sticky v-if="analysisResult" position="bottom-right" :offset="[24, 24]">
+      <q-btn fab icon="smart_toy" color="primary" @click="chatOpen = !chatOpen" class="chat-fab">
+        <q-badge v-if="!chatOpen" color="positive" floating rounded label="AI" />
+        <q-tooltip>AI 追问助手</q-tooltip>
+      </q-btn>
+    </q-page-sticky>
+
+    <!-- AI 聊天浮窗 -->
+    <AIChatPanel v-model="chatOpen" :study-id="study?.id ?? null" />
   </q-page>
 </template>
 
@@ -870,6 +880,7 @@ import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
 import { type SuspiciousArea } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
+import AIChatPanel from 'components/chat/AIChatPanel.vue';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -894,6 +905,7 @@ const advancedOptions = ref({
 });
 const fileInput = ref<HTMLInputElement | null>(null);
 const isUploading = ref(false);
+const chatOpen = ref(false);
 
 interface LogEntry {
   time: string;

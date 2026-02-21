@@ -455,6 +455,50 @@ class QwenService {
       return new Error(`调用通义千问API失败: ${error.message}`);
     }
   }
+
+  /**
+   * 流式多轮对话（SSE）
+   * @param {Array} messages - OpenAI 格式消息数组 [{role, content}]
+   * @param {Object} options - 可选参数
+   * @param {string} options.model - 模型名称
+   * @param {boolean} options.enableThinking - 是否启用深度思考（默认 true）
+   * @returns {import('stream').Readable} 可读流
+   */
+  async chatStream(messages, options = {}) {
+    const model = options.model || process.env.QWEN_CHAT_MODEL || 'qwen-plus';
+    const enableThinking = options.enableThinking !== false;
+
+    const requestBody = {
+      model,
+      messages,
+      stream: true,
+      max_tokens: enableThinking ? 16000 : 2000,
+      enable_thinking: enableThinking,
+    };
+
+    // 深度思考模式不支持 temperature / top_p
+    if (!enableThinking) {
+      requestBody.temperature = 0.7;
+      requestBody.top_p = 0.9;
+    }
+
+    console.log(`🤖 chatStream: model=${model}, enableThinking=${enableThinking}`);
+
+    const response = await axios({
+      method: 'post',
+      url: `${this.apiUrl}/chat/completions`,
+      data: requestBody,
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      responseType: 'stream',
+      timeout: 120000,
+    });
+
+    return response.data;
+  }
 }
 
 module.exports = new QwenService();

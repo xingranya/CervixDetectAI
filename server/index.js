@@ -19,6 +19,7 @@ const dashboardRouter = require('./routes/dashboard');
 const systemRouter = require('./routes/system');
 const settingsRouter = require('./routes/settings');
 const paymentRouter = require('./routes/payment');
+const chatRouter = require('./routes/chat');
 const { testConnection, syncDatabase } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
 
@@ -68,7 +69,17 @@ app.use(
     credentials: true,
   }),
 );
-app.use(compression()); // 启用Gzip压缩
+app.use(
+  compression({
+    // SSE 流式响应不压缩，避免缓冲导致数据无法实时到达前端
+    filter: (req, res) => {
+      if (res.getHeader('Content-Type')?.toString().includes('text/event-stream')) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  }),
+);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -88,9 +99,10 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/chat', chatRouter);
 
 // 使用环境变量配置前端构建路径，便于服务器部署
-const distPath = process.env.FRONTEND_DIST_PATH 
+const distPath = process.env.FRONTEND_DIST_PATH
   ? path.resolve(process.env.FRONTEND_DIST_PATH)
   : path.join(__dirname, '../../dist/spa');
 
@@ -161,7 +173,7 @@ app.listen(PORT, async () => {
   console.log(`📄 报告目录: ${reportsDir}`);
   console.log(`🤖 通义千问模型: ${process.env.QWEN_MODEL || '未配置'}`);
   console.log(`🔧 运行环境: ${process.env.NODE_ENV || 'development'}`);
-  
+
   // 测试数据库连接
   try {
     await testConnection();
