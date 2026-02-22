@@ -5,8 +5,11 @@
 > - [axios.ts](file://src/boot/axios.ts)
 > - [api.ts](file://src/services/api.ts)
 > - [apiService.ts](file://src/services/apiService.ts)
+> - [chatService.ts](file://src/services/chatService.ts)
 > - [authStore.ts](file://src/stores/authStore.ts)
 > - [UploadPage.vue](file://src/pages/UploadPage.vue)
+> - [StudyDetailPage.vue](file://src/pages/StudyDetailPage.vue)
+> - [AIChatPanel.vue](file://src/components/chat/AIChatPanel.vue)
 > - [LoginPage.vue](file://src/pages/LoginPage.vue)
 > - [quasar.config.ts](file://quasar.config.ts) - _新增开发服务器代理配置_
 
@@ -18,8 +21,9 @@
 4. [业务服务抽象](#业务服务抽象)
 5. [调用示例](#调用示例)
 6. [错误处理策略](#错误处理策略)
-7. [请求取消与防重复提交](#请求取消与防重复提交)
-8. [与后端RESTful API的契约一致性](#与后端restful-api的契约一致性)
+7. [SSE流式聊天集成](#sse流式聊天集成)
+8. [请求取消与防重复提交](#请求取消与防重复提交)
+9. [与后端RESTful API的契约一致性](#与后端restful-api的契约一致性)
 
 ## 项目概述
 
@@ -766,6 +770,50 @@ try {
 
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L453-L477)
 
+## SSE流式聊天集成
+
+AI 聊天模块采用 `fetch + ReadableStream` 直连 SSE 接口，实现思考过程与正文分流渲染。该链路主要由 `chatService.ts` 与 `AIChatPanel.vue` 协同完成。
+
+### 流式数据协议
+
+- 后端端点：`POST /api/chat`
+- 响应类型：`text/event-stream`
+- 分片类型：
+  - `reasoning`：深度思考过程
+  - `content`：正式回答内容
+  - `error`：错误信息
+  - `[DONE]`：流结束标记
+
+### 前端处理流程
+
+```mermaid
+sequenceDiagram
+participant Panel as AIChatPanel
+participant Service as chatService
+participant API as /api/chat
+Panel->>Service : sendChatMessage(...)
+Service->>API : fetch POST (SSE)
+API-->>Service : data: {type:'reasoning'|'content', content:'...'}
+Service-->>Panel : onChunk(text, type)
+Panel->>Panel : 更新 reasoning / content
+Panel->>Service : stopResponse() -> AbortController.abort()
+API-->>Service : [DONE]
+Service-->>Panel : onDone()
+```
+
+### 关键实现点
+
+- `chatService.ts` 内部使用 `response.body.getReader()` 逐块读取数据。
+- 通过 `AbortController` 返回控制句柄给组件层，实现“中断 AI 回复”。
+- `AIChatPanel.vue` 将流式分片实时合并到最后一条 assistant 消息。
+- 思考内容与正式回复采用不同 UI 容器，支持展开/折叠与自动滚动。
+
+**Section sources**
+
+- [chatService.ts](file://src/services/chatService.ts#L1-L106)
+- [AIChatPanel.vue](file://src/components/chat/AIChatPanel.vue#L1-L1590)
+- [StudyDetailPage.vue](file://src/pages/StudyDetailPage.vue#L862-L908)
+
 ## 请求取消与防重复提交
 
 为了防止用户重复提交请求，可以在发起请求前检查是否已经有正在进行的请求，并在必要时取消之前的请求。
@@ -780,12 +828,15 @@ D --> E[发起上传请求]
 E --> F[显示上传进度]
 ```
 
-虽然当前代码中没有显式实现请求取消，但可以通过axios的CancelToken或AbortController来实现。防重复提交则通过在`uploadAndAnalyze`函数中设置`uploading.value = true`来实现，确保在上传过程中按钮处于禁用状态。
+上传分析流程当前主要通过`uploading.value = true`防止重复提交，尚未显式实现上传请求取消。
+聊天流程已显式实现请求取消：`AIChatPanel.vue` 通过 `AbortController` 中止 `chatService.ts` 的流式请求。
 
 **Section sources**
 
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L278)
 - [UploadPage.vue](file://src/pages/UploadPage.vue#L379)
+- [AIChatPanel.vue](file://src/components/chat/AIChatPanel.vue#L320-L427)
+- [chatService.ts](file://src/services/chatService.ts#L33-L106)
 
 ## 与后端RESTful API的契约一致性
 
@@ -819,6 +870,10 @@ E --> F[显示上传进度]
 - `POST /analyze` - 开始AI分析
 - `GET /tasks` - 获取分析任务列表
 - `GET /tasks/:id` - 获取任务详情
+
+### AI对话接口 (`/api/chat`)
+
+- `POST /` - 基于病例上下文进行流式对话（SSE）
 
 ### 报告接口 (`/api/reports`)
 

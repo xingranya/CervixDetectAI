@@ -5,6 +5,7 @@
 > - [sms-auth.js](file://server/routes/sms-auth.js)
 > - [studies.js](file://server/routes/studies.js)
 > - [analyze.js](file://server/routes/analyze.js)
+> - [chat.js](file://server/routes/chat.js)
 > - [reports.js](file://server/routes/reports.js)
 > - [authStore.ts](file://src/stores/authStore.ts)
 > - [api.ts](file://src/services/api.ts)
@@ -25,6 +26,7 @@
 4. [AI分析端点](#ai分析端点)
    - [/api/analyze](#apianalyze)
    - [/api/analyze/:taskId](#apianalyzetaskid)
+   - [/api/chat](#apichat)
 5. [报告管理端点](#报告管理端点)
    - [/api/reports](#apireports)
    - [/api/reports/generate/:studyId](#apireportsgeneratestudyid)
@@ -442,6 +444,36 @@ AI分析端点负责处理AI分析任务的创建和状态查询。系统使用�
 
 **Section sources**
 - [analyze.js](file://server/routes/analyze.js#L127-L155)
+
+### /api/chat
+此端点用于在病例详情中进行 AI 对话追问，采用 SSE 流式返回。服务端会结合病例分析结果构建系统上下文，并按阶段返回思考过程与正式回答。
+
+- **HTTP方法**: POST
+- **URL路径**: `/api/chat`
+- **请求头**:
+  - `Content-Type: application/json`
+  - `Authorization: Bearer <access_token>` (可选)
+- **请求参数 (body)**:
+  - `studyId` (number, 可选): 病例ID
+  - `message` (string, 必填): 用户输入内容
+  - `history` (array, 可选): 对话历史，元素为 `{ role, content }`
+  - `enableThinking` (boolean, 可选): 是否启用深度思考，默认 `true`
+- **响应格式**: `text/event-stream`
+- **SSE分片示例**:
+```json
+{"type":"reasoning","content":"..."}
+{"type":"content","content":"..."}
+{"type":"error","content":"..."}
+```
+- **结束标记**: `data: [DONE]`
+- **状态码**:
+  - `200`: 流式对话建立成功
+  - `400`: 请求参数错误
+  - `500`: 服务器内部错误
+- **认证要求**: 可选 (JWT访问令牌)
+
+**Section sources**
+- [chat.js](file://server/routes/chat.js#L90-L252)
 
 ## 报告管理端点
 报告管理端点负责处理医疗报告的生成、查询、更新和下载。报告可以基于AI分析结果自动生成，也可以由医生手动创建和编辑。

@@ -107,6 +107,17 @@
 | **💡 临床建议** | 提供专业的临床建议和生物标志物信息 |
 | **📄 报告生成** | 自动生成 PDF 报告，支持下载        |
 
+### 💬 AI 聊天助手
+
+| 功能                  | 说明                                                                  |
+| :-------------------- | :-------------------------------------------------------------------- |
+| **🧠 双模式问答**     | 支持深度思考模式与快速回复模式切换                                    |
+| **🌊 SSE 流式输出**   | 支持思考过程（reasoning）与正式回答（content）分流式展示              |
+| **⏹️ 中断回复**       | 生成过程中可随时停止 AI 回复，避免长响应阻塞                          |
+| **📜 Markdown 渲染**  | 支持列表、代码块、表格、引用等 Markdown 输出，并做 HTML 安全净化      |
+| **📌 上下文关联**     | 自动结合当前病例分析结果、检查方式与历史对话生成回复                  |
+| **🎨 主题与可用性**   | 已优化浅色/深色主题、自动滚动到最新内容、思考卡片展开折叠与状态提示   |
+
 ### 💳 订阅支付
 
 | 功能            | 说明                               |
@@ -303,6 +314,8 @@ CervixDetectAI/
 │   ├── 📁 components/               # 公共组件
 │   │   ├── 📁 common/               # 通用组件
 │   │   │   └── AgreementDialog.vue  # 用户协议对话框
+│   │   ├── 📁 chat/                 # AI 聊天组件
+│   │   │   └── AIChatPanel.vue      # AI 聊天面板（病例详情页）
 │   │   ├── 📁 patients/             # 患者相关组件
 │   │   └── EssentialLink.vue        # 侧边栏链接
 │   ├── 📁 constants/                # 常量配置
@@ -324,6 +337,7 @@ CervixDetectAI/
 │   │   ├── api.ts                   # HTTP 请求封装
 │   │   ├── authAPI.ts               # 认证接口
 │   │   ├── studyAPI.ts              # 病例接口
+│   │   ├── chatService.ts           # SSE 聊天流式服务
 │   │   └── ...                      # 其他接口
 │   ├── 📁 stores/                   # Pinia 状态管理
 │   │   ├── authStore.ts             # 认证状态
@@ -349,12 +363,14 @@ CervixDetectAI/
 │   │   ├── studies.js               # 病例管理
 │   │   ├── patients.js              # 患者管理
 │   │   ├── analysis-tasks.js        # 分析任务
+│   │   ├── chat.js                  # AI 聊天接口（SSE）
 │   │   ├── reports.js               # 报告管理
 │   │   ├── payment.js               # 支付接口
 │   │   └── system.js                # 系统管理
 │   ├── 📁 services/                 # 业务逻辑
 │   │   ├── sms.service.js           # 短信服务
 │   │   ├── paymentService.js        # 支付服务
+│   │   ├── qwenService.js           # 通义千问分析/对话服务
 │   │   └── databaseCleanup.service.js # 数据库清理服务
 │   ├── 📁 middleware/               # 中间件
 │   │   └── auth.js                  # JWT 认证中间件
@@ -617,6 +633,12 @@ TEMPLATE_ID_RESET_PASSWORD=42424
 | POST | `/analyze`   | 开始 AI 分析     |
 | GET  | `/tasks`     | 获取分析任务列表 |
 | GET  | `/tasks/:id` | 获取任务详情     |
+
+### AI 对话 `/api/chat`
+
+| 方法 | 路径 | 说明 |
+| :--- | :--- | :--- |
+| POST | `/`  | 基于病例上下文进行 AI 对话（SSE 流式返回，支持深度思考与中断） |
 
 ### 报告管理 `/api/reports`
 

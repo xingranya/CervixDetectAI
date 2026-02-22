@@ -7,6 +7,7 @@
 > - [studies.js](file://server/routes/studies.js)
 > - [analysis-tasks.js](file://server/routes/analysis-tasks.js)
 > - [analyze.js](file://server/routes/analyze.js)
+> - [chat.js](file://server/routes/chat.js)
 > - [reports.js](file://server/routes/reports.js)
 > - [api.ts](file://src/services/api.ts)
 > - [User.js](file://server/models/User.js)
@@ -23,7 +24,8 @@
 2. [用户管理API](#用户管理api)
 3. [病例管理API](#病例管理api)
 4. [AI分析API](#ai分析api)
-5. [报告管理API](#报告管理api)
+5. [AI对话API](#ai对话api)
+6. [报告管理API](#报告管理api)
 
 ## 认证API
 
@@ -1537,6 +1539,44 @@ const result = await analysisTaskAPI.saveResult(1, {
 
 **Section sources**
 - [analyze.js](file://server/routes/analyze.js#L344-L374)
+
+## AI对话API
+
+### POST /api/chat
+基于病例上下文进行 AI 追问对话（SSE 流式响应）。
+
+**请求头**
+- `Content-Type: application/json`
+- `Authorization: Bearer <access_token>`（可选）
+
+**请求体参数**
+- `studyId` (number, 可选): 病例ID，用于加载分析结果上下文
+- `message` (string, 必填): 用户提问内容
+- `history` (array, 可选): 历史消息数组，元素结构为 `{ role, content }`
+- `enableThinking` (boolean, 可选): 是否启用深度思考模式，默认 `true`
+
+**SSE分片格式**
+
+```json
+{"type":"reasoning","content":"..."}
+{"type":"content","content":"..."}
+{"type":"error","content":"..."}
+```
+
+流结束标记：`data: [DONE]`
+
+**HTTP状态码**
+- `200 OK`: 成功建立SSE流并返回分片
+- `400 Bad Request`: 消息为空或参数格式不正确
+- `500 Internal Server Error`: 对话服务异常
+
+**前端调用示例**
+```typescript
+// 通过 fetch + ReadableStream 消费 SSE（见 src/services/chatService.ts）
+```
+
+**Section sources**
+- [chat.js](file://server/routes/chat.js#L90-L252)
 
 ## 报告管理API
 
