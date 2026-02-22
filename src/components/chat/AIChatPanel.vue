@@ -82,25 +82,52 @@
             </div>
 
             <!-- AI 气泡 -->
-            <div v-else class="msg-row msg-ai">
+            <div
+              v-else-if="!(isLoading && currentPhase === 'reasoning' && index === messages.length - 1)"
+              class="msg-row msg-ai"
+            >
               <div class="bubble-avatar ai-avatar">
                 <img :src="aiAvatar" alt="AI" />
               </div>
               <div class="bubble-wrapper">
-                <!-- 思考过程折叠 -->
-                <div v-if="msg.reasoning" class="reasoning-block">
-                  <q-expansion-item dense dense-toggle>
-                    <template v-slot:header>
-                      <div class="reasoning-toggle">
-                        <q-icon name="psychology" size="14px" color="amber-8" />
-                        <span>深度思考过程</span>
-                        <q-badge color="grey-3" text-color="grey-7" rounded>
-                          {{ msg.reasoning.length }} 字
-                        </q-badge>
-                      </div>
-                    </template>
-                    <div class="reasoning-content">{{ msg.reasoning }}</div>
-                  </q-expansion-item>
+                <!-- 深度思考流式展示 -->
+                <div
+                  v-if="msg.reasoning"
+                  class="reasoning-block"
+                  :class="{
+                    'is-streaming':
+                      isLoading && index === messages.length - 1 && currentPhase === 'reasoning',
+                  }"
+                >
+                  <div class="reasoning-shimmer" />
+                  <div class="reasoning-header" @click="toggleReasoning(index)">
+                    <div class="reasoning-header-left">
+                      <span class="reasoning-icon-wrapper">
+                        <q-icon name="psychology" size="16px" />
+                      </span>
+                      <span class="reasoning-tag">深度思考过程</span>
+                      <span class="reasoning-count">
+                        <span class="reasoning-count-value">{{ msg.reasoning.length }}</span>
+                        <span class="reasoning-count-unit">字</span>
+                      </span>
+                    </div>
+                    <q-icon
+                      :name="expandedReasoning.has(index) ? 'expand_less' : 'expand_more'"
+                      size="18px"
+                      class="reasoning-toggle-icon"
+                    />
+                  </div>
+                  <transition name="reasoning-expand">
+                    <div v-show="expandedReasoning.has(index)" class="reasoning-content">
+                      {{ msg.reasoning }}
+                      <span
+                        v-if="
+                          isLoading && index === messages.length - 1 && currentPhase === 'reasoning'
+                        "
+                        class="typing-cursor"
+                      />
+                    </div>
+                  </transition>
                 </div>
 
                 <!-- 正式回复 -->
@@ -119,29 +146,36 @@
             </div>
           </template>
 
-          <!-- 思考状态 -->
+          <!-- 正在深思的流式卡片 -->
           <div v-if="isLoading && currentPhase === 'reasoning'" class="msg-row msg-ai">
             <div class="bubble-avatar ai-avatar">
               <img :src="aiAvatar" alt="AI" />
             </div>
-            <div class="thinking-indicator">
-              <div class="thinking-dots"><span /><span /><span /></div>
-              <span class="thinking-text">正在深度思考...</span>
+            <div class="bubble-wrapper">
+              <div class="reasoning-block is-streaming">
+                <div class="reasoning-shimmer" />
+                <div class="reasoning-progress-bar" />
+                <div class="reasoning-header">
+                  <div class="reasoning-header-left">
+                    <span class="reasoning-icon-wrapper is-active">
+                      <q-icon name="psychology" size="16px" />
+                    </span>
+                    <span class="reasoning-tag">正在深度思考</span>
+                    <span class="reasoning-count">
+                      <q-spinner-dots size="12px" class="q-mr-xs reasoning-spinner" />
+                      <span class="reasoning-count-value">{{ currentReasoningText.length }}</span>
+                      <span class="reasoning-count-unit">字</span>
+                    </span>
+                  </div>
+                </div>
+                <div ref="streamingReasoningContent" class="reasoning-content">
+                  {{ currentReasoningText }}
+                  <span class="typing-cursor" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 流式输出占位 -->
-          <div
-            v-if="isLoading && currentPhase === 'content' && !currentContentText"
-            class="msg-row msg-ai"
-          >
-            <div class="bubble-avatar ai-avatar">
-              <img :src="aiAvatar" alt="AI" />
-            </div>
-            <div class="bubble bubble-ai">
-              <q-spinner-dots size="1.6em" color="primary" />
-            </div>
-          </div>
         </div>
 
         <!-- 输入区域 -->
@@ -185,10 +219,10 @@
               round
               flat
               dense
-              icon="send"
-              :disable="!inputText.trim() || isLoading"
-              @click="sendMessage"
-              class="send-btn"
+              :icon="isLoading ? 'stop' : 'send'"
+              :disable="!isLoading && !inputText.trim()"
+              @click="isLoading ? stopResponse() : sendMessage()"
+              :class="['send-btn', { 'is-stop': isLoading }]"
             />
           </div>
           <div class="chat-disclaimer">
@@ -226,9 +260,20 @@ const inputText = ref('');
 const isLoading = ref(false);
 const enableThinking = ref(false); // 默认关闭深度思考以追求更快的常规响应
 const currentPhase = ref<'reasoning' | 'content'>('reasoning');
-const currentContentText = ref('');
+const currentReasoningText = ref('');
+const expandedReasoning = ref<Set<number>>(new Set());
 const messagesContainer = ref<HTMLElement>();
+const streamingReasoningContent = ref<HTMLElement>();
+const activeAssistantIndex = ref<number | null>(null);
 let currentController: AbortController | null = null;
+
+/** 切换深度思考过程的展开/折叠 */
+function toggleReasoning(index: number) {
+  const s = new Set(expandedReasoning.value);
+  if (s.has(index)) s.delete(index);
+  else s.add(index);
+  expandedReasoning.value = s;
+}
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -246,10 +291,46 @@ function scrollToBottom() {
   });
 }
 
+/** 深度思考流式卡片滚动到底部 */
+function scrollStreamingReasoningToBottom() {
+  void nextTick(() => {
+    const container = streamingReasoningContent.value;
+    if (container) container.scrollTop = container.scrollHeight;
+  });
+}
+
 /** 快捷提问 */
 function askQuick(question: string) {
   inputText.value = question;
   sendMessage();
+}
+
+/** 中断当前 AI 回复 */
+function stopResponse() {
+  if (!isLoading.value) return;
+
+  currentController?.abort();
+  currentController = null;
+
+  const idx = activeAssistantIndex.value;
+  const aiMsg = idx !== null ? messages.value[idx] : null;
+
+  isLoading.value = false;
+  currentPhase.value = 'content';
+  currentReasoningText.value = '';
+  activeAssistantIndex.value = null;
+
+  if (aiMsg && idx !== null) {
+    if (!aiMsg.content) aiMsg.content = '⏹️ 已停止生成';
+    if (!aiMsg.reasoning) delete aiMsg.reasoning;
+    if (aiMsg.reasoning) {
+      const s = new Set(expandedReasoning.value);
+      s.add(idx);
+      expandedReasoning.value = s;
+    }
+  }
+
+  scrollToBottom();
 }
 
 /** 发送消息 */
@@ -261,11 +342,14 @@ function sendMessage() {
   inputText.value = '';
   isLoading.value = true;
   currentPhase.value = enableThinking.value ? 'reasoning' : 'content';
-  currentContentText.value = '';
+  currentReasoningText.value = '';
   scrollToBottom();
 
-  const aiMsg: ChatMessage = { role: 'assistant', content: '', reasoning: '' };
-  messages.value.push(aiMsg);
+  const aiMsgIndex =
+    messages.value.push({ role: 'assistant', content: '', reasoning: '' }) - 1;
+  activeAssistantIndex.value = aiMsgIndex;
+  scrollToBottom();
+  scrollStreamingReasoningToBottom();
 
   const history = messages.value.slice(0, -2);
 
@@ -275,28 +359,47 @@ function sendMessage() {
     history,
     enableThinking.value,
     (chunk: string, type: 'reasoning' | 'content' | 'error') => {
+      const aiMsg = messages.value[aiMsgIndex];
+      if (!aiMsg) return;
+
       if (type === 'reasoning') {
         aiMsg.reasoning = (aiMsg.reasoning || '') + chunk;
+        currentReasoningText.value = aiMsg.reasoning || '';
+        scrollStreamingReasoningToBottom();
       } else if (type === 'content') {
         currentPhase.value = 'content';
         aiMsg.content += chunk;
-        currentContentText.value = aiMsg.content;
       }
       scrollToBottom();
     },
     () => {
+      const aiMsg = messages.value[aiMsgIndex];
+
       isLoading.value = false;
       currentController = null;
       currentPhase.value = 'content';
-      if (!aiMsg.content) aiMsg.content = '抱歉，暂时无法生成回复，请稍后重试。';
-      if (!aiMsg.reasoning) delete aiMsg.reasoning;
+      currentReasoningText.value = '';
+      activeAssistantIndex.value = null;
+      if (aiMsg) {
+        if (!aiMsg.content) aiMsg.content = '抱歉，暂时无法生成回复，请稍后重试。';
+        if (!aiMsg.reasoning) delete aiMsg.reasoning;
+        // 流结束后自动展开最后一条消息的思考过程
+        if (aiMsg.reasoning) {
+          const s = new Set(expandedReasoning.value);
+          s.add(aiMsgIndex);
+          expandedReasoning.value = s;
+        }
+      }
       scrollToBottom();
     },
     (error: string) => {
+      const aiMsg = messages.value[aiMsgIndex];
+
       isLoading.value = false;
       currentController = null;
       currentPhase.value = 'content';
-      aiMsg.content = `⚠️ ${error}`;
+      activeAssistantIndex.value = null;
+      if (aiMsg) aiMsg.content = `⚠️ ${error}`;
       scrollToBottom();
     },
   );
@@ -444,7 +547,6 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 24px 20px;
-  scroll-behavior: smooth;
   background: transparent; /* 去除原本实色背景，露出玻璃窗口底层 */
 
   &::-webkit-scrollbar {
@@ -638,93 +740,241 @@ onUnmounted(() => {
   }
 }
 
-/* ============ 思考折叠 ============ */
+/* ============ 深度思考流式卡片 ============ */
 .reasoning-block {
-  margin-bottom: 8px;
-  border-radius: 14px;
+  margin-bottom: 10px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9e7 100%);
+  border: 1px solid #fde68a;
+  transition: all 0.3s ease;
+  position: relative;
 
-  :deep(.q-expansion-item__container) {
-    .q-item {
-      padding: 8px 14px;
-      min-height: 36px;
+  .reasoning-shimmer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      110deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.3) 45%,
+      rgba(255, 255, 255, 0) 90%
+    );
+    background-size: 220% 100%;
+  }
+
+  .reasoning-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    opacity: 0;
+    background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 45%, #fbbf24 100%);
+    background-size: 180% 100%;
+  }
+
+  &.is-streaming {
+    border-color: #f59e0b;
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.1),
+      0 4px 16px -4px rgba(245, 158, 11, 0.08);
+    animation: reasoningGlow 2s ease-in-out infinite;
+
+    .reasoning-shimmer {
+      opacity: 1;
+      animation: shimmerMove 2.2s linear infinite;
+    }
+
+    .reasoning-progress-bar {
+      opacity: 1;
+      animation: progressRun 1.6s linear infinite;
     }
   }
 
-  .reasoning-toggle {
+  .reasoning-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+
+    &:hover {
+      background: rgba(245, 158, 11, 0.05);
+    }
+  }
+
+  .reasoning-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 500;
   }
 
-  .reasoning-content {
-    padding: 12px 16px 16px;
-    font-size: 13px;
-    line-height: 1.7;
-    color: #475569;
-    white-space: pre-wrap;
-    max-height: 200px; /* 进一步限制高度，加速查阅最终结论 */
-    overflow-y: auto;
-    border-top: 1px dashed #e2e8f0;
-    background: #fdfdfd;
-  }
-}
+  .reasoning-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.14);
+    flex-shrink: 0;
 
-/* ============ 思考动画 ============ */
-.thinking-indicator {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  background: #fff;
-  border-radius: 20px;
-  border-bottom-left-radius: 6px;
-  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.04);
-
-  .thinking-dots {
-    display: flex;
-    gap: 5px;
-
-    span {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #94a3b8;
-      animation: dotBounce 1.4s infinite ease-in-out both;
-
-      &:nth-child(1) {
-        animation-delay: 0s;
-      }
-      &:nth-child(2) {
-        animation-delay: 0.16s;
-      }
-      &:nth-child(3) {
-        animation-delay: 0.32s;
-      }
+    &.is-active {
+      animation: iconPulse 1.5s ease-in-out infinite;
     }
   }
 
-  .thinking-text {
-    font-size: 14px;
-    color: #64748b;
+  .reasoning-tag {
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+  }
+
+  .reasoning-count {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.12);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reasoning-count-unit {
+    margin-left: 2px;
+  }
+
+  .reasoning-count-value {
+    display: inline-block;
+    min-width: 4ch;
+    text-align: right;
+  }
+
+  .reasoning-spinner {
+    color: #d97706;
+  }
+
+  .reasoning-toggle-icon {
+    color: #b45309;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .reasoning-content {
+    padding: 0 16px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #78350f;
+    white-space: pre-wrap;
+    max-height: 240px;
+    overflow-y: auto;
+    border-top: 1px dashed rgba(245, 158, 11, 0.2);
+    padding-top: 12px;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(245, 158, 11, 0.2);
+      border-radius: 2px;
+    }
+  }
+
+  .reasoning-icon-spin {
+    animation: iconPulse 1.5s ease-in-out infinite;
   }
 }
 
-@keyframes dotBounce {
+.reasoning-expand-enter-active,
+.reasoning-expand-leave-active {
+  transition:
+    max-height 0.24s ease,
+    opacity 0.2s ease,
+    padding-top 0.24s ease;
+  overflow: hidden;
+}
+
+.reasoning-expand-enter-from,
+.reasoning-expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0 !important;
+}
+
+.reasoning-expand-enter-to,
+.reasoning-expand-leave-from {
+  max-height: 240px;
+  opacity: 1;
+}
+
+/* 打字机光标 */
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #f59e0b;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes cursorBlink {
   0%,
-  80%,
-  100% {
-    transform: scale(0.6);
-    opacity: 0.4;
-  }
-  40% {
-    transform: scale(1);
+  50% {
     opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes reasoningGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.1),
+      0 4px 16px -4px rgba(245, 158, 11, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(245, 158, 11, 0.18),
+      0 4px 20px -4px rgba(245, 158, 11, 0.15);
+  }
+}
+
+@keyframes shimmerMove {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+@keyframes progressRun {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
@@ -885,6 +1135,15 @@ onUnmounted(() => {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
     }
+
+    &.is-stop {
+      background: #ef4444;
+    }
+
+    &.is-stop:not([disabled]):hover {
+      background: #dc2626;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+    }
   }
 }
 
@@ -995,25 +1254,50 @@ body.body--dark {
   }
 
   .reasoning-block {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(120, 53, 15, 0.12);
+    border-color: rgba(245, 158, 11, 0.2);
 
-    .reasoning-toggle {
-      color: #94a3b8;
+    &.is-streaming {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .reasoning-tag {
+      color: #fbbf24;
+    }
+    .reasoning-icon-wrapper {
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.18);
+    }
+    .reasoning-count {
+      color: #fcd34d;
+      background: rgba(245, 158, 11, 0.15);
+    }
+    .reasoning-spinner,
+    .reasoning-toggle-icon {
+      color: #fbbf24;
     }
     .reasoning-content {
-      color: #cbd5e1;
-      background: transparent;
-      border-top-color: rgba(255, 255, 255, 0.04);
+      color: #fde68a;
+      border-top-color: rgba(245, 158, 11, 0.15);
+    }
+    .reasoning-header:hover {
+      background: rgba(245, 158, 11, 0.06);
+    }
+    .reasoning-shimmer {
+      background: linear-gradient(
+        110deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(251, 191, 36, 0.16) 45%,
+        rgba(255, 255, 255, 0) 90%
+      );
+    }
+    .reasoning-progress-bar {
+      background: linear-gradient(90deg, #fcd34d 0%, #f59e0b 50%, #fcd34d 100%);
     }
   }
 
-  .thinking-indicator {
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    .thinking-text {
-      color: #94a3b8;
-    }
+  .typing-cursor {
+    background: #fbbf24;
   }
 
   .chat-input-area {
@@ -1035,6 +1319,11 @@ body.body--dark {
     }
 
     .send-btn {
+      &.is-stop {
+        background: #ef4444;
+        color: #ffffff !important;
+      }
+
       &[disabled] {
         background: #334155;
         color: #64748b !important;
