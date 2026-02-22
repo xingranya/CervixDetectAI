@@ -23,17 +23,7 @@
             </div>
           </div>
           <div class="header-actions">
-            <q-btn
-              flat
-              round
-              dense
-              :icon="enableThinking ? 'psychology' : 'flash_on'"
-              :color="enableThinking ? 'amber-4' : 'text-secondary'"
-              size="sm"
-              @click="enableThinking = !enableThinking"
-            >
-              <q-tooltip>切换为{{ enableThinking ? '快速回复' : '深度思考' }}模式</q-tooltip>
-            </q-btn>
+            <!-- 原深度思考按钮已移至底部 -->
             <q-btn
               flat
               round
@@ -82,7 +72,12 @@
                 <div class="bubble-text">{{ msg.content }}</div>
               </div>
               <div class="bubble-avatar user-avatar">
-                <q-icon name="person" size="18px" />
+                <img
+                  v-if="authStore.user?.avatar_url"
+                  :src="authStore.user.avatar_url"
+                  alt="User"
+                />
+                <q-icon v-else name="person" size="18px" />
               </div>
             </div>
 
@@ -151,6 +146,29 @@
 
         <!-- 输入区域 -->
         <div class="chat-input-area">
+          <div class="input-controls q-mb-sm flex items-center justify-between">
+            <div
+              class="row items-center cursor-pointer text-caption text-grey-7"
+              style="font-weight: 500"
+              @click="enableThinking = !enableThinking"
+            >
+              <q-toggle
+                v-model="enableThinking"
+                class="thinking-toggle q-mr-xs"
+                color="primary"
+                keep-color
+                dense
+                size="sm"
+              />
+              <q-icon
+                :name="enableThinking ? 'psychology' : 'flash_on'"
+                :color="enableThinking ? 'amber-8' : 'grey-5'"
+                size="16px"
+                class="q-mr-xs"
+              />
+              {{ enableThinking ? '深度思考已开启' : '快速回复模式' }}
+            </div>
+          </div>
           <div class="input-wrapper">
             <q-input
               v-model="inputText"
@@ -188,6 +206,7 @@ import { ref, watch, nextTick, onUnmounted } from 'vue';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { sendChatMessage, type ChatMessage } from 'src/services/chatService';
+import { useAuthStore } from 'src/stores/authStore';
 
 interface Props {
   modelValue: boolean;
@@ -197,6 +216,7 @@ interface Props {
 const props = defineProps<Props>();
 defineEmits<{ 'update:modelValue': [value: boolean] }>();
 
+const authStore = useAuthStore();
 const aiAvatar = '/logo.svg';
 
 const quickQuestions = ['诊断结论解读', '风险评估分析', '后续建议'];
@@ -204,7 +224,7 @@ const quickQuestions = ['诊断结论解读', '风险评估分析', '后续建�
 const messages = ref<ChatMessage[]>([]);
 const inputText = ref('');
 const isLoading = ref(false);
-const enableThinking = ref(true);
+const enableThinking = ref(false); // 默认关闭深度思考以追求更快的常规响应
 const currentPhase = ref<'reasoning' | 'content'>('reasoning');
 const currentContentText = ref('');
 const messagesContainer = ref<HTMLElement>();
@@ -329,7 +349,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 16px 20px;
   // 一种非常现代明亮、清脆无杂色的医学蓝
-  background: #1976D2;
+  background: #1976d2;
   border-bottom: none;
   color: #ffffff;
   z-index: 10;
@@ -578,6 +598,11 @@ onUnmounted(() => {
   &.user-avatar {
     background: #f1f5f9;
     color: #64748b;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 }
 
@@ -643,7 +668,7 @@ onUnmounted(() => {
     line-height: 1.7;
     color: #475569;
     white-space: pre-wrap;
-    max-height: 280px;
+    max-height: 200px; /* 进一步限制高度，加速查阅最终结论 */
     overflow-y: auto;
     border-top: 1px dashed #e2e8f0;
     background: #fdfdfd;

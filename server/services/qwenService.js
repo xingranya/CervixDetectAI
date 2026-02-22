@@ -470,14 +470,27 @@ class QwenService {
 
     const requestBody = {
       model,
-      messages,
+      messages: [...messages], // 浅拷贝以免修改原数据
       stream: true,
       max_tokens: enableThinking ? 16000 : 2000,
       enable_thinking: enableThinking,
     };
 
-    // 深度思考模式不支持 temperature / top_p
-    if (!enableThinking) {
+    if (enableThinking) {
+      // 强制模型用中文深思的 Prompt
+      if (!requestBody.messages.some((m) => m.role === 'system')) {
+        requestBody.messages.unshift({
+          role: 'system',
+          content:
+            '如果启用了深度思考模式，请务必全程使用简体中文输出您的推理思考过程 (reasoning_content)，不要使用任何外语。',
+        });
+      } else {
+        const sysMsg = requestBody.messages.find((m) => m.role === 'system');
+        sysMsg.content +=
+          '\n重要指令：请务必全程使用“简体中文”输出推理思考过程，禁止使用任何外语。';
+      }
+    } else {
+      // 深度思考模式不支持 temperature / top_p
       requestBody.temperature = 0.7;
       requestBody.top_p = 0.9;
     }
