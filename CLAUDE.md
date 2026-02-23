@@ -90,6 +90,9 @@ TENCENT_SES_REGION=ap-guangzhou
 TENCENT_SES_FROM_EMAIL=no-reply@hpvsc.icu
 TEMPLATE_ID_REGISTER=42423
 TEMPLATE_ID_RESET_PASSWORD=42424
+TEMPLATE_ID_CHANGE_EMAIL=42475
+TEMPLATE_ID_REPORT_READY=42476
+TEMPLATE_ID_REGISTER_SUCCESS=42477
 ```
 
 ## 常用命令
@@ -240,8 +243,11 @@ Order (支付订单)
   - 支持通知列表、未读计数、单条已读、全部已读
 - **邮箱认证 API** (`/api/auth/email`)
   - `POST /send-code` - 发送邮箱验证码
-  - `POST /register` - 邮箱验证码注册
+  - `POST /verify` - 校验邮箱验证码
   - `POST /reset-password` - 邮箱验证码重置密码
+- **邮箱变更 API** (`/api/users/me/email`)
+  - `POST /send-code` - 发送更换邮箱验证码
+  - `POST /confirm` - 验证并确认更换邮箱
 - **系统管理 API** (`/api/system`)
   - `POST /database/cleanup` - 执行数据库清理
   - `GET /database/size` - 获取表大小统计
@@ -251,7 +257,7 @@ Order (支付订单)
 - 阿里云 DYPNS (号码认证)
 - 阿里云 ESA AI 验证码（登录/注册安全验证）
 - 阿里云 SMS (短信验证码)
-- **腾讯云 SES (邮箱验证码推送)**
+- **腾讯云 SES (验证码 + 业务通知邮件推送)**
 - 通义千问大模型 (AI 诊断建议)
 - Sharp (医学影像处理)
 - 易支付 (支付接口)
@@ -269,7 +275,7 @@ Order (支付订单)
   id: INTEGER (主键)
   email: STRING (邮箱地址)
   code: STRING (6位验证码)
-  type: ENUM ('register', 'reset_password')
+  type: ENUM ('register', 'reset_password', 'change_email')
   expires_at: DATETIME (过期时间，5分钟)
   used: BOOLEAN (是否已使用)
   created_at: DATETIME
@@ -286,18 +292,44 @@ Order (支付订单)
    - 调用腾讯云 SES API 发送邮件
    - 保存到数据库（5分钟有效）
 
-2. **邮箱注册** - `POST /api/auth/email/register`
+2. **邮箱验证码重置密码** - `POST /api/auth/email/reset-password`
    - 验证邮箱格式
-   - 验证验证码有效性
-   - 检查邮箱是否已注册
-   - 创建用户账户
-   - 标记验证码已使用
-
-3. **重置密码** - `POST /api/auth/email/reset-password`
-   - 验证邮箱格式
-   - 验证验证码有效性
+   - 校验 `reset_password` 验证码
    - 更新用户密码
    - 标记验证码已使用
+
+3. **更换邮箱验证码** - `POST /api/users/me/email/send-code`
+   - 校验新邮箱格式与唯一性
+   - 校验 60 秒发送频率与每日上限
+   - 发送 `change_email` 模板验证码
+
+4. **确认更换邮箱** - `POST /api/users/me/email/confirm`
+   - 校验新邮箱验证码
+   - 原子更新用户邮箱
+
+5. **注册成功欢迎邮件**
+   - 注册成功后触发 `register_success` 模板
+   - 模板 ID：`TEMPLATE_ID_REGISTER_SUCCESS=42477`
+
+6. **报告生成完成邮件**
+   - 分析结果落库后触发 `report_ready` 模板
+   - 模板 ID：`TEMPLATE_ID_REPORT_READY=42476`
+
+7. **前端邮箱安全交互统一**
+   - `ProfilePage` / `SettingsPage` 复用 `EmailSecurityCard`
+   - `ForgotPasswordPage` 邮箱通道恢复可用，支持直接改密
+
+### 模板配置基线
+
+- `TEMPLATE_ID_CHANGE_EMAIL=42475`
+- `TEMPLATE_ID_REPORT_READY=42476`
+- `TEMPLATE_ID_REGISTER_SUCCESS=42477`
+- 所有模板 ID 仅从环境变量读取（未配置即返回明确错误）
+
+### 兼容说明
+
+- 认证主链路仍兼容原有接口；新增能力为增量扩展，不破坏既有调用。
+- 邮箱注册接口仍为 `POST /api/auth/register`（通过 `email + emailCode + password` 完成注册）。
 
 ### 安全特性
 

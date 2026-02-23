@@ -616,7 +616,26 @@ TENCENT_SES_FROM_EMAIL=no-reply@hpvsc.icu
 # 邮件模板 ID
 TEMPLATE_ID_REGISTER=42423
 TEMPLATE_ID_RESET_PASSWORD=42424
+TEMPLATE_ID_CHANGE_EMAIL=42475
+TEMPLATE_ID_REPORT_READY=42476
+TEMPLATE_ID_REGISTER_SUCCESS=42477
 ```
+
+### 📮 邮件推送场景矩阵
+
+| 场景 | 模板键 | 模板 ID | 触发入口 |
+| :--- | :--- | :--- | :--- |
+| 注册验证码 | `register` | `TEMPLATE_ID_REGISTER` | `POST /api/auth/email/send-code` (`type=register`) |
+| 重置密码验证码 | `reset_password` | `TEMPLATE_ID_RESET_PASSWORD` | `POST /api/auth/email/send-code` (`type=reset_password`) |
+| 更换邮箱验证码 | `change_email` | `TEMPLATE_ID_CHANGE_EMAIL=42475` | `POST /api/users/me/email/send-code` |
+| 报告生成完成 | `report_ready` | `TEMPLATE_ID_REPORT_READY=42476` | 分析结果落库后自动触发 |
+| 注册成功欢迎 | `register_success` | `TEMPLATE_ID_REGISTER_SUCCESS=42477` | 用户注册成功后自动触发 |
+
+### 🔐 邮箱安全与找回密码 UI
+
+- `SettingsPage` 与 `ProfilePage` 已统一为独立的“邮箱安全”卡片流程（输入新邮箱 -> 发送验证码 -> 确认更换）。
+- `ForgotPasswordPage` 已恢复邮箱通道可用，支持邮箱验证码直接重置密码。
+- 新增前端复用组件：`src/components/settings/EmailSecurityCard.vue`，避免页面重复逻辑。
 
 ---
 
@@ -634,8 +653,15 @@ TEMPLATE_ID_RESET_PASSWORD=42424
 | POST | `/refresh`              | 刷新 Token         |
 | GET  | `/me`                   | 获取当前用户信息   |
 | POST | `/email/send-code`      | 发送邮箱验证码     |
-| POST | `/email/register`       | 邮箱验证码注册     |
+| POST | `/email/verify`         | 校验邮箱验证码     |
 | POST | `/email/reset-password` | 邮箱验证码重置密码 |
+
+### 用户邮箱变更 `/api/users/me/email`
+
+| 方法 | 路径         | 说明                   |
+| :--- | :----------- | :--------------------- |
+| POST | `/send-code` | 发送更换邮箱验证码     |
+| POST | `/confirm`   | 校验验证码并确认更换邮箱 |
 
 ### 短信认证 `/api/auth/sms`
 

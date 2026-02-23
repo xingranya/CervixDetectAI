@@ -9,8 +9,9 @@
 1. [API 概述](#api-概述)
 2. [发送验证码](#发送验证码)
 3. [验证验证码](#验证验证码)
-4. [错误码说明](#错误码说明)
-5. [频率限制](#频率限制)
+4. [邮箱重置密码](#邮箱重置密码)
+5. [错误码说明](#错误码说明)
+6. [频率限制](#频率限制)
 
 ## API 概述
 
@@ -28,6 +29,9 @@ flowchart TD
     Client -->|7. POST /verify| VerifyCode[验证验证码接口]
     VerifyCode -->|8. 查询记录| QueryDB[查询验证码]
     VerifyCode -->|9. 更新状态| MarkUsed[标记为已使用]
+    Client -->|10. POST /reset-password| ResetPwd[邮箱验证码重置密码]
+    ResetPwd -->|11. 校验验证码| VerifyResetCode[校验 reset_password 验证码]
+    ResetPwd -->|12. 更新密码| UpdatePwd[更新用户密码]
 ```
 
 **Diagram sources**
@@ -241,6 +245,65 @@ sequenceDiagram
 
 ---
 
+## 邮箱重置密码
+
+### 端点
+
+```http
+POST /api/auth/email/reset-password
+```
+
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `email` | `string` | 是 | 邮箱地址 |
+| `code` | `string` | 是 | 6位验证码（`type=reset_password`） |
+| `newPassword` | `string` | 是 | 新密码（至少 6 位） |
+
+### 请求示例
+
+```json
+{
+  "email": "doctor@example.com",
+  "code": "123456",
+  "newPassword": "newPassword123"
+}
+```
+
+### 响应示例
+
+#### 成功响应 (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "密码重置成功"
+}
+```
+
+#### 失败响应 (400 Bad Request)
+
+```json
+{
+  "success": false,
+  "message": "验证码错误或已过期"
+}
+```
+
+### 处理流程
+
+1. 校验 `email`、`code`、`newPassword` 必填；
+2. 校验邮箱格式与密码长度；
+3. 查询邮箱对应用户；
+4. 校验 `reset_password` 类型验证码；
+5. 标记验证码为 `used` 并写入新密码。
+
+**Section sources**
+- [email-auth.js](../../server/routes/email-auth.js#L200-L264)
+
+---
+
 ## 错误码说明
 
 ### 业务错误码
@@ -255,6 +318,10 @@ sequenceDiagram
 | 发送过于频繁 | 429 | `发送过于频繁，请XX秒后再试` |
 | 达到每日上限 | 429 | `今日发送次数已达上限（10次）` |
 | 验证码无效 | 400 | `验证码无效或已过期` |
+| 重置密码参数缺失 | 400 | `邮箱、验证码和新密码为必填项` |
+| 重置密码长度不足 | 400 | `密码长度至少6位` |
+| 重置密码邮箱不存在 | 404 | `该邮箱未注册` |
+| 重置密码验证码错误 | 400 | `验证码错误或已过期` |
 
 ### 腾讯云错误码映射
 
