@@ -20,8 +20,14 @@ const systemRouter = require('./routes/system');
 const settingsRouter = require('./routes/settings');
 const paymentRouter = require('./routes/payment');
 const chatRouter = require('./routes/chat');
+const followupsRouter = require('./routes/followups');
+const notificationsRouter = require('./routes/notifications');
 const { testConnection, syncDatabase } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
+const {
+  ensureFollowUpInfrastructure,
+  startFollowUpScheduler,
+} = require('./services/followupScheduler.service');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -100,6 +106,8 @@ app.use('/api/system', systemRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/followups', followupsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // 使用环境变量配置前端构建路径，便于服务器部署
 const distPath = process.env.FRONTEND_DIST_PATH
@@ -173,11 +181,15 @@ app.listen(PORT, async () => {
   console.log(`📄 报告目录: ${reportsDir}`);
   console.log(`🤖 通义千问模型: ${process.env.QWEN_MODEL || '未配置'}`);
   console.log(`🔧 运行环境: ${process.env.NODE_ENV || 'development'}`);
+  startFollowUpScheduler();
 
   // 测试数据库连接
   try {
     await testConnection();
     console.log('✅ 数据库连接成功');
+
+    // 独立保障随访模块表结构，避免 DB_SYNC=false 导致新功能直接报 500
+    await ensureFollowUpInfrastructure();
 
     // 数据库同步（通过 DB_SYNC 环境变量控制）
     // DB_SYNC=true 启用同步，DB_SYNC=false 或不设置则跳过

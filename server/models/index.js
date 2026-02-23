@@ -13,6 +13,8 @@ const MedicalReport = require('./MedicalReport');
 const SmsCode = require('./SmsCode');
 const EmailCode = require('./EmailCode');
 const Order = require('./Order');
+const FollowUp = require('./FollowUp');
+const Notification = require('./Notification');
 
 // 定义模型关系
 
@@ -25,6 +27,9 @@ User.hasMany(AnalysisTask, { foreignKey: 'user_id', as: 'analysis_tasks' });
 User.hasMany(AnalysisResult, { foreignKey: 'reviewed_by', as: 'reviewed_results' });
 User.hasMany(MedicalReport, { foreignKey: 'generated_by', as: 'generated_reports' });
 User.hasMany(MedicalReport, { foreignKey: 'signed_by', as: 'signed_reports' });
+User.hasMany(FollowUp, { foreignKey: 'created_by', as: 'created_followups' });
+User.hasMany(FollowUp, { foreignKey: 'assigned_doctor_id', as: 'assigned_followups' });
+User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
 
 // UserAvatar 关系
 UserAvatar.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -33,6 +38,7 @@ UserAvatar.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Patient.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 Patient.hasMany(Study, { foreignKey: 'patient_id', as: 'studies' });
 Patient.hasMany(MedicalReport, { foreignKey: 'patient_id', as: 'reports' });
+Patient.hasMany(FollowUp, { foreignKey: 'patient_id', as: 'followups' });
 
 // Study 关系
 Study.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
@@ -41,6 +47,7 @@ Study.hasMany(StudyImage, { foreignKey: 'study_id', as: 'images' });
 Study.hasMany(AnalysisTask, { foreignKey: 'study_id', as: 'analysis_tasks' });
 Study.hasMany(AnalysisResult, { foreignKey: 'study_id', as: 'analysis_results' });
 Study.hasMany(MedicalReport, { foreignKey: 'study_id', as: 'reports' });
+Study.hasMany(FollowUp, { foreignKey: 'study_id', as: 'followups' });
 
 // StudyImage 关系
 StudyImage.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
@@ -69,6 +76,15 @@ MedicalReport.belongsTo(User, { foreignKey: 'signed_by', as: 'signer' });
 // Order 关系
 Order.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// FollowUp 关系
+FollowUp.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+FollowUp.belongsTo(Study, { foreignKey: 'study_id', as: 'study' });
+FollowUp.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+FollowUp.belongsTo(User, { foreignKey: 'assigned_doctor_id', as: 'assigned_doctor' });
+
+// Notification 关系
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 // 导出所有模型和sequelize实例
 module.exports = {
   sequelize,
@@ -83,4 +99,6 @@ module.exports = {
   SmsCode,
   EmailCode,
   Order,
+  FollowUp,
+  Notification,
 };

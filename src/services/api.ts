@@ -614,6 +614,234 @@ export const dashboardAPI = {
 };
 
 // ============================================================
+// FollowUp API
+// ============================================================
+
+export type FollowUpStatus = 'pending' | 'overdue' | 'completed' | 'cancelled';
+export type FollowUpRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export interface FollowUpDoctorSummary {
+  id: number;
+  username?: string;
+  real_name?: string;
+}
+
+export interface FollowUpPatientSummary {
+  id: number;
+  patient_id: string;
+  name: string;
+}
+
+export interface FollowUpStudySummary {
+  id: number;
+  study_id: string;
+  study_type?: string;
+  study_date?: string;
+}
+
+export interface FollowUpItem {
+  id: number;
+  follow_up_id: string;
+  patient_id: number;
+  study_id?: number;
+  created_by: number;
+  assigned_doctor_id?: number;
+  planned_date: string;
+  recommended_interval_months?: number;
+  risk_level_snapshot?: FollowUpRiskLevel;
+  ai_flagged_high_attention: boolean;
+  doctor_marked_high_attention: boolean;
+  is_high_attention: boolean;
+  status: FollowUpStatus;
+  reason?: string;
+  notes?: string;
+  completed_at?: string;
+  cancelled_at?: string;
+  last_reminded_at?: string;
+  created_at: string;
+  updated_at: string;
+  patient?: FollowUpPatientSummary;
+  study?: FollowUpStudySummary;
+  creator?: FollowUpDoctorSummary;
+  assigned_doctor?: FollowUpDoctorSummary;
+}
+
+export interface FollowUpListData {
+  followups: FollowUpItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface CreateFollowUpPayload {
+  patient_id: number;
+  study_id?: number | null;
+  planned_date?: string;
+  assigned_doctor_id?: number | null;
+  reason?: string;
+  notes?: string;
+  doctor_marked_high_attention?: boolean;
+}
+
+export interface UpdateFollowUpPayload {
+  study_id?: number | null;
+  planned_date?: string;
+  assigned_doctor_id?: number | null;
+  reason?: string;
+  notes?: string;
+  doctor_marked_high_attention?: boolean;
+}
+
+export const followUpAPI = {
+  async createFollowUp(payload: CreateFollowUpPayload): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.post<ApiResponse<{ followup: FollowUpItem }>>(
+      '/followups',
+      payload,
+    );
+    return data;
+  },
+
+  async getFollowUps(params?: {
+    page?: number;
+    limit?: number;
+    status?: FollowUpStatus;
+    patient_id?: number;
+    assigned_doctor_id?: number;
+    high_attention?: boolean;
+    date_from?: string;
+    date_to?: string;
+    keyword?: string;
+  }): Promise<ApiResponse<FollowUpListData>> {
+    const normalizedParams = {
+      ...params,
+      high_attention:
+        typeof params?.high_attention === 'boolean'
+          ? String(params.high_attention)
+          : undefined,
+    };
+    const { data } = await apiClient.get<ApiResponse<FollowUpListData>>('/followups', {
+      params: normalizedParams,
+    });
+    return data;
+  },
+
+  async getFollowUp(id: number): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.get<ApiResponse<{ followup: FollowUpItem }>>(`/followups/${id}`);
+    return data;
+  },
+
+  async updateFollowUp(
+    id: number,
+    payload: UpdateFollowUpPayload,
+  ): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.put<ApiResponse<{ followup: FollowUpItem }>>(
+      `/followups/${id}`,
+      payload,
+    );
+    return data;
+  },
+
+  async completeFollowUp(id: number): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.patch<ApiResponse<{ followup: FollowUpItem }>>(
+      `/followups/${id}/complete`,
+    );
+    return data;
+  },
+
+  async cancelFollowUp(id: number): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.patch<ApiResponse<{ followup: FollowUpItem }>>(
+      `/followups/${id}/cancel`,
+    );
+    return data;
+  },
+
+  async setHighAttention(id: number, marked: boolean): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+    const { data } = await apiClient.patch<ApiResponse<{ followup: FollowUpItem }>>(
+      `/followups/${id}/high-attention`,
+      { marked },
+    );
+    return data;
+  },
+
+  async remindNow(id: number): Promise<ApiResponse<{ notification: NotificationItem }>> {
+    const { data } = await apiClient.post<ApiResponse<{ notification: NotificationItem }>>(
+      `/followups/${id}/remind`,
+    );
+    return data;
+  },
+};
+
+// ============================================================
+// Notification API
+// ============================================================
+
+export type NotificationType =
+  | 'followup_due'
+  | 'followup_overdue'
+  | 'followup_high_attention'
+  | 'system';
+
+export interface NotificationItem {
+  id: number;
+  user_id: number;
+  type: NotificationType;
+  title: string;
+  content: string;
+  related_type?: 'followup' | 'patient' | 'study';
+  related_id?: number;
+  is_read: boolean;
+  read_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationListData {
+  notifications: NotificationItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const notificationAPI = {
+  async getNotifications(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<NotificationListData>> {
+    const { data } = await apiClient.get<ApiResponse<NotificationListData>>('/notifications', {
+      params,
+    });
+    return data;
+  },
+
+  async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
+    const { data } = await apiClient.get<ApiResponse<{ unreadCount: number }>>(
+      '/notifications/unread-count',
+    );
+    return data;
+  },
+
+  async markAsRead(id: number): Promise<ApiResponse<{ notification: NotificationItem }>> {
+    const { data } = await apiClient.patch<ApiResponse<{ notification: NotificationItem }>>(
+      `/notifications/${id}/read`,
+    );
+    return data;
+  },
+
+  async markAllAsRead(): Promise<ApiResponse<{ updatedCount: number }>> {
+    const { data } = await apiClient.patch<ApiResponse<{ updatedCount: number }>>(
+      '/notifications/read-all',
+    );
+    return data;
+  },
+};
+
+// ============================================================
 // Payment API
 // ============================================================
 
