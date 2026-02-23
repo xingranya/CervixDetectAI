@@ -162,7 +162,7 @@
                 <div>{{ userName }}</div>
               </div>
             </template>
-            <q-list style="min-width: 200px">
+            <q-list class="user-menu-list">
               <q-item clickable v-ripple @click="goToProfile">
                 <q-item-section avatar>
                   <q-icon name="account_circle" />
@@ -486,23 +486,24 @@ onUnmounted(() => {
 }
 
 :deep(.q-menu.notification-menu) {
-  border-radius: 18px !important;
+  border-radius: var(--app-radius-xl) !important;
   overflow: hidden !important;
   background: transparent;
 }
 
 .notification-panel {
-  background: #ffffff;
-  border: 1px solid #e5ebf5;
-  border-radius: 18px;
+  background: var(--app-glass-bg);
+  border: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-xl);
   overflow: hidden;
-  box-shadow: 0 14px 36px rgba(19, 51, 88, 0.16);
+  box-shadow: var(--app-shadow-lg);
+  backdrop-filter: blur(var(--app-glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-lg));
 }
 
 .notification-panel--dark {
-  background: #1f2633;
-  border-color: #38445a;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  background: var(--app-glass-bg);
+  border-color: var(--app-glass-border);
 }
 
 .notification-panel-header {
@@ -511,7 +512,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--app-radius-xl) var(--app-radius-xl) 0 0;
   color: #ffffff;
   background: #1976d2;
 }
@@ -530,7 +531,7 @@ onUnmounted(() => {
 
 .notification-read-all-btn {
   min-width: 84px;
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
   font-weight: 600;
 }
 
@@ -539,7 +540,7 @@ onUnmounted(() => {
 }
 
 .notification-skeleton {
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
 }
 
 .notification-list {
@@ -550,7 +551,7 @@ onUnmounted(() => {
 
 .notification-item {
   margin-bottom: 8px;
-  border-radius: 12px;
+  border-radius: var(--app-radius-md);
   border: 1px solid #e9eff8;
   background: #f9fbff;
   transition: all 0.2s ease;
@@ -637,7 +638,7 @@ onUnmounted(() => {
 .notification-type-icon {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--app-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -768,14 +769,18 @@ onUnmounted(() => {
 }
 
 .notification-jump-btn {
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
+}
+
+.user-menu-list {
+  min-width: 200px;
 }
 </style>
 
 <style>
 /* 修正通知弹层最外壳：去掉默认方形白底与阴影，保持与内部圆角一致 */
 .q-menu.notification-menu {
-  border-radius: 18px !important;
+  border-radius: var(--app-radius-xl) !important;
   background: transparent !important;
   box-shadow: none !important;
   border: 0 !important;

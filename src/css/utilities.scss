@@ -16,3 +16,38 @@
     transform: translateY(-2px);
   }
 }
+
+// 玻璃化容器（适用于菜单、侧边浮层、提示面板）
+.app-glass-surface {
+  background: var(--app-glass-bg);
+  border: 1px solid var(--app-glass-border);
+  backdrop-filter: blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+}
+
+// 提升层容器（适用于主卡片）
+.app-panel-elevated {
+  background: var(--app-surface-elevated);
+  border: 1px solid var(--app-border-default);
+  box-shadow: var(--app-shadow-md);
+  transition:
+    box-shadow var(--app-transition-normal),
+    border-color var(--app-transition-normal),
+    background-color var(--app-transition-normal);
+}
+
+.app-radius-sm {
+  border-radius: var(--app-radius-sm);
+}
+
+.app-radius-md {
+  border-radius: var(--app-radius-md);
+}
+
+.app-radius-lg {
+  border-radius: var(--app-radius-lg);
+}
+
+.app-radius-xl {
+  border-radius: var(--app-radius-xl);
+}

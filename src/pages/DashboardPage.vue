@@ -628,7 +628,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .dashboard-page {
-  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: var(--app-dashboard-page-bg);
   min-height: calc(100vh - 64px);
   padding: 24px 32px;
 }
@@ -636,13 +636,16 @@ onUnmounted(() => {
 .page-header {
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #cbd5e1;
+  border-bottom: 1px solid var(--app-border-default);
 }
 
 // Welcome Banner
 .welcome-banner {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #bae6fd;
+  background: var(--app-glass-bg-light);
+  border: 1px solid var(--app-glass-border-light);
+  border-radius: var(--app-radius-lg);
+  backdrop-filter: blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
   color: #0c4a6e;
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -651,7 +654,7 @@ onUnmounted(() => {
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--app-shadow-lg);
     transform: translateY(-2px);
   }
 
@@ -662,12 +665,10 @@ onUnmounted(() => {
 
 // Modern Card Style
 .modern-card {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e2e8f0;
+  background: var(--app-surface);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-md);
+  border: 1px solid var(--app-border-default);
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
     box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -675,15 +676,13 @@ onUnmounted(() => {
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.08),
-      0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--app-shadow-lg);
     transform: translateY(-2px);
   }
 
   .card-header {
     padding: 20px 24px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--app-border-light);
   }
 }
 
@@ -699,19 +698,19 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-md);
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
     box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
     border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
-  background-color: #f8fafc;
+  background-color: var(--app-elevated-bg);
 
   &:hover {
-    border-color: #94a3b8;
-    background-color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-color: var(--app-field-border-hover);
+    background-color: var(--app-surface);
+    box-shadow: var(--app-shadow-sm);
   }
 }
 
@@ -722,8 +721,8 @@ onUnmounted(() => {
 }
 
 .task-icon {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border-default);
 }
 
 .task-details {
@@ -739,10 +738,10 @@ onUnmounted(() => {
 
 // Stats Cards
 .stat-card {
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--app-elevated-bg);
+  border-radius: var(--app-radius-md);
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border-default);
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
     box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -750,8 +749,8 @@ onUnmounted(() => {
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
-    background: #ffffff;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background: var(--app-surface);
+    box-shadow: var(--app-shadow-md);
   }
 }
 
@@ -764,20 +763,20 @@ onUnmounted(() => {
 
 .stat-title {
   font-size: 14px;
-  color: #64748b;
+  color: var(--app-text-secondary);
   font-weight: 500;
 }
 
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--app-text-primary);
   margin-bottom: 8px;
 }
 
 .stat-unit {
   font-size: 16px;
-  color: #64748b;
+  color: var(--app-text-secondary);
   font-weight: 400;
 }
 
@@ -815,8 +814,8 @@ onUnmounted(() => {
 }
 
 .action-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-md);
   padding: 20px;
   text-align: center;
   transition:
@@ -825,12 +824,12 @@ onUnmounted(() => {
     border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
   cursor: pointer;
-  background-color: #f8fafc;
+  background-color: var(--app-elevated-bg);
 
   &:hover {
     border-color: var(--q-primary);
-    background-color: #ffffff;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background-color: var(--app-surface);
+    box-shadow: var(--app-shadow-md);
     transform: translateY(-2px);
   }
 }
@@ -845,11 +844,11 @@ onUnmounted(() => {
 .notice-item {
   padding: 16px;
   border-left: 4px solid var(--q-primary);
-  background-color: #f8fafc;
-  border-radius: 0 8px 8px 0;
-  border-top: 1px solid #e2e8f0;
-  border-right: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--app-elevated-bg);
+  border-radius: 0 var(--app-radius-md) var(--app-radius-md) 0;
+  border-top: 1px solid var(--app-border-default);
+  border-right: 1px solid var(--app-border-default);
+  border-bottom: 1px solid var(--app-border-default);
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
     box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -857,8 +856,8 @@ onUnmounted(() => {
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
 
   &:hover {
-    background-color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: var(--app-surface);
+    box-shadow: var(--app-shadow-sm);
   }
 }
 
@@ -913,9 +912,11 @@ body.body--dark {
   }
 
   .welcome-banner {
-    background: var(--app-dashboard-banner-bg);
-    border-color: var(--app-dashboard-banner-border);
-    color: var(--app-dashboard-banner-text);
+    background: var(--app-glass-bg);
+    border-color: var(--app-glass-border);
+    color: var(--app-text-primary);
+    backdrop-filter: blur(var(--app-glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
   }
 
   .modern-card {

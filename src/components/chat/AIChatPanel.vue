@@ -426,12 +426,16 @@ onUnmounted(() => {
 <style scoped lang="scss">
 /* ============ 面板容器与主题变量（浅色默认） ============ */
 .ai-chat-panel {
-  --chat-panel-bg: rgba(255, 255, 255, 0.96);
-  --chat-panel-border: #dce8f6;
+  --chat-panel-bg: var(--app-glass-bg-light);
+  --chat-panel-border: var(--app-glass-border-light);
   --chat-panel-shadow:
     0 24px 56px -18px rgba(15, 23, 42, 0.28),
     0 10px 26px -12px rgba(30, 58, 138, 0.22),
     0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  --chat-radius-panel: var(--app-radius-xl);
+  --chat-radius-card: var(--app-radius-lg);
+  --chat-radius-control: var(--app-radius-md);
+  --chat-radius-soft: var(--app-radius-sm);
   --chat-panel-overlay: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 58%, #f8fafc 100%);
 
   --chat-header-bg: #1976d2;
@@ -456,6 +460,9 @@ onUnmounted(() => {
   --chat-scrollbar-hover: rgba(71, 85, 105, 0.42);
   --chat-welcome-icon-bg: #ffffff;
   --chat-welcome-icon-shadow: 0 10px 24px rgba(148, 163, 184, 0.18);
+  --chat-avatar-shadow: var(--app-shadow-sm);
+  --chat-chip-shadow: var(--app-shadow-sm);
+  --chat-avatar-ai-shadow: var(--app-shadow-sm);
   --chat-welcome-title: #15324f;
   --chat-welcome-desc: #607289;
   --chat-chip-bg: #ffffff;
@@ -557,7 +564,7 @@ onUnmounted(() => {
   max-width: calc(100vw - 32px);
   height: 680px;
   max-height: calc(100vh - 120px);
-  border-radius: 20px;
+  border-radius: var(--chat-radius-panel);
   border: 1px solid var(--chat-panel-border);
   box-shadow: var(--chat-panel-shadow);
   background: var(--chat-panel-bg);
@@ -565,8 +572,8 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--app-glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-lg));
 
   &::before {
     content: '';
@@ -604,9 +611,9 @@ onUnmounted(() => {
     position: relative;
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: var(--chat-radius-control);
     background: var(--chat-avatar-bg);
-    box-shadow: 0 4px 10px rgba(147, 197, 253, 0.22);
+    box-shadow: var(--chat-avatar-shadow);
     padding: 6px;
     display: flex;
     align-items: center;
@@ -751,7 +758,7 @@ onUnmounted(() => {
     width: 72px;
     height: 72px;
     background: var(--chat-welcome-icon-bg);
-    border-radius: 20px;
+    border-radius: var(--chat-radius-panel);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -790,9 +797,9 @@ onUnmounted(() => {
       background: var(--chat-chip-bg) !important;
       border: 1px solid var(--chat-chip-border) !important;
       color: var(--chat-chip-text) !important;
-      border-radius: 24px;
+      border-radius: var(--chat-radius-panel);
       transition: all 0.22s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      box-shadow: var(--chat-chip-shadow);
 
       &:hover {
         transform: translateY(-1px);
@@ -848,7 +855,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: var(--chat-radius-control);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -856,7 +863,7 @@ onUnmounted(() => {
 
   &.ai-avatar {
     background: var(--chat-avatar-ai-bg);
-    box-shadow: 0 2px 8px rgba(148, 163, 184, 0.16);
+    box-shadow: var(--chat-avatar-ai-shadow);
     border: 1px solid var(--chat-avatar-ai-border);
     padding: 6px;
 
@@ -886,7 +893,7 @@ onUnmounted(() => {
 
 .bubble {
   padding: 13px 16px;
-  border-radius: 16px;
+  border-radius: var(--chat-radius-card);
   max-width: 100%;
   word-break: break-word;
   line-height: 1.66;
@@ -897,14 +904,14 @@ onUnmounted(() => {
     background: var(--chat-user-bubble-bg);
     color: var(--chat-user-bubble-text);
     border-color: var(--chat-user-bubble-border);
-    border-bottom-right-radius: 8px;
+    border-bottom-right-radius: var(--chat-radius-soft);
     max-width: calc(100% - 52px);
   }
 
   &.bubble-ai {
     background: var(--chat-ai-bubble-bg);
     color: var(--chat-ai-bubble-text);
-    border-bottom-left-radius: 8px;
+    border-bottom-left-radius: var(--chat-radius-soft);
     box-shadow: var(--chat-bubble-shadow);
     border: 1px solid var(--chat-ai-bubble-border);
   }
@@ -913,7 +920,7 @@ onUnmounted(() => {
 /* ============ 深度思考流式卡片 ============ */
 .reasoning-block {
   margin-bottom: 10px;
-  border-radius: 14px;
+  border-radius: var(--chat-radius-control);
   overflow: hidden;
   background: var(--chat-reasoning-bg);
   border: 1px solid var(--chat-reasoning-border);
@@ -1184,7 +1191,7 @@ onUnmounted(() => {
     background: var(--chat-md-code-bg);
     color: var(--chat-md-code-text);
     padding: 2px 6px;
-    border-radius: 6px;
+    border-radius: var(--chat-radius-soft);
     font-size: 13px;
     font-family: inherit;
   }
@@ -1194,7 +1201,7 @@ onUnmounted(() => {
     border: 1px solid var(--chat-md-pre-border);
     color: var(--chat-md-pre-text);
     padding: 12px 16px;
-    border-radius: 12px;
+    border-radius: var(--chat-radius-md);
     overflow-x: auto;
     margin: 12px 0;
     font-size: 13px;
@@ -1212,7 +1219,7 @@ onUnmounted(() => {
     margin: 12px 0;
     color: var(--chat-md-quote-text);
     background: var(--chat-md-quote-bg);
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 var(--chat-radius-soft) var(--chat-radius-soft) 0;
   }
 
   :deep(strong) {
@@ -1256,8 +1263,8 @@ onUnmounted(() => {
 .chat-input-area {
   padding: 14px 18px 18px;
   background: var(--chat-input-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
   border-top: 1px solid var(--chat-input-border);
 
   .input-controls {
@@ -1317,7 +1324,7 @@ onUnmounted(() => {
     align-items: flex-end;
     gap: 12px;
     background: var(--chat-input-wrapper-bg);
-    border-radius: 20px;
+    border-radius: var(--chat-radius-panel);
     padding: 8px 10px 8px 14px;
     border: 1px solid var(--chat-input-wrapper-border);
     box-shadow: var(--chat-input-wrapper-shadow);
@@ -1357,7 +1364,7 @@ onUnmounted(() => {
     color: white !important;
     width: 36px;
     height: 36px;
-    border-radius: 18px;
+    border-radius: var(--chat-radius-panel);
     transition: all 0.2s ease;
     margin-bottom: 2px;
 
@@ -1463,8 +1470,8 @@ onUnmounted(() => {
 <style lang="scss">
 /* ============ 暗色模式 ============ */
 body.body--dark .ai-chat-panel {
-  --chat-panel-bg: rgba(15, 23, 42, 0.9);
-  --chat-panel-border: rgba(148, 163, 184, 0.26);
+  --chat-panel-bg: var(--app-glass-bg-dark);
+  --chat-panel-border: var(--app-glass-border-dark);
   --chat-panel-shadow:
     0 26px 58px -18px rgba(2, 6, 23, 0.66),
     0 10px 24px -12px rgba(2, 6, 23, 0.5),
@@ -1497,6 +1504,9 @@ body.body--dark .ai-chat-panel {
   --chat-scrollbar-hover: rgba(203, 213, 225, 0.45);
   --chat-welcome-icon-bg: #0f172a;
   --chat-welcome-icon-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+  --chat-avatar-shadow: var(--app-shadow-sm);
+  --chat-chip-shadow: var(--app-shadow-sm);
+  --chat-avatar-ai-shadow: var(--app-shadow-sm);
   --chat-welcome-title: #e2e8f0;
   --chat-welcome-desc: #9eb0c4;
   --chat-chip-bg: rgba(30, 41, 59, 0.92);

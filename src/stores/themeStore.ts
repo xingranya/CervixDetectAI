@@ -5,7 +5,8 @@ import { Dark } from 'quasar';
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const useThemeStore = defineStore('theme', () => {
-  const themeMode = ref<ThemeMode>('light');
+  const defaultThemeMode: ThemeMode = 'system';
+  const themeMode = ref<ThemeMode>(defaultThemeMode);
   const isDark = ref(false);
 
   function resolveTheme(mode: ThemeMode): boolean {
@@ -27,7 +28,11 @@ export const useThemeStore = defineStore('theme', () => {
 
   /** 初始化主题：从 localStorage 读取偏好，监听系统主题变化 */
   function initTheme(): void {
-    const saved = (localStorage.getItem('app_theme_preference') as ThemeMode) || 'light';
+    const savedRaw = localStorage.getItem('app_theme_preference');
+    const saved: ThemeMode =
+      savedRaw === 'light' || savedRaw === 'dark' || savedRaw === 'system'
+        ? savedRaw
+        : defaultThemeMode;
     setTheme(saved);
 
     // 监听系统主题变化（仅在 system 模式下自动切换）

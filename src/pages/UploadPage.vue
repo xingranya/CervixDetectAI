@@ -318,7 +318,7 @@
             </div>
             <q-list dense class="q-mt-sm">
               <q-item v-for="(tip, index) in tips" :key="index" class="q-pa-none q-mb-xs">
-                <q-item-section avatar style="min-width: 32px">
+                <q-item-section avatar class="tip-avatar">
                   <q-icon :name="tip.icon" :color="tip.color" size="xs" />
                 </q-item-section>
                 <q-item-section>
@@ -338,7 +338,7 @@
       transition-show="fade"
       transition-hide="fade"
     >
-      <q-card style="min-width: 500px; max-width: 600px">
+      <q-card class="add-patient-dialog-card">
         <q-card-section class="row items-center bg-primary text-white">
           <q-icon name="person_add" size="sm" class="q-mr-sm" />
           <div class="text-h6">新增患者</div>
@@ -346,7 +346,7 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pt-md q-px-lg" style="max-height: 70vh; overflow-y: auto">
+        <q-card-section class="q-pt-md q-px-lg add-patient-dialog-body">
           <PatientForm
             v-model="newPatientData"
             @submit="handleAddPatient"
@@ -845,17 +845,35 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 <style scoped lang="scss">
 .upload-card {
   min-height: 400px;
+  border-radius: var(--app-radius-lg);
+}
+
+.tip-avatar {
+  min-width: 32px;
+}
+
+.add-patient-dialog-card {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: var(--app-radius-lg);
+}
+
+.add-patient-dialog-body {
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .upload-zone {
-  border: 2px dashed #d0d7de;
-  border-radius: 12px;
-  background: #fafbfc;
+  border: 2px dashed var(--app-upload-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-upload-bg);
   min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  backdrop-filter: blur(var(--app-glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-sm));
   transition:
     border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -863,20 +881,20 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 
   &:hover {
     border-color: var(--q-primary);
-    background: #f0f7ff;
+    background: var(--app-primary-soft-bg);
     box-shadow: var(--app-shadow-sm);
   }
 
   &--active {
     border-color: var(--q-primary);
-    background: #e3f2fd;
+    background: var(--app-primary-soft-bg);
     border-style: solid;
   }
 
   &--has-file {
     border-style: solid;
     border-color: var(--q-positive);
-    background: #f9fafb;
+    background: var(--app-elevated-bg);
     cursor: pointer;
   }
 
@@ -895,7 +913,7 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 .preview-image {
   max-width: 100%;
   max-height: 300px;
-  border-radius: 8px;
+  border-radius: var(--app-radius-md);
   object-fit: contain;
 }
 
@@ -912,7 +930,7 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 .file-list {
   max-height: 220px;
   overflow-y: auto;
-  border-radius: 8px;
+  border-radius: var(--app-radius-md);
 }
 
 .file-item--active {

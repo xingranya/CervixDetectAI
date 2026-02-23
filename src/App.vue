@@ -29,7 +29,7 @@ onMounted(() => {
   if (!authStore.hasInitialized) {
     authStore.initializeAuth();
   }
-  // 主题初始化 - 默认 light 模式，不触发暗色
+  // 主题初始化 - 默认跟随系统主题
   themeStore.initTheme();
 });
 </script>

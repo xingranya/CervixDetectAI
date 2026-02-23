@@ -13,7 +13,7 @@
     <!-- AI分析结果卡片 - 优先显示 -->
     <div v-if="analysisResult" class="row q-mb-md">
       <div class="col-12">
-        <q-card class="ai-result-card shadow-3 rounded-borders" style="border-radius: 16px">
+        <q-card class="ai-result-card shadow-3 rounded-borders study-surface-card">
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
@@ -51,8 +51,7 @@
                   <!-- Decorative Background Icon -->
                   <q-icon
                     name="medical_services"
-                    class="absolute-bottom-right text-grey-2"
-                    style="font-size: 80px; margin: -10px -10px"
+                    class="absolute-bottom-right text-grey-2 ai-diagnosis-bg-icon"
                   />
                 </div>
               </div>
@@ -105,7 +104,7 @@
                     </div>
                     <div class="text-grey-7">个高风险区域</div>
                   </div>
-                  <q-scroll-area style="height: 80px" v-if="analysisResult.suspiciousAreas">
+                  <q-scroll-area class="suspicious-areas-scroll" v-if="analysisResult.suspiciousAreas">
                     <div
                       v-for="(area, idx) in analysisResult.suspiciousAreas"
                       :key="idx"
@@ -160,10 +159,7 @@
             >
               <q-card flat class="bg-grey-1">
                 <q-card-section>
-                  <div
-                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1"
-                    style="white-space: pre-wrap; line-height: 1.6"
-                  >
+                  <div class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block">
                     {{ analysisResult.detailedReport }}
                   </div>
                 </q-card-section>
@@ -223,12 +219,7 @@
         </q-card>
 
         <!-- Image Preview Section -->
-        <q-card
-          class="full-height shadow-3 rounded-borders"
-          v-else
-          style="border-radius: 16px"
-          ref="previewCardRef"
-        >
+        <q-card class="full-height shadow-3 rounded-borders study-surface-card" v-else ref="previewCardRef">
           <!-- Header -->
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
@@ -497,7 +488,7 @@
         <!-- 分析日志（移到右侧列） -->
 
         <!-- AI Control Panel -->
-        <q-card class="q-mb-md shadow-3 rounded-borders" style="border-radius: 16px">
+        <q-card class="q-mb-md shadow-3 rounded-borders study-surface-card">
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
@@ -603,7 +594,7 @@
                     v-ripple
                   >
                     <q-icon name="grain" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                    <div class="text-caption text-weight-bold advanced-option-label">
                       核质增强
                     </div>
                     <q-icon
@@ -628,7 +619,7 @@
                     v-ripple
                   >
                     <q-icon name="layers_clear" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                    <div class="text-caption text-weight-bold advanced-option-label">
                       重叠分离
                     </div>
                     <q-icon
@@ -653,7 +644,7 @@
                     v-ripple
                   >
                     <q-icon name="filter_alt_off" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold" style="font-size: 11px">
+                    <div class="text-caption text-weight-bold advanced-option-label">
                       杂质过滤
                     </div>
                     <q-icon
@@ -686,7 +677,7 @@
 
         <!-- Lesion Visualization -->
         <!-- Lesion Visualization -->
-        <q-card class="q-mb-md shadow-3 rounded-borders" style="border-radius: 16px">
+        <q-card class="q-mb-md shadow-3 rounded-borders study-surface-card">
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
@@ -701,7 +692,7 @@
 
           <q-card-section class="q-pa-md bg-grey-1">
             <div class="bg-white q-pa-sm rounded-borders shadow-1 q-mb-md">
-              <div ref="chartRef" style="height: 200px"></div>
+              <div ref="chartRef" class="lesion-chart"></div>
             </div>
 
             <div class="row q-col-gutter-sm">
@@ -745,24 +736,15 @@
               class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-caption shadow-1"
             >
               <div class="flex items-center q-mb-xs">
-                <div
-                  class="q-mr-sm bg-negative rounded-circle"
-                  style="width: 8px; height: 8px"
-                ></div>
+                <div class="q-mr-sm bg-negative rounded-circle legend-dot"></div>
                 <span class="text-brown-9 text-weight-bold">HSIL - 高置信度</span>
               </div>
               <div class="flex items-center q-mb-xs">
-                <div
-                  class="q-mr-sm bg-warning rounded-circle"
-                  style="width: 8px; height: 8px"
-                ></div>
+                <div class="q-mr-sm bg-warning rounded-circle legend-dot"></div>
                 <span class="text-brown-9">LSIL - 中置信度</span>
               </div>
               <div class="flex items-center">
-                <div
-                  class="q-mr-sm bg-primary rounded-circle"
-                  style="width: 8px; height: 8px"
-                ></div>
+                <div class="q-mr-sm bg-primary rounded-circle legend-dot"></div>
                 <span class="text-brown-9">醋酸白上皮 - 已识别</span>
               </div>
             </div>
@@ -771,7 +753,7 @@
 
         <!-- Analysis Log -->
         <!-- Analysis Log -->
-        <q-card class="shadow-3 rounded-borders" style="border-radius: 16px">
+        <q-card class="shadow-3 rounded-borders study-surface-card">
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
@@ -793,10 +775,10 @@
           </q-card-section>
 
           <q-card-section class="q-pa-none bg-grey-1">
-            <q-scroll-area style="height: 200px" class="bg-white">
+            <q-scroll-area class="bg-white analysis-log-scroll-area">
               <q-list separator class="q-py-xs">
                 <q-item v-for="(log, index) in logs" :key="index" class="q-py-sm hover-bg-grey-1">
-                  <q-item-section avatar style="min-width: 40px">
+                  <q-item-section avatar class="analysis-log-avatar">
                     <q-icon
                       :name="log.message.includes('完成') ? 'check_circle' : 'info'"
                       :color="log.message.includes('完成') ? 'positive' : 'primary'"
@@ -820,11 +802,7 @@
                     <div class="text-body2 text-grey-9 q-mt-xs">{{ log.message }}</div>
                   </q-item-section>
                 </q-item>
-                <div
-                  v-if="logs.length === 0"
-                  class="text-center text-grey-5 q-pa-md flex flex-center"
-                  style="height: 100%"
-                >
+                <div v-if="logs.length === 0" class="text-center text-grey-5 q-pa-md flex flex-center analysis-log-empty">
                   <div class="column flex-center">
                     <q-icon name="history" size="md" class="q-mb-sm" />
                     暂无日志记录
@@ -1576,19 +1554,19 @@ onUnmounted(() => {
 
 <style scoped>
 .border-bottom {
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--app-border-default);
 }
 .border-bottom-light {
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--app-border-light);
 }
 .border-top-light {
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--app-border-light);
 }
 .border-light {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--app-border-default);
 }
 .border-dashed {
-  border: 2px dashed #e0e0e0;
+  border: 2px dashed var(--app-border-dashed);
 }
 .border-negative {
   border: 2px solid #ef4444;
@@ -1600,8 +1578,51 @@ onUnmounted(() => {
   font-family: monospace;
 }
 .upload-area:hover {
-  background-color: #e0f2f1;
-  border-color: #375a64;
+  background-color: var(--app-upload-accent-hover-bg);
+  border-color: var(--app-upload-accent-hover-border);
+}
+
+.study-surface-card {
+  border-radius: var(--app-radius-lg) !important;
+}
+
+.report-text-block {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.ai-diagnosis-bg-icon {
+  font-size: 80px;
+  margin: -10px -10px;
+}
+
+.suspicious-areas-scroll {
+  height: 80px;
+}
+
+.advanced-option-label {
+  font-size: 11px;
+}
+
+.lesion-chart {
+  height: 200px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.analysis-log-scroll-area {
+  height: 200px;
+}
+
+.analysis-log-avatar {
+  min-width: 40px;
+}
+
+.analysis-log-empty {
+  height: 100%;
 }
 
 /* 现代化影像预览样式 */
@@ -1612,13 +1633,13 @@ onUnmounted(() => {
 }
 
 .image-panel-wrapper:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--app-image-panel-hover-shadow) !important;
   transform: translateY(-2px);
 }
 
 /* 优化图像容器样式 */
 .image-container {
-  border-radius: 8px;
+  border-radius: var(--app-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1633,9 +1654,9 @@ onUnmounted(() => {
 
 /* AI标注视图容器 */
 .annotated-view-container {
-  border-radius: 8px;
+  border-radius: var(--app-radius-md);
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--app-border-default);
 }
 
 /* 进度条置顶样式 */
@@ -1653,11 +1674,9 @@ onUnmounted(() => {
 .analysis-progress-card {
   max-width: 700px;
   margin: 0 auto;
-  border-radius: 20px !important;
+  border-radius: var(--app-radius-xl) !important;
   background: linear-gradient(135deg, #1565c0 0%, #0d47a1 50%, #01579b 100%) !important;
-  box-shadow:
-    0 20px 60px rgba(21, 101, 192, 0.4),
-    0 0 40px rgba(33, 150, 243, 0.2);
+  box-shadow: var(--app-shadow-lg);
   pointer-events: auto;
   animation: slideDown 0.4s ease-out;
 }
@@ -1684,12 +1703,13 @@ onUnmounted(() => {
 .analysis-icon-container {
   width: 50px;
   height: 50px;
-  border-radius: 14px;
+  border-radius: var(--app-radius-md);
   background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
 }
 
 .progress-percentage {
@@ -1716,7 +1736,7 @@ onUnmounted(() => {
 .progress-bar-bg {
   height: 8px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
   position: relative;
   overflow: visible;
 }
@@ -1729,7 +1749,7 @@ onUnmounted(() => {
 .progress-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #4fc3f7, #81d4fa, #b3e5fc);
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
   transition: width 0.5s ease-out;
   position: relative;
 }
@@ -1761,7 +1781,7 @@ onUnmounted(() => {
   height: 16px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 0 20px 8px rgba(129, 212, 250, 0.6);
+  box-shadow: var(--app-shadow-lg);
   transform: translateX(-50%);
   transition: left 0.5s ease-out;
 }

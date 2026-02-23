@@ -359,7 +359,7 @@
 
         <!-- 修改密码对话框 -->
         <q-dialog v-model="passwordDialog" persistent>
-          <q-card style="min-width: 420px" class="password-dialog">
+          <q-card class="password-dialog password-dialog-card">
             <q-card-section class="row items-center q-pb-none q-pt-lg q-px-lg">
               <div class="text-h6 text-weight-bold">修改密码</div>
               <q-space />
@@ -519,7 +519,7 @@
                 </div>
               </q-card-section>
               <q-card-section>
-                <div ref="performanceChartRef" style="height: 300px"></div>
+                <div ref="performanceChartRef" class="performance-chart"></div>
               </q-card-section>
             </q-card>
           </div>
@@ -691,7 +691,7 @@
                     outlined
                     v-model="backup.time"
                     :options="['02:00', '03:00', '04:00']"
-                    style="width: 100px"
+                    class="backup-time-select"
                   />
                 </div>
                 <q-checkbox v-model="backup.emailNotify" label="备份后发送通知邮件" dense />
@@ -768,7 +768,7 @@
                 </div>
               </q-card-section>
               <q-card-section class="q-pa-none">
-                <q-scroll-area style="height: 300px">
+                <q-scroll-area class="system-log-scroll-area">
                   <q-list v-if="systemLogs.length > 0" separator>
                     <q-item v-for="(log, index) in systemLogs" :key="`${log.time}-${index}`">
                       <q-item-section>
@@ -1308,16 +1308,32 @@ onUnmounted(() => {
 
 <style scoped>
 .border-bottom {
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--app-border-default);
 }
 .border-bottom-light {
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--app-border-light);
 }
 .border-blue-2 {
-  border: 1px solid #bbdefb;
+  border: 1px solid var(--app-border-blue-2);
 }
 .font-mono {
   font-family: monospace;
+}
+
+.password-dialog-card {
+  min-width: 420px;
+}
+
+.performance-chart {
+  height: 300px;
+}
+
+.backup-time-select {
+  width: 100px;
+}
+
+.system-log-scroll-area {
+  height: 300px;
 }
 
 .empty-log-state {
@@ -1331,14 +1347,14 @@ onUnmounted(() => {
 
 /* 卡片基础样式 */
 .profile-card {
-  border-radius: 16px;
-  border: 1px solid #e8e8e8;
-  background: white;
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-border-default);
+  background: var(--app-surface);
 }
 
 /* 头像样式 */
 .avatar-wrapper {
-  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.25);
+  box-shadow: var(--app-shadow-lg);
 }
 
 .avatar-wrapper img {
@@ -1350,7 +1366,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-soft-divider);
 }
 
 .info-item:last-child {
@@ -1360,7 +1376,7 @@ onUnmounted(() => {
 .info-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1374,20 +1390,20 @@ onUnmounted(() => {
 
 .info-label {
   font-size: 12px;
-  color: #9e9e9e;
+  color: var(--app-text-tertiary);
   margin-bottom: 2px;
 }
 
 .info-value {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--app-text-primary);
 }
 
 /* 统计盒子样式 */
 .stat-box {
   padding: 20px;
-  border-radius: 12px;
+  border-radius: var(--app-radius-md);
   text-align: center;
 }
 
@@ -1399,7 +1415,7 @@ onUnmounted(() => {
 
 .stat-label {
   font-size: 13px;
-  color: #757575;
+  color: var(--app-text-secondary);
   margin-top: 8px;
 }
 
@@ -1416,12 +1432,12 @@ onUnmounted(() => {
 .form-section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #9e9e9e;
+  color: var(--app-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-soft-divider);
 }
 
 /* 表单输入框 */
@@ -1430,7 +1446,7 @@ onUnmounted(() => {
 }
 
 .form-input :deep(.q-field__control) {
-  border-radius: 10px;
+  border-radius: var(--app-radius-md);
   min-height: 48px;
 }
 
@@ -1441,16 +1457,16 @@ onUnmounted(() => {
 
 /* 只读字段样式 */
 .readonly-field :deep(.q-field__control) {
-  background-color: #fafafa;
+  background-color: var(--app-readonly-bg);
 }
 
 .readonly-field :deep(.q-field__control:before) {
-  border-color: #e0e0e0;
+  border-color: var(--app-readonly-border);
 }
 
 /* 表单操作按钮区域 */
 .form-actions {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--app-soft-divider);
 }
 
 /* 安全设置列表 */
@@ -1460,18 +1476,18 @@ onUnmounted(() => {
 
 .security-item {
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--app-radius-md);
   margin: 0 8px;
 }
 
 .security-item:hover {
-  background-color: #fafafa;
+  background-color: var(--app-elevated-bg);
 }
 
 .security-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--app-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1479,6 +1495,6 @@ onUnmounted(() => {
 
 /* 密码对话框 */
 .password-dialog {
-  border-radius: 16px;
+  border-radius: var(--app-radius-xl);
 }
 </style>

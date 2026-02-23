@@ -6,6 +6,49 @@
 @use './auth';
 
 // =============================================================
+// Quasar 组件视觉基线（浅色/深色通用）
+// 目标：统一圆角、边框、阴影与交互过渡，减少页面级硬编码
+// =============================================================
+
+.q-card {
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-sm);
+  transition:
+    border-color var(--app-transition-normal),
+    box-shadow var(--app-transition-normal),
+    background-color var(--app-transition-normal);
+}
+
+.q-menu {
+  background: var(--app-surface-elevated);
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-xl);
+  box-shadow: var(--app-shadow-lg);
+  overflow: hidden;
+}
+
+.q-dialog__inner > .q-card {
+  background: var(--app-dialog-bg);
+  border: 1px solid var(--app-border-default);
+  border-radius: var(--app-radius-xl);
+  box-shadow: var(--app-shadow-lg);
+}
+
+.q-field--outlined .q-field__control {
+  border-radius: var(--app-radius-md);
+}
+
+.q-btn:not(.q-btn--round):not(.q-btn--fab):not(.q-btn--rectangle) {
+  border-radius: var(--app-radius-md);
+}
+
+.q-chip {
+  border-radius: 999px;
+}
+
+// =============================================================
 // 全局暗色模式适配
 // 统一处理所有页面的通用暗色覆盖，避免逐页面重复编写
 // 仅在 body.body--dark 时生效，亮色模式完全不受影响
@@ -42,6 +85,12 @@ body.body--dark {
   // q-card 默认白色背景
   .q-card {
     background: var(--app-card-bg);
+    border-color: var(--app-border-default);
+  }
+
+  // q-menu / q-dialog 浮层统一深色
+  .q-menu {
+    background: var(--app-surface-elevated);
     border-color: var(--app-border-default);
   }
 
@@ -123,6 +172,7 @@ body.body--dark {
   // q-dialog 弹窗
   .q-dialog__inner > .q-card {
     background: var(--app-dialog-bg);
+    border-color: var(--app-border-default);
   }
 
   // ---- 通用颜色工具类覆盖（Quasar 工具类使用 !important，故此处保持） ----
