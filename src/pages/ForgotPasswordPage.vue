@@ -8,10 +8,7 @@
     </template>
 
     <template #workspace>
-      <AuthWorkspaceShell
-        title="找回密码"
-        subtitle="请选择找回方式并完成身份验证"
-      >
+      <AuthWorkspaceShell title="找回密码" subtitle="请选择找回方式并完成身份验证">
         <q-tabs
           v-model="resetChannel"
           dense
@@ -20,188 +17,235 @@
           indicator-color="primary"
           align="justify"
         >
-          <q-tab name="email" label="邮箱通道" disable />
+          <q-tab name="email" label="邮箱通道" />
           <q-tab name="phone" label="短信通道" />
         </q-tabs>
 
-        <q-banner rounded class="auth-disabled-channel-banner">
-          邮箱找回通道暂不可用，请使用短信通道完成密码重置。
+        <q-banner rounded class="auth-channel-banner">
+          <template v-if="resetChannel === 'email'">
+            邮箱通道已启用，请先获取邮箱验证码，再完成密码重置。
+          </template>
+          <template v-else>
+            短信通道用于手机号找回，请确保手机号可接收验证码。
+          </template>
         </q-banner>
 
         <div class="auth-channel-stage">
           <transition name="auth-channel">
-          <q-form
-            v-if="resetChannel === 'email'"
-            key="email"
-            class="auth-form q-gutter-md"
-            @submit.prevent="onVerifyEmailCode"
-          >
-            <q-input
-              v-model="email"
-              outlined
-              label="邮箱"
-              type="text"
-              inputmode="email"
-              autocapitalize="off"
-              autocorrect="off"
-              spellcheck="false"
-              lazy-rules
-              :rules="[
-                (val) => (val && val.length > 0) || '邮箱为必填项',
-                (val) => EMAIL_PATTERN.test(val) || '邮箱格式不正确',
-              ]"
+            <q-form
+              v-if="resetChannel === 'email'"
+              key="email"
+              class="auth-form q-gutter-md"
+              @submit.prevent="onResetByEmail"
             >
-              <template #prepend>
-                <q-icon name="email" />
-              </template>
-            </q-input>
+              <q-input
+                v-model="email"
+                outlined
+                label="邮箱"
+                type="text"
+                inputmode="email"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                lazy-rules
+                :rules="[
+                  (val) => (val && val.length > 0) || '邮箱为必填项',
+                  (val) => EMAIL_PATTERN.test(val) || '邮箱格式不正确',
+                ]"
+              >
+                <template #prepend>
+                  <q-icon name="email" />
+                </template>
+              </q-input>
 
-            <q-input
-              v-model="emailCode"
-              outlined
-              label="邮箱验证码"
-              maxlength="6"
-              lazy-rules
-              :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
+              <q-input
+                v-model="emailCode"
+                outlined
+                label="邮箱验证码"
+                maxlength="6"
+                lazy-rules
+                :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
+              >
+                <template #prepend>
+                  <q-icon name="shield" />
+                </template>
+                <template #append>
+                  <q-btn
+                    :label="emailCountdownText"
+                    :disable="!canSendEmailCode"
+                    :loading="sendingEmailCode"
+                    flat
+                    dense
+                    color="primary"
+                    no-caps
+                    @click="handleSendEmailCode"
+                  />
+                </template>
+              </q-input>
+
+              <q-input
+                v-model="emailNewPassword"
+                outlined
+                label="新密码"
+                :type="showEmailNewPassword ? 'text' : 'password'"
+                lazy-rules
+                :rules="[
+                  (val) => (val && val.length > 0) || '请输入新密码',
+                  (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+                ]"
+              >
+                <template #prepend>
+                  <q-icon name="lock" />
+                </template>
+                <template #append>
+                  <q-icon
+                    :name="showEmailNewPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showEmailNewPassword = !showEmailNewPassword"
+                  />
+                </template>
+              </q-input>
+
+              <q-input
+                v-model="emailConfirmPassword"
+                outlined
+                label="确认新密码"
+                :type="showEmailConfirmPassword ? 'text' : 'password'"
+                lazy-rules
+                :rules="[
+                  (val) => (val && val.length > 0) || '请确认新密码',
+                  (val) => val === emailNewPassword || '两次输入的密码不一致',
+                ]"
+              >
+                <template #prepend>
+                  <q-icon name="lock" />
+                </template>
+                <template #append>
+                  <q-icon
+                    :name="showEmailConfirmPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showEmailConfirmPassword = !showEmailConfirmPassword"
+                  />
+                </template>
+              </q-input>
+
+              <q-btn
+                color="primary"
+                unelevated
+                rounded
+                size="lg"
+                class="full-width auth-primary-cta"
+                type="submit"
+                :loading="resettingEmailPassword"
+              >
+                重置密码
+              </q-btn>
+            </q-form>
+
+            <q-form
+              v-else
+              key="phone"
+              class="auth-form q-gutter-md"
+              @submit.prevent="onResetByPhone"
             >
-              <template #prepend>
-                <q-icon name="shield" />
-              </template>
-              <template #append>
-                <q-btn
-                  :label="emailCountdownText"
-                  :disable="!canSendEmailCode"
-                  :loading="sendingEmailCode"
-                  flat
-                  dense
-                  color="primary"
-                  no-caps
-                  @click="handleSendEmailCode"
-                />
-              </template>
-            </q-input>
+              <q-input
+                v-model="phone"
+                outlined
+                label="手机号"
+                type="tel"
+                maxlength="11"
+                lazy-rules
+                :rules="[(val) => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
+              >
+                <template #prepend>
+                  <q-icon name="phone" />
+                </template>
+              </q-input>
 
-            <q-btn
-              color="primary"
-              unelevated
-              rounded
-              size="lg"
-              class="full-width auth-primary-cta"
-              type="submit"
-              :loading="verifyingEmailCode"
-            >
-              验证邮箱验证码
-            </q-btn>
+              <q-input
+                v-model="smsCode"
+                outlined
+                label="短信验证码"
+                maxlength="6"
+                lazy-rules
+                :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
+              >
+                <template #prepend>
+                  <q-icon name="shield" />
+                </template>
+                <template #append>
+                  <q-btn
+                    :label="smsCountdownText"
+                    :disable="!canSendSmsCode"
+                    :loading="sendingSmsCode"
+                    flat
+                    dense
+                    color="primary"
+                    no-caps
+                    @click="sendSmsCode"
+                  />
+                </template>
+              </q-input>
 
-            <q-banner v-if="emailVerified" rounded class="bg-positive text-white">
-              邮箱验证通过。当前短期方案已记录验证结果，请联系管理员完成密码更新。
-            </q-banner>
-          </q-form>
+              <q-input
+                v-model="newPassword"
+                outlined
+                label="新密码"
+                :type="showNewPassword ? 'text' : 'password'"
+                lazy-rules
+                :rules="[
+                  (val) => (val && val.length > 0) || '请输入新密码',
+                  (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+                ]"
+              >
+                <template #prepend>
+                  <q-icon name="lock" />
+                </template>
+                <template #append>
+                  <q-icon
+                    :name="showNewPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showNewPassword = !showNewPassword"
+                  />
+                </template>
+              </q-input>
 
-          <q-form
-            v-else
-            key="phone"
-            class="auth-form q-gutter-md"
-            @submit.prevent="onResetByPhone"
-          >
-            <q-input
-              v-model="phone"
-              outlined
-              label="手机号"
-              type="tel"
-              maxlength="11"
-              lazy-rules
-              :rules="[(val) => /^1[3-9]\d{9}$/.test(val) || '请输入正确的手机号']"
-            >
-              <template #prepend>
-                <q-icon name="phone" />
-              </template>
-            </q-input>
+              <q-input
+                v-model="confirmPassword"
+                outlined
+                label="确认新密码"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                lazy-rules
+                :rules="[
+                  (val) => (val && val.length > 0) || '请确认新密码',
+                  (val) => val === newPassword || '两次输入的密码不一致',
+                ]"
+              >
+                <template #prepend>
+                  <q-icon name="lock" />
+                </template>
+                <template #append>
+                  <q-icon
+                    :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showConfirmPassword = !showConfirmPassword"
+                  />
+                </template>
+              </q-input>
 
-            <q-input
-              v-model="smsCode"
-              outlined
-              label="短信验证码"
-              maxlength="6"
-              lazy-rules
-              :rules="[(val) => (val && val.length === 6) || '请输入6位验证码']"
-            >
-              <template #prepend>
-                <q-icon name="shield" />
-              </template>
-              <template #append>
-                <q-btn
-                  :label="smsCountdownText"
-                  :disable="!canSendSmsCode"
-                  :loading="sendingSmsCode"
-                  flat
-                  dense
-                  color="primary"
-                  no-caps
-                  @click="sendSmsCode"
-                />
-              </template>
-            </q-input>
-
-            <q-input
-              v-model="newPassword"
-              outlined
-              label="新密码"
-              :type="showNewPassword ? 'text' : 'password'"
-              lazy-rules
-              :rules="[
-                (val) => (val && val.length > 0) || '请输入新密码',
-                (val) => (val && val.length >= MIN_PASSWORD_LENGTH) || `密码长度至少${MIN_PASSWORD_LENGTH}位`,
-              ]"
-            >
-              <template #prepend>
-                <q-icon name="lock" />
-              </template>
-              <template #append>
-                <q-icon
-                  :name="showNewPassword ? 'visibility' : 'visibility_off'"
-                  class="cursor-pointer"
-                  @click="showNewPassword = !showNewPassword"
-                />
-              </template>
-            </q-input>
-
-            <q-input
-              v-model="confirmPassword"
-              outlined
-              label="确认新密码"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              lazy-rules
-              :rules="[
-                (val) => (val && val.length > 0) || '请确认新密码',
-                (val) => val === newPassword || '两次输入的密码不一致',
-              ]"
-            >
-              <template #prepend>
-                <q-icon name="lock" />
-              </template>
-              <template #append>
-                <q-icon
-                  :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
-                  class="cursor-pointer"
-                  @click="showConfirmPassword = !showConfirmPassword"
-                />
-              </template>
-            </q-input>
-
-            <q-btn
-              color="primary"
-              unelevated
-              rounded
-              size="lg"
-              class="full-width auth-primary-cta"
-              type="submit"
-              :loading="resettingPassword"
-            >
-              重置密码
-            </q-btn>
-          </q-form>
-        </transition>
+              <q-btn
+                color="primary"
+                unelevated
+                rounded
+                size="lg"
+                class="full-width auth-primary-cta"
+                type="submit"
+                :loading="resettingPassword"
+              >
+                重置密码
+              </q-btn>
+            </q-form>
+          </transition>
         </div>
 
         <template #footer>
@@ -227,15 +271,18 @@ import { authAPI } from 'src/services/api';
 const $q = useQuasar();
 const router = useRouter();
 
-const resetChannel = ref<'email' | 'phone'>('phone');
+const resetChannel = ref<'email' | 'phone'>('email');
 
 const email = ref('');
 const emailCode = ref('');
 const emailCountdown = ref(0);
 const sendingEmailCode = ref(false);
-const verifyingEmailCode = ref(false);
-const emailVerified = ref(false);
 const emailTimer = ref<number | null>(null);
+const emailNewPassword = ref('');
+const emailConfirmPassword = ref('');
+const showEmailNewPassword = ref(false);
+const showEmailConfirmPassword = ref(false);
+const resettingEmailPassword = ref(false);
 
 const phone = ref('');
 const smsCode = ref('');
@@ -310,13 +357,12 @@ const handleSendEmailCode = async () => {
     sendingEmailCode.value = true;
     const result = await authAPI.sendEmailCode(email.value, 'reset_password');
 
-    if (result.success || result.message) {
+    if (result.success) {
       $q.notify({
         type: 'positive',
         message: '验证码已发送到邮箱，请注意查收',
         position: 'top',
       });
-      emailVerified.value = false;
       startEmailCountdown();
     } else {
       $q.notify({
@@ -340,33 +386,61 @@ const handleSendEmailCode = async () => {
   }
 };
 
-const onVerifyEmailCode = async () => {
-  if (!email.value || !emailCode.value) return;
+const onResetByEmail = async () => {
+  if (!email.value || !emailCode.value || !emailNewPassword.value || !emailConfirmPassword.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请完整填写重置信息',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (emailNewPassword.value.length < MIN_PASSWORD_LENGTH) {
+    $q.notify({
+      type: 'warning',
+      message: `密码长度至少${MIN_PASSWORD_LENGTH}位`,
+      position: 'top',
+    });
+    return;
+  }
+
+  if (emailNewPassword.value !== emailConfirmPassword.value) {
+    $q.notify({
+      type: 'warning',
+      message: '两次输入的密码不一致',
+      position: 'top',
+    });
+    return;
+  }
 
   try {
-    verifyingEmailCode.value = true;
-    const result = await authAPI.verifyEmailCode(email.value, emailCode.value, 'reset_password');
+    resettingEmailPassword.value = true;
+    const result = await authAPI.resetPasswordByEmail(
+      email.value,
+      emailCode.value,
+      emailNewPassword.value,
+    );
 
     if (result.success) {
-      emailVerified.value = true;
       $q.notify({
         type: 'positive',
-        message: '邮箱验证成功',
+        message: '密码重置成功，请重新登录',
         position: 'top',
       });
-    } else {
-      emailVerified.value = false;
-      $q.notify({
-        type: 'negative',
-        message: result.message || '验证码验证失败',
-        position: 'top',
-      });
+      void router.push('/login');
+      return;
     }
+
+    $q.notify({
+      type: 'negative',
+      message: result.message || '密码重置失败',
+      position: 'top',
+    });
   } catch (error: unknown) {
-    emailVerified.value = false;
     const errorMessage =
       (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-      '验证码验证失败，请稍后重试';
+      '密码重置失败，请稍后重试';
 
     $q.notify({
       type: 'negative',
@@ -374,7 +448,7 @@ const onVerifyEmailCode = async () => {
       position: 'top',
     });
   } finally {
-    verifyingEmailCode.value = false;
+    resettingEmailPassword.value = false;
   }
 };
 
@@ -481,4 +555,3 @@ onBeforeUnmount(() => {
   clearSmsTimer();
 });
 </script>
-

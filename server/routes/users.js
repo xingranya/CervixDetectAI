@@ -5,10 +5,14 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
-const { User, UserAvatar } = require('../models');
+const { User, UserAvatar, EmailCode } = require('../models');
+const emailService = require('../services/email.service');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
+const CODE_EXPIRE_MINUTES = 5;
+const SEND_INTERVAL_SECONDS = 60;
+const MAX_DAILY_SEND_COUNT = 10;
 
 // 配置multer用于头像上传
 const avatarStorage = multer.diskStorage({
@@ -92,6 +96,7 @@ router.put('/me', authenticate, async (req, res) => {
 
     if (email !== undefined) {
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      const currentEmail = (req.user.email || '').trim().toLowerCase();
 
       if (normalizedEmail) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -102,21 +107,13 @@ router.put('/me', authenticate, async (req, res) => {
           });
         }
 
-        const existedUser = await User.findOne({
-          where: {
-            email: normalizedEmail,
-            id: { [Op.ne]: req.user.id },
-          },
-        });
-
-        if (existedUser) {
+        // 邮箱变更需走验证码验证链路，避免直接修改绕过校验
+        if (normalizedEmail !== currentEmail) {
           return res.status(409).json({
             success: false,
-            message: '该邮箱已被其他账号使用',
+            message: '邮箱变更需先完成验证码校验，请使用“发送验证码/确认更换邮箱”流程',
           });
         }
-
-        updateData.email = normalizedEmail;
       }
     }
 
@@ -142,6 +139,203 @@ router.put('/me', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '更新用户信息失败',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/users/me/email/send-code
+ * 发送更换邮箱验证码（验证新邮箱）
+ */
+router.post('/me/email/send-code', authenticate, async (req, res) => {
+  try {
+    const { new_email } = req.body;
+    const normalizedEmail = typeof new_email === 'string' ? new_email.trim().toLowerCase() : '';
+    const currentEmail = (req.user.email || '').trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: '新邮箱不能为空',
+      });
+    }
+
+    if (!emailService.validateEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: '新邮箱格式不正确',
+      });
+    }
+
+    if (normalizedEmail === currentEmail) {
+      return res.status(400).json({
+        success: false,
+        message: '新邮箱与当前邮箱一致，无需更换',
+      });
+    }
+
+    const existedUser = await User.findOne({
+      where: {
+        email: normalizedEmail,
+        id: { [Op.ne]: req.user.id },
+      },
+    });
+
+    if (existedUser) {
+      return res.status(409).json({
+        success: false,
+        message: '该邮箱已被其他账号使用',
+      });
+    }
+
+    const oneMinuteAgo = new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000);
+    const recentCode = await EmailCode.findOne({
+      where: {
+        email: normalizedEmail,
+        type: 'change_email',
+        created_at: {
+          [Op.gte]: oneMinuteAgo,
+        },
+      },
+    });
+
+    if (recentCode) {
+      const remainingSeconds = Math.ceil(
+        (recentCode.created_at.getTime() + SEND_INTERVAL_SECONDS * 1000 - Date.now()) / 1000,
+      );
+      return res.status(429).json({
+        success: false,
+        message: `发送过于频繁，请${remainingSeconds}秒后再试`,
+        error: String(remainingSeconds),
+      });
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayCount = await EmailCode.count({
+      where: {
+        email: normalizedEmail,
+        type: 'change_email',
+        created_at: {
+          [Op.gte]: todayStart,
+        },
+      },
+    });
+
+    if (todayCount >= MAX_DAILY_SEND_COUNT) {
+      return res.status(429).json({
+        success: false,
+        message: `今日发送次数已达上限（${MAX_DAILY_SEND_COUNT}次）`,
+        error: String(MAX_DAILY_SEND_COUNT),
+      });
+    }
+
+    const code = emailService.generateCode();
+    await EmailCode.invalidatePreviousCodes(normalizedEmail, 'change_email');
+    const sendResult = await emailService.sendVerifyCode(normalizedEmail, code, 'change_email');
+
+    if (!sendResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: sendResult.message || '验证码发送失败，请稍后重试',
+      });
+    }
+
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    await EmailCode.create({
+      email: normalizedEmail,
+      code,
+      biz_id: sendResult.bizId,
+      type: 'change_email',
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      expires_at: new Date(Date.now() + CODE_EXPIRE_MINUTES * 60 * 1000),
+    });
+
+    res.json({
+      success: true,
+      message: '验证码已发送到新邮箱',
+      data: {
+        expiresIn: CODE_EXPIRE_MINUTES * 60,
+      },
+    });
+  } catch (error) {
+    console.error('发送更换邮箱验证码错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '发送验证码失败，请稍后重试',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/users/me/email/confirm
+ * 确认更换邮箱
+ */
+router.post('/me/email/confirm', authenticate, async (req, res) => {
+  try {
+    const { new_email, code } = req.body;
+    const normalizedEmail = typeof new_email === 'string' ? new_email.trim().toLowerCase() : '';
+    const normalizedCode = typeof code === 'string' ? code.trim() : '';
+
+    if (!normalizedEmail || !normalizedCode) {
+      return res.status(400).json({
+        success: false,
+        message: '新邮箱和验证码不能为空',
+      });
+    }
+
+    if (!emailService.validateEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: '新邮箱格式不正确',
+      });
+    }
+
+    const existedUser = await User.findOne({
+      where: {
+        email: normalizedEmail,
+        id: { [Op.ne]: req.user.id },
+      },
+    });
+
+    if (existedUser) {
+      return res.status(409).json({
+        success: false,
+        message: '该邮箱已被其他账号使用',
+      });
+    }
+
+    const validCode = await EmailCode.findValidCode(normalizedEmail, normalizedCode, 'change_email');
+    if (!validCode) {
+      return res.status(400).json({
+        success: false,
+        message: '验证码无效或已过期',
+      });
+    }
+
+    await validCode.markAsUsed();
+    await req.user.update({ email: normalizedEmail });
+
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password_hash'] },
+    });
+
+    res.json({
+      success: true,
+      message: '邮箱更换成功',
+      data: { user: updatedUser },
+    });
+  } catch (error) {
+    console.error('确认更换邮箱错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '更换邮箱失败',
       error: error.message,
     });
   }

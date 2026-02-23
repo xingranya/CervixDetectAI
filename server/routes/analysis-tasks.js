@@ -16,6 +16,7 @@ const {
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
 const { createAnalysisNotifications } = require('../services/notificationService');
+const emailService = require('../services/email.service');
 
 const router = express.Router();
 
@@ -826,6 +827,29 @@ router.post('/:id/result', authenticate, async (req, res) => {
         });
       } catch (notifyError) {
         console.error('创建分析通知失败:', notifyError.message);
+      }
+
+      // 发送报告生成完成邮件（不影响主流程）
+      try {
+        const receiver = await User.findByPk(task.user_id, {
+          attributes: ['id', 'email'],
+        });
+        if (receiver?.email) {
+          const relatedStudy = await Study.findByPk(task.study_id, {
+            attributes: ['id', 'study_id'],
+          });
+          const sendResult = await emailService.sendReportReadyEmail(receiver.email, {
+            studyId: relatedStudy?.study_id || String(task.study_id),
+            diagnosis: finalDiagnosis,
+            riskLevel: risk_level,
+            completedAt: new Date().toLocaleString('zh-CN'),
+          });
+          if (!sendResult.success) {
+            console.error('报告完成邮件发送失败:', sendResult.message);
+          }
+        }
+      } catch (emailError) {
+        console.error('报告完成邮件发送异常:', emailError.message);
       }
 
       res.status(201).json({

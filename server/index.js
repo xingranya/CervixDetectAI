@@ -28,6 +28,7 @@ const {
   ensureFollowUpInfrastructure,
   startFollowUpScheduler,
 } = require('./services/followupScheduler.service');
+const { ensureEmailInfrastructure } = require('./services/emailInfrastructure.service');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -190,6 +191,8 @@ app.listen(PORT, async () => {
 
     // 独立保障随访模块表结构，避免 DB_SYNC=false 导致新功能直接报 500
     await ensureFollowUpInfrastructure();
+    // 独立保障邮箱验证码枚举，避免 DB_SYNC=false 导致 change_email 不可用
+    await ensureEmailInfrastructure();
 
     // 数据库同步（通过 DB_SYNC 环境变量控制）
     // DB_SYNC=true 启用同步，DB_SYNC=false 或不设置则跳过

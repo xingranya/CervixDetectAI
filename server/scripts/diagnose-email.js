@@ -18,15 +18,32 @@ console.log('TENCENT_SES_REGION:', process.env.TENCENT_SES_REGION || '❌ 未配
 console.log('TENCENT_SES_FROM_EMAIL:', process.env.TENCENT_SES_FROM_EMAIL || '❌ 未配置');
 console.log('TEMPLATE_ID_REGISTER:', process.env.TEMPLATE_ID_REGISTER || '❌ 未配置');
 console.log('TEMPLATE_ID_RESET_PASSWORD:', process.env.TEMPLATE_ID_RESET_PASSWORD || '❌ 未配置');
+console.log('TEMPLATE_ID_CHANGE_EMAIL:', process.env.TEMPLATE_ID_CHANGE_EMAIL || '❌ 未配置');
+console.log('TEMPLATE_ID_REPORT_READY:', process.env.TEMPLATE_ID_REPORT_READY || '❌ 未配置');
+console.log('TEMPLATE_ID_REGISTER_SUCCESS:', process.env.TEMPLATE_ID_REGISTER_SUCCESS || '❌ 未配置');
 console.log('');
 
 // 2. 验证模板ID
 const templateIdRegister = parseInt(process.env.TEMPLATE_ID_REGISTER || '0');
 const templateIdReset = parseInt(process.env.TEMPLATE_ID_RESET_PASSWORD || '0');
+const templateIdChangeEmail = parseInt(process.env.TEMPLATE_ID_CHANGE_EMAIL || '0');
+const templateIdReportReady = parseInt(process.env.TEMPLATE_ID_REPORT_READY || '0');
+const templateIdRegisterSuccess = parseInt(process.env.TEMPLATE_ID_REGISTER_SUCCESS || '0');
 
 console.log('2️⃣ 模板ID验证：');
 console.log('注册模板ID:', templateIdRegister, templateIdRegister > 0 ? '✅ 已配置' : '❌ 未配置');
 console.log('重置密码模板ID:', templateIdReset, templateIdReset > 0 ? '✅ 已配置' : '❌ 未配置');
+console.log(
+  '更换邮箱模板ID:',
+  templateIdChangeEmail,
+  templateIdChangeEmail > 0 ? '✅ 已配置' : '❌ 未配置',
+);
+console.log('报告完成模板ID:', templateIdReportReady, templateIdReportReady > 0 ? '✅ 已配置' : '❌ 未配置');
+console.log(
+  '注册成功模板ID:',
+  templateIdRegisterSuccess,
+  templateIdRegisterSuccess > 0 ? '✅ 已配置' : '❌ 未配置',
+);
 console.log('');
 
 // 3. 测试腾讯云SDK连接
@@ -126,6 +143,9 @@ try {
     console.log('2. TENCENT_SECRET_KEY - 腾讯云SecretKey');
     console.log('3. TEMPLATE_ID_REGISTER - 注册模板ID');
     console.log('4. TEMPLATE_ID_RESET_PASSWORD - 重置密码模板ID');
+    console.log('5. TEMPLATE_ID_CHANGE_EMAIL - 更换邮箱验证码模板ID');
+    console.log('6. TEMPLATE_ID_REPORT_READY - 报告生成完成模板ID');
+    console.log('7. TEMPLATE_ID_REGISTER_SUCCESS - 注册成功欢迎模板ID');
   }
 } catch (error) {
   console.log('❌ SES客户端创建失败：', error.message);

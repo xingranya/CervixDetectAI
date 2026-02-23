@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const qwenService = require('./qwenService');
-const { Study, AnalysisTask, AnalysisResult, sequelize } = require('../models');
+const { Study, AnalysisTask, AnalysisResult, User, sequelize } = require('../models');
 const { createAnalysisNotifications } = require('./notificationService');
+const emailService = require('./email.service');
 
 // 风险等级配置（关键词 -> 等级映射）
 const RISK_LEVEL_CONFIG = [
@@ -121,6 +122,29 @@ async function processTask(analysisTaskId, imagePath, studyId) {
         });
       } catch (notifyError) {
         console.error('[AnalysisService] 创建站内通知失败:', notifyError.message);
+      }
+
+      // 发送报告生成完成邮件（不影响主流程）
+      try {
+        const receiverId = taskRecord?.user_id || study?.user_id;
+        if (receiverId) {
+          const receiver = await User.findByPk(receiverId, {
+            attributes: ['id', 'email', 'username', 'real_name'],
+          });
+          if (receiver?.email) {
+            const sendResult = await emailService.sendReportReadyEmail(receiver.email, {
+              studyId: study?.study_id || String(studyId),
+              diagnosis: result.diagnosis,
+              riskLevel,
+              completedAt: new Date().toLocaleString('zh-CN'),
+            });
+            if (!sendResult.success) {
+              console.error('[AnalysisService] 报告完成邮件发送失败:', sendResult.message);
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('[AnalysisService] 报告完成邮件发送异常:', emailError.message);
       }
     } catch (aiError) {
       clearInterval(progressInterval);

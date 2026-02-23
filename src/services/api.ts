@@ -141,6 +141,19 @@ export const authAPI = {
     return data;
   },
 
+  async resetPasswordByEmail(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Promise<ApiResponse<null>> {
+    const { data } = await apiClient.post<ApiResponse<null>>('/auth/email/reset-password', {
+      email,
+      code,
+      newPassword,
+    });
+    return data;
+  },
+
   // 邮箱验证相关接口
   async sendEmailCode(
     email: string,
@@ -205,6 +218,30 @@ export const userAPI = {
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
+    return data;
+  },
+
+  async sendChangeEmailCode(newEmail: string): Promise<ApiResponse<{ expiresIn: number }>> {
+    const { data } = await apiClient.post<ApiResponse<{ expiresIn: number }>>(
+      '/users/me/email/send-code',
+      {
+        new_email: newEmail,
+      },
+    );
+    return data;
+  },
+
+  async confirmChangeEmail(
+    newEmail: string,
+    code: string,
+  ): Promise<ApiResponse<{ user: AuthData['user'] }>> {
+    const { data } = await apiClient.post<ApiResponse<{ user: AuthData['user'] }>>(
+      '/users/me/email/confirm',
+      {
+        new_email: newEmail,
+        code,
       },
     );
     return data;

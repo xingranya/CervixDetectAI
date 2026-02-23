@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const router = express.Router();
 const { EmailCode, User } = require('../models');
@@ -202,6 +203,75 @@ router.post('/verify', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '验证失败，请稍后重试',
+    });
+  }
+});
+
+/**
+ * POST /api/auth/email/reset-password
+ * 通过邮箱验证码重置密码
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedCode = typeof code === 'string' ? code.trim() : '';
+    const normalizedPassword = typeof newPassword === 'string' ? newPassword : '';
+
+    if (!normalizedEmail || !normalizedCode || !normalizedPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '邮箱、验证码和新密码为必填项',
+      });
+    }
+
+    if (!emailService.validateEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: '邮箱格式不正确',
+      });
+    }
+
+    if (normalizedPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: '密码长度至少6位',
+      });
+    }
+
+    const user = await User.findOne({ where: { email: normalizedEmail } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '该邮箱未注册',
+      });
+    }
+
+    const validCode = await EmailCode.findValidCode(normalizedEmail, normalizedCode, 'reset_password');
+    if (!validCode) {
+      return res.status(400).json({
+        success: false,
+        message: '验证码错误或已过期',
+      });
+    }
+
+    await validCode.markAsUsed();
+    user.password_hash = normalizedPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: '密码重置成功',
+    });
+  } catch (error) {
+    console.error('[EmailAuth] 邮箱重置密码失败:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      message: '重置密码失败，请稍后重试',
     });
   }
 });

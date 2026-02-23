@@ -2,6 +2,7 @@
 const express = require('express');
 const { User, EmailCode } = require('../models');
 const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
+const emailService = require('../services/email.service');
 const { authenticate } = require('../middleware/auth');
 const { Op } = require('sequelize');
 
@@ -115,6 +116,20 @@ router.post('/register', async (req, res) => {
     // 生成tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+
+    if (user.email) {
+      const receiverName = user.real_name || user.username || '用户';
+      emailService
+        .sendRegisterSuccessEmail(user.email, { username: receiverName })
+        .then((sendResult) => {
+          if (!sendResult.success) {
+            console.error('注册成功欢迎邮件发送失败:', sendResult.message);
+          }
+        })
+        .catch((emailError) => {
+          console.error('注册成功欢迎邮件发送异常:', emailError.message);
+        });
+    }
 
     // 返回用户信息和tokens
     res.status(201).json({

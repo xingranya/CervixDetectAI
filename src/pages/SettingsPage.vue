@@ -187,26 +187,19 @@
                     <div class="form-section-title">联系方式</div>
                     <div class="row q-col-gutter-lg">
                       <div class="col-md-6 col-12">
-                        <q-input
-                          v-model="profileData.email"
+                        <q-field
                           outlined
-                          label="邮箱"
-                          type="text"
-                          inputmode="email"
-                          autocapitalize="off"
-                          autocorrect="off"
-                          spellcheck="false"
-                          placeholder="example@email.com"
-                          class="form-input"
-                          :rules="[
-                            (val) =>
-                              !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || '邮箱格式不正确',
-                          ]"
+                          label="邮箱（在下方邮箱安全模块更换）"
+                          stack-label
+                          class="form-input readonly-field"
                         >
                           <template v-slot:prepend>
                             <q-icon name="email" color="grey-6" />
                           </template>
-                        </q-input>
+                          <template v-slot:control>
+                            <div class="self-center full-width q-pl-xs">{{ profileData.email || '-' }}</div>
+                          </template>
+                        </q-field>
                       </div>
                       <div class="col-md-6 col-12">
                         <q-input
@@ -325,6 +318,13 @@
                 </q-form>
               </q-card-section>
             </q-card>
+
+            <EmailSecurityCard
+              class="q-mb-lg"
+              :current-email="profileData.email"
+              :disabled="loading"
+              @email-updated="handleEmailUpdated"
+            />
 
             <!-- 安全设置卡片 -->
             <q-card flat bordered class="profile-card">
@@ -844,6 +844,7 @@ import { userAPI } from 'src/services/api';
 import { HOSPITALS, DEPARTMENTS } from 'src/constants/hospitals';
 import { setItem, STORAGE_KEYS } from 'src/utils/storage';
 import { getImageUrl } from 'src/utils/mappers';
+import EmailSecurityCard from 'src/components/settings/EmailSecurityCard.vue';
 
 const $q = useQuasar();
 const activeTab = ref('user_account');
@@ -935,21 +936,17 @@ const loadUserData = async () => {
 const saveProfile = async () => {
   loading.value = true;
   try {
-    const updateData: { real_name?: string; phone?: string; email?: string } = {
+    const updateData: { real_name?: string; phone?: string } = {
       real_name: profileData.value.firstName.trim(),
       phone: profileData.value.phone.trim(),
     };
-    const normalizedEmail = profileData.value.email.trim();
-    if (normalizedEmail) {
-      updateData.email = normalizedEmail;
-    }
 
     const response = await userAPI.updateProfile(updateData);
 
     if (response.success) {
       const mergedUser = {
+        ...(authStore.user || {}),
         ...response.data.user,
-        email: response.data.user.email || updateData.email || '',
       };
       authStore.user = mergedUser;
       setItem(STORAGE_KEYS.USER_INFO, mergedUser);
@@ -974,6 +971,19 @@ const saveProfile = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleEmailUpdated = (payload: { email: string }) => {
+  profileData.value.email = payload.email;
+  if (authStore.user) {
+    const mergedUser = {
+      ...authStore.user,
+      email: payload.email,
+    };
+    authStore.user = mergedUser;
+    setItem(STORAGE_KEYS.USER_INFO, mergedUser);
+  }
+  appendSystemLog('更换了登录邮箱');
 };
 
 // 重置表单

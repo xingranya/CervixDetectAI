@@ -31,7 +31,7 @@ const EmailCode = sequelize.define(
       comment: '腾讯云返回的RequestId',
     },
     type: {
-      type: DataTypes.ENUM('register', 'reset_password'),
+      type: DataTypes.ENUM('register', 'reset_password', 'change_email'),
       allowNull: false,
       defaultValue: 'register',
       comment: '验证码类型',

@@ -24,19 +24,55 @@ const sesClient = new SESClient(clientConfig);
 
 async function testSendEmail() {
   const testEmail = 'feilin095@163.com'; // 你的测试邮箱
+  const scene = process.env.TEST_EMAIL_SCENE || 'register';
+  const templateIdMap = {
+    register: parseInt(process.env.TEMPLATE_ID_REGISTER || '0'),
+    reset_password: parseInt(process.env.TEMPLATE_ID_RESET_PASSWORD || '0'),
+    change_email: parseInt(process.env.TEMPLATE_ID_CHANGE_EMAIL || '0'),
+    report_ready: parseInt(process.env.TEMPLATE_ID_REPORT_READY || '0'),
+    register_success: parseInt(process.env.TEMPLATE_ID_REGISTER_SUCCESS || '0'),
+  };
+
+  const templateDataMap = {
+    register: { code: '888888' },
+    reset_password: { code: '888888' },
+    change_email: { code: '888888' },
+    report_ready: {
+      study_id: 'study_demo_001',
+      diagnosis: 'NILM',
+      risk_level: 'low',
+      completed_at: new Date().toLocaleString('zh-CN'),
+    },
+    register_success: { username: '测试用户' },
+  };
+
+  const subjectMap = {
+    register: '测试邮件 - 注册验证码',
+    reset_password: '测试邮件 - 重置密码验证码',
+    change_email: '测试邮件 - 更换邮箱验证码',
+    report_ready: '测试邮件 - 报告生成完成',
+    register_success: '测试邮件 - 注册成功欢迎',
+  };
+
+  const templateId = templateIdMap[scene];
+  if (!templateId) {
+    console.log(`\n❌ 测试场景 ${scene} 未配置有效模板ID，请检查环境变量`);
+    return;
+  }
 
   const params = {
     FromEmailAddress: `CervixDetectAI <${process.env.TENCENT_SES_FROM_EMAIL}>`,
     Destination: [testEmail],
     Template: {
-      TemplateID: parseInt(process.env.TEMPLATE_ID_REGISTER),
-      TemplateData: JSON.stringify({ code: '888888' }),
+      TemplateID: templateId,
+      TemplateData: JSON.stringify(templateDataMap[scene] || { code: '888888' }),
     },
-    Subject: '测试邮件 - 注册验证码',
+    Subject: subjectMap[scene] || '测试邮件',
     TriggerType: 1,
   };
 
   console.log('发送测试邮件到:', testEmail);
+  console.log('测试场景:', scene);
   console.log('模板ID:', params.Template.TemplateID);
 
   try {
