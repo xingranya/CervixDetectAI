@@ -21,7 +21,7 @@
               <div class="col">
                 <div class="text-subtitle1 text-weight-bold q-mb-xs">
                   <q-icon name="cloud_upload" class="q-mr-sm" />
-                  正在上传...
+                  正在批量处理...
                 </div>
                 <q-linear-progress
                   :value="uploadProgress / 100"
@@ -34,7 +34,9 @@
                     <q-badge color="white" text-color="primary" :label="`${uploadProgress}%`" />
                   </div>
                 </q-linear-progress>
-                <div class="text-caption text-grey-7">正在上传图像到服务器，请勿关闭页面...</div>
+                <div class="text-caption text-grey-7">
+                  正在上传影像并创建分析任务，请勿关闭页面...
+                </div>
               </div>
             </q-card-section>
           </q-card>
@@ -64,7 +66,7 @@
               class="upload-zone"
               :class="{
                 'upload-zone--active': isDragging,
-                'upload-zone--has-file': selectedFile,
+                'upload-zone--has-file': selectedFiles.length > 0,
               }"
               @dragover.prevent="isDragging = true"
               @dragleave.prevent="isDragging = false"
@@ -74,44 +76,112 @@
               <input
                 ref="fileInputRef"
                 type="file"
+                multiple
                 accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp"
                 class="hidden"
                 @change="onFileChange"
               />
 
               <transition name="fade" mode="out-in">
-                <div v-if="!selectedFile" key="empty" class="upload-zone__content">
+                <div v-if="selectedFiles.length === 0" key="empty" class="upload-zone__content">
                   <q-icon name="cloud_upload" size="56px" color="primary" class="q-mb-md" />
-                  <div class="text-subtitle1 text-grey-8 q-mb-xs">拖拽图像到此处</div>
-                  <div class="text-body2 text-grey-6 q-mb-md">或点击选择文件</div>
+                  <div class="text-subtitle1 text-grey-8 q-mb-xs">拖拽图像到此处（支持多张）</div>
+                  <div class="text-body2 text-grey-6 q-mb-md">或点击选择文件（最多 10 张）</div>
                   <q-btn
                     color="primary"
                     outline
-                    label="选择图像"
+                    label="选择图像文件"
                     icon="add_photo_alternate"
                     @click.stop="triggerFileInput"
                   />
                 </div>
 
                 <div v-else key="preview" class="upload-zone__preview">
-                  <q-img :src="imagePreviewUrl" spinner-color="primary" class="preview-image" />
-                  <div class="preview-info q-mt-md">
-                    <q-chip icon="check_circle" color="positive" text-color="white">
-                      {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
+                  <q-img
+                    v-if="imagePreviewUrl"
+                    :src="imagePreviewUrl"
+                    spinner-color="primary"
+                    class="preview-image"
+                  />
+                  <div class="preview-info q-mt-md q-gutter-sm">
+                    <q-chip icon="collections" color="primary" text-color="white">
+                      已选择 {{ selectedFiles.length }} 张
+                    </q-chip>
+                    <q-chip color="grey-2" text-color="grey-8">
+                      总计 {{ formatFileSize(totalSelectedSize) }}
+                    </q-chip>
+                    <q-chip
+                      v-if="remainingUploadSlots > 0"
+                      icon="add_photo_alternate"
+                      color="light-blue-1"
+                      text-color="light-blue-9"
+                    >
+                      还可添加 {{ remainingUploadSlots }} 张
+                    </q-chip>
+                    <q-chip v-else icon="check_circle" color="green-1" text-color="green-9">
+                      已达到最多 {{ MAX_FILES }} 张
                     </q-chip>
                   </div>
+
+                  <div class="preview-actions q-mt-sm">
+                    <div class="text-caption text-grey-7">
+                      可继续拖拽文件到此区域，或点击按钮追加影像
+                    </div>
+                    <q-btn
+                      class="q-mt-sm"
+                      color="primary"
+                      outline
+                      icon="add_photo_alternate"
+                      label="继续添加影像"
+                      :disable="remainingUploadSlots === 0"
+                      @click.stop="triggerFileInput"
+                    />
+                  </div>
+
+                  <q-list bordered separator class="file-list q-mt-md">
+                    <q-item
+                      v-for="(file, index) in selectedFiles"
+                      :key="`${file.name}-${index}`"
+                      clickable
+                      :class="{ 'file-item--active': index === activePreviewIndex }"
+                      @click.stop="setActivePreview(index)"
+                    >
+                      <q-item-section avatar>
+                        <q-icon name="image" color="primary" />
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label lines="1">{{ file.name }}</q-item-label>
+                        <q-item-label caption>{{ formatFileSize(file.size) }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section side v-if="index === activePreviewIndex">
+                        <q-chip dense color="primary" text-color="white" icon="visibility">
+                          预览中
+                        </q-chip>
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-btn
+                          flat
+                          round
+                          dense
+                          icon="close"
+                          color="grey-6"
+                          @click.stop="removeFile(index)"
+                        />
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
                 </div>
               </transition>
             </div>
           </q-card-section>
 
-          <q-separator v-if="selectedFile" />
+          <q-separator v-if="selectedFiles.length > 0" />
 
-          <q-card-actions v-if="selectedFile" align="right" class="q-pa-md">
-            <q-btn flat label="清除" icon="delete_outline" @click="clearFile" />
+          <q-card-actions v-if="selectedFiles.length > 0" align="right" class="q-pa-md">
+            <q-btn flat label="清空" icon="delete_outline" @click="clearAllFiles" />
             <q-btn
               color="primary"
-              label="上传并分析"
+              :label="`上传并分析（${selectedFiles.length}）`"
               icon="rocket_launch"
               :loading="uploading"
               @click="uploadAndAnalyze"
@@ -289,10 +359,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { uploadImage } from 'src/services/apiService';
+import { isAxiosError } from 'axios';
+import { analysisTaskAPI, type BatchAnalysisTaskItem } from 'src/services/api';
 import { usePatientStore } from 'stores/patientStore';
 import type { Patient, CreatePatientRequest } from 'src/services/patientService';
 import PatientSelector from 'src/components/patients/PatientSelector.vue';
@@ -315,10 +386,13 @@ const newPatientData = ref<CreatePatientRequest>({
 
 // 文件相关
 const fileInputRef = ref<HTMLInputElement | null>(null);
-const selectedFile = ref<File | null>(null);
+const selectedFiles = ref<File[]>([]);
+const activePreviewIndex = ref(-1);
+const previewObjectUrl = ref('');
 const isDragging = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref(0);
+const MAX_FILES = 10;
 
 // 检查方式选项
 const modalities = [
@@ -336,6 +410,7 @@ const tips = [
   { icon: 'check_circle', color: 'orange', text: '请确保图像清晰、质量良好' },
   { icon: 'check_circle', color: 'orange', text: '支持格式：JPG, PNG, TIFF' },
   { icon: 'check_circle', color: 'orange', text: '文件大小不超过 20MB' },
+  { icon: 'check_circle', color: 'orange', text: '单次最多上传 10 张影像' },
   { icon: 'check_circle', color: 'orange', text: 'AI 分析约需 30-60 秒' },
 ];
 
@@ -373,12 +448,49 @@ onMounted(async () => {
 });
 
 // 图像预览 URL
-const imagePreviewUrl = computed(() => {
-  if (selectedFile.value) {
-    return URL.createObjectURL(selectedFile.value);
+const activePreviewFile = computed(() => {
+  if (selectedFiles.value.length === 0) {
+    return null;
   }
-  return '';
+
+  if (
+    activePreviewIndex.value < 0 ||
+    activePreviewIndex.value >= selectedFiles.value.length
+  ) {
+    return selectedFiles.value[selectedFiles.value.length - 1];
+  }
+
+  return selectedFiles.value[activePreviewIndex.value];
 });
+
+watch(
+  activePreviewFile,
+  (file) => {
+    if (previewObjectUrl.value) {
+      URL.revokeObjectURL(previewObjectUrl.value);
+      previewObjectUrl.value = '';
+    }
+
+    if (file) {
+      previewObjectUrl.value = URL.createObjectURL(file);
+    }
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  if (previewObjectUrl.value) {
+    URL.revokeObjectURL(previewObjectUrl.value);
+    previewObjectUrl.value = '';
+  }
+});
+
+const imagePreviewUrl = computed(() => previewObjectUrl.value);
+
+const totalSelectedSize = computed(() =>
+  selectedFiles.value.reduce((sum, file) => sum + file.size, 0),
+);
+const remainingUploadSlots = computed(() => Math.max(0, MAX_FILES - selectedFiles.value.length));
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -395,50 +507,122 @@ const triggerFileInput = () => {
 // 文件选择变化
 const onFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (file) {
-    validateAndSetFile(file);
+  const files = Array.from(input.files || []);
+  if (files.length > 0) {
+    appendFiles(files);
+  }
+
+  // 允许重复选择同名文件
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
   }
 };
 
 // 拖放处理
 const onDrop = (event: DragEvent) => {
   isDragging.value = false;
-  const file = event.dataTransfer?.files[0];
-  if (file) {
-    validateAndSetFile(file);
+  const files = Array.from(event.dataTransfer?.files || []);
+  if (files.length > 0) {
+    appendFiles(files);
   }
 };
 
-// 验证并设置文件
-const validateAndSetFile = (file: File) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/tiff'];
+// 校验并追加文件
+const appendFiles = (files: File[]) => {
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff', 'image/bmp'];
   const maxSize = 20 * 1024 * 1024; // 20MB
+  const accepted: File[] = [];
+  const rejected: string[] = [];
 
-  if (!validTypes.includes(file.type)) {
+  files.forEach((file) => {
+    if (!validTypes.includes(file.type)) {
+      rejected.push(`${file.name}: 格式不支持`);
+      return;
+    }
+
+    if (file.size > maxSize) {
+      rejected.push(`${file.name}: 超过20MB`);
+      return;
+    }
+
+    const duplicated = selectedFiles.value.some(
+      (item) =>
+        item.name === file.name &&
+        item.size === file.size &&
+        item.lastModified === file.lastModified,
+    );
+    if (duplicated) {
+      rejected.push(`${file.name}: 已存在`);
+      return;
+    }
+
+    accepted.push(file);
+  });
+
+  const remainSlots = MAX_FILES - selectedFiles.value.length;
+  if (remainSlots <= 0) {
     $q.notify({
       type: 'warning',
-      message: '不支持的文件格式，请选择 JPG、PNG 或 TIFF 图像',
+      message: `最多只能上传 ${MAX_FILES} 张影像`,
       position: 'top',
     });
     return;
   }
 
-  if (file.size > maxSize) {
-    $q.notify({
-      type: 'warning',
-      message: '文件过大，请选择小于 20MB 的图像',
-      position: 'top',
-    });
-    return;
+  const toAdd = accepted.slice(0, remainSlots);
+  if (toAdd.length > 0) {
+    selectedFiles.value = [...selectedFiles.value, ...toAdd];
+    activePreviewIndex.value = selectedFiles.value.length - 1;
   }
 
-  selectedFile.value = file;
+  if (accepted.length > remainSlots) {
+    rejected.push(`超过数量上限，已忽略 ${accepted.length - remainSlots} 张`);
+  }
+
+  if (rejected.length > 0) {
+    $q.notify({
+      type: 'warning',
+      message: `部分文件未加入：${rejected[0]}`,
+      position: 'top',
+    });
+  }
 };
 
-// 清除文件
-const clearFile = () => {
-  selectedFile.value = null;
+// 切换主预览
+const setActivePreview = (index: number) => {
+  if (index < 0 || index >= selectedFiles.value.length) {
+    return;
+  }
+  activePreviewIndex.value = index;
+};
+
+// 删除单个文件
+const removeFile = (index: number) => {
+  if (index < 0 || index >= selectedFiles.value.length) {
+    return;
+  }
+
+  selectedFiles.value.splice(index, 1);
+
+  if (selectedFiles.value.length === 0) {
+    activePreviewIndex.value = -1;
+    return;
+  }
+
+  if (activePreviewIndex.value === index) {
+    activePreviewIndex.value = Math.min(index, selectedFiles.value.length - 1);
+    return;
+  }
+
+  if (activePreviewIndex.value > index) {
+    activePreviewIndex.value -= 1;
+  }
+};
+
+// 清空文件
+const clearAllFiles = () => {
+  selectedFiles.value = [];
+  activePreviewIndex.value = -1;
   if (fileInputRef.value) {
     fileInputRef.value.value = '';
   }
@@ -473,10 +657,10 @@ const resolvePatientBusinessId = async (): Promise<string | null> => {
 
 // 上传并分析
 const uploadAndAnalyze = async () => {
-  if (!selectedFile.value) {
+  if (selectedFiles.value.length === 0) {
     $q.notify({
       type: 'warning',
-      message: '请先选择图像文件',
+      message: '请先选择至少一张图像文件',
       position: 'top',
     });
     return;
@@ -513,51 +697,101 @@ const uploadAndAnalyze = async () => {
 
   uploading.value = true;
   uploadProgress.value = 0;
+  let progressInterval: ReturnType<typeof setInterval> | null = null;
 
   try {
     // 模拟上传进度
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
-        uploadProgress.value += 10;
+        uploadProgress.value += 5;
       }
-    }, 200);
+    }, 250);
 
-    // 调用后端 API 上传图像并创建分析任务
-    const response = await uploadImage({
-      image: selectedFile.value,
+    // 调用后端 API 批量创建分析任务
+    const response = await analysisTaskAPI.createBatchTasks({
+      images: selectedFiles.value,
       patientName: selectedPatient.value.name,
-      // /api/analyze 使用 patient_id（业务号），不是数据库自增 id
       patientId: resolvedPatientId,
       studyDate: studyInfo.value.studyDate,
       modality: studyInfo.value.modality,
       description: studyInfo.value.description,
+      priority: 'normal',
     });
 
     clearInterval(progressInterval);
+    progressInterval = null;
     uploadProgress.value = 100;
     uploading.value = false;
 
-    const studyId = response.studyDbId || parseInt(response.studyId);
+    if (!response.success || !response.data) {
+      throw new Error(response.message || '批量创建任务失败');
+    }
 
-    $q.notify({
-      type: 'positive',
-      message: '✅ 上传成功！正在跳转到分析页面...',
-      position: 'top',
-      timeout: 2000,
-      icon: 'check_circle',
+    const failedItems = response.data.items.filter(
+      (item: BatchAnalysisTaskItem) => item.status === 'FAILED',
+    );
+    const { created, failed, total } = response.data.summary;
+
+    if (created > 0) {
+      $q.notify({
+        type: failed > 0 ? 'warning' : 'positive',
+        message: `已创建 ${created}/${total} 个分析任务${failed > 0 ? `，失败 ${failed} 个` : ''}`,
+        position: 'top',
+        timeout: 3500,
+        icon: failed > 0 ? 'warning_amber' : 'check_circle',
+      });
+    }
+
+    if (failedItems.length > 0) {
+      const firstError = failedItems[0]?.error || '未知错误';
+      $q.notify({
+        type: 'negative',
+        message: `部分影像创建失败：${firstError}`,
+        position: 'top',
+        timeout: 6000,
+        icon: 'error',
+      });
+    }
+
+    if (created === 0) {
+      return;
+    }
+
+    clearAllFiles();
+
+    await router.push({
+      path: '/app/studies',
+      query: { batch: response.data.batchId },
     });
-
-    await router.push(`/app/studies/${studyId}`);
   } catch (error) {
     uploadProgress.value = 0;
 
     let errorMessage = '上传失败，请重试';
-    if (error instanceof Error) {
-      if (error.message.includes('Network Error') || error.message.includes('timeout')) {
-        errorMessage = '❌ 无法连接到后端服务，请确保后端已启动';
-      } else {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      const serverMessage =
+        typeof error.response?.data === 'object' && error.response?.data
+          ? (error.response.data as { message?: string }).message
+          : undefined;
+
+      if (status === 404) {
+        errorMessage = '❌ 后端未找到批量接口 /analysis-tasks/batch，请重启后端后重试';
+      } else if (status === 401) {
+        errorMessage = '❌ 登录状态已失效，请重新登录后重试';
+      } else if (status === 413) {
+        errorMessage = '❌ 上传内容过大，请减少文件大小或数量后重试';
+      } else if (typeof status === 'number') {
+        errorMessage = `❌ 上传失败（HTTP ${status}）${serverMessage ? `: ${serverMessage}` : ''}`;
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage =
+          '❌ 网络连接中断，请确认前端 9000 到后端 4000 可用，且后端已加载 batch 接口';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = '❌ 请求超时，请稍后重试';
+      } else if (error.message) {
         errorMessage = `❌ 上传失败: ${error.message}`;
       }
+    } else if (error instanceof Error) {
+      errorMessage = `❌ 上传失败: ${error.message}`;
     }
 
     $q.notify({
@@ -568,6 +802,9 @@ const uploadAndAnalyze = async () => {
       icon: 'error',
     });
   } finally {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
     uploading.value = false;
   }
 };
@@ -640,7 +877,7 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
     border-style: solid;
     border-color: var(--q-positive);
     background: #f9fafb;
-    cursor: default;
+    cursor: pointer;
   }
 
   &__content {
@@ -665,6 +902,21 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 .preview-info {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+}
+
+.preview-actions {
+  text-align: center;
+}
+
+.file-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+.file-item--active {
+  background: #e3f2fd;
 }
 
 .fade-enter-active,
@@ -699,6 +951,10 @@ body.body--dark {
       border-color: var(--q-positive);
       background: var(--app-upload-bg);
     }
+  }
+
+  .file-item--active {
+    background: rgba(25, 118, 210, 0.22);
   }
 }
 </style>

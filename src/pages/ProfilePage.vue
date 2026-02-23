@@ -163,7 +163,11 @@
                       v-model="profileData.email"
                       outlined
                       label="邮箱"
-                      type="email"
+                      type="text"
+                      inputmode="email"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
                       placeholder="example@email.com"
                       class="form-input"
                       :rules="[
@@ -539,21 +543,27 @@ const loadUserData = async () => {
 const saveProfile = async () => {
   loading.value = true;
   try {
-    const updateData: { real_name?: string; phone?: string; email?: string } = {};
-
-    if (profileData.value.firstName) {
-      updateData.real_name = profileData.value.firstName.trim();
-    }
-    if (profileData.value.phone) {
-      updateData.phone = profileData.value.phone;
+    const updateData: { real_name?: string; phone?: string; email?: string } = {
+      real_name: profileData.value.firstName.trim(),
+      phone: profileData.value.phone.trim(),
+    };
+    const normalizedEmail = profileData.value.email.trim();
+    if (normalizedEmail) {
+      updateData.email = normalizedEmail;
     }
 
     const response = await userAPI.updateProfile(updateData);
 
     if (response.success) {
-      authStore.user = response.data.user;
-      setItem(STORAGE_KEYS.USER_INFO, response.data.user);
-      await loadUserData();
+      const mergedUser = {
+        ...response.data.user,
+        email: response.data.user.email || updateData.email || '',
+      };
+      authStore.user = mergedUser;
+      setItem(STORAGE_KEYS.USER_INFO, mergedUser);
+      profileData.value.email = mergedUser.email || '';
+      profileData.value.phone = mergedUser.phone || '';
+      profileData.value.firstName = mergedUser.real_name || '';
 
       $q.notify({
         type: 'positive',

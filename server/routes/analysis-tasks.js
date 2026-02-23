@@ -1,8 +1,18 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
-const { AnalysisTask, AnalysisResult, Study, User, StudyImage } = require('../models');
+const {
+  AnalysisTask,
+  AnalysisResult,
+  Study,
+  User,
+  StudyImage,
+  Patient,
+  sequelize,
+} = require('../models');
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
 
@@ -11,6 +21,7 @@ const router = express.Router();
 // 服务端根目录与上传目录
 const serverRootDir = path.resolve(__dirname, '..');
 const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
+const studiesUploadDir = path.join(uploadsRootDir, 'studies');
 
 /**
  * 将数据库中存储的 file_path 解析为 uploads 目录下的绝对路径
@@ -35,6 +46,83 @@ function resolveUploadAbsolutePath(storedPath) {
 
   return absPath;
 }
+
+/**
+ * 删除上传文件（忽略删除失败）
+ * @param {string | undefined} filePath 绝对文件路径
+ */
+async function removeUploadedFile(filePath) {
+  if (!filePath) return;
+  try {
+    await fs.promises.unlink(filePath);
+  } catch {
+    // 忽略文件不存在等清理失败场景
+  }
+}
+
+/**
+ * 归一化优先级
+ * @param {unknown} inputPriority 优先级输入
+ * @returns {'normal' | 'urgent' | 'emergency'}
+ */
+function normalizePriority(inputPriority) {
+  const raw = typeof inputPriority === 'string' ? inputPriority.trim().toLowerCase() : 'normal';
+  if (raw === 'urgent' || raw === 'emergency') {
+    return raw;
+  }
+  return 'normal';
+}
+
+/**
+ * 根据原始文件名推断格式
+ * @param {string} originalFilename 原始文件名
+ * @returns {string}
+ */
+function resolveFileFormat(originalFilename) {
+  const ext = path.extname(originalFilename || '').slice(1).toUpperCase();
+  if (!ext) return 'JPEG';
+  return ext === 'JPG' ? 'JPEG' : ext;
+}
+
+// 批量上传：沿用 studies 上传目录，保证静态路径一致
+const batchImageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      if (!fs.existsSync(studiesUploadDir)) {
+        fs.mkdirSync(studiesUploadDir, { recursive: true });
+      }
+      cb(null, studiesUploadDir);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `study-${uniqueSuffix}${path.extname(file.originalname)}`);
+  },
+});
+
+const batchUploadImages = multer({
+  storage: batchImageStorage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_IMAGE_SIZE || '', 10) || 20 * 1024 * 1024, // 20MB
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/tiff',
+      'image/bmp',
+      'image/x-ms-bmp',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('只支持 JPEG、PNG、TIFF、BMP 格式的医学影像'));
+  },
+});
 
 /**
  * 规范化任务状态（兼容历史值）
@@ -206,6 +294,190 @@ router.post('/', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '创建分析任务失败',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/analysis-tasks/batch
+ * 批量上传影像并创建分析任务（部分成功）
+ */
+router.post('/batch', authenticate, batchUploadImages.array('images', 10), async (req, res) => {
+  const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+  const batchId = `batch_${uuidv4()}`;
+
+  try {
+    const { patientName, patientId, studyDate, modality, description, model_version, priority } =
+      req.body;
+
+    if (!uploadedFiles.length) {
+      return res.status(400).json({
+        success: false,
+        message: '请至少上传一张影像',
+      });
+    }
+
+    if (!patientName || !patientId || !studyDate || !modality) {
+      await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
+      return res.status(400).json({
+        success: false,
+        message: '缺少必填字段：patientName、patientId、studyDate、modality',
+      });
+    }
+
+    const studyDateObj = new Date(studyDate);
+    if (Number.isNaN(studyDateObj.getTime())) {
+      await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
+      return res.status(400).json({
+        success: false,
+        message: '检查日期格式不正确',
+      });
+    }
+
+    const finalPriority = normalizePriority(priority);
+
+    // 查找或创建患者（使用业务号）
+    let patient = await Patient.findOne({ where: { patient_id: patientId } });
+    if (!patient) {
+      try {
+        patient = await Patient.create({
+          patient_id: patientId,
+          name: patientName,
+          gender: 'female',
+          created_by: req.user.id,
+        });
+      } catch (error) {
+        // 并发场景下可能重复创建，回查兜底
+        patient = await Patient.findOne({ where: { patient_id: patientId } });
+        if (!patient) {
+          throw error;
+        }
+      }
+    }
+
+    const items = [];
+    let createdCount = 0;
+
+    for (const [index, file] of uploadedFiles.entries()) {
+      let transaction;
+      try {
+        transaction = await sequelize.transaction();
+
+        const study = await Study.create(
+          {
+            study_id: `study_${uuidv4()}`,
+            patient_id: patient.id,
+            user_id: req.user.id,
+            study_date: studyDateObj,
+            study_type: modality,
+            description: description || '',
+            status: 'processing',
+            priority: finalPriority,
+          },
+          { transaction },
+        );
+
+        const image = await StudyImage.create(
+          {
+            study_id: study.id,
+            original_filename: file.originalname,
+            stored_filename: file.filename,
+            file_path: `/uploads/studies/${file.filename}`,
+            file_size: file.size,
+            mime_type: file.mimetype,
+            file_format: resolveFileFormat(file.originalname),
+            is_primary: true,
+            upload_status: 'completed',
+          },
+          { transaction },
+        );
+
+        const taskId = `task_${uuidv4()}`;
+        const task = await AnalysisTask.create(
+          {
+            task_id: taskId,
+            study_id: study.id,
+            user_id: req.user.id,
+            ai_model_version: model_version,
+            status: 'PENDING',
+            progress: 0,
+          },
+          { transaction },
+        );
+
+        await transaction.commit();
+        createdCount += 1;
+
+        const item = {
+          index,
+          originalFilename: file.originalname,
+          studyDbId: study.id,
+          studyId: study.study_id,
+          imageId: image.id,
+          taskId,
+          status: 'PENDING',
+        };
+        items.push(item);
+
+        // 异步触发分析，不阻塞响应
+        const imagePath = resolveUploadAbsolutePath(image.file_path);
+        if (!imagePath) {
+          await task.update({
+            status: 'FAILED',
+            progress: 0,
+            error_message: '图像路径解析失败，无法开始分析',
+            completed_at: new Date(),
+          });
+          await Study.update({ status: 'failed' }, { where: { id: study.id } });
+          item.status = 'FAILED';
+          item.error = '图像路径解析失败，无法开始分析';
+          continue;
+        }
+
+        analysisService.processTask(task.id, imagePath, study.id).catch((error) => {
+          console.error(
+            `❌ [POST /analysis-tasks/batch] 异步分析失败: Task=${task.id}, Study=${study.id}`,
+            error,
+          );
+        });
+      } catch (error) {
+        if (transaction) {
+          await transaction.rollback();
+        }
+
+        await removeUploadedFile(file.path);
+        items.push({
+          index,
+          originalFilename: file.originalname,
+          status: 'FAILED',
+          error: error.message || '创建任务失败',
+        });
+      }
+    }
+
+    const failedCount = uploadedFiles.length - createdCount;
+
+    res.status(200).json({
+      success: true,
+      message:
+        failedCount > 0 ? `批量任务创建完成，成功 ${createdCount} 条，失败 ${failedCount} 条` : '批量任务创建成功',
+      data: {
+        batchId,
+        summary: {
+          total: uploadedFiles.length,
+          created: createdCount,
+          failed: failedCount,
+        },
+        items,
+      },
+    });
+  } catch (error) {
+    await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
+    console.error('批量创建分析任务错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量创建分析任务失败',
       error: error.message,
     });
   }

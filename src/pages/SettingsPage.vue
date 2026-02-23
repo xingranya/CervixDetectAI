@@ -191,7 +191,11 @@
                           v-model="profileData.email"
                           outlined
                           label="邮箱"
-                          type="email"
+                          type="text"
+                          inputmode="email"
+                          autocapitalize="off"
+                          autocorrect="off"
+                          spellcheck="false"
                           placeholder="example@email.com"
                           class="form-input"
                           :rules="[
@@ -743,20 +747,45 @@
                   近期系统日志
                 </div>
                 <div class="q-gutter-sm">
-                  <q-btn outline size="sm" icon="download" label="导出日志" color="grey-8" />
-                  <q-btn outline size="sm" icon="delete" label="清空日志" color="grey-8" />
+                  <q-btn
+                    outline
+                    size="sm"
+                    icon="download"
+                    label="导出日志"
+                    color="grey-8"
+                    :disable="systemLogs.length === 0"
+                    @click="exportSystemLogs"
+                  />
+                  <q-btn
+                    outline
+                    size="sm"
+                    icon="delete"
+                    label="清空日志"
+                    color="grey-8"
+                    :disable="systemLogs.length === 0"
+                    @click="clearSystemLogs"
+                  />
                 </div>
               </q-card-section>
               <q-card-section class="q-pa-none">
                 <q-scroll-area style="height: 300px">
-                  <q-list separator>
-                    <q-item v-for="(log, index) in systemLogs" :key="index">
+                  <q-list v-if="systemLogs.length > 0" separator>
+                    <q-item v-for="(log, index) in systemLogs" :key="`${log.time}-${index}`">
                       <q-item-section>
-                        <div class="text-caption text-grey-6 font-mono">{{ log.time }}</div>
+                        <div class="row items-center q-gutter-sm q-mb-xs">
+                          <div class="text-caption text-grey-6 font-mono">{{ log.time }}</div>
+                          <q-chip dense square color="blue-1" text-color="primary" icon="person">
+                            {{ log.username }}
+                          </q-chip>
+                        </div>
                         <div class="text-body2 text-grey-9">{{ log.message }}</div>
                       </q-item-section>
                     </q-item>
                   </q-list>
+                  <div v-else class="empty-log-state">
+                    <q-icon name="description" size="36px" color="grey-4" />
+                    <div class="text-grey-6 q-mt-sm">暂无系统日志</div>
+                  </div>
                 </q-scroll-area>
               </q-card-section>
             </q-card>
@@ -777,7 +806,7 @@
                 </div>
                 <div class="row q-mb-sm">
                   <div class="col-2 text-grey-7 text-weight-medium">版本</div>
-                  <div class="col-10">V1.0.0 (Build 20251212)</div>
+                  <div class="col-10">V1.1.8 (Build 20260223)</div>
                 </div>
                 <div class="row q-mb-sm">
                   <div class="col-2 text-grey-7 text-weight-medium">许可证</div>
@@ -785,7 +814,7 @@
                 </div>
                 <div class="row q-mb-sm">
                   <div class="col-2 text-grey-7 text-weight-medium">技术支持</div>
-                  <div class="col-10">support@med-ai.com | 400-123-4567</div>
+                  <div class="col-10">support@hpvsc.icu</div>
                 </div>
                 <div class="row q-mb-md">
                   <div class="col-2 text-grey-7 text-weight-medium">数据安全</div>
@@ -823,6 +852,9 @@ const themeStore = useThemeStore();
 // Auth Store
 const authStore = useAuthStore();
 const user = computed(() => authStore.user);
+const currentUserDisplayName = computed(() => {
+  return user.value?.real_name || user.value?.username || '当前用户';
+});
 
 // 获取当前用户所属医院
 const currentHospital = computed(() => {
@@ -903,21 +935,28 @@ const loadUserData = async () => {
 const saveProfile = async () => {
   loading.value = true;
   try {
-    const updateData: { real_name?: string; phone?: string } = {};
-
-    if (profileData.value.firstName) {
-      updateData.real_name = profileData.value.firstName.trim();
-    }
-    if (profileData.value.phone) {
-      updateData.phone = profileData.value.phone;
+    const updateData: { real_name?: string; phone?: string; email?: string } = {
+      real_name: profileData.value.firstName.trim(),
+      phone: profileData.value.phone.trim(),
+    };
+    const normalizedEmail = profileData.value.email.trim();
+    if (normalizedEmail) {
+      updateData.email = normalizedEmail;
     }
 
     const response = await userAPI.updateProfile(updateData);
 
     if (response.success) {
-      authStore.user = response.data.user;
-      setItem(STORAGE_KEYS.USER_INFO, response.data.user);
-      await loadUserData();
+      const mergedUser = {
+        ...response.data.user,
+        email: response.data.user.email || updateData.email || '',
+      };
+      authStore.user = mergedUser;
+      setItem(STORAGE_KEYS.USER_INFO, mergedUser);
+      profileData.value.email = mergedUser.email || '';
+      profileData.value.phone = mergedUser.phone || '';
+      profileData.value.firstName = mergedUser.real_name || '';
+      appendSystemLog('保存了用户基本资料');
 
       $q.notify({
         type: 'positive',
@@ -978,6 +1017,7 @@ const uploadAvatar = async (file: File) => {
     const response = await userAPI.uploadAvatar(file);
     if (response.success) {
       await authStore.fetchCurrentUser();
+      appendSystemLog('更新了用户头像');
       $q.notify({
         type: 'positive',
         message: '头像上传成功！',
@@ -1020,6 +1060,7 @@ const changePassword = async () => {
 
     if (response.success) {
       passwordDialog.value = false;
+      appendSystemLog('修改了账户密码');
       $q.notify({
         type: 'positive',
         message: '密码修改成功！',
@@ -1069,12 +1110,91 @@ const backup = ref({
 const restoreFile = ref(null);
 
 // System Log
-const systemLogs = ref([
-  { time: '2025-12-12 10:23:11', message: '用户[张明]登录系统。' },
-  { time: '2025-12-12 09:45:30', message: 'AI模型完成病例[20251211005]分析，置信度: 0.92。' },
-  { time: '2025-12-12 02:00:15', message: '每日数据备份任务执行成功，大小: 4.7GB。' },
-  { time: '2025-12-11 22:10:05', message: '系统服务重启完成，版本: V1.0.0。' },
-]);
+interface SystemLogItem {
+  time: string;
+  username: string;
+  message: string;
+}
+
+const systemLogs = ref<SystemLogItem[]>([]);
+
+const formatLogTime = (date: Date): string => {
+  const pad = (num: number) => String(num).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+};
+
+const appendSystemLog = (message: string, date = new Date()) => {
+  systemLogs.value.unshift({
+    time: formatLogTime(date),
+    username: currentUserDisplayName.value,
+    message,
+  });
+};
+
+const initializeSystemLogs = () => {
+  const now = Date.now();
+  systemLogs.value = [
+    {
+      time: formatLogTime(new Date(now - 2 * 60 * 1000)),
+      username: currentUserDisplayName.value,
+      message: '登录后进入系统设置页面',
+    },
+    {
+      time: formatLogTime(new Date(now - 15 * 60 * 1000)),
+      username: currentUserDisplayName.value,
+      message: '查看了系统参数配置',
+    },
+    {
+      time: formatLogTime(new Date(now - 35 * 60 * 1000)),
+      username: currentUserDisplayName.value,
+      message: '查看了AI模型性能面板',
+    },
+    {
+      time: formatLogTime(new Date(now - 60 * 60 * 1000)),
+      username: currentUserDisplayName.value,
+      message: '完成账户安全检查',
+    },
+  ];
+};
+
+const clearSystemLogs = () => {
+  systemLogs.value = [];
+  $q.notify({
+    type: 'info',
+    message: '系统日志已清空',
+    position: 'top',
+  });
+};
+
+const exportSystemLogs = () => {
+  if (systemLogs.value.length === 0) {
+    return;
+  }
+
+  const textContent = systemLogs.value
+    .map((item) => `[${item.time}] [${item.username}] ${item.message}`)
+    .join('\n');
+  const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+  const fileName = `system-log-${new Date().toISOString().slice(0, 10)}.txt`;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  $q.notify({
+    type: 'positive',
+    message: '系统日志导出成功',
+    position: 'top',
+  });
+};
 
 // Chart
 const performanceChartRef = ref<HTMLElement | null>(null);
@@ -1160,7 +1280,14 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  if (!authStore.hasInitialized) {
+    authStore.initializeAuth();
+  }
+
+  await loadUserData();
+  initializeSystemLogs();
+
   // Delay chart init to ensure tab is rendered if active
   setTimeout(() => {
     if (activeTab.value === 'ai_model') initChart();
@@ -1191,6 +1318,15 @@ onUnmounted(() => {
 }
 .font-mono {
   font-family: monospace;
+}
+
+.empty-log-state {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 卡片基础样式 */

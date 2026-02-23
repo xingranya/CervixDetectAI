@@ -19,6 +19,8 @@ const getServerBaseUrl = (apiBaseUrl: string): string => {
 
 const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
+type LatestTaskStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+
 /**
  * 将相对路径转换为完整URL
  */
@@ -31,6 +33,33 @@ function getImageUrl(filePath: string | undefined): string | undefined {
   // 否则拼接服务器地址
   const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
   return `${SERVER_BASE_URL}${normalizedPath}`;
+}
+
+/**
+ * 标准化任务状态（兼容大小写与历史值）
+ */
+function normalizeLatestTaskStatus(status: string | undefined): LatestTaskStatus | undefined {
+  if (!status) return undefined;
+
+  const normalized = status.toUpperCase();
+  if (normalized === 'PENDING') return 'PENDING';
+  if (normalized === 'PROCESSING' || normalized === 'RUNNING') return 'PROCESSING';
+  if (normalized === 'SUCCESS' || normalized === 'COMPLETED') return 'SUCCESS';
+  if (normalized === 'FAILED' || normalized === 'CANCELLED' || normalized === 'CANCELED') {
+    return 'FAILED';
+  }
+  return undefined;
+}
+
+/**
+ * 获取病例最新任务状态
+ */
+function resolveLatestTaskStatus(
+  tasks: Array<{ status: string; created_at: string }> | undefined,
+): LatestTaskStatus | undefined {
+  if (!tasks || tasks.length === 0) return undefined;
+  const latest = [...tasks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  return normalizeLatestTaskStatus(latest?.status);
 }
 
 export interface Study {
@@ -56,6 +85,8 @@ export interface Study {
   downloaded_at?: string | undefined;
   diagnosis?: string | undefined;
   riskLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
+  confidence?: number | undefined;
+  latestTaskStatus?: LatestTaskStatus | undefined;
 }
 
 export const useStudyStore = defineStore('study', {
@@ -100,6 +131,7 @@ export const useStudyStore = defineStore('study', {
           // Map backend data to frontend format
           this.studies = response.data.studies.map((study: StudyRaw) => {
             const imageUrl = getImageUrl(study.images?.[0]?.file_path);
+            const latestTaskStatus = resolveLatestTaskStatus(study.analysis_tasks);
             return {
               id: study.id,
               study_id: study.study_id,
@@ -121,6 +153,8 @@ export const useStudyStore = defineStore('study', {
               downloaded_at: study.downloaded_at,
               diagnosis: study.analysis_results?.[0]?.diagnosis,
               riskLevel: study.analysis_results?.[0]?.risk_level,
+              confidence: study.analysis_results?.[0]?.confidence,
+              latestTaskStatus,
             };
           });
           console.log('✅ [fetchStudies] 已映射病例数据，共', this.studies.length, '条');
@@ -157,6 +191,7 @@ export const useStudyStore = defineStore('study', {
 
           // 获取最新的分析结果
           const latestResult = response.data.study.analysis_results?.[0];
+          const latestTaskStatus = resolveLatestTaskStatus(response.data.study.analysis_tasks);
           let analysisResult: AnalysisResult | undefined;
 
           if (latestResult) {
@@ -193,6 +228,8 @@ export const useStudyStore = defineStore('study', {
             downloaded_at: response.data.study.downloaded_at,
             diagnosis: latestResult?.diagnosis,
             riskLevel: latestResult?.risk_level,
+            confidence: latestResult?.confidence,
+            latestTaskStatus,
           };
 
           // 检查是否有进行中的任务
@@ -206,6 +243,7 @@ export const useStudyStore = defineStore('study', {
             if (latestTask && ['PENDING', 'PROCESSING'].includes(latestTask.status)) {
               study.taskId = latestTask.task_id;
               study.status = 'processing';
+              study.latestTaskStatus = normalizeLatestTaskStatus(latestTask.status);
             }
           }
 
@@ -264,6 +302,7 @@ export const useStudyStore = defineStore('study', {
             description: response.data.study.description,
             uploadedAt: response.data.study.created_at,
             created_at: response.data.study.created_at,
+            latestTaskStatus: undefined,
           };
 
           // Upload images if provided
@@ -285,6 +324,7 @@ export const useStudyStore = defineStore('study', {
           if (newStudy.images && newStudy.images.length > 0) {
             await analysisTaskAPI.createTask({ study_id: newStudy.id });
             newStudy.status = 'processing';
+            newStudy.latestTaskStatus = 'PENDING';
           }
 
           return newStudy;

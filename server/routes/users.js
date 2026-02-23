@@ -77,11 +77,48 @@ router.get('/me', authenticate, async (req, res) => {
  */
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const { real_name, phone } = req.body;
+    const { real_name, phone, email } = req.body;
     const updateData = {};
 
-    if (real_name !== undefined) updateData.real_name = real_name;
-    if (phone !== undefined) updateData.phone = phone;
+    if (real_name !== undefined) {
+      const normalizedRealName = typeof real_name === 'string' ? real_name.trim() : '';
+      updateData.real_name = normalizedRealName || null;
+    }
+
+    if (phone !== undefined) {
+      const normalizedPhone = typeof phone === 'string' ? phone.trim() : '';
+      updateData.phone = normalizedPhone || null;
+    }
+
+    if (email !== undefined) {
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+      if (normalizedEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+          return res.status(400).json({
+            success: false,
+            message: '邮箱格式不正确',
+          });
+        }
+
+        const existedUser = await User.findOne({
+          where: {
+            email: normalizedEmail,
+            id: { [Op.ne]: req.user.id },
+          },
+        });
+
+        if (existedUser) {
+          return res.status(409).json({
+            success: false,
+            message: '该邮箱已被其他账号使用',
+          });
+        }
+
+        updateData.email = normalizedEmail;
+      }
+    }
 
     await req.user.update(updateData);
 
@@ -96,6 +133,12 @@ router.put('/me', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('更新用户信息错误:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: '邮箱已被使用，请更换后重试',
+      });
+    }
     res.status(500).json({
       success: false,
       message: '更新用户信息失败',

@@ -807,6 +807,90 @@ components:
                     $ref: '#/components/schemas/AnalysisTask'
                 pagination:
                   $ref: '#/components/schemas/Pagination'
+    CreateBatchAnalysisTaskRequest:
+      type: object
+      required: [images, patientName, patientId, studyDate, modality]
+      properties:
+        images:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: binary
+        patientName:
+          type: string
+        patientId:
+          type: string
+        studyDate:
+          type: string
+          format: date
+          description: Study date in ISO format
+        modality:
+          type: string
+        description:
+          type: string
+          nullable: true
+        model_version:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [normal, urgent, emergency]
+    BatchAnalysisTaskItem:
+      type: object
+      required: [index, originalFilename, status]
+      properties:
+        index:
+          type: integer
+        originalFilename:
+          type: string
+        studyDbId:
+          type: integer
+          nullable: true
+        studyId:
+          type: string
+          nullable: true
+        imageId:
+          type: integer
+          nullable: true
+        taskId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, FAILED]
+        error:
+          type: string
+          nullable: true
+    BatchAnalysisTaskSummary:
+      type: object
+      required: [total, created, failed]
+      properties:
+        total:
+          type: integer
+        created:
+          type: integer
+        failed:
+          type: integer
+    BatchAnalysisTaskData:
+      type: object
+      required: [batchId, summary, items]
+      properties:
+        batchId:
+          type: string
+        summary:
+          $ref: '#/components/schemas/BatchAnalysisTaskSummary'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchAnalysisTaskItem'
+    BatchAnalysisTaskResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/BatchAnalysisTaskData'
     PaymentCreateResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
@@ -1781,6 +1865,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalysisTaskListResponse'
+  /analysis-tasks/batch:
+    post:
+      tags: [AnalysisTasks]
+      summary: Batch upload images and create analysis tasks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBatchAnalysisTaskRequest'
+      responses:
+        '200':
+          description: OK (supports partial success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAnalysisTaskResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /analysis-tasks/{id}:
     get:
       tags: [AnalysisTasks]

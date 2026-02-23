@@ -180,6 +180,7 @@ export const userAPI = {
   async updateProfile(userData: {
     real_name?: string;
     phone?: string;
+    email?: string;
   }): Promise<ApiResponse<{ user: AuthData['user'] }>> {
     const { data } = await apiClient.put<ApiResponse<{ user: AuthData['user'] }>>(
       '/users/me',
@@ -365,6 +366,38 @@ interface AnalysisResultData {
   detailed_report?: string;
 }
 
+export interface CreateBatchAnalysisTaskRequest {
+  images: File[];
+  patientName: string;
+  patientId: string;
+  studyDate: string;
+  modality: string;
+  description?: string;
+  priority?: 'normal' | 'urgent' | 'emergency';
+  model_version?: string;
+}
+
+export interface BatchAnalysisTaskItem {
+  index: number;
+  originalFilename: string;
+  studyDbId?: number;
+  studyId?: string;
+  imageId?: number;
+  taskId?: string;
+  status: 'PENDING' | 'FAILED';
+  error?: string;
+}
+
+export interface BatchAnalysisTaskResponse {
+  batchId: string;
+  summary: {
+    total: number;
+    created: number;
+    failed: number;
+  };
+  items: BatchAnalysisTaskItem[];
+}
+
 export const analysisTaskAPI = {
   async createTask(taskData: {
     study_id: number;
@@ -421,6 +454,39 @@ export const analysisTaskAPI = {
 
   async deleteTask(id: number): Promise<ApiResponse<null>> {
     const { data } = await apiClient.delete<ApiResponse<null>>(`/analysis-tasks/${id}`);
+    return data;
+  },
+
+  async createBatchTasks(
+    payload: CreateBatchAnalysisTaskRequest,
+  ): Promise<ApiResponse<BatchAnalysisTaskResponse>> {
+    const formData = new FormData();
+    payload.images.forEach((image) => {
+      formData.append('images', image);
+    });
+    formData.append('patientName', payload.patientName);
+    formData.append('patientId', payload.patientId);
+    formData.append('studyDate', payload.studyDate);
+    formData.append('modality', payload.modality);
+    if (payload.description) {
+      formData.append('description', payload.description);
+    }
+    if (payload.priority) {
+      formData.append('priority', payload.priority);
+    }
+    if (payload.model_version) {
+      formData.append('model_version', payload.model_version);
+    }
+
+    const { data } = await apiClient.post<ApiResponse<BatchAnalysisTaskResponse>>(
+      '/analysis-tasks/batch',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
     return data;
   },
 };

@@ -40,7 +40,11 @@
               v-model="email"
               outlined
               label="邮箱"
-              type="email"
+              type="text"
+              inputmode="email"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               lazy-rules
               :rules="[
                 (val) => (val && val.length > 0) || '邮箱为必填项',
@@ -477,5 +481,4 @@ onBeforeUnmount(() => {
   clearSmsTimer();
 });
 </script>
-
 

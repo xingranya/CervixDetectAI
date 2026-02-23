@@ -100,6 +100,41 @@
             </q-td>
           </template>
 
+          <!-- 最新任务状态列 -->
+          <template v-slot:body-cell-latestTaskStatus="props">
+            <q-td :props="props">
+              <q-chip
+                :color="getTaskStatusColor(props.row.latestTaskStatus)"
+                text-color="white"
+                size="sm"
+                dense
+              >
+                {{ getTaskStatusLabel(props.row.latestTaskStatus) }}
+              </q-chip>
+            </q-td>
+          </template>
+
+          <!-- 风险等级列 -->
+          <template v-slot:body-cell-riskLevel="props">
+            <q-td :props="props">
+              <q-chip
+                :color="getRiskLevelColor(props.row.riskLevel)"
+                :text-color="props.row.riskLevel ? 'white' : 'grey-8'"
+                size="sm"
+                dense
+              >
+                {{ getRiskLevelLabel(props.row.riskLevel) }}
+              </q-chip>
+            </q-td>
+          </template>
+
+          <!-- 置信度列 -->
+          <template v-slot:body-cell-confidence="props">
+            <q-td :props="props">
+              {{ formatConfidence(props.row.confidence) }}
+            </q-td>
+          </template>
+
           <!-- 操作列 -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
@@ -187,6 +222,15 @@ const studyColumns = [
   },
   { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
   { name: 'status', label: '状态', field: 'status', align: 'center' as const, sortable: true },
+  {
+    name: 'latestTaskStatus',
+    label: '任务状态',
+    field: 'latestTaskStatus',
+    align: 'center' as const,
+    sortable: true,
+  },
+  { name: 'riskLevel', label: '风险等级', field: 'riskLevel', align: 'center' as const },
+  { name: 'confidence', label: '置信度', field: 'confidence', align: 'center' as const },
   { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
@@ -279,6 +323,78 @@ const getStatusLabel = (status: string): string => {
   }
 };
 
+// 获取任务状态颜色
+const getTaskStatusColor = (status: string | undefined): string => {
+  switch (status) {
+    case 'SUCCESS':
+      return 'green';
+    case 'PROCESSING':
+      return 'orange';
+    case 'FAILED':
+      return 'red';
+    case 'PENDING':
+      return 'grey';
+    default:
+      return 'grey-5';
+  }
+};
+
+// 获取任务状态标签
+const getTaskStatusLabel = (status: string | undefined): string => {
+  switch (status) {
+    case 'SUCCESS':
+      return '成功';
+    case 'PROCESSING':
+      return '处理中';
+    case 'FAILED':
+      return '失败';
+    case 'PENDING':
+      return '待处理';
+    default:
+      return '暂无任务';
+  }
+};
+
+// 获取风险等级颜色
+const getRiskLevelColor = (riskLevel: string | undefined): string => {
+  switch (riskLevel) {
+    case 'critical':
+      return 'deep-orange';
+    case 'high':
+      return 'red';
+    case 'medium':
+      return 'orange';
+    case 'low':
+      return 'green';
+    default:
+      return 'grey-3';
+  }
+};
+
+// 获取风险等级标签
+const getRiskLevelLabel = (riskLevel: string | undefined): string => {
+  switch (riskLevel) {
+    case 'critical':
+      return '极高';
+    case 'high':
+      return '高';
+    case 'medium':
+      return '中';
+    case 'low':
+      return '低';
+    default:
+      return '未评估';
+  }
+};
+
+// 格式化置信度
+const formatConfidence = (confidence: number | undefined): string => {
+  if (typeof confidence !== 'number' || Number.isNaN(confidence)) {
+    return '-';
+  }
+  return `${Math.round(confidence * 100)}%`;
+};
+
 // 查看病例详情
 const viewStudy = (id: number) => {
   void router.push(`/app/studies/${id}`);
@@ -364,6 +480,16 @@ watch(
 // 组件挂载时加载数据
 onMounted(async () => {
   try {
+    const batchQuery = route.query.batch;
+    const batchId = Array.isArray(batchQuery) ? batchQuery[0] : batchQuery;
+    if (typeof batchId === 'string' && batchId) {
+      $q.notify({
+        type: 'info',
+        message: `批量任务已提交（批次: ${batchId}）`,
+        position: 'top',
+        timeout: 2500,
+      });
+    }
     await studyStore.fetchStudies();
   } catch (error) {
     console.error('加载病例数据失败:', error);
