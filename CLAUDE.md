@@ -56,7 +56,10 @@ CervixDetectAI/
 3. **用户中心** - 登录注册、邮箱验证码、阿里云号码认证、阿里云 AI 验证码安全验证、权限管理
 4. **订阅支付** - 会员订阅、价格展示、优惠计算、用户协议
 5. **报告生成** - PDF 导出、ECharts 图表展示
-6. **数据库维护** - 自动清理过期验证码和旧数据
+6. **随访管理** - 随访计划创建、状态流转、预设模板、定时提醒与手动提醒
+7. **站内通知中心** - 分析完成通知、高风险预警、随访提醒、未读计数与跳转联动
+8. **UI 设计系统** - 全局圆角/边框/阴影/玻璃化统一，浅色与深色主题一致性优化
+9. **数据库维护** - 自动清理过期验证码和旧数据
 
 ## 关键配置文件
 
@@ -119,6 +122,15 @@ quasar build -m capacitor -T android  # Android 构建
 - 登录页 footer 的注册引导文案优先使用“开始注册”这类直接表达。
 
 ## 近期更新
+
+- **[2026-02-23] 随访管理、站内通知与 UI 体系升级**
+  - 新增随访模型与路由：`server/models/FollowUp.js`、`server/routes/followups.js`
+  - 新增随访调度服务：`server/services/followupScheduler.service.js`（`node-cron` 定时提醒）
+  - 新增站内通知服务与接口：`server/services/notificationService.js`、`server/routes/notifications.js`
+  - 分析结果落库后自动推送“报告分析完成”通知；高风险/极高风险追加“高风险病变预警”
+  - 前端新增随访页面 `src/pages/FollowUpsPage.vue` 与通知面板联动 `src/layouts/MainLayout.vue`
+  - API 设置页新增 `in_app` 站内通知渠道：`src/pages/ApiSettingsPage.vue`
+  - 全局样式统一升级：`src/css/design-tokens.scss`、`src/css/app.scss`（圆角、边框、阴影、玻璃化）
 
 - **[2026-02-20] 平台体验与生态规划升级**
   - 全面支持全局暗色模式 (Dark Mode) 及相关组件的响应式样式适配
@@ -210,6 +222,8 @@ quasar build -m capacitor -T android  # Android 构建
 User 1:N Patient 1:N Study 1:N StudyImage
               └── 1:1 AnalysisTask 1:1 AnalysisResult 1:1 MedicalReport
 
+FollowUp (随访计划)
+Notification (站内通知)
 EmailCode (邮箱验证码，独立模型)
 SmsCode (短信验证码，独立模型)
 Order (支付订单)
@@ -220,6 +234,10 @@ Order (支付订单)
 - 双 Token 认证 (Access + Refresh)
 - 401 自动刷新重试机制
 - 模块化封装 (authAPI, patientAPI, studyAPI 等)
+- **随访管理 API** (`/api/followups`)
+  - 覆盖创建、分页查询、编辑、完成/取消、重点关注、立即提醒
+- **站内通知 API** (`/api/notifications`)
+  - 支持通知列表、未读计数、单条已读、全部已读
 - **邮箱认证 API** (`/api/auth/email`)
   - `POST /send-code` - 发送邮箱验证码
   - `POST /register` - 邮箱验证码注册
