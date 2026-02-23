@@ -388,11 +388,23 @@ const getRiskLevelLabel = (riskLevel: string | undefined): string => {
 };
 
 // 格式化置信度
-const formatConfidence = (confidence: number | undefined): string => {
-  if (typeof confidence !== 'number' || Number.isNaN(confidence)) {
+const formatConfidence = (confidence: unknown): string => {
+  if (confidence === null || confidence === undefined) {
     return '-';
   }
-  return `${Math.round(confidence * 100)}%`;
+
+  const raw = typeof confidence === 'number' ? confidence : Number(confidence);
+  if (!Number.isFinite(raw) || raw < 0) {
+    return '-';
+  }
+
+  // 兼容历史百分比值（0-100）
+  const normalized = raw > 1 && raw <= 100 ? raw / 100 : raw;
+  if (normalized > 1) {
+    return '-';
+  }
+
+  return `${Math.round(normalized * 100)}%`;
 };
 
 // 查看病例详情

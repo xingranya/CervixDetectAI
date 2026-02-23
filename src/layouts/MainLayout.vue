@@ -51,7 +51,7 @@
                 <div class="notification-panel-header">
                   <div>
                     <div class="notification-panel-title">站内通知</div>
-                    <div class="notification-panel-subtitle">随访提醒与系统消息</div>
+                    <div class="notification-panel-subtitle">随访提醒、分析结果与系统消息</div>
                   </div>
                   <q-btn
                     unelevated
@@ -423,6 +423,11 @@ const handleNotificationClick = async (item: NotificationItem) => {
 
   notificationMenuVisible.value = false;
 
+  if (item.related_type === 'study' && item.related_id) {
+    void router.push(`/app/studies/${item.related_id}`);
+    return;
+  }
+
   if (item.type === 'followup_overdue') {
     void router.push({ path: '/app/follow-ups', query: { status: 'overdue' } });
     return;
@@ -497,8 +502,8 @@ onUnmounted(() => {
   border-radius: var(--app-radius-xl);
   overflow: hidden;
   box-shadow: var(--app-shadow-lg);
-  backdrop-filter: blur(var(--app-glass-blur-lg));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-lg));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-lg));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-lg));
 }
 
 .notification-panel--dark {

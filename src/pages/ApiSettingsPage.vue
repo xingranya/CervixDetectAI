@@ -279,7 +279,7 @@
                   <q-item tag="label" v-ripple>
                     <q-item-section>
                       <q-item-label>启用全渠道通知</q-item-label>
-                      <q-item-label caption>分析完成、异常预警等重要消息</q-item-label>
+                      <q-item-label caption>站内通知、分析完成、异常预警等重要消息</q-item-label>
                     </q-item-section>
                     <q-item-section side top>
                       <q-toggle v-model="preferences.notifications.enable" color="primary" />
@@ -294,6 +294,13 @@
                             >通知渠道</q-item-label
                           >
                           <div class="q-gutter-sm">
+                            <q-checkbox
+                              v-model="preferences.notifications.channels"
+                              val="in_app"
+                              label="站内通知"
+                              dense
+                              size="sm"
+                            />
                             <q-checkbox
                               v-model="preferences.notifications.channels"
                               val="email"
@@ -1413,7 +1420,7 @@ const modelOptions = [
 const preferences = ref({
   notifications: {
     enable: true,
-    channels: ['email', 'browser'] as string[],
+    channels: ['in_app', 'email', 'browser'] as string[],
     types: ['analysis', 'alert', 'security'] as string[],
     dndMode: false,
   },
@@ -1719,7 +1726,7 @@ const resetPreferences = () => {
   preferences.value = {
     notifications: {
       enable: true,
-      channels: ['email', 'browser'],
+      channels: ['in_app', 'email', 'browser'],
       types: ['analysis', 'alert', 'security'],
       dndMode: false,
     },

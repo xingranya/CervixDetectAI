@@ -572,8 +572,8 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  backdrop-filter: blur(var(--app-glass-blur-lg));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-lg));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-lg));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-lg));
 
   &::before {
     content: '';
@@ -1263,8 +1263,8 @@ onUnmounted(() => {
 .chat-input-area {
   padding: 14px 18px 18px;
   background: var(--chat-input-bg);
-  backdrop-filter: blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   border-top: 1px solid var(--chat-input-border);
 
   .input-controls {

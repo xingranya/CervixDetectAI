@@ -21,8 +21,8 @@
 .app-glass-surface {
   background: var(--app-glass-bg);
   border: 1px solid var(--app-glass-border);
-  backdrop-filter: blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
 }
 
 // 提升层容器（适用于主卡片）

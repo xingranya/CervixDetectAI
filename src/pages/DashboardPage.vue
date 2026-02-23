@@ -644,8 +644,8 @@ onUnmounted(() => {
   background: var(--app-glass-bg-light);
   border: 1px solid var(--app-glass-border-light);
   border-radius: var(--app-radius-lg);
-  backdrop-filter: blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   color: #0c4a6e;
   transition:
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
@@ -915,8 +915,8 @@ body.body--dark {
     background: var(--app-glass-bg);
     border-color: var(--app-glass-border);
     color: var(--app-text-primary);
-    backdrop-filter: blur(var(--app-glass-blur-md));
-    -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   }
 
   .modern-card {

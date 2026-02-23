@@ -29,7 +29,8 @@
   background: #f9fafb;
   color: #6b7280;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
-  backdrop-filter: blur(6px);
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(6px);
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(6px);
 }
 
 .app-footer__content {

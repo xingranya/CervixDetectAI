@@ -11,8 +11,8 @@
   --app-text-primary: #1e293b;
   --app-text-secondary: #64748b;
   --app-text-tertiary: #94a3b8;
-  --app-border-default: #e2e8f0;
-  --app-border-light: #f1f5f9;
+  --app-border-default: #d1dbe8;
+  --app-border-light: #e3e9f2;
   --app-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --app-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
@@ -31,18 +31,18 @@
   --app-radius-xl: 18px;
 
   // 玻璃效果（中等强度）
-  --app-glass-bg-light: rgba(255, 255, 255, 0.62);
-  --app-glass-bg-dark: rgba(30, 41, 59, 0.56);
-  --app-glass-border-light: rgba(148, 163, 184, 0.38);
-  --app-glass-border-dark: rgba(148, 163, 184, 0.22);
-  --app-glass-saturate-light: 1.48;
-  --app-glass-saturate-dark: 1.12;
+  --app-glass-bg-light: rgba(255, 255, 255, 0.42);
+  --app-glass-bg-dark: rgba(15, 23, 42, 0.36);
+  --app-glass-border-light: rgba(148, 163, 184, 0.55);
+  --app-glass-border-dark: rgba(148, 163, 184, 0.3);
+  --app-glass-saturate-light: 1.9;
+  --app-glass-saturate-dark: 1.45;
   --app-glass-bg: var(--app-glass-bg-light);
   --app-glass-border: var(--app-glass-border-light);
   --app-glass-saturate: var(--app-glass-saturate-light);
-  --app-glass-blur-sm: 6px;
-  --app-glass-blur-md: 10px;
-  --app-glass-blur-lg: 14px;
+  --app-glass-blur-sm: 10px;
+  --app-glass-blur-md: 16px;
+  --app-glass-blur-lg: 24px;
 
   // 过渡
   --app-transition-fast: 0.15s ease;
@@ -98,12 +98,12 @@
   // Quasar 组件覆盖令牌
   --app-card-bg: #ffffff;
   --app-page-bg: #f8fafc;
-  --app-separator-color: #e2e8f0;
+  --app-separator-color: #dde5ef;
   --app-item-hover-bg: rgba(0, 0, 0, 0.04);
   --app-field-control-color: #1e293b;
   --app-field-label-color: #64748b;
-  --app-field-border-color: #cbd5e1;
-  --app-field-border-hover: #94a3b8;
+  --app-field-border-color: #c4d1e1;
+  --app-field-border-hover: #98aec6;
   --app-table-bg: #ffffff;
   --app-table-header-color: #64748b;
   --app-table-hover-bg: rgba(0, 0, 0, 0.02);
@@ -140,8 +140,8 @@
 
   // 边框颜色令牌
   --app-border-blue-2: #93c5fd;
-  --app-border-dashed: #cbd5e1;
-  --app-soft-divider: #e2e8f0;
+  --app-border-dashed: #c6d2e2;
+  --app-soft-divider: #dde5ef;
 
   // 悬浮状态背景
   --app-hover-bg: rgba(0, 0, 0, 0.04);
@@ -154,12 +154,12 @@
 
   // 只读字段
   --app-readonly-bg: #f8fafc;
-  --app-readonly-border: #e2e8f0;
+  --app-readonly-border: #dde5ef;
 
   // 上传区
   --app-upload-bg: #f8fafc;
-  --app-upload-border: #cbd5e1;
-  --app-upload-border-hover: #94a3b8;
+  --app-upload-border: #c4d1e1;
+  --app-upload-border-hover: #98aec6;
   --app-upload-accent-hover-bg: #e8f6f5;
   --app-upload-accent-hover-border: #8bb7c2;
 
@@ -168,7 +168,7 @@
 
   // 页脚
   --app-footer-bg: #f8fafc;
-  --app-footer-border: #e2e8f0;
+  --app-footer-border: #dde5ef;
 }
 
 // 暗色模式覆盖（仅在 body.body--dark 时生效）
@@ -189,6 +189,9 @@ body.body--dark {
   --app-glass-bg: var(--app-glass-bg-dark);
   --app-glass-border: var(--app-glass-border-dark);
   --app-glass-saturate: var(--app-glass-saturate-dark);
+  --app-glass-blur-sm: 12px;
+  --app-glass-blur-md: 20px;
+  --app-glass-blur-lg: 30px;
 
   // Quasar 组件暗色令牌
   --app-card-bg: #1e1e1e;

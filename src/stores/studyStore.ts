@@ -62,6 +62,27 @@ function resolveLatestTaskStatus(
   return normalizeLatestTaskStatus(latest?.status);
 }
 
+/**
+ * 统一归一化置信度
+ * 兼容 number / string（DECIMAL）/ 百分比数值（0-100）
+ */
+function normalizeConfidenceValue(value: unknown): number | undefined {
+  if (value === null || value === undefined) return undefined;
+
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num) || num < 0) return undefined;
+
+  // 兼容历史百分比格式（例如 85）
+  if (num > 1 && num <= 100) {
+    return num / 100;
+  }
+
+  // 防御式保护：超过 100 的异常值直接丢弃
+  if (num > 100) return undefined;
+
+  return num;
+}
+
 export interface Study {
   id: number;
   study_id: string;
@@ -131,7 +152,33 @@ export const useStudyStore = defineStore('study', {
           // Map backend data to frontend format
           this.studies = response.data.studies.map((study: StudyRaw) => {
             const imageUrl = getImageUrl(study.images?.[0]?.file_path);
-            const latestTaskStatus = resolveLatestTaskStatus(study.analysis_tasks);
+            const rawLatestTaskStatus = resolveLatestTaskStatus(study.analysis_tasks);
+            const normalizedConfidence = normalizeConfidenceValue(
+              study.analysis_results?.[0]?.confidence,
+            );
+            const hasAnalysisResult = Boolean(study.analysis_results?.[0]);
+            let latestTaskStatus = rawLatestTaskStatus;
+            let normalizedStatus = study.status;
+
+            // 优先级：只要已有分析结果，前端一律视为 completed
+            if (hasAnalysisResult) {
+              normalizedStatus = 'completed';
+              if (
+                !rawLatestTaskStatus ||
+                rawLatestTaskStatus === 'PENDING' ||
+                rawLatestTaskStatus === 'PROCESSING'
+              ) {
+                latestTaskStatus = 'SUCCESS';
+              }
+            } else if (
+              rawLatestTaskStatus === 'PENDING' ||
+              rawLatestTaskStatus === 'PROCESSING'
+            ) {
+              normalizedStatus = 'processing';
+            } else if (rawLatestTaskStatus === 'FAILED' && normalizedStatus === 'processing') {
+              normalizedStatus = 'failed';
+            }
+
             return {
               id: study.id,
               study_id: study.study_id,
@@ -139,7 +186,7 @@ export const useStudyStore = defineStore('study', {
               patientName: study.patient?.name || '',
               patientId: study.patient?.patient_id || '',
               studyDate: study.study_date,
-              status: study.status,
+              status: normalizedStatus,
               study_type: study.study_type,
               modality: study.study_type,
               bodyPart: '宫颈',
@@ -153,7 +200,7 @@ export const useStudyStore = defineStore('study', {
               downloaded_at: study.downloaded_at,
               diagnosis: study.analysis_results?.[0]?.diagnosis,
               riskLevel: study.analysis_results?.[0]?.risk_level,
-              confidence: study.analysis_results?.[0]?.confidence,
+              confidence: normalizedConfidence,
               latestTaskStatus,
             };
           });
@@ -191,18 +238,40 @@ export const useStudyStore = defineStore('study', {
 
           // 获取最新的分析结果
           const latestResult = response.data.study.analysis_results?.[0];
-          const latestTaskStatus = resolveLatestTaskStatus(response.data.study.analysis_tasks);
+          const normalizedLatestConfidence = normalizeConfidenceValue(latestResult?.confidence);
+          const rawLatestTaskStatus = resolveLatestTaskStatus(response.data.study.analysis_tasks);
+          let latestTaskStatus = rawLatestTaskStatus;
           let analysisResult: AnalysisResult | undefined;
 
           if (latestResult) {
             analysisResult = {
               diagnosis: latestResult.diagnosis || '',
-              confidence: latestResult.confidence || 0,
+              confidence: normalizedLatestConfidence ?? 0,
               recommendations: latestResult.recommendations || [],
               suspiciousAreas: latestResult.suspicious_areas || [],
               biomarkers: latestResult.biomarkers,
               detailedReport: latestResult.detailed_report,
             };
+          }
+
+          const hasAnalysisResult = Boolean(analysisResult);
+          let normalizedStatus = response.data.study.status;
+          if (hasAnalysisResult) {
+            normalizedStatus = 'completed';
+            if (
+              !rawLatestTaskStatus ||
+              rawLatestTaskStatus === 'PENDING' ||
+              rawLatestTaskStatus === 'PROCESSING'
+            ) {
+              latestTaskStatus = 'SUCCESS';
+            }
+          } else if (
+            rawLatestTaskStatus === 'PENDING' ||
+            rawLatestTaskStatus === 'PROCESSING'
+          ) {
+            normalizedStatus = 'processing';
+          } else if (rawLatestTaskStatus === 'FAILED' && normalizedStatus === 'processing') {
+            normalizedStatus = 'failed';
           }
 
           const study: Study = {
@@ -212,7 +281,7 @@ export const useStudyStore = defineStore('study', {
             patientName: response.data.study.patient?.name || '',
             patientId: response.data.study.patient?.patient_id || '',
             studyDate: response.data.study.study_date,
-            status: response.data.study.status,
+            status: normalizedStatus,
             study_type: response.data.study.study_type,
             modality: response.data.study.study_type,
             bodyPart: '宫颈',
@@ -228,13 +297,13 @@ export const useStudyStore = defineStore('study', {
             downloaded_at: response.data.study.downloaded_at,
             diagnosis: latestResult?.diagnosis,
             riskLevel: latestResult?.risk_level,
-            confidence: latestResult?.confidence,
+            confidence: normalizedLatestConfidence,
             latestTaskStatus,
           };
 
           // 检查是否有进行中的任务
           const analysisTasks = response.data.study.analysis_tasks;
-          if (analysisTasks && analysisTasks.length > 0) {
+          if (!hasAnalysisResult && analysisTasks && analysisTasks.length > 0) {
             // 按创建时间倒序排列
             const tasks = [...analysisTasks].sort(
               (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),

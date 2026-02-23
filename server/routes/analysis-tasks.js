@@ -15,6 +15,7 @@ const {
 } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
+const { createAnalysisNotifications } = require('../services/notificationService');
 
 const router = express.Router();
 
@@ -809,6 +810,23 @@ router.post('/:id/result', authenticate, async (req, res) => {
         progress: 100,
         completed_at: new Date(),
       });
+
+      // 创建站内通知（不影响主流程）
+      try {
+        const relatedStudy = await Study.findByPk(task.study_id, {
+          attributes: ['id', 'study_id'],
+        });
+        await createAnalysisNotifications({
+          userId: task.user_id,
+          studyId: task.study_id,
+          studyCode: relatedStudy?.study_id,
+          diagnosis: finalDiagnosis,
+          riskLevel: risk_level,
+          confidence: finalConfidence,
+        });
+      } catch (notifyError) {
+        console.error('创建分析通知失败:', notifyError.message);
+      }
 
       res.status(201).json({
         success: true,

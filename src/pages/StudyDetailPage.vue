@@ -488,7 +488,7 @@
         <!-- 分析日志（移到右侧列） -->
 
         <!-- AI Control Panel -->
-        <q-card class="q-mb-md shadow-3 rounded-borders study-surface-card">
+        <q-card class="q-mb-md shadow-3 rounded-borders study-surface-card analysis-progress">
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
           >
@@ -658,7 +658,7 @@
               </div>
             </div>
 
-            <div class="q-mt-md">
+            <div class="q-mt-md analysis-progress-inline">
               <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">进度</div>
               <q-linear-progress
                 :value="progress / 100"
@@ -1095,11 +1095,27 @@ const startAnalysis = async () => {
   }
 };
 
-const stopAnalysis = () => {
+const clearPollingTaskStatus = () => {
   if (pollingIntervalId) {
     clearInterval(pollingIntervalId);
     pollingIntervalId = null;
   }
+};
+
+const completeAnalysisFromResult = (message?: string) => {
+  clearPollingTaskStatus();
+  currentTaskId.value = null;
+  isAnalyzing.value = false;
+  progress.value = 100;
+  progressStatus.value = '分析完成';
+  if (message) {
+    addLog(message, 100);
+  }
+};
+
+const stopAnalysis = () => {
+  clearPollingTaskStatus();
+  currentTaskId.value = null;
   isAnalyzing.value = false;
   progressStatus.value = '已停止';
   addLog('分析已手动停止');
@@ -1157,8 +1173,8 @@ const startPollingTaskStatus = (taskId: string) => {
           }
         }
       } else if (task.status === 'SUCCESS') {
-        clearInterval(pollingIntervalId!);
-        pollingIntervalId = null;
+        clearPollingTaskStatus();
+        currentTaskId.value = null;
         progressStatus.value = '分析完成';
         addLog('分析完成，正在加载结果...', 99);
 
@@ -1196,8 +1212,8 @@ const startPollingTaskStatus = (taskId: string) => {
           }
         }, 500);
       } else if (task.status === 'FAILED') {
-        clearInterval(pollingIntervalId!);
-        pollingIntervalId = null;
+        clearPollingTaskStatus();
+        currentTaskId.value = null;
         isAnalyzing.value = false;
         progressStatus.value = '分析失败';
         addLog(`分析失败: ${task.error || '未知错误'}`, 0);
@@ -1239,12 +1255,19 @@ const refreshStudyData = async () => {
       const updatedStudy = await studyStore.loadStudyById(parseInt(studyId as string), true);
       console.log('✅ 病例数据已刷新', updatedStudy);
 
-      // 检查是否有正在进行的任务，如果有则自动开始轮询
-      if (updatedStudy?.status === 'processing' && updatedStudy.taskId) {
+      // 优先级：已有分析结果时，直接视为完成，避免被历史任务状态覆盖
+      if (updatedStudy?.analysisResult && !currentTaskId.value) {
+        completeAnalysisFromResult();
+      } else if (updatedStudy?.status === 'processing' && updatedStudy.taskId) {
+        // 检查是否有正在进行的任务，如果有则自动开始轮询
         console.log('🔄 检测到正在进行的任务，恢复轮询:', updatedStudy.taskId);
         isAnalyzing.value = true;
         currentTaskId.value = updatedStudy.taskId;
         startPollingTaskStatus(updatedStudy.taskId);
+      } else {
+        clearPollingTaskStatus();
+        currentTaskId.value = null;
+        isAnalyzing.value = false;
       }
 
       // 强制更新图表
@@ -1256,10 +1279,6 @@ const refreshStudyData = async () => {
     }
   }
 };
-
-onMounted(async () => {
-  await refreshStudyData();
-});
 
 const addLog = (message: string, confidence?: number) => {
   logs.value.unshift({
@@ -1363,9 +1382,14 @@ const updateChart = () => {
 // 监听分析结果变化，自动更新图表
 watch(
   () => analysisResult.value,
-  () => {
+  (result) => {
     console.log('📊 分析结果变化，更新图表');
     updateChart();
+
+    // 只要有结果就结束“分析中”态，避免显示与数据不一致
+    if (result && isAnalyzing.value && !currentTaskId.value) {
+      completeAnalysisFromResult('检测到分析结果，已同步完成状态');
+    }
   },
   { deep: true },
 );
@@ -1410,8 +1434,11 @@ onMounted(async () => {
       console.log('📊 分析结果:', analysisResult.value);
       console.log('📊 完整病例数据:', study.value);
 
-      // 检查是否有进行中的分析任务
-      if (study.value?.status === 'processing') {
+      // 已有结果时优先结束分析态，避免旧任务状态造成误判
+      if (analysisResult.value) {
+        completeAnalysisFromResult();
+      } else if (study.value?.status === 'processing') {
+        // 检查是否有进行中的分析任务
         console.log('🔍 检测到病例状态为 processing，查找分析任务...');
 
         try {
@@ -1625,6 +1652,61 @@ onUnmounted(() => {
   height: 100%;
 }
 
+/* 右侧分析面板：增强玻璃质感与层次 */
+.analysis-progress {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--app-border-default) 72%, #1976d2 28%);
+  background:
+    radial-gradient(110% 80% at 0% -10%, rgba(25, 118, 210, 0.14), transparent 60%),
+    radial-gradient(120% 90% at 100% 0%, rgba(56, 189, 248, 0.12), transparent 62%),
+    var(--app-glass-bg);
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-sm));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-sm));
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.analysis-progress::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.02) 48%,
+    rgba(15, 23, 42, 0.04) 100%
+  );
+}
+
+.analysis-progress :deep(.q-card__section) {
+  position: relative;
+  z-index: 1;
+}
+
+.analysis-progress .bg-white {
+  background-color: rgba(255, 255, 255, 0.64) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.analysis-progress .bg-grey-1 {
+  background-color: rgba(248, 250, 252, 0.66) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.analysis-progress-inline {
+  padding: 10px 12px;
+  border: 1px solid var(--app-border-light);
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.36);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 /* 现代化影像预览样式 */
 .image-panel-wrapper {
   transition:
@@ -1708,8 +1790,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-md));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
 }
 
 .progress-percentage {
@@ -1836,6 +1918,42 @@ body.body--dark {
   // 以下规则为 StudyDetailPage 页面特有，全局 app.scss 未覆盖
   .annotated-view-container {
     border-color: var(--app-border-default) !important;
+  }
+
+  .analysis-progress {
+    border-color: color-mix(in srgb, var(--app-border-default) 75%, #4da3ff 25%);
+    background:
+      radial-gradient(120% 92% at 0% -12%, rgba(25, 118, 210, 0.22), transparent 62%),
+      radial-gradient(120% 90% at 100% 0%, rgba(56, 189, 248, 0.18), transparent 64%),
+      rgba(15, 23, 42, 0.42);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    box-shadow:
+      0 14px 30px rgba(2, 8, 23, 0.52),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .analysis-progress::before {
+    background: linear-gradient(
+      145deg,
+      rgba(148, 163, 184, 0.2) 0%,
+      rgba(148, 163, 184, 0.02) 48%,
+      rgba(15, 23, 42, 0.16) 100%
+    );
+  }
+
+  .analysis-progress .bg-white {
+    background-color: rgba(15, 23, 42, 0.48) !important;
+    border-bottom-color: var(--app-border-default) !important;
+  }
+
+  .analysis-progress .bg-grey-1 {
+    background-color: rgba(15, 23, 42, 0.34) !important;
+  }
+
+  .analysis-progress-inline {
+    background: rgba(15, 23, 42, 0.34);
+    border-color: var(--app-border-default);
   }
 
   .upload-area:hover {

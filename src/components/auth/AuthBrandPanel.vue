@@ -480,7 +480,8 @@ onBeforeUnmount(() => {
 /* HUD Dashboard */
 .hud-dashboard {
   background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 20px;
   padding: 24px;

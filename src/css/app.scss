@@ -12,7 +12,7 @@
 
 .q-card {
   background: var(--app-card-bg);
-  border: 1px solid var(--app-border-default);
+  border: 1px solid var(--app-border-light);
   border-radius: var(--app-radius-lg);
   box-shadow: var(--app-shadow-sm);
   transition:
@@ -21,23 +21,40 @@
     background-color var(--app-transition-normal);
 }
 
+.q-card--bordered,
+.q-card.q-card--bordered {
+  border-color: var(--app-border-default) !important;
+}
+
 .q-menu {
-  background: var(--app-surface-elevated);
-  border: 1px solid var(--app-border-default);
+  background: var(--app-glass-bg);
+  border: 1px solid var(--app-glass-border);
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-lg);
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   overflow: hidden;
 }
 
 .q-dialog__inner > .q-card {
-  background: var(--app-dialog-bg);
-  border: 1px solid var(--app-border-default);
+  background: var(--app-glass-bg);
+  border: 1px solid var(--app-glass-border);
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-lg);
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
 }
 
 .q-field--outlined .q-field__control {
   border-radius: var(--app-radius-md);
+}
+
+.q-field--outlined .q-field__control:before {
+  border-color: var(--app-field-border-color);
+}
+
+.q-field--outlined .q-field__control:hover:before {
+  border-color: var(--app-field-border-hover);
 }
 
 .q-btn:not(.q-btn--round):not(.q-btn--fab):not(.q-btn--rectangle) {
@@ -46,6 +63,16 @@
 
 .q-chip {
   border-radius: 999px;
+}
+
+.q-separator {
+  background: var(--app-separator-color);
+  opacity: 0.78;
+}
+
+.q-list--bordered,
+.q-table--bordered {
+  border-color: var(--app-border-light);
 }
 
 // =============================================================
@@ -90,8 +117,10 @@ body.body--dark {
 
   // q-menu / q-dialog 浮层统一深色
   .q-menu {
-    background: var(--app-surface-elevated);
-    border-color: var(--app-border-default);
+    background: var(--app-glass-bg);
+    border-color: var(--app-glass-border);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   }
 
   // q-tab-panels 面板背景
@@ -171,8 +200,10 @@ body.body--dark {
 
   // q-dialog 弹窗
   .q-dialog__inner > .q-card {
-    background: var(--app-dialog-bg);
-    border-color: var(--app-border-default);
+    background: var(--app-glass-bg);
+    border-color: var(--app-glass-border);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   }
 
   // ---- 通用颜色工具类覆盖（Quasar 工具类使用 !important，故此处保持） ----

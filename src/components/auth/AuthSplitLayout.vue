@@ -155,7 +155,8 @@
 
   .auth-split-layout__workspace-panel {
     background: var(--auth-workspace-overlay);
-    backdrop-filter: blur(14px);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
   }
 }
 
@@ -191,7 +192,8 @@ body.body--dark .auth-background-glow {
 @media (min-width: 1024px) {
   body.body--dark .auth-split-layout__workspace-panel {
     background: var(--auth-workspace-overlay);
-    backdrop-filter: blur(14px);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
   }
 }
 </style>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const qwenService = require('./qwenService');
 const { Study, AnalysisTask, AnalysisResult, sequelize } = require('../models');
+const { createAnalysisNotifications } = require('./notificationService');
 
 // 风险等级配置（关键词 -> 等级映射）
 const RISK_LEVEL_CONFIG = [
@@ -35,6 +36,7 @@ async function processTask(analysisTaskId, imagePath, studyId) {
 
     // 获取病例信息，以获取检查方式
     const study = await Study.findByPk(studyId);
+    const taskRecord = await AnalysisTask.findByPk(analysisTaskId);
     const modality = study?.study_type || '巴氏染色涂片（Pap Smear）';
     console.log(`🔬 [AnalysisService] 检查方式: ${modality}`);
 
@@ -106,6 +108,20 @@ async function processTask(analysisTaskId, imagePath, studyId) {
 
         await Study.update({ status: 'completed' }, { where: { id: studyId }, transaction: t });
       });
+
+      // 创建站内通知（不影响主流程）
+      try {
+        await createAnalysisNotifications({
+          userId: taskRecord?.user_id || study?.user_id,
+          studyId,
+          studyCode: study?.study_id,
+          diagnosis: result.diagnosis,
+          riskLevel,
+          confidence: result.confidence,
+        });
+      } catch (notifyError) {
+        console.error('[AnalysisService] 创建站内通知失败:', notifyError.message);
+      }
     } catch (aiError) {
       clearInterval(progressInterval);
       throw aiError;

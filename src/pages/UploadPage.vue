@@ -872,8 +872,8 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(var(--app-glass-blur-sm));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur-sm));
+  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-sm));
+  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-sm));
   transition:
     border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
     background-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
