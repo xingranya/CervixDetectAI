@@ -13,10 +13,11 @@
 5. [软删除实现](#软删除实现)
 6. [数据模型说明](#数据模型说明)
 7. [API端点参考](#api端点参考)
-8. [错误响应格式](#错误响应格式)
+8. [批量创建任务（新增）](#批量创建任务新增)
+9. [错误响应格式](#错误响应格式)
 
 ## 简介
-AI分析任务API提供了一套完整的分析任务管理功能，支持创建、查询、更新和删除分析任务。该API专为宫颈癌AI检测系统设计，确保用户能够安全、高效地管理其医学影像分析任务。
+AI分析任务API提供了一套完整的分析任务管理功能，支持创建、批量创建、查询、更新和删除分析任务。该API专为宫颈癌AI检测系统设计，确保用户能够安全、高效地管理其医学影像分析任务。
 
 **Section sources**
 - [analysis-tasks.js](file://server/routes/analysis-tasks.js#L1-L405)
@@ -200,6 +201,79 @@ Database-->>Client : 返回创建的任务
 
 **Section sources**
 - [analysis-tasks.js](file://server/routes/analysis-tasks.js#L12-L80)
+
+### 批量创建任务（新增）
+上传多张影像并批量创建分析任务，支持“部分成功”返回。
+
+#### 请求信息
+- **HTTP方法**: POST
+- **URL路径**: /api/analysis-tasks/batch
+- **请求头**:
+  - Authorization: Bearer <token>
+  - Content-Type: multipart/form-data
+
+#### 请求参数
+| 参数名 | 位置 | 类型 | 是否必填 | 描述 |
+|-------|------|------|---------|------|
+| images | form-data | file[] | 是 | 影像文件数组，最多10张 |
+| patientName | form-data | string | 是 | 患者姓名 |
+| patientId | form-data | string | 是 | 患者业务号 |
+| studyDate | form-data | string | 是 | 检查日期（ISO date） |
+| modality | form-data | string | 是 | 检查方式 |
+| description | form-data | string | 否 | 检查描述 |
+| priority | form-data | string | 否 | 优先级（normal/urgent/emergency） |
+| model_version | form-data | string | 否 | 模型版本 |
+
+#### 响应体JSON Schema
+```json
+{
+  "success": true,
+  "message": "批量任务创建完成，成功 2 条，失败 1 条",
+  "data": {
+    "batchId": "batch_xxx",
+    "summary": {
+      "total": 3,
+      "created": 2,
+      "failed": 1
+    },
+    "items": [
+      {
+        "index": 0,
+        "originalFilename": "a.jpg",
+        "studyDbId": 101,
+        "studyId": "study_xxx",
+        "imageId": 501,
+        "taskId": "task_xxx",
+        "status": "PENDING"
+      },
+      {
+        "index": 1,
+        "originalFilename": "b.jpg",
+        "status": "FAILED",
+        "error": "创建任务失败"
+      }
+    ]
+  }
+}
+```
+
+#### HTTP状态码
+| 状态码 | 说明 | 错误信息示例 |
+|-------|------|------------|
+| 200 | 批量创建完成（可部分成功） | "批量任务创建完成，成功 2 条，失败 1 条" |
+| 400 | 请求参数错误 | "请至少上传一张影像" |
+| 401 | 未认证 | "未提供认证令牌" |
+| 500 | 服务器错误 | "批量创建分析任务失败" |
+
+#### 行为说明
+- 每个文件独立创建 `Study`、`StudyImage`、`AnalysisTask`，单个失败不影响其它文件。
+- 成功项会异步触发分析流程，不阻塞接口响应。
+- 失败场景会清理对应上传文件，减少无效文件残留。
+
+**Section sources**
+- [analysis-tasks.js](file://server/routes/analysis-tasks.js#L303-L487)
+- [api.ts](file://src/services/api.ts#L460-L486)
+- [openapi.yaml](file://server/docs/openapi.yaml#L1868-L1900)
 
 ### 获取分析任务列表
 获取分析任务的分页列表。

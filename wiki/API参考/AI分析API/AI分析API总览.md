@@ -27,7 +27,7 @@
 ## 核心端点
 系统提供了两套互补的API接口，分别用于处理图像上传和管理分析任务。
 
-第一套接口（`/api/analyze`）专为图像上传和快速状态查询设计，简化了前端集成流程。第二套接口（`/api/analysis-tasks`）则提供了对分析任务的完整CRUD操作，适用于需要精细控制任务生命周期的管理场景。
+第一套接口（`/api/analyze`）专为单图上传和快速状态查询设计，简化了前端集成流程。第二套接口（`/api/analysis-tasks`）提供了单任务 CRUD 与批量上传创建任务能力，适用于需要精细控制任务生命周期和批次管理的场景。
 
 ```mermaid
 graph TD
@@ -37,6 +37,7 @@ B --> D[上传图像并创建任务]
 B --> E[查询任务状态]
 B --> F[根据studyId查询结果]
 C --> G[创建分析任务]
+C --> M[批量上传并创建任务]
 C --> H[获取任务列表]
 C --> I[获取任务详情]
 C --> J[更新任务状态]
@@ -46,7 +47,7 @@ C --> L[删除分析任务]
 
 **Diagram sources**
 - [analyze.js](file://server/routes/analyze.js#L48-L377)
-- [analysis-tasks.js](file://server/routes/analysis-tasks.js#L9-L404)
+- [analysis-tasks.js](file://server/routes/analysis-tasks.js#L9-L487)
 
 ## 分析任务状态机
 分析任务在其生命周期中会经历一系列预定义的状态。这些状态构成了一个清晰的状态机，确保了任务处理的可预测性和可追踪性。
@@ -187,6 +188,26 @@ SaveResult --> UpdateStatus["更新任务状态"]
 | **请求体JSON Schema** | `{ "study_id": { "type": "integer" }, "model_name": { "type": "string" }, "model_version": { "type": "string" }, "priority": { "type": "string", "enum": ["low", "normal", "high"] } }` |
 | **响应体JSON Schema** | `{ "success": "boolean", "message": "string", "data": { "task": { ... } } }` |
 | **可能的HTTP状态码** | `201` (创建成功), `400` (请求错误), `403` (无权限), `404` (资源不存在), `500` (服务器错误) |
+| **错误信息** | `{ "success": false, "message": "string", "error?": "string" }` |
+
+### 批量上传并创建分析任务
+上传多张影像并批量创建分析任务，返回批次汇总与逐文件结果，支持“部分成功”。
+
+**Section sources**
+- [analysis-tasks.js](file://server/routes/analysis-tasks.js#L303-L487)
+- [api.ts](file://src/services/api.ts#L460-L486)
+- [openapi.yaml](file://server/docs/openapi.yaml#L1868-L1900)
+
+| 属性 | 说明 |
+| :--- | :--- |
+| **HTTP方法** | `POST` |
+| **URL路径** | `/api/analysis-tasks/batch` |
+| **请求头** | `Authorization: Bearer <token>`, `Content-Type: multipart/form-data` |
+| **请求参数** | 无（使用请求体） |
+| **请求体** | `multipart/form-data`，包含 `images[]`（最多10张）、`patientName`、`patientId`、`studyDate`、`modality`，以及可选的 `description`、`priority`、`model_version` |
+| **请求体JSON Schema** | 不适用（非JSON格式） |
+| **响应体JSON Schema** | `{ "success": true, "data": { "batchId": "string", "summary": { "total": "number", "created": "number", "failed": "number" }, "items": [ { "index": "number", "originalFilename": "string", "studyDbId?": "number", "studyId?": "string", "imageId?": "number", "taskId?": "string", "status": "'PENDING'|'FAILED'", "error?": "string" } ] } }` |
+| **可能的HTTP状态码** | `200` (完成，可部分成功), `400` (请求错误), `500` (服务器错误) |
 | **错误信息** | `{ "success": false, "message": "string", "error?": "string" }` |
 
 ### 获取分析任务列表
