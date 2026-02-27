@@ -51,27 +51,22 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
   width: 100%;
   max-width: 460px;
   box-sizing: border-box;
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  /* Light Mode Glass Card */
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(203, 213, 225, 0.85);
+  background: var(--auth-surface);
+  border: 1px solid var(--auth-border);
   border-radius: 24px;
-  box-shadow:
-    0 22px 42px -10px rgba(148, 163, 184, 0.18),
-    0 0 0 1px rgba(148, 163, 184, 0.08);
-  color: #1e293b;
-  padding: 32px 28px;
+  box-shadow: var(--auth-shadow-soft);
+  color: var(--auth-text-strong);
+  padding: 34px 28px 30px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+    transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
+    box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default);
 }
 
 .auth-workspace-shell__mobile-logo {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: flex;
   justify-content: center;
 }
@@ -81,44 +76,64 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
   height: 48px;
 }
 
+.auth-workspace-shell__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .auth-workspace-shell__title-block {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .auth-workspace-shell__title {
   margin: 0;
-  font-size: 1.82rem;
-  line-height: 1.15;
-  font-weight: 760;
-  letter-spacing: -0.015em;
-  color: #0f172a;
+  font-size: 2.02rem;
+  line-height: 1.08;
+  font-weight: 820;
+  letter-spacing: -0.02em;
+  color: var(--auth-text-strong);
+  text-wrap: balance;
+}
+
+.auth-workspace-shell__title::after {
+  content: '';
+  display: block;
+  width: 52px;
+  height: 3px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--auth-primary-500), rgba(37, 99, 235, 0.35));
 }
 
 .auth-workspace-shell__subtitle {
   margin: 0;
-  padding: 8px 14px;
+  padding: 7px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(59, 130, 246, 0.24);
+  border: 1px solid rgba(37, 99, 235, 0.24);
   background: linear-gradient(135deg, rgba(219, 234, 254, 0.68), rgba(239, 246, 255, 0.92));
-  color: #1d4ed8;
-  font-size: 0.85rem;
+  color: var(--auth-primary-600);
+  font-size: 0.88rem;
   line-height: 1.3;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 92%;
+  text-wrap: balance;
 }
 
 .auth-workspace-shell__subtitle-icon {
-  color: #2563eb;
+  color: var(--auth-primary-500);
 }
 
 .auth-workspace-shell__content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 2px;
 }
 
 .auth-workspace-shell__footer {
@@ -131,15 +146,13 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
    DARK MODE OVERRIDES (Quasar body--dark)
    ========================================= */
 body.body--dark .auth-workspace-shell {
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  box-shadow:
-    0 20px 40px -8px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(148, 163, 184, 0.08);
+  background: var(--auth-surface);
+  border-color: var(--auth-border);
+  box-shadow: var(--auth-shadow-soft);
 }
 
 body.body--dark .auth-workspace-shell__title {
-  color: #f8fafc;
+  color: var(--auth-text-strong);
   text-shadow: 0 4px 12px rgba(14, 116, 144, 0.22);
 }
 
@@ -155,8 +168,7 @@ body.body--dark .auth-workspace-shell__subtitle-icon {
 
 @media (max-width: 1023px) {
   .auth-workspace-shell {
-    max-height: none;
-    overflow: visible;
+    max-width: 100%;
   }
 }
 
@@ -164,24 +176,34 @@ body.body--dark .auth-workspace-shell__subtitle-icon {
   .auth-workspace-shell {
     width: 100%;
     max-width: 100%;
-    max-height: none;
-    overflow: visible;
-    padding: 16px 10px;
-    border-radius: 16px;
+    padding: 18px 10px 16px;
+    border-radius: var(--auth-radius-card);
+    gap: 18px;
+  }
+
+  .auth-workspace-shell__mobile-logo {
+    margin-bottom: 12px;
   }
 
   .auth-workspace-shell__title {
-    font-size: 1.35rem;
+    font-size: 1.7rem;
+    line-height: 1.12;
+  }
+
+  .auth-workspace-shell__title::after {
+    width: 44px;
+    margin-top: 8px;
   }
 
   .auth-workspace-shell__subtitle {
     width: 100%;
     justify-content: center;
     text-align: center;
-    padding: 6px 8px;
-    font-size: 0.74rem;
+    padding: 7px 10px;
+    font-size: 0.8rem;
     line-height: 1.25;
     white-space: normal;
+    max-width: 100%;
   }
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 认证页面双栏布局骨架 - Modern Medical Tech Edition
- * - 桌面端：品牌区 + 工作台区 (55/45 Split)
+ * - 桌面端：品牌区 + 工作台区 (52/48 Split)
  * - 移动端：仅工作台区
  */
 </script>
@@ -52,10 +52,10 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(56, 189, 248, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.02) 1px, transparent 1px);
   background-size: 40px 40px;
-  opacity: 0.9;
+  opacity: 0.56;
   pointer-events: none;
   z-index: 0;
 }
@@ -65,8 +65,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.1), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.05), transparent 40%);
+    radial-gradient(circle at 16% 20%, rgba(37, 99, 235, 0.16), transparent 42%),
+    radial-gradient(circle at 86% 80%, rgba(56, 189, 248, 0.08), transparent 45%);
   pointer-events: none;
   z-index: 0;
 }
@@ -110,6 +110,11 @@
     overflow-y: auto;
   }
 
+  .auth-background-mesh,
+  .auth-background-glow {
+    display: none;
+  }
+
   .auth-split-layout__workspace-panel {
     align-items: center;
     justify-content: center;
@@ -143,7 +148,7 @@
 
 @media (min-width: 1024px) {
   .auth-split-layout {
-    grid-template-columns: 55fr 45fr;
+    grid-template-columns: 52fr 48fr;
   }
 
   .auth-split-layout__brand-panel {
@@ -155,8 +160,8 @@
 
   .auth-split-layout__workspace-panel {
     background: var(--auth-workspace-overlay);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   }
 }
 
@@ -178,22 +183,22 @@ body.body--dark .auth-split-layout {
 
 body.body--dark .auth-background-mesh {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
-  opacity: 0.55;
+    linear-gradient(rgba(148, 163, 184, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.028) 1px, transparent 1px);
+  opacity: 0.5;
 }
 
 body.body--dark .auth-background-glow {
   background:
-    radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.1), transparent 40%);
+    radial-gradient(circle at 16% 20%, rgba(37, 99, 235, 0.26), transparent 42%),
+    radial-gradient(circle at 86% 80%, rgba(14, 165, 233, 0.11), transparent 45%);
 }
 
 @media (min-width: 1024px) {
   body.body--dark .auth-split-layout__workspace-panel {
     background: var(--auth-workspace-overlay);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(14px);
+    backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
+    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   }
 }
 </style>

@@ -24,7 +24,7 @@
         <q-tabs
           v-model="loginType"
           dense
-          class="auth-login-tabs bg-grey-2 text-grey-7 rounded-borders q-pa-xs"
+          class="auth-login-tabs"
           active-color="primary"
           indicator-color="transparent"
           align="justify"
@@ -407,7 +407,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AuthBrandPanel from 'src/components/auth/AuthBrandPanel.vue';
 import AuthSplitLayout from 'src/components/auth/AuthSplitLayout.vue';
 import AuthWorkspaceShell from 'src/components/auth/AuthWorkspaceShell.vue';
@@ -418,10 +418,18 @@ import { authAPI } from 'src/services/api';
 import { useAuthStore } from 'stores/authStore';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const $q = useQuasar();
 
-const loginType = ref<'email' | 'phone' | 'employee'>('employee');
+const resolveLoginMode = (mode: unknown): 'email' | 'phone' | 'employee' => {
+  if (mode === 'email' || mode === 'phone' || mode === 'employee') {
+    return mode;
+  }
+  return 'employee';
+};
+
+const loginType = ref<'email' | 'phone' | 'employee'>(resolveLoginMode(route.query.mode));
 const email = ref('');
 const password = ref('');
 const phone = ref('');
@@ -538,6 +546,16 @@ watch(
     }
   },
   { flush: 'post' },
+);
+
+watch(
+  () => route.query.mode,
+  (mode) => {
+    const nextMode = resolveLoginMode(mode);
+    if (nextMode !== loginType.value) {
+      loginType.value = nextMode;
+    }
+  },
 );
 
 const onCaptchaSuccess = (token: string) => {
@@ -853,17 +871,17 @@ onBeforeUnmount(() => {
 .auth-login-brand-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  border: 1px solid var(--app-border-default);
-  border-radius: 12px;
-  background: var(--app-surface-soft, var(--app-surface));
+  gap: 9px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius-card);
+  background: var(--auth-surface-soft);
 }
 
 .auth-login-brand-meta__logo {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -873,111 +891,43 @@ onBeforeUnmount(() => {
 }
 
 .auth-login-brand-meta__name {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   line-height: 1.25;
   font-weight: 700;
-  color: var(--app-text-primary);
+  color: var(--auth-text-strong);
 }
 
 .auth-login-brand-meta__team :deep(strong) {
-  color: var(--q-primary);
+  color: var(--auth-primary-500);
   font-weight: 700;
 }
 
 .auth-login-brand-meta__team {
-  margin: 4px 0 0;
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: var(--app-text-secondary);
-}
-
-.auth-login-cta {
-  color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 52%, #1e40af 100%);
-  border: 1px solid rgba(37, 99, 235, 0.46);
-  box-shadow:
-    0 10px 24px rgba(37, 99, 235, 0.28),
-    0 2px 8px rgba(30, 64, 175, 0.2);
-  transition:
-    transform var(--app-motion-duration-fast) var(--app-motion-ease-default),
-    box-shadow var(--app-motion-duration-fast) var(--app-motion-ease-default),
-    filter var(--app-motion-duration-fast) var(--app-motion-ease-default);
-}
-
-.auth-login-cta :deep(.q-focus-helper),
-.auth-login-cta :deep(.q-btn__overlay) {
-  display: none;
-}
-
-.auth-login-cta:not([disabled]):hover {
-  transform: translateY(-1px);
-  filter: brightness(1.04);
-  box-shadow:
-    0 14px 30px rgba(37, 99, 235, 0.34),
-    0 4px 12px rgba(30, 64, 175, 0.26);
-}
-
-.auth-login-cta:not([disabled]):active {
-  transform: translateY(0);
-  filter: brightness(0.98);
-}
-
-.auth-login-cta[disabled],
-.auth-login-cta:disabled {
-  color: rgba(255, 255, 255, 0.72);
-  background: linear-gradient(135deg, #5b8def 0%, #4d79d8 100%);
-  border-color: rgba(59, 130, 246, 0.26);
-  box-shadow: none;
-  filter: none;
+  margin: 3px 0 0;
+  font-size: 0.73rem;
+  line-height: 1.4;
+  color: var(--auth-text-muted);
 }
 
 @media (max-width: 600px) {
   .auth-login-brand-meta {
-    padding: 8px 10px;
-    gap: 8px;
+    padding: 7px 9px;
+    gap: 7px;
+    margin-bottom: 8px;
   }
 
   .auth-login-brand-meta__logo {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
   .auth-login-brand-meta__name {
-    font-size: 0.86rem;
+    font-size: 0.82rem;
   }
 
   .auth-login-brand-meta__team {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     line-height: 1.35;
-  }
-
-  .auth-login-tabs {
-    padding: 2px !important;
-  }
-
-  .auth-login-tabs :deep(.q-tab) {
-    min-height: 34px;
-    min-width: 0;
-    padding: 0 4px;
-    font-size: 12px;
-  }
-
-  .auth-login-tabs :deep(.q-tab__content) {
-    min-width: 0;
-    gap: 2px;
-  }
-
-  .auth-login-tabs :deep(.q-tab__icon) {
-    margin-right: 2px;
-    font-size: 16px;
-  }
-
-  .auth-login-tabs :deep(.q-tab__label) {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    max-width: 100%;
   }
 }
 </style>

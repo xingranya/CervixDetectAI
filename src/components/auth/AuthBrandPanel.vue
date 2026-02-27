@@ -172,7 +172,7 @@ onMounted(() => {
   realtimeTimer = window.setInterval(() => {
     updateRealtimeData();
     syncAnimatedDisplays();
-  }, 2500);
+  }, 3000);
 });
 
 onBeforeUnmount(() => {
@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
 .logo-box {
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 12px;
   display: flex;
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
 .brand-name {
   font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: #0f172a;
 }
 
@@ -445,14 +445,19 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: #0284c7;
   margin-bottom: 16px;
+  opacity: 1;
 }
 
 .hero-title {
-  font-size: clamp(2.56rem, 3.5vw, 3.4rem);
+  font-size: clamp(2.48rem, 3.4vw, 3.2rem);
   font-weight: 900;
-  line-height: 1.03;
+  line-height: 1.04;
   margin: 0 0 14px;
   letter-spacing: -0.02em;
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
   color: #0f172a;
   text-shadow:
     0 8px 24px rgba(37, 99, 235, 0.18),
@@ -479,7 +484,7 @@ onBeforeUnmount(() => {
 
 /* HUD Dashboard */
 .hud-dashboard {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.62);
   backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -517,10 +522,10 @@ onBeforeUnmount(() => {
 }
 
 .hud-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.82);
 }
 
 .hud-card-head {
@@ -689,11 +694,12 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   flex: 1;
+  margin-top: 0;
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.64);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -702,7 +708,7 @@ onBeforeUnmount(() => {
 }
 
 .feature-card:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .feature-icon-box {
@@ -734,6 +740,7 @@ onBeforeUnmount(() => {
   margin-top: 24px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
   padding-top: 16px;
+  opacity: 1;
 }
 
 .auth-brand-footer-title {
@@ -962,6 +969,7 @@ body.body--dark .copyright-meta-row {
   .auth-brand-panel {
     padding: 30px;
   }
+
   .hero-title {
     font-size: 2rem;
   }
