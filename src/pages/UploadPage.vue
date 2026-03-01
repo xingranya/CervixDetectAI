@@ -193,6 +193,90 @@
             </q-btn>
           </q-card-actions>
         </q-card>
+
+        <q-card flat bordered class="q-mt-md prep-card">
+          <q-card-section class="row items-center q-pb-sm">
+            <q-icon name="fact_check" size="24px" color="primary" class="q-mr-sm" />
+            <div class="text-subtitle1 text-weight-bold">上传前检查</div>
+            <q-space />
+            <q-chip
+              dense
+              :color="uploadReadyRate === 100 ? 'positive' : 'amber-8'"
+              text-color="white"
+              icon="rule"
+            >
+              完成度 {{ uploadReadyRate }}%
+            </q-chip>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pt-md">
+            <q-linear-progress
+              :value="uploadReadyRate / 100"
+              rounded
+              size="8px"
+              color="primary"
+              track-color="grey-3"
+              class="q-mb-md"
+            />
+
+            <div class="row q-col-gutter-md">
+              <div class="col-md-7 col-12">
+                <q-list bordered separator class="prep-list">
+                  <q-item v-for="item in uploadChecklist" :key="item.key">
+                    <q-item-section avatar>
+                      <q-icon
+                        :name="item.passed ? 'check_circle' : 'radio_button_unchecked'"
+                        :color="item.passed ? 'positive' : 'grey-6'"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label :class="item.passed ? 'text-grey-9' : 'text-grey-7'">
+                        {{ item.label }}
+                      </q-item-label>
+                      <q-item-label caption>{{ item.hint }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </div>
+              <div class="col-md-5 col-12">
+                <q-card flat bordered class="prep-tip-card">
+                  <q-card-section class="q-py-sm">
+                    <div class="text-subtitle2 text-weight-bold q-mb-sm">
+                      <q-icon name="lightbulb" color="amber-8" class="q-mr-xs" />
+                      提升识别效果
+                    </div>
+                    <q-list dense>
+                      <q-item class="q-pa-none q-mb-xs">
+                        <q-item-section avatar class="tip-avatar">
+                          <q-icon name="done" color="primary" size="xs" />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label caption>优先上传清晰、无强反光图像</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item class="q-pa-none q-mb-xs">
+                        <q-item-section avatar class="tip-avatar">
+                          <q-icon name="done" color="primary" size="xs" />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label caption>一次批量建议 3-6 张，质量更稳定</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item class="q-pa-none">
+                        <q-item-section avatar class="tip-avatar">
+                          <q-icon name="done" color="primary" size="xs" />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label caption>上传后可在“病例中心”查看批次状态</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
       </div>
 
       <!-- 信息表单区域 -->
@@ -491,6 +575,45 @@ const totalSelectedSize = computed(() =>
   selectedFiles.value.reduce((sum, file) => sum + file.size, 0),
 );
 const remainingUploadSlots = computed(() => Math.max(0, MAX_FILES - selectedFiles.value.length));
+
+const uploadChecklist = computed(() => {
+  const hasPatient = !!selectedPatient.value;
+  const hasFiles = selectedFiles.value.length > 0;
+  const hasModality = !!studyInfo.value.modality;
+  const hasStudyDate = !!studyInfo.value.studyDate;
+
+  return [
+    {
+      key: 'patient',
+      label: '已选择患者',
+      passed: hasPatient,
+      hint: hasPatient ? `当前：${selectedPatient.value?.name || ''}` : '请先在右侧选择或新增患者',
+    },
+    {
+      key: 'files',
+      label: '已选择影像',
+      passed: hasFiles,
+      hint: hasFiles ? `当前 ${selectedFiles.value.length} 张` : '请至少选择 1 张图像',
+    },
+    {
+      key: 'modality',
+      label: '检查方式已填写',
+      passed: hasModality,
+      hint: hasModality ? studyInfo.value.modality : '请填写检查方式',
+    },
+    {
+      key: 'studyDate',
+      label: '检查日期已填写',
+      passed: hasStudyDate,
+      hint: hasStudyDate ? studyInfo.value.studyDate : '请填写检查日期',
+    },
+  ];
+});
+
+const uploadReadyRate = computed(() => {
+  const passedCount = uploadChecklist.value.filter((item) => item.passed).length;
+  return Math.round((passedCount / uploadChecklist.value.length) * 100);
+});
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -846,6 +969,19 @@ const handleAddPatient = async (data: CreatePatientRequest) => {
 .upload-card {
   min-height: 400px;
   border-radius: var(--app-radius-lg);
+}
+
+.prep-card {
+  border-radius: var(--app-radius-lg);
+}
+
+.prep-list {
+  border-radius: var(--app-radius-md);
+}
+
+.prep-tip-card {
+  border-radius: var(--app-radius-md);
+  background: linear-gradient(160deg, #fff 0%, #f7faff 100%);
 }
 
 .tip-avatar {
