@@ -22,6 +22,7 @@ const paymentRouter = require('./routes/payment');
 const chatRouter = require('./routes/chat');
 const followupsRouter = require('./routes/followups');
 const notificationsRouter = require('./routes/notifications');
+const patientInsightsRouter = require('./routes/patient-insights');
 const { testConnection, syncDatabase } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
 const {
@@ -109,6 +110,7 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/followups', followupsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/patient-insights', patientInsightsRouter);
 
 // 使用环境变量配置前端构建路径，便于服务器部署
 const distPath = process.env.FRONTEND_DIST_PATH
