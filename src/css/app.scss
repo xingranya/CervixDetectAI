@@ -76,6 +76,39 @@
 }
 
 // =============================================================
+// 主业务页统一视觉风格
+// =============================================================
+
+.app-gradient-page {
+  background:
+    radial-gradient(circle at 6% 4%, rgba(59, 130, 246, 0.1), transparent 32%),
+    radial-gradient(circle at 92% 2%, rgba(16, 185, 129, 0.1), transparent 28%),
+    var(--app-page-bg, #f8fafc);
+}
+
+.app-accent-tabs {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: var(--app-radius-lg);
+  padding: 6px;
+}
+
+.app-accent-tabs .q-tab {
+  border-radius: 12px;
+  min-height: 40px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.app-accent-tabs .q-tab--active {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.app-accent-tabs .q-tabs__content {
+  gap: 6px;
+}
+
+// =============================================================
 // 全局暗色模式适配
 // 统一处理所有页面的通用暗色覆盖，避免逐页面重复编写
 // 仅在 body.body--dark 时生效，亮色模式完全不受影响
@@ -132,6 +165,23 @@ body.body--dark {
   // q-page 默认背景（排除 auth 页面，其自行管理暗色渐变）
   .q-page:not(.auth-split-layout) {
     background: var(--app-bg-primary);
+  }
+
+  .app-gradient-page {
+    background:
+      radial-gradient(circle at 8% 6%, rgba(59, 130, 246, 0.2), transparent 36%),
+      radial-gradient(circle at 92% 4%, rgba(16, 185, 129, 0.16), transparent 32%),
+      var(--app-bg-primary);
+  }
+
+  .app-accent-tabs {
+    background: rgba(15, 23, 42, 0.45);
+    border-color: rgba(71, 85, 105, 0.45);
+  }
+
+  .app-accent-tabs .q-tab--active {
+    background: rgba(59, 130, 246, 0.28);
+    color: #bfdbfe;
   }
 
   // q-separator 分隔线

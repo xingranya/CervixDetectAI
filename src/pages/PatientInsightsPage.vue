@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md patient-insights-page">
+  <q-page class="q-pa-md app-gradient-page patient-insights-page">
     <div class="row items-center q-col-gutter-md q-mb-md">
       <div class="col-auto">
         <q-btn flat round icon="arrow_back" color="grey-8" @click="goBack">

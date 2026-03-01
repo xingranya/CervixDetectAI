@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-lg bg-grey-1">
+  <q-page class="q-pa-lg app-gradient-page">
     <div class="row q-mb-lg">
       <div class="col-12">
         <div class="text-h4 text-weight-bold q-mb-xs">个人资料</div>

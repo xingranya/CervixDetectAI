@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md app-gradient-page">
     <div class="row items-center q-mb-md">
       <div class="col">
         <div class="text-h5">随访管理</div>

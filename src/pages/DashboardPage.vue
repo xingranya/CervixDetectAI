@@ -1,5 +1,5 @@
 <template>
-  <q-page class="dashboard-page">
+  <q-page class="dashboard-page app-gradient-page">
     <!-- Page Header -->
     <div class="page-header q-mb-md">
       <div class="row items-center">

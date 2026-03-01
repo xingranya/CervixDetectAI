@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md app-gradient-page">
     <!-- 页面标题 -->
     <div class="row items-center q-mb-md">
       <div class="col">
@@ -16,7 +16,7 @@
       <q-tabs
         v-model="activeTab"
         dense
-        class="text-grey"
+        class="text-grey app-accent-tabs"
         active-color="primary"
         indicator-color="primary"
         align="left"

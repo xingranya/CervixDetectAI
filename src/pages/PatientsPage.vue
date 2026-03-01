@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md app-gradient-page">
     <!-- 页面标题 -->
     <div class="row items-center q-mb-md">
       <div class="col">

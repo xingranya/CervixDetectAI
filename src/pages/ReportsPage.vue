@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md app-gradient-page">
     <div class="row">
       <div class="col-12">
         <div class="text-h5 q-mb-md">报告中心</div>

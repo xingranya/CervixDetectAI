@@ -1,19 +1,76 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md settings-page app-gradient-page">
     <!-- Page Header -->
-    <div class="row items-center q-mb-md border-bottom q-pb-md">
+    <div class="row items-center q-mb-sm border-bottom q-pb-md">
       <div class="col">
         <div class="text-h5 flex items-center text-weight-bold text-dark">
           <q-icon name="settings" color="primary" class="q-mr-sm" />
           系统设置
         </div>
+        <div class="text-caption text-grey-7 q-mt-xs">系统控制台 · 全局配置与运维面板</div>
+      </div>
+    </div>
+
+    <q-card flat bordered class="settings-hero q-mb-md">
+      <q-card-section class="row items-center q-col-gutter-md">
+        <div class="col-lg-8 col-md-7 col-xs-12">
+          <div class="text-h6 text-weight-bold q-mb-xs">系统运行概览</div>
+          <div class="text-body2 text-grey-7">
+            通过下方模块统一管理模型表现、参数控制、备份策略与操作留痕。
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-5 col-xs-12">
+          <div class="row q-col-gutter-sm">
+            <div class="col-6">
+              <q-btn
+                outline
+                color="primary"
+                icon="tune"
+                label="参数面板"
+                class="full-width"
+                @click="activeTab = 'system_params'"
+              />
+            </div>
+            <div class="col-6">
+              <q-btn
+                outline
+                color="teal"
+                icon="storage"
+                label="备份中心"
+                class="full-width"
+                @click="activeTab = 'data_backup'"
+              />
+            </div>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <div class="row q-col-gutter-md q-mb-md">
+      <div
+        v-for="item in overviewHighlights"
+        :key="item.key"
+        class="col-lg-3 col-md-6 col-xs-12"
+      >
+        <q-card flat bordered class="overview-card">
+          <q-card-section class="row items-center no-wrap q-pa-md">
+            <q-avatar :color="item.bgColor" :text-color="item.iconColor" size="44px" class="q-mr-md">
+              <q-icon :name="item.icon" />
+            </q-avatar>
+            <div class="col">
+              <div class="text-caption text-grey-7">{{ item.label }}</div>
+              <div class="text-subtitle1 text-weight-bold">{{ item.value }}</div>
+              <div class="text-caption" :class="item.trendClass">{{ item.trend }}</div>
+            </div>
+          </q-card-section>
+        </q-card>
       </div>
     </div>
 
     <q-tabs
       v-model="activeTab"
       dense
-      class="text-grey"
+      class="settings-tabs app-accent-tabs text-grey q-mb-xs"
       active-color="primary"
       indicator-color="primary"
       align="left"
@@ -28,7 +85,7 @@
 
     <q-separator class="q-mb-md" />
 
-    <q-tab-panels v-model="activeTab" animated>
+    <q-tab-panels v-model="activeTab" animated class="settings-panels">
       <!-- User Account Tab -->
       <q-tab-panel name="user_account" class="q-pa-none">
         <div class="row q-col-gutter-lg">
@@ -169,12 +226,12 @@
                   <!-- 基本信息区块 -->
                   <div class="form-section">
                     <div class="form-section-title">基本信息</div>
+                    <div class="profile-form-label">姓名</div>
                     <q-input
                       v-model="profileData.firstName"
                       outlined
-                      label="姓名"
                       placeholder="请输入您的真实姓名"
-                      class="form-input"
+                      class="form-input form-input-lg profile-edit-input"
                     >
                       <template v-slot:prepend>
                         <q-icon name="person" color="grey-6" />
@@ -185,30 +242,32 @@
                   <!-- 联系方式区块 -->
                   <div class="form-section">
                     <div class="form-section-title">联系方式</div>
-                    <div class="row q-col-gutter-lg">
+                    <div class="row q-col-gutter-lg profile-contact-row">
                       <div class="col-md-6 col-12">
+                        <div class="profile-form-label">
+                          邮箱
+                          <span class="profile-form-label__hint">（在下方邮箱安全模块更换）</span>
+                        </div>
                         <q-field
                           outlined
-                          label="邮箱（在下方邮箱安全模块更换）"
-                          stack-label
-                          class="form-input readonly-field"
+                          class="form-input form-input-lg readonly-field profile-edit-input"
                         >
                           <template v-slot:prepend>
                             <q-icon name="email" color="grey-6" />
                           </template>
                           <template v-slot:control>
-                            <div class="self-center full-width q-pl-xs">{{ profileData.email || '-' }}</div>
+                            <div class="profile-readonly-value">{{ profileData.email || '-' }}</div>
                           </template>
                         </q-field>
                       </div>
                       <div class="col-md-6 col-12">
+                        <div class="profile-form-label">手机号</div>
                         <q-input
                           v-model="profileData.phone"
                           outlined
-                          label="手机号"
                           type="tel"
                           placeholder="请输入手机号码"
-                          class="form-input"
+                          class="form-input form-input-lg profile-edit-input"
                           maxlength="11"
                           :rules="[
                             (val) => !val || /^1[3-9]\d{9}$/.test(val) || '手机号格式不正确',
@@ -454,8 +513,8 @@
       <q-tab-panel name="ai_model" class="q-pa-none">
         <div class="row q-col-gutter-md">
           <div class="col-md-6 col-12">
-            <q-card flat bordered class="full-height">
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="full-height control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="info" class="q-mr-sm text-grey-7" />
                   当前模型版本
@@ -483,8 +542,8 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered class="full-height">
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="full-height control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="update" class="q-mr-sm text-grey-7" />
                   可用更新
@@ -502,17 +561,37 @@
                   <div class="text-caption text-grey-6">大小: 245 MB | 发布日期: 2025-12-10</div>
                 </div>
                 <div class="row q-gutter-sm">
-                  <q-btn color="primary" icon="download" label="立即更新" />
-                  <q-btn outline color="grey-8" icon="sync" label="检查更新" />
-                  <q-btn outline color="grey-8" icon="backup" label="模型备份" />
+                  <q-btn
+                    color="primary"
+                    icon="download"
+                    label="立即更新"
+                    :loading="modelActionLoading.update"
+                    @click="runModelAction('update')"
+                  />
+                  <q-btn
+                    outline
+                    color="grey-8"
+                    icon="sync"
+                    label="检查更新"
+                    :loading="modelActionLoading.check"
+                    @click="runModelAction('check')"
+                  />
+                  <q-btn
+                    outline
+                    color="grey-8"
+                    icon="backup"
+                    label="模型备份"
+                    :loading="modelActionLoading.backup"
+                    @click="runModelAction('backup')"
+                  />
                 </div>
               </q-card-section>
             </q-card>
           </div>
 
           <div class="col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="show_chart" class="q-mr-sm text-grey-7" />
                   模型性能监控
@@ -527,11 +606,11 @@
       </q-tab-panel>
 
       <!-- System Params Tab -->
-      <q-tab-panel name="system_params" class="q-pa-none">
+      <q-tab-panel name="system_params" class="q-pa-none rounded-control-panel">
         <div class="row q-col-gutter-md">
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="tune" class="q-mr-sm text-grey-7" />
                   风险评估阈值
@@ -565,8 +644,8 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="description" class="q-mr-sm text-grey-7" />
                   报告生成设置
@@ -596,8 +675,8 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="image" class="q-mr-sm text-grey-7" />
                   影像分析参数
@@ -617,8 +696,8 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="gavel" class="q-mr-sm text-grey-7" />
                   系统诊断标准依据
@@ -636,18 +715,31 @@
           </div>
 
           <div class="col-12 flex justify-end q-gutter-sm">
-            <q-btn outline color="grey-8" icon="restore" label="恢复默认" />
-            <q-btn color="primary" icon="save" label="保存设置" />
+            <q-btn
+              outline
+              color="grey-8"
+              icon="restore"
+              label="恢复默认"
+              :loading="paramsActionLoading.reset"
+              @click="resetSystemParams"
+            />
+            <q-btn
+              color="primary"
+              icon="save"
+              label="保存设置"
+              :loading="paramsActionLoading.save"
+              @click="saveSystemParams"
+            />
           </div>
         </div>
       </q-tab-panel>
 
       <!-- Data Backup Tab -->
-      <q-tab-panel name="data_backup" class="q-pa-none">
+      <q-tab-panel name="data_backup" class="q-pa-none rounded-control-panel">
         <div class="row q-col-gutter-md">
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="backup" class="q-mr-sm text-grey-7" />
                   备份状态
@@ -671,8 +763,8 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="schedule" class="q-mr-sm text-grey-7" />
                   备份计划
@@ -700,23 +792,36 @@
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="play_arrow" class="q-mr-sm text-grey-7" />
                   立即执行
                 </div>
               </q-card-section>
               <q-card-section class="row q-gutter-sm">
-                <q-btn color="primary" icon="save" label="创建完整备份" />
-                <q-btn outline color="grey-8" icon="folder" label="仅备份病例数据" />
+                <q-btn
+                  color="primary"
+                  icon="save"
+                  label="创建完整备份"
+                  :loading="backupActionLoading.full"
+                  @click="runBackupAction('full')"
+                />
+                <q-btn
+                  outline
+                  color="grey-8"
+                  icon="folder"
+                  label="仅备份病例数据"
+                  :loading="backupActionLoading.caseOnly"
+                  @click="runBackupAction('caseOnly')"
+                />
               </q-card-section>
             </q-card>
           </div>
 
           <div class="col-md-6 col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="restore" class="q-mr-sm text-grey-7" />
                   恢复操作
@@ -728,7 +833,13 @@
                   <q-file dense outlined v-model="restoreFile" label="选择文件" class="col-grow">
                     <template v-slot:prepend><q-icon name="attach_file" /></template>
                   </q-file>
-                  <q-btn color="primary" icon="sync" label="验证并恢复" />
+                  <q-btn
+                    color="primary"
+                    icon="sync"
+                    label="验证并恢复"
+                    :loading="backupActionLoading.restore"
+                    @click="runBackupAction('restore')"
+                  />
                 </div>
               </q-card-section>
             </q-card>
@@ -740,8 +851,10 @@
       <q-tab-panel name="system_log" class="q-pa-none">
         <div class="row q-col-gutter-md">
           <div class="col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center justify-between q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section
+                class="row items-center justify-between q-pb-sm border-bottom-light panel-header"
+              >
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="list" class="q-mr-sm text-grey-7" />
                   近期系统日志
@@ -753,7 +866,7 @@
                     icon="download"
                     label="导出日志"
                     color="grey-8"
-                    :disable="systemLogs.length === 0"
+                    :disable="filteredSystemLogs.length === 0"
                     @click="exportSystemLogs"
                   />
                   <q-btn
@@ -767,24 +880,74 @@
                   />
                 </div>
               </q-card-section>
+              <q-card-section class="q-pt-sm q-pb-sm">
+                <div class="row q-col-gutter-sm items-center">
+                  <div class="col-md-8 col-xs-12">
+                    <q-btn-toggle
+                      v-model="logTypeFilter"
+                      unelevated
+                      toggle-color="primary"
+                      color="grey-3"
+                      text-color="grey-8"
+                      spread
+                      :options="logTypeOptions"
+                    />
+                  </div>
+                  <div class="col-md-4 col-xs-12">
+                    <q-input
+                      v-model="logKeyword"
+                      dense
+                      outlined
+                      clearable
+                      placeholder="搜索日志内容"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="search" />
+                      </template>
+                    </q-input>
+                  </div>
+                </div>
+              </q-card-section>
               <q-card-section class="q-pa-none">
                 <q-scroll-area class="system-log-scroll-area">
-                  <q-list v-if="systemLogs.length > 0" separator>
-                    <q-item v-for="(log, index) in systemLogs" :key="`${log.time}-${index}`">
+                  <q-list v-if="filteredSystemLogs.length > 0" separator>
+                    <q-item
+                      v-for="(log, index) in filteredSystemLogs"
+                      :key="`${log.time}-${index}`"
+                      class="log-entry"
+                    >
+                      <q-item-section avatar class="log-entry__axis">
+                        <div
+                          class="log-dot"
+                          :style="{ backgroundColor: getLogTypeMeta(log.type).dotColor }"
+                        >
+                          <q-icon :name="getLogTypeMeta(log.type).icon" size="16px" color="white" />
+                        </div>
+                      </q-item-section>
                       <q-item-section>
                         <div class="row items-center q-gutter-sm q-mb-xs">
                           <div class="text-caption text-grey-6 font-mono">{{ log.time }}</div>
                           <q-chip dense square color="blue-1" text-color="primary" icon="person">
                             {{ log.username }}
                           </q-chip>
+                          <q-chip
+                            dense
+                            :color="getLogTypeMeta(log.type).chipColor"
+                            :text-color="getLogTypeMeta(log.type).chipTextColor"
+                            :icon="getLogTypeMeta(log.type).icon"
+                          >
+                            {{ getLogTypeMeta(log.type).label }}
+                          </q-chip>
                         </div>
-                        <div class="text-body2 text-grey-9">{{ log.message }}</div>
+                        <div class="text-body2 text-grey-9 log-message">{{ log.message }}</div>
                       </q-item-section>
                     </q-item>
                   </q-list>
                   <div v-else class="empty-log-state">
                     <q-icon name="description" size="36px" color="grey-4" />
-                    <div class="text-grey-6 q-mt-sm">暂无系统日志</div>
+                    <div class="text-grey-6 q-mt-sm">
+                      {{ systemLogs.length === 0 ? '暂无系统日志' : '当前筛选条件下无日志' }}
+                    </div>
                   </div>
                 </q-scroll-area>
               </q-card-section>
@@ -792,8 +955,8 @@
           </div>
 
           <div class="col-12">
-            <q-card flat bordered>
-              <q-card-section class="row items-center q-pb-sm border-bottom-light">
+            <q-card flat bordered class="control-card">
+              <q-card-section class="row items-center q-pb-sm border-bottom-light panel-header">
                 <div class="text-subtitle1 text-weight-bold flex items-center">
                   <q-icon name="info" class="q-mr-sm text-grey-7" />
                   软件信息
@@ -821,9 +984,30 @@
                   <div class="col-10">符合《医疗卫生机构数据安全管理办法》</div>
                 </div>
                 <div class="row q-gutter-sm">
-                  <q-btn outline color="grey-8" icon="help" label="用户手册" />
-                  <q-btn outline color="grey-8" icon="security" label="隐私协议" />
-                  <q-btn outline color="grey-8" icon="update" label="检查更新" />
+                  <q-btn
+                    outline
+                    color="grey-8"
+                    icon="help"
+                    label="用户手册"
+                    :loading="infoActionLoading.manual"
+                    @click="runInfoAction('manual')"
+                  />
+                  <q-btn
+                    outline
+                    color="grey-8"
+                    icon="security"
+                    label="隐私协议"
+                    :loading="infoActionLoading.privacy"
+                    @click="runInfoAction('privacy')"
+                  />
+                  <q-btn
+                    outline
+                    color="grey-8"
+                    icon="update"
+                    label="检查更新"
+                    :loading="infoActionLoading.update"
+                    @click="runInfoAction('update')"
+                  />
                 </div>
               </q-card-section>
             </q-card>
@@ -849,6 +1033,48 @@ import EmailSecurityCard from 'src/components/settings/EmailSecurityCard.vue';
 const $q = useQuasar();
 const activeTab = ref('user_account');
 const themeStore = useThemeStore();
+const overviewHighlights = ref([
+  {
+    key: 'health',
+    label: '系统健康度',
+    value: '98.4%',
+    trend: '较昨日 +1.2%',
+    icon: 'monitor_heart',
+    bgColor: 'green-1',
+    iconColor: 'green-8',
+    trendClass: 'text-positive',
+  },
+  {
+    key: 'model',
+    label: '模型服务状态',
+    value: '稳定运行',
+    trend: '平均延时 420ms',
+    icon: 'memory',
+    bgColor: 'blue-1',
+    iconColor: 'primary',
+    trendClass: 'text-primary',
+  },
+  {
+    key: 'backup',
+    label: '数据备份',
+    value: '今日已完成',
+    trend: '最近执行 02:00',
+    icon: 'backup',
+    bgColor: 'amber-1',
+    iconColor: 'amber-9',
+    trendClass: 'text-amber-9',
+  },
+  {
+    key: 'risk',
+    label: '高风险提醒',
+    value: '12 条',
+    trend: '待医生复核 3 条',
+    icon: 'notification_important',
+    bgColor: 'red-1',
+    iconColor: 'negative',
+    trendClass: 'text-negative',
+  },
+]);
 
 // Auth Store
 const authStore = useAuthStore();
@@ -953,7 +1179,7 @@ const saveProfile = async () => {
       profileData.value.email = mergedUser.email || '';
       profileData.value.phone = mergedUser.phone || '';
       profileData.value.firstName = mergedUser.real_name || '';
-      appendSystemLog('保存了用户基本资料');
+      appendSystemLog('保存了用户基本资料', 'account');
 
       $q.notify({
         type: 'positive',
@@ -983,7 +1209,7 @@ const handleEmailUpdated = (payload: { email: string }) => {
     authStore.user = mergedUser;
     setItem(STORAGE_KEYS.USER_INFO, mergedUser);
   }
-  appendSystemLog('更换了登录邮箱');
+  appendSystemLog('更换了登录邮箱', 'security');
 };
 
 // 重置表单
@@ -1027,7 +1253,7 @@ const uploadAvatar = async (file: File) => {
     const response = await userAPI.uploadAvatar(file);
     if (response.success) {
       await authStore.fetchCurrentUser();
-      appendSystemLog('更新了用户头像');
+      appendSystemLog('更新了用户头像', 'account');
       $q.notify({
         type: 'positive',
         message: '头像上传成功！',
@@ -1070,7 +1296,7 @@ const changePassword = async () => {
 
     if (response.success) {
       passwordDialog.value = false;
-      appendSystemLog('修改了账户密码');
+      appendSystemLog('修改了账户密码', 'security');
       $q.notify({
         type: 'positive',
         message: '密码修改成功！',
@@ -1090,7 +1316,7 @@ const changePassword = async () => {
 };
 
 // System Params
-const params = ref({
+const defaultSystemParams = {
   lowRiskThreshold: 0.3,
   highRiskThreshold: 0.7,
   includeSummary: true,
@@ -1099,6 +1325,33 @@ const params = ref({
   analysisMode: 'balanced',
   saveIntermediate: true,
   diagnosticStandard: 'who2020',
+};
+
+const params = ref({
+  ...defaultSystemParams,
+});
+
+const modelActionLoading = ref({
+  update: false,
+  check: false,
+  backup: false,
+});
+
+const paramsActionLoading = ref({
+  save: false,
+  reset: false,
+});
+
+const backupActionLoading = ref({
+  full: false,
+  caseOnly: false,
+  restore: false,
+});
+
+const infoActionLoading = ref({
+  manual: false,
+  privacy: false,
+  update: false,
 });
 const analysisModeOptions = [
   { label: '高精度模式 (较慢)', value: 'high' },
@@ -1119,14 +1372,198 @@ const backup = ref({
 });
 const restoreFile = ref(null);
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const runModelAction = async (action: 'update' | 'check' | 'backup') => {
+  modelActionLoading.value[action] = true;
+  try {
+    await wait(900);
+    const actionTextMap = {
+      update: '模型更新任务已提交',
+      check: '已完成版本检查，当前为最新版本',
+      backup: '模型备份已完成',
+    };
+    appendSystemLog(actionTextMap[action], 'model');
+    $q.notify({
+      type: 'positive',
+      message: actionTextMap[action],
+      position: 'top',
+    });
+  } finally {
+    modelActionLoading.value[action] = false;
+  }
+};
+
+const resetSystemParams = async () => {
+  paramsActionLoading.value.reset = true;
+  try {
+    await wait(500);
+    params.value = { ...defaultSystemParams };
+    appendSystemLog('恢复了系统参数默认值', 'system');
+    $q.notify({
+      type: 'info',
+      message: '系统参数已恢复默认值',
+      position: 'top',
+    });
+  } finally {
+    paramsActionLoading.value.reset = false;
+  }
+};
+
+const saveSystemParams = async () => {
+  paramsActionLoading.value.save = true;
+  try {
+    await wait(800);
+    appendSystemLog('保存了系统参数配置', 'system');
+    $q.notify({
+      type: 'positive',
+      message: '系统参数已保存',
+      position: 'top',
+    });
+  } finally {
+    paramsActionLoading.value.save = false;
+  }
+};
+
+const runBackupAction = async (action: 'full' | 'caseOnly' | 'restore') => {
+  if (action === 'restore' && !restoreFile.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请先选择恢复文件',
+      position: 'top',
+    });
+    return;
+  }
+
+  backupActionLoading.value[action] = true;
+  try {
+    await wait(1200);
+    const actionTextMap = {
+      full: '完整备份任务已创建',
+      caseOnly: '病例数据备份任务已创建',
+      restore: '恢复验证通过，已进入恢复流程',
+    };
+    appendSystemLog(actionTextMap[action], 'backup');
+    $q.notify({
+      type: 'positive',
+      message: actionTextMap[action],
+      position: 'top',
+    });
+  } finally {
+    backupActionLoading.value[action] = false;
+  }
+};
+
+const runInfoAction = async (action: 'manual' | 'privacy' | 'update') => {
+  infoActionLoading.value[action] = true;
+  try {
+    await wait(500);
+    const actionTextMap = {
+      manual: '已打开用户手册',
+      privacy: '已打开隐私协议',
+      update: '已完成版本检查',
+    };
+    appendSystemLog(actionTextMap[action], 'system');
+    $q.notify({
+      type: 'info',
+      message: actionTextMap[action],
+      position: 'top',
+    });
+  } finally {
+    infoActionLoading.value[action] = false;
+  }
+};
+
 // System Log
+type SystemLogType = 'account' | 'model' | 'backup' | 'security' | 'system';
+type SystemLogFilterType = 'all' | SystemLogType;
+
 interface SystemLogItem {
   time: string;
   username: string;
   message: string;
+  type: SystemLogType;
 }
 
 const systemLogs = ref<SystemLogItem[]>([]);
+const logTypeFilter = ref<SystemLogFilterType>('all');
+const logKeyword = ref('');
+const logTypeOptions = [
+  { label: '全部', value: 'all' },
+  { label: '账户', value: 'account' },
+  { label: '模型', value: 'model' },
+  { label: '备份', value: 'backup' },
+  { label: '安全', value: 'security' },
+  { label: '系统', value: 'system' },
+];
+
+const logTypeMetaMap: Record<
+  SystemLogType,
+  {
+    label: string;
+    icon: string;
+    chipColor: string;
+    chipTextColor: string;
+    dotColor: string;
+  }
+> = {
+  account: {
+    label: '账户',
+    icon: 'person',
+    chipColor: 'blue-1',
+    chipTextColor: 'primary',
+    dotColor: '#2563eb',
+  },
+  model: {
+    label: '模型',
+    icon: 'memory',
+    chipColor: 'indigo-1',
+    chipTextColor: 'indigo-9',
+    dotColor: '#4f46e5',
+  },
+  backup: {
+    label: '备份',
+    icon: 'storage',
+    chipColor: 'teal-1',
+    chipTextColor: 'teal-9',
+    dotColor: '#0f766e',
+  },
+  security: {
+    label: '安全',
+    icon: 'security',
+    chipColor: 'red-1',
+    chipTextColor: 'negative',
+    dotColor: '#dc2626',
+  },
+  system: {
+    label: '系统',
+    icon: 'settings',
+    chipColor: 'grey-3',
+    chipTextColor: 'grey-8',
+    dotColor: '#475569',
+  },
+};
+
+const getLogTypeMeta = (type: SystemLogType) => {
+  return logTypeMetaMap[type];
+};
+
+const filteredSystemLogs = computed(() => {
+  const keyword = logKeyword.value.trim().toLowerCase();
+
+  return systemLogs.value.filter((log) => {
+    const matchesType = logTypeFilter.value === 'all' || log.type === logTypeFilter.value;
+    if (!matchesType) {
+      return false;
+    }
+
+    if (!keyword) {
+      return true;
+    }
+
+    return `${log.message} ${log.username}`.toLowerCase().includes(keyword);
+  });
+});
 
 const formatLogTime = (date: Date): string => {
   const pad = (num: number) => String(num).padStart(2, '0');
@@ -1139,11 +1576,12 @@ const formatLogTime = (date: Date): string => {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
-const appendSystemLog = (message: string, date = new Date()) => {
+const appendSystemLog = (message: string, type: SystemLogType = 'system', date = new Date()) => {
   systemLogs.value.unshift({
     time: formatLogTime(date),
     username: currentUserDisplayName.value,
     message,
+    type,
   });
 };
 
@@ -1154,21 +1592,25 @@ const initializeSystemLogs = () => {
       time: formatLogTime(new Date(now - 2 * 60 * 1000)),
       username: currentUserDisplayName.value,
       message: '登录后进入系统设置页面',
+      type: 'system',
     },
     {
       time: formatLogTime(new Date(now - 15 * 60 * 1000)),
       username: currentUserDisplayName.value,
       message: '查看了系统参数配置',
+      type: 'system',
     },
     {
       time: formatLogTime(new Date(now - 35 * 60 * 1000)),
       username: currentUserDisplayName.value,
       message: '查看了AI模型性能面板',
+      type: 'model',
     },
     {
       time: formatLogTime(new Date(now - 60 * 60 * 1000)),
       username: currentUserDisplayName.value,
       message: '完成账户安全检查',
+      type: 'security',
     },
   ];
 };
@@ -1183,12 +1625,15 @@ const clearSystemLogs = () => {
 };
 
 const exportSystemLogs = () => {
-  if (systemLogs.value.length === 0) {
+  if (filteredSystemLogs.value.length === 0) {
     return;
   }
 
-  const textContent = systemLogs.value
-    .map((item) => `[${item.time}] [${item.username}] ${item.message}`)
+  const textContent = filteredSystemLogs.value
+    .map(
+      (item) =>
+        `[${item.time}] [${item.username}] [${getLogTypeMeta(item.type).label}] ${item.message}`,
+    )
     .join('\n');
   const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
   const fileName = `system-log-${new Date().toISOString().slice(0, 10)}.txt`;
@@ -1317,6 +1762,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+
 .border-bottom {
   border-bottom: 1px solid var(--app-border-default);
 }
@@ -1328,6 +1774,61 @@ onUnmounted(() => {
 }
 .font-mono {
   font-family: monospace;
+}
+
+.settings-hero {
+  border-radius: var(--app-radius-xl);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.overview-card {
+  border-radius: var(--app-radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);
+}
+
+.settings-panels {
+  border-radius: var(--app-radius-lg);
+}
+
+.settings-panels :deep(.q-tab-panel) {
+  padding-top: 8px;
+}
+
+.rounded-control-panel :deep(.control-card) {
+  border-radius: 22px;
+}
+
+.rounded-control-panel :deep(.control-card .q-card__section:first-child) {
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+}
+
+.control-card {
+  overflow: hidden;
+}
+
+.panel-header {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(241, 245, 249, 0.88));
+}
+
+.settings-page :deep(.q-card[flat][bordered]) {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: var(--app-radius-lg);
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.settings-page :deep(.q-card[flat][bordered]:hover) {
+  border-color: rgba(59, 130, 246, 0.32);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
 }
 
 .password-dialog-card {
@@ -1346,6 +1847,48 @@ onUnmounted(() => {
   height: 300px;
 }
 
+.log-entry {
+  position: relative;
+  align-items: flex-start;
+  padding: 14px 16px 12px;
+}
+
+.log-entry__axis {
+  min-width: 44px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.log-entry__axis::after {
+  content: '';
+  position: absolute;
+  top: 30px;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: rgba(148, 163, 184, 0.32);
+}
+
+.log-entry:last-child .log-entry__axis::after {
+  display: none;
+}
+
+.log-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+.log-message {
+  line-height: 1.5;
+}
+
 .empty-log-state {
   height: 100%;
   min-height: 240px;
@@ -1360,6 +1903,7 @@ onUnmounted(() => {
   border-radius: var(--app-radius-lg);
   border: 1px solid var(--app-border-default);
   background: var(--app-surface);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 /* 头像样式 */
@@ -1450,6 +1994,19 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--app-soft-divider);
 }
 
+.profile-form-label {
+  font-size: 13px;
+  color: var(--app-text-tertiary);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.profile-form-label__hint {
+  font-weight: 500;
+  color: var(--app-text-tertiary);
+}
+
 /* 表单输入框 */
 .form-input {
   margin-bottom: 16px;
@@ -1457,12 +2014,56 @@ onUnmounted(() => {
 
 .form-input :deep(.q-field__control) {
   border-radius: var(--app-radius-md);
-  min-height: 48px;
+  min-height: 52px;
 }
 
 .form-input :deep(.q-field__native) {
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+.form-input-lg :deep(.q-field__control) {
+  min-height: 56px;
+}
+
+.form-input-lg :deep(.q-field__native) {
+  font-size: 15px;
+  line-height: 1.45;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.form-input-lg :deep(.q-field__label) {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profile-edit-input :deep(.q-field__control) {
+  border-radius: 14px;
+  padding: 0 12px;
+}
+
+.profile-edit-input :deep(.q-field__prepend) {
+  align-self: center;
+  padding-right: 10px;
+}
+
+.profile-edit-input :deep(.q-field__native) {
+  align-self: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.profile-readonly-value {
+  align-self: center;
+  width: 100%;
+  color: var(--app-text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.profile-contact-row :deep(.q-field__prepend) {
+  padding-right: 8px;
 }
 
 /* 只读字段样式 */
