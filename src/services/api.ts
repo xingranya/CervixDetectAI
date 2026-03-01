@@ -812,6 +812,233 @@ export const followUpAPI = {
 };
 
 // ============================================================
+// Patient Insights API
+// ============================================================
+
+export type PatientInsightRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type PatientInsightTrend = 'up' | 'down' | 'stable' | 'insufficient';
+
+export interface PatientInsightBasicPatient {
+  id: number;
+  patient_id: string;
+  name: string;
+  gender: 'male' | 'female';
+  birth_date?: string;
+  phone?: string;
+}
+
+export interface PatientInsightOverviewData {
+  patient: PatientInsightBasicPatient;
+  summary: {
+    total_studies: number;
+    total_analyses: number;
+    high_risk_analyses: number;
+    pending_followups: number;
+    overdue_followups: number;
+    latest_study: null | {
+      study_id: number;
+      study_unique_id: string;
+      study_date?: string;
+      study_type?: string;
+      status?: string;
+      created_at?: string;
+    };
+    latest_analysis: null | {
+      analysis_result_id: number;
+      study_id: number;
+      study_unique_id?: string;
+      diagnosis?: string;
+      confidence: number;
+      risk_level: PatientInsightRiskLevel;
+      analysis_at?: string;
+    };
+  };
+  risk_profile: {
+    score: number;
+    level: PatientInsightRiskLevel;
+    trend: PatientInsightTrend;
+  };
+}
+
+export interface PatientInsightHistoryItem {
+  analysis_result_id: number;
+  study_id?: number;
+  study_unique_id?: string;
+  study_date?: string;
+  study_type?: string;
+  diagnosis?: string;
+  risk_level: PatientInsightRiskLevel;
+  confidence: number;
+  recommendations: string[];
+  analysis_at?: string;
+}
+
+export interface PatientInsightHistoryData {
+  series: PatientInsightHistoryItem[];
+  stats: {
+    total_detections: number;
+    first_detection_at?: string;
+    latest_detection_at?: string;
+    risk_distribution: Record<PatientInsightRiskLevel, number>;
+    average_confidence: number;
+    trend: PatientInsightTrend;
+  };
+}
+
+export interface PatientInsightTaskSnapshot {
+  task_id: string;
+  status: string;
+  progress?: number;
+  created_at?: string;
+  completed_at?: string;
+}
+
+export interface PatientInsightFollowupSnapshot {
+  follow_up_id: string;
+  status: string;
+  planned_date?: string;
+  is_high_attention: boolean;
+}
+
+export interface PatientInsightStudySnapshot {
+  study_id: number;
+  study_unique_id: string;
+  study_date?: string;
+  study_type?: string;
+  study_status?: string;
+  diagnosis?: string;
+  risk_level: PatientInsightRiskLevel;
+  confidence: number;
+  recommendations: string[];
+  analysis_at?: string;
+  latest_task: PatientInsightTaskSnapshot | null;
+  followup: PatientInsightFollowupSnapshot | null;
+}
+
+export interface PatientInsightCompareData {
+  left: PatientInsightStudySnapshot;
+  right: PatientInsightStudySnapshot;
+  diff: {
+    risk_delta: number;
+    confidence_delta: number;
+    diagnosis_changed: boolean;
+    recommendation_added: string[];
+    recommendation_removed: string[];
+    summary: string[];
+  };
+}
+
+export interface PatientInsightTimelineEvent {
+  event_id: string;
+  event_type: string;
+  event_time: string;
+  title: string;
+  description: string;
+  risk_level?: PatientInsightRiskLevel;
+  status?: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface PatientInsightTimelineData {
+  items: PatientInsightTimelineEvent[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface PatientInsightRiskFactor {
+  key: string;
+  label: string;
+  weight: number;
+  score: number;
+  value: string | number;
+  description: string;
+}
+
+export interface PatientInsightRiskProfileData {
+  score: number;
+  level: PatientInsightRiskLevel;
+  trend: PatientInsightTrend;
+  factors: PatientInsightRiskFactor[];
+  suggestions: string[];
+  metrics: {
+    total_analyses: number;
+    high_risk_count: number;
+    high_risk_ratio: number;
+    overdue_followups: number;
+    high_attention_followups: number;
+    latest_analysis_at?: string;
+  };
+}
+
+export const patientInsightsAPI = {
+  async getOverview(patientId: number): Promise<ApiResponse<PatientInsightOverviewData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightOverviewData>>(
+      `/patient-insights/${patientId}/overview`,
+    );
+    return data;
+  },
+
+  async getHistory(
+    patientId: number,
+    params?: {
+      limit?: number;
+      date_from?: string;
+      date_to?: string;
+    },
+  ): Promise<ApiResponse<PatientInsightHistoryData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightHistoryData>>(
+      `/patient-insights/${patientId}/history`,
+      { params },
+    );
+    return data;
+  },
+
+  async getCompare(
+    patientId: number,
+    leftStudyId: number,
+    rightStudyId: number,
+  ): Promise<ApiResponse<PatientInsightCompareData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightCompareData>>(
+      `/patient-insights/${patientId}/compare`,
+      {
+        params: {
+          left_study_id: leftStudyId,
+          right_study_id: rightStudyId,
+        },
+      },
+    );
+    return data;
+  },
+
+  async getTimeline(
+    patientId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      date_from?: string;
+      date_to?: string;
+    },
+  ): Promise<ApiResponse<PatientInsightTimelineData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightTimelineData>>(
+      `/patient-insights/${patientId}/timeline`,
+      { params },
+    );
+    return data;
+  },
+
+  async getRiskProfile(patientId: number): Promise<ApiResponse<PatientInsightRiskProfileData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightRiskProfileData>>(
+      `/patient-insights/${patientId}/risk-profile`,
+    );
+    return data;
+  },
+};
+
+// ============================================================
 // Notification API
 // ============================================================
 

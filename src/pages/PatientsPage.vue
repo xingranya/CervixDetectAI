@@ -103,6 +103,15 @@
               <q-btn
                 flat
                 size="sm"
+                icon="insights"
+                color="indigo"
+                @click="viewInsights(props.row.id)"
+              >
+                <q-tooltip>患者洞察</q-tooltip>
+              </q-btn>
+              <q-btn
+                flat
+                size="sm"
                 icon="delete"
                 color="negative"
                 @click="confirmDelete(props.row)"
@@ -299,6 +308,11 @@ const viewPatient = (patient: Patient) => {
 // 查看患者病例
 const viewStudies = (patientId: number) => {
   void router.push({ path: '/app/studies', query: { patient_id: patientId.toString() } });
+};
+
+// 查看患者洞察
+const viewInsights = (patientId: number) => {
+  void router.push(`/app/patients/${patientId}/insights`);
 };
 
 // 表单提交
