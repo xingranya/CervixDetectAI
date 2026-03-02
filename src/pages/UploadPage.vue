@@ -21,7 +21,7 @@
               <div class="col">
                 <div class="text-subtitle1 text-weight-bold q-mb-xs">
                   <q-icon name="cloud_upload" class="q-mr-sm" />
-                  正在批量处理...
+                  {{ uploadProcessingTitle }}
                 </div>
                 <q-linear-progress
                   :value="uploadProgress / 100"
@@ -35,7 +35,7 @@
                   </div>
                 </q-linear-progress>
                 <div class="text-caption text-grey-7">
-                  正在上传影像并创建分析任务，请勿关闭页面...
+                  {{ uploadProcessingHint }}
                 </div>
               </div>
             </q-card-section>
@@ -448,6 +448,7 @@ import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import { analysisTaskAPI, type BatchAnalysisTaskItem } from 'src/services/api';
+import { uploadImage } from 'src/services/apiService';
 import { usePatientStore } from 'stores/patientStore';
 import type { Patient, CreatePatientRequest } from 'src/services/patientService';
 import PatientSelector from 'src/components/patients/PatientSelector.vue';
@@ -614,6 +615,16 @@ const uploadReadyRate = computed(() => {
   const passedCount = uploadChecklist.value.filter((item) => item.passed).length;
   return Math.round((passedCount / uploadChecklist.value.length) * 100);
 });
+
+const isBatchUploadMode = computed(() => selectedFiles.value.length > 1);
+const uploadProcessingTitle = computed(() =>
+  isBatchUploadMode.value ? '正在批量处理...' : '正在上传并启动分析...',
+);
+const uploadProcessingHint = computed(() =>
+  isBatchUploadMode.value
+    ? '正在上传影像并创建分析任务，请勿关闭页面...'
+    : '正在创建分析任务，即将跳转到进度页面...',
+);
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -821,6 +832,7 @@ const uploadAndAnalyze = async () => {
   uploading.value = true;
   uploadProgress.value = 0;
   let progressInterval: ReturnType<typeof setInterval> | null = null;
+  const isSingleUpload = selectedFiles.value.length === 1;
 
   try {
     // 模拟上传进度
@@ -829,6 +841,44 @@ const uploadAndAnalyze = async () => {
         uploadProgress.value += 5;
       }
     }, 250);
+
+    if (isSingleUpload) {
+      const firstFile = selectedFiles.value[0];
+      if (!firstFile) {
+        throw new Error('未找到可上传的影像文件');
+      }
+
+      const singleResponse = await uploadImage({
+        image: firstFile,
+        patientName: selectedPatient.value.name,
+        patientId: resolvedPatientId,
+        studyDate: studyInfo.value.studyDate,
+        modality: studyInfo.value.modality,
+        description: studyInfo.value.description,
+      });
+
+      clearInterval(progressInterval);
+      progressInterval = null;
+      uploadProgress.value = 100;
+      uploading.value = false;
+
+      $q.notify({
+        type: 'positive',
+        message: '分析任务已创建，正在进入病例进度页面',
+        position: 'top',
+        timeout: 2500,
+        icon: 'check_circle',
+      });
+
+      clearAllFiles();
+
+      if (singleResponse.studyDbId) {
+        await router.push(`/app/studies/${singleResponse.studyDbId}`);
+      } else {
+        await router.push('/app/studies');
+      }
+      return;
+    }
 
     // 调用后端 API 批量创建分析任务
     const response = await analysisTaskAPI.createBatchTasks({
@@ -898,7 +948,9 @@ const uploadAndAnalyze = async () => {
           : undefined;
 
       if (status === 404) {
-        errorMessage = '❌ 后端未找到批量接口 /analysis-tasks/batch，请重启后端后重试';
+        errorMessage = isSingleUpload
+          ? '❌ 后端未找到单张分析接口 /analyze，请重启后端后重试'
+          : '❌ 后端未找到批量接口 /analysis-tasks/batch，请重启后端后重试';
       } else if (status === 401) {
         errorMessage = '❌ 登录状态已失效，请重新登录后重试';
       } else if (status === 413) {
@@ -906,8 +958,9 @@ const uploadAndAnalyze = async () => {
       } else if (typeof status === 'number') {
         errorMessage = `❌ 上传失败（HTTP ${status}）${serverMessage ? `: ${serverMessage}` : ''}`;
       } else if (error.code === 'ERR_NETWORK') {
-        errorMessage =
-          '❌ 网络连接中断，请确认前端 9000 到后端 4000 可用，且后端已加载 batch 接口';
+        errorMessage = isSingleUpload
+          ? '❌ 网络连接中断，请确认前端到后端连通，且后端已加载 /analyze 接口'
+          : '❌ 网络连接中断，请确认前端到后端连通，且后端已加载 /analysis-tasks/batch 接口';
       } else if (error.code === 'ECONNABORTED') {
         errorMessage = '❌ 请求超时，请稍后重试';
       } else if (error.message) {
