@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const {
@@ -17,48 +16,19 @@ const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
 const { createAnalysisNotifications } = require('../services/notificationService');
 const emailService = require('../services/email.service');
+const {
+  persistStudyImage,
+  prepareStudyImageForAnalysis,
+} = require('../services/studyImageStorage.service');
 
 const router = express.Router();
 
-// 服务端根目录与上传目录
-const serverRootDir = path.resolve(__dirname, '..');
-const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
-const studiesUploadDir = path.join(uploadsRootDir, 'studies');
-
-/**
- * 将数据库中存储的 file_path 解析为 uploads 目录下的绝对路径
- * 仅允许解析到 uploads 目录，避免路径穿越造成误读
- * @param {string} storedPath 数据库中存储的路径（可能以 / 开头）
- * @returns {string | null} 绝对路径；若解析失败返回 null
- */
-function resolveUploadAbsolutePath(storedPath) {
-  if (!storedPath || typeof storedPath !== 'string') {
-    return null;
-  }
-
-  // 兼容历史数据：/uploads/... 与 uploads/... 两种形式
-  const trimmed = storedPath.replace(/^\/+/, '');
-  const absPath = path.resolve(serverRootDir, trimmed);
-
-  // 确保目标路径位于 uploads 目录下
-  const relativeToUploads = path.relative(uploadsRootDir, absPath);
-  if (relativeToUploads.startsWith('..') || path.isAbsolute(relativeToUploads)) {
-    return null;
-  }
-
-  return absPath;
-}
-
-/**
- * 删除上传文件（忽略删除失败）
- * @param {string | undefined} filePath 绝对文件路径
- */
-async function removeUploadedFile(filePath) {
-  if (!filePath) return;
+async function safeCleanup(handler) {
+  if (typeof handler !== 'function') return;
   try {
-    await fs.promises.unlink(filePath);
+    await handler();
   } catch {
-    // 忽略文件不存在等清理失败场景
+    // 清理失败不阻断主流程
   }
 }
 
@@ -86,26 +56,8 @@ function resolveFileFormat(originalFilename) {
   return ext === 'JPG' ? 'JPEG' : ext;
 }
 
-// 批量上传：沿用 studies 上传目录，保证静态路径一致
-const batchImageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    try {
-      if (!fs.existsSync(studiesUploadDir)) {
-        fs.mkdirSync(studiesUploadDir, { recursive: true });
-      }
-      cb(null, studiesUploadDir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `study-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
 const batchUploadImages = multer({
-  storage: batchImageStorage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: parseInt(process.env.MAX_IMAGE_SIZE || '', 10) || 20 * 1024 * 1024, // 20MB
   },
@@ -256,10 +208,9 @@ router.post('/', authenticate, async (req, res) => {
           });
         }
 
-        if (studyImage && studyImage.file_path) {
-          // 解析为 uploads 目录下的绝对路径（兼容 /uploads/... 形式）
-          const imagePath = resolveUploadAbsolutePath(studyImage.file_path);
-          if (!imagePath) {
+        if (studyImage) {
+          const preparedImage = await prepareStudyImageForAnalysis(studyImage);
+          if (!preparedImage.imagePath) {
             await task.update({
               status: 'FAILED',
               error_message: '图像路径解析失败，无法开始分析',
@@ -269,9 +220,13 @@ router.post('/', authenticate, async (req, res) => {
           }
 
           console.log(
-            `🚀 [POST /analysis-tasks] 触发后台分析: TaskID=${task.id}, Image=${imagePath}`,
+            `🚀 [POST /analysis-tasks] 触发后台分析: TaskID=${task.id}, Image=${preparedImage.imagePath}`,
           );
-          await analysisService.processTask(task.id, imagePath, study.id);
+          try {
+            await analysisService.processTask(task.id, preparedImage.imagePath, study.id);
+          } finally {
+            await safeCleanup(preparedImage.cleanup);
+          }
         } else {
           console.error(
             `❌ [POST /analysis-tasks] 无法触发分析: 未找到病例图像 (StudyID=${study.id})`,
@@ -321,7 +276,6 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
     }
 
     if (!patientName || !patientId || !studyDate || !modality) {
-      await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
       return res.status(400).json({
         success: false,
         message: '缺少必填字段：patientName、patientId、studyDate、modality',
@@ -330,7 +284,6 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
 
     const studyDateObj = new Date(studyDate);
     if (Number.isNaN(studyDateObj.getTime())) {
-      await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
       return res.status(400).json({
         success: false,
         message: '检查日期格式不正确',
@@ -363,6 +316,7 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
 
     for (const [index, file] of uploadedFiles.entries()) {
       let transaction;
+      let rollbackPersistedImage = null;
       try {
         transaction = await sequelize.transaction();
 
@@ -379,13 +333,18 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
           },
           { transaction },
         );
+        const persistedImage = await persistStudyImage({
+          file,
+          studyId: study.id,
+        });
+        rollbackPersistedImage = persistedImage.rollback;
 
         const image = await StudyImage.create(
           {
             study_id: study.id,
             original_filename: file.originalname,
-            stored_filename: file.filename,
-            file_path: `/uploads/studies/${file.filename}`,
+            stored_filename: persistedImage.storedFilename,
+            file_path: persistedImage.filePath,
             file_size: file.size,
             mime_type: file.mimetype,
             file_format: resolveFileFormat(file.originalname),
@@ -409,6 +368,7 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
         );
 
         await transaction.commit();
+        transaction = null;
         createdCount += 1;
 
         const item = {
@@ -423,8 +383,8 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
         items.push(item);
 
         // 异步触发分析，不阻塞响应
-        const imagePath = resolveUploadAbsolutePath(image.file_path);
-        if (!imagePath) {
+        const preparedImage = await prepareStudyImageForAnalysis(image);
+        if (!preparedImage.imagePath) {
           await task.update({
             status: 'FAILED',
             progress: 0,
@@ -437,18 +397,23 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
           continue;
         }
 
-        analysisService.processTask(task.id, imagePath, study.id).catch((error) => {
-          console.error(
-            `❌ [POST /analysis-tasks/batch] 异步分析失败: Task=${task.id}, Study=${study.id}`,
-            error,
-          );
-        });
+        analysisService
+          .processTask(task.id, preparedImage.imagePath, study.id)
+          .finally(async () => {
+            await safeCleanup(preparedImage.cleanup);
+          })
+          .catch((error) => {
+            console.error(
+              `❌ [POST /analysis-tasks/batch] 异步分析失败: Task=${task.id}, Study=${study.id}`,
+              error,
+            );
+          });
       } catch (error) {
         if (transaction) {
           await transaction.rollback();
         }
 
-        await removeUploadedFile(file.path);
+        await safeCleanup(rollbackPersistedImage);
         items.push({
           index,
           originalFilename: file.originalname,
@@ -475,7 +440,6 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
       },
     });
   } catch (error) {
-    await Promise.all(uploadedFiles.map((file) => removeUploadedFile(file.path)));
     console.error('批量创建分析任务错误:', error);
     res.status(500).json({
       success: false,
