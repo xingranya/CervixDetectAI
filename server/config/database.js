@@ -12,7 +12,6 @@ module.exports = {
     timezone: '+08:00',
     dialectOptions: {
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
     },
     define: {
       timestamps: true,
@@ -20,6 +19,8 @@ module.exports = {
       createdAt: 'created_at',
       updatedAt: 'updated_at',
       deletedAt: 'deleted_at',
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
       paranoid: true, // 启用软删除
     },
     pool: {
@@ -40,7 +41,6 @@ module.exports = {
     timezone: '+08:00',
     dialectOptions: {
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
     },
     define: {
       timestamps: true,
@@ -48,6 +48,8 @@ module.exports = {
       createdAt: 'created_at',
       updatedAt: 'updated_at',
       deletedAt: 'deleted_at',
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
       paranoid: true,
     },
     pool: {
