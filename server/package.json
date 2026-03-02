@@ -1,7 +1,7 @@
 {
   "name": "server",
-  "version": "1.0.0",
-  "description": "CervixDetectAI 后端服务 - 通义千问API集成",
+  "version": "1.4.5",
+  "description": "CervixDetectAI 后端服务",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

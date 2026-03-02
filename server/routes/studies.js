@@ -2,7 +2,6 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { Op } = require('sequelize');
 const {
   Study,
@@ -14,54 +13,17 @@ const {
   sequelize,
 } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const {
+  persistStudyImage,
+  removeStudyImageFile,
+  serializeStudyImageForResponse,
+  serializeStudyForResponse,
+} = require('../services/studyImageStorage.service');
 
 const router = express.Router();
 
-// 服务端根目录与上传目录
-const serverRootDir = path.resolve(__dirname, '..');
-const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
-
-/**
- * 将数据库中存储的 file_path 解析为 uploads 目录下的绝对路径
- * 仅允许解析到 uploads 目录，避免路径穿越造成误删/误读
- * @param {string} storedPath 数据库中存储的路径（可能以 / 开头）
- * @returns {string | null} 绝对路径；若解析失败返回 null
- */
-function resolveUploadAbsolutePath(storedPath) {
-  if (!storedPath || typeof storedPath !== 'string') {
-    return null;
-  }
-
-  // 兼容历史数据：/uploads/... 与 uploads/... 两种形式
-  const trimmed = storedPath.replace(/^\/+/, '');
-  const absPath = path.resolve(serverRootDir, trimmed);
-
-  // 确保目标路径位于 uploads 目录下
-  const relativeToUploads = path.relative(uploadsRootDir, absPath);
-  if (relativeToUploads.startsWith('..') || path.isAbsolute(relativeToUploads)) {
-    return null;
-  }
-
-  return absPath;
-}
-
-// 配置multer用于影像文件上传
-const imageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/studies');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `study-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
 const uploadImages = multer({
-  storage: imageStorage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 20 * 1024 * 1024, // 20MB per file
   },
@@ -167,6 +129,7 @@ router.post('/', authenticate, async (req, res) => {
  */
 router.post('/:id/images', authenticate, uploadImages.array('images', 10), async (req, res) => {
   let transaction;
+  const rollbackHandlers = [];
   try {
     transaction = await sequelize.transaction();
     const study = await Study.findByPk(req.params.id, {
@@ -176,10 +139,6 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
 
     if (!study) {
       await transaction.rollback();
-      // 清理已上传的文件
-      if (req.files) {
-        req.files.forEach((file) => fs.unlinkSync(file.path));
-      }
       return res.status(404).json({
         success: false,
         message: '病例不存在',
@@ -189,10 +148,6 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     // 验证权限
     if (req.user.role !== 'admin' && study.user_id !== req.user.id) {
       await transaction.rollback();
-      // 清理已上传的文件
-      if (req.files) {
-        req.files.forEach((file) => fs.unlinkSync(file.path));
-      }
       return res.status(403).json({
         success: false,
         message: '无权上传影像',
@@ -222,13 +177,15 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
       const ext = path.extname(file.originalname).substring(1).toUpperCase();
       const fileFormat = ext === 'JPG' ? 'JPEG' : ext || 'JPEG';
       const isPrimary = shouldSetPrimary && index === 0;
+      const persistedImage = await persistStudyImage({ file, studyId: study.id });
+      rollbackHandlers.push(persistedImage.rollback);
 
       const image = await StudyImage.create(
         {
           study_id: study.id,
-          file_path: `/uploads/studies/${file.filename}`,
+          file_path: persistedImage.filePath,
           original_filename: file.originalname,
-          stored_filename: file.filename,
+          stored_filename: persistedImage.storedFilename,
           file_size: file.size,
           mime_type: file.mimetype,
           file_format: fileFormat,
@@ -240,24 +197,27 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
     }
 
     await transaction.commit();
+    transaction = null;
+    const responseImages = await Promise.all(images.map((img) => serializeStudyImageForResponse(img)));
+
     res.json({
       success: true,
-      message: `成功上传 ${images.length} 个影像文件`,
-      data: { images },
+      message: `成功上传 ${responseImages.length} 个影像文件`,
+      data: { images: responseImages },
     });
   } catch (error) {
     console.error('上传影像错误:', error);
     if (transaction) {
       await transaction.rollback();
     }
-    // 清理已上传的文件
-    if (req.files) {
-      req.files.forEach((file) => {
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
+    for (const rollback of rollbackHandlers) {
+      try {
+        await rollback();
+      } catch {
+        // 上传回滚失败不阻断错误返回
+      }
     }
+
     res.status(500).json({
       success: false,
       message: '上传影像失败',
@@ -311,7 +271,7 @@ router.get('/', authenticate, async (req, res) => {
         {
           model: StudyImage,
           as: 'images',
-          attributes: ['id', 'file_path', 'original_filename', 'created_at'],
+          attributes: ['id', 'file_path', 'stored_filename', 'original_filename', 'created_at'],
         },
         {
           model: AnalysisResult,
@@ -329,11 +289,12 @@ router.get('/', authenticate, async (req, res) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[DEBUG] 病例查询: 总数=${count}, 返回=${rows.length}`);
     }
+    const normalizedStudies = await Promise.all(rows.map((row) => serializeStudyForResponse(row)));
 
     res.json({
       success: true,
       data: {
-        studies: rows,
+        studies: normalizedStudies,
         pagination: {
           total: count,
           page: parseInt(page),
@@ -400,10 +361,11 @@ router.get('/:id', authenticate, async (req, res) => {
         message: '无权访问该病例',
       });
     }
+    const normalizedStudy = await serializeStudyForResponse(study);
 
     res.json({
       success: true,
-      data: { study },
+      data: { study: normalizedStudy },
     });
   } catch (error) {
     console.error('获取病例详情错误:', error);
@@ -564,10 +526,7 @@ router.delete('/:id/images/:imageId', authenticate, async (req, res) => {
 
     // 删除文件
     const deletedWasPrimary = image.is_primary === true;
-    const filePath = resolveUploadAbsolutePath(image.file_path);
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    await removeStudyImageFile(image);
 
     // 删除数据库记录
     await image.destroy();

@@ -14,6 +14,7 @@ const {
   sequelize,
 } = require('../models');
 const { optionalAuth } = require('../middleware/auth');
+const { serializeStudyImageForResponse } = require('../services/studyImageStorage.service');
 
 const router = express.Router();
 
@@ -322,13 +323,19 @@ router.get('/study/:studyId', async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
+    let imageUrl = study.images?.[0]?.file_path;
+    if (study.images?.[0]) {
+      const normalizedImage = await serializeStudyImageForResponse(study.images[0]);
+      imageUrl = normalizedImage?.file_path;
+    }
+
     const studyInfo = {
       patientName: study.patient?.name,
       patientId: study.patient?.patient_id,
       studyDate: study.study_date,
       modality: study.study_type,
       description: study.description,
-      imageUrl: study.images?.[0]?.file_path,
+      imageUrl,
     };
 
     if (!latestTask) {
