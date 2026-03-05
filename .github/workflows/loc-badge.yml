@@ -1,0 +1,59 @@
+name: Update LOC Badge
+
+# 触发条件：当向 main 分支推送代码时执行
+on:
+  push:
+    branches:
+      - main  # 如果您的主分支名叫 master，请修改此处
+
+jobs:
+  update-badge:
+    name: Calculate and Update LOC
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 2. Install Dependencies
+        # 引入 cloc 进行统计，引入 jq 解析 JSON 数据
+        run: sudo apt-get update && sudo apt-get install -y cloc jq
+
+      - name: 3. Calculate Core LOC
+        id: calc
+        run: |
+          # 架构考量：通过 exclude-dir 排除依赖包、虚拟环境和构建产物，确保只统计真实源码
+          # 您可以根据 CervixDetectAI 的具体技术栈增减这里的忽略目录
+          TOTAL_LOC=$(cloc . --exclude-dir=node_modules,venv,.git,build,dist,__pycache__ --json | jq '.SUM.code')
+          
+          # 异常处理：确保获取到的值为数字
+          if ! [[ "$TOTAL_LOC" =~ ^[0-9]+$ ]]; then
+            echo "Error: LOC parsing failed."
+            exit 1
+          fi
+          
+          echo "TOTAL_LOC=$TOTAL_LOC" >> $GITHUB_ENV
+          echo "Current Core Lines of Code: $TOTAL_LOC"
+
+      - name: 4. Inject into README
+        run: |
+          # 性能优化与精确替换：使用原生 sed 命令直接修改 README.md 中的数字参数
+          sed -i -E "s|(https://img.shields.io/badge/LOC-)[0-9]+(-blue)|\1${{ env.TOTAL_LOC }}\2|g" README.md
+
+      - name: 5. Commit and Push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 异常处理与边界控制：
+          # 1. 仅在 README 发生实质性变动时才发起 commit，避免产生无意义的空提交
+          # 2. 提交信息必须携带 [skip ci]，防止 GitHub Actions 陷入无限循环触发
+          if [[ -n $(git status -s README.md) ]]; then
+            git add README.md
+            git commit -m "docs: update lines of code badge to ${{ env.TOTAL_LOC }} [skip ci]"
+            git push
+          else
+            echo "LOC unchanged. No commit needed."
+          fi
