@@ -2,11 +2,10 @@
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
 const { Op } = require('sequelize');
 const { User, UserAvatar, EmailCode } = require('../models');
 const emailService = require('../services/email.service');
+const { uploadBufferToTucang } = require('../services/tucang.service');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -14,23 +13,8 @@ const CODE_EXPIRE_MINUTES = 5;
 const SEND_INTERVAL_SECONDS = 60;
 const MAX_DAILY_SEND_COUNT = 10;
 
-// 配置multer用于头像上传
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/avatars');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `avatar-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
 const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
   },
@@ -400,54 +384,31 @@ router.put('/me/password', authenticate, async (req, res) => {
  */
 router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file || !Buffer.isBuffer(req.file.buffer)) {
       return res.status(400).json({
         success: false,
         message: '请上传头像文件',
       });
     }
 
-    const originalPath = req.file.path;
-    const baseDir = path.dirname(originalPath);
-    const baseName = path.basename(originalPath, path.extname(originalPath));
+    const uploadedAvatar = await uploadBufferToTucang({
+      buffer: req.file.buffer,
+      filename: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folderId: process.env.TUCANG_AVATAR_FOLDER_ID,
+    });
+    const avatarUrl = uploadedAvatar.url;
 
-    // 生成多个尺寸的头像
-    const sizes = [
-      { name: 'large', width: 500, height: 500 },
-      { name: 'medium', width: 200, height: 200 },
-      { name: 'small', width: 100, height: 100 },
-      { name: 'thumbnail', width: 50, height: 50 },
-    ];
-
-    const avatarPaths = {};
-
-    for (const size of sizes) {
-      const outputPath = path.join(baseDir, `${baseName}-${size.name}.jpg`);
-      await sharp(originalPath)
-        .resize(size.width, size.height, {
-          fit: 'cover',
-          position: 'center',
-        })
-        .jpeg({ quality: 90 })
-        .toFile(outputPath);
-
-      avatarPaths[`${size.name}_url`] = `/uploads/avatars/${path.basename(outputPath)}`;
-    }
-
-    // 获取图片元数据
-    const metadata = await sharp(originalPath).metadata();
-
-    // 删除原始文件
-    fs.unlinkSync(originalPath);
+    const metadata = await sharp(req.file.buffer).metadata().catch(() => null);
 
     // 保存到数据库
     const avatar = await UserAvatar.create({
       user_id: req.user.id,
-      original_url: avatarPaths.large_url,
-      large_url: avatarPaths.large_url,
-      medium_url: avatarPaths.medium_url,
-      small_url: avatarPaths.small_url,
-      thumbnail_url: avatarPaths.thumbnail_url,
+      original_url: avatarUrl,
+      large_url: avatarUrl,
+      medium_url: avatarUrl,
+      small_url: avatarUrl,
+      thumbnail_url: avatarUrl,
       file_size: req.file.size,
       mime_type: req.file.mimetype || 'image/jpeg',
       width: metadata.width || 500,
@@ -455,7 +416,7 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
     });
 
     // 更新用户表的avatar_url
-    await req.user.update({ avatar_url: avatarPaths.medium_url });
+    await req.user.update({ avatar_url: avatarUrl });
 
     res.json({
       success: true,
@@ -464,10 +425,6 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
     });
   } catch (error) {
     console.error('上传头像错误:', error);
-    // 如果出错,删除已上传的文件
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     res.status(500).json({
       success: false,
       message: '上传头像失败',

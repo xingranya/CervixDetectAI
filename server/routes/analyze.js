@@ -2,7 +2,8 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const analysisService = require('../services/analysisService');
 const {
@@ -14,28 +15,14 @@ const {
   sequelize,
 } = require('../models');
 const { optionalAuth } = require('../middleware/auth');
-const { serializeStudyImageForResponse } = require('../services/studyImageStorage.service');
+const {
+  serializeStudyImageForResponse,
+  persistStudyImage,
+  prepareStudyImageForAnalysis,
+} = require('../services/studyImageStorage.service');
 
 const router = express.Router();
-
-// 配置multer存储
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    // 确保目录存在（避免首次部署/清理后上传失败）
-    try {
-      require('fs').mkdirSync(uploadDir, { recursive: true });
-    } catch (e) {
-      return cb(e);
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const filename = `${uuidv4()}${ext}`;
-    cb(null, filename);
-  },
-});
+const analyzeTempUploadDir = path.join(__dirname, '..', 'uploads', 'analyze-temp');
 
 // 文件过滤器
 const fileFilter = (req, file, cb) => {
@@ -55,8 +42,25 @@ const fileFilter = (req, file, cb) => {
 };
 
 // 配置multer
+const analyzeUploadStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      if (!fs.existsSync(analyzeTempUploadDir)) {
+        fs.mkdirSync(analyzeTempUploadDir, { recursive: true });
+      }
+      cb(null, analyzeTempUploadDir);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+    cb(null, `analyze-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+
 const upload = multer({
-  storage: storage,
+  storage: analyzeUploadStorage,
   fileFilter: fileFilter,
   limits: {
     // 与前端/病例上传保持一致，默认 20MB（可用环境变量覆盖）
@@ -64,12 +68,32 @@ const upload = multer({
   },
 });
 
+async function safeCleanup(handler) {
+  if (typeof handler !== 'function') return;
+  try {
+    await handler();
+  } catch {
+    // 清理失败不阻断主流程
+  }
+}
+
+async function cleanupUploadedTempFile(file) {
+  const targetPath = file?.path;
+  if (!targetPath) return;
+  try {
+    await fsPromises.unlink(targetPath);
+  } catch {
+    // 临时文件清理失败不阻断主流程
+  }
+}
+
 /**
  * POST /api/analyze
  * 上传图像并创建分析任务
  */
 router.post('/', optionalAuth, upload.single('image'), async (req, res, next) => {
   let transaction;
+  let rollbackPersistedImage = null;
   try {
     console.log('➡️ 收到分析请求');
     // 验证文件
@@ -86,8 +110,7 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
     const { patientName, patientId, studyDate, modality } = req.body;
     if (!patientName || !patientId || !studyDate || !modality) {
       console.error('❌ 缺少必填字段:', req.body);
-      // 删除已上传的文件
-      await fs.unlink(req.file.path).catch(() => {});
+      await cleanupUploadedTempFile(req.file);
       return res.status(400).json({
         success: false,
         message: '请求参数错误',
@@ -151,17 +174,23 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
       const fileExt = path.extname(req.file.originalname).substring(1).toUpperCase();
       const fileFormat = fileExt === 'JPG' ? 'JPEG' : fileExt;
 
-      await StudyImage.create(
+      const persistedImage = await persistStudyImage({
+        file: req.file,
+        studyId: study.id,
+      });
+      rollbackPersistedImage = persistedImage.rollback;
+
+      const createdImage = await StudyImage.create(
         {
           study_id: study.id,
           original_filename: req.file.originalname,
-          stored_filename: path.basename(req.file.filename),
-          file_path: `/uploads/${path.basename(req.file.path)}`,
+          stored_filename: persistedImage.storedFilename,
+          file_path: persistedImage.filePath,
           file_size: req.file.size,
           mime_type: req.file.mimetype,
           file_format: fileFormat,
           is_primary: true,
-          upload_status: 'completed',
+          upload_status: persistedImage.uploadStatus || 'completed',
         },
         { transaction },
       );
@@ -197,20 +226,44 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
       });
 
       // 异步执行分析 (传入数据库ID)
-      analysisService.processTask(analysisTask.id, req.file.path, study.id).catch((err) => {
-        console.error(`❌ 任务后台执行失败:`, err);
+      (async () => {
+        const preparedImage = await prepareStudyImageForAnalysis(createdImage);
+        if (!preparedImage.imagePath) {
+          await analysisTask.update({
+            status: 'FAILED',
+            progress: 0,
+            error_message: '图像路径解析失败，无法开始分析',
+            completed_at: new Date(),
+          });
+          await Study.update({ status: 'failed' }, { where: { id: study.id } });
+          return;
+        }
+
+        analysisService
+          .processTask(analysisTask.id, preparedImage.imagePath, study.id)
+          .finally(async () => {
+            await safeCleanup(preparedImage.cleanup);
+          })
+          .catch((err) => {
+            console.error(`❌ 任务后台执行失败:`, err);
+          });
+      })().catch((err) => {
+        console.error(`❌ 单图分析预处理失败:`, err);
       });
     } catch (dbError) {
       console.error('❌ 数据库操作失败:', dbError);
       await transaction.rollback();
+      transaction = null;
       console.log('⏪ 事务已回滚');
+      await safeCleanup(rollbackPersistedImage);
       throw dbError;
     }
   } catch (error) {
-    // 发生错误时尝试删除文件
-    if (req.file) {
-      await fs.unlink(req.file.path).catch(() => {});
+    if (transaction) {
+      await transaction.rollback().catch(() => {});
     }
+    await safeCleanup(rollbackPersistedImage);
+    await cleanupUploadedTempFile(req.file);
     console.error('分析请求处理失败 (Outer Catch):', error);
     next(error);
   }

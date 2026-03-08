@@ -27,7 +27,6 @@ const { testConnection, syncDatabase } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
 const {
   ensureFollowUpInfrastructure,
-  startFollowUpScheduler,
 } = require('./services/followupScheduler.service');
 const { ensureEmailInfrastructure } = require('./services/emailInfrastructure.service');
 
@@ -184,7 +183,6 @@ app.listen(PORT, async () => {
   console.log(`📄 报告目录: ${reportsDir}`);
   console.log(`🤖 通义千问模型: ${process.env.QWEN_MODEL || '未配置'}`);
   console.log(`🔧 运行环境: ${process.env.NODE_ENV || 'development'}`);
-  startFollowUpScheduler();
 
   // 测试数据库连接
   try {

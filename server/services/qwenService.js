@@ -2,6 +2,10 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(String(value || ''));
+}
+
 /**
  * 根据检查方式生成优化的提示词
  * @param {string} modality - 检查方式类型
@@ -269,15 +273,15 @@ class QwenService {
 
   /**
    * 调用通义千闪API分析宫颈图像
-   * @param {string} imagePath - 图像文件路径
+   * @param {string} imagePath - 图像来源（本地路径或公网URL）
    * @param {string} modality - 检查方式类型
    * @param {number} retryCount - 重试次数
    * @returns {Promise<Object>} 分析结果
    */
   async analyzeImage(imagePath, modality = '巴氏染色涂片（Pap Smear）', retryCount = 3) {
     try {
-      // 转换图像为Base64
-      const imageDataUrl = await this.imageToBase64(imagePath);
+      // 远程URL直传模型；本地路径转换为Base64
+      const imageDataUrl = isHttpUrl(imagePath) ? imagePath : await this.imageToBase64(imagePath);
 
       // 根据检查方式生成优化的提示词
       const systemPrompt = generatePrompt(modality);

@@ -18,6 +18,7 @@ const { createAnalysisNotifications } = require('../services/notificationService
 const emailService = require('../services/email.service');
 const {
   persistStudyImage,
+  syncStudyImageToTucang,
   prepareStudyImageForAnalysis,
 } = require('../services/studyImageStorage.service');
 
@@ -349,7 +350,7 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
             mime_type: file.mimetype,
             file_format: resolveFileFormat(file.originalname),
             is_primary: true,
-            upload_status: 'completed',
+            upload_status: persistedImage.uploadStatus || 'completed',
           },
           { transaction },
         );
@@ -369,6 +370,11 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
 
         await transaction.commit();
         transaction = null;
+        try {
+          await syncStudyImageToTucang(image);
+        } catch (error) {
+          console.warn(`[POST /analysis-tasks/batch] 图仓同步失败，保留本地路径: ${error.message}`);
+        }
         createdCount += 1;
 
         const item = {

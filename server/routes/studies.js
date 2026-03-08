@@ -15,6 +15,7 @@ const {
 const { authenticate } = require('../middleware/auth');
 const {
   persistStudyImage,
+  syncStudyImageToTucang,
   removeStudyImageFile,
   serializeStudyImageForResponse,
   serializeStudyForResponse,
@@ -190,6 +191,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
           mime_type: file.mimetype,
           file_format: fileFormat,
           is_primary: isPrimary,
+          upload_status: persistedImage.uploadStatus || 'completed',
         },
         { transaction },
       );
@@ -198,6 +200,15 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
 
     await transaction.commit();
     transaction = null;
+    await Promise.all(
+      images.map(async (img) => {
+        try {
+          await syncStudyImageToTucang(img);
+        } catch (error) {
+          console.warn(`[POST /studies/:id/images] 图仓同步失败，保留本地路径: ${error.message}`);
+        }
+      }),
+    );
     const responseImages = await Promise.all(images.map((img) => serializeStudyImageForResponse(img)));
 
     res.json({
