@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { useQuasar } from 'quasar';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  SORTED_SOFTWARE_COPYRIGHTS,
+  type SoftwareCopyrightItem,
+} from 'src/constants/softwareCopyrights';
 
 interface BrandFeatureItem {
   icon: string;
@@ -13,13 +18,6 @@ interface BrandRealtimeMetric {
   value: number;
   description: string;
   color: string;
-}
-
-interface BrandCopyrightItem {
-  name: string;
-  version: string;
-  registrationNo: string;
-  certificateNo: string;
 }
 
 const props = withDefaults(
@@ -62,20 +60,10 @@ const defaultFeatures: BrandFeatureItem[] = [
   },
 ];
 
-const defaultCopyrights: BrandCopyrightItem[] = [
-  {
-    name: '宫颈智能阅片与分级管理系统',
-    version: 'V1.0.0',
-    registrationNo: '2026SR0224083',
-    certificateNo: '软著登字第17438364号',
-  },
-  {
-    name: '宫颈护航智能辅助筛查系统',
-    version: 'V1.0.0',
-    registrationNo: '2026SR0207339',
-    certificateNo: '软著登字第17421620号',
-  },
-];
+const $q = useQuasar();
+const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
+const previewVisible = ref(false);
+const activeCertificate = ref<SoftwareCopyrightItem | null>(null);
 
 const precisionRate = ref(99.55);
 const partnerCount = ref(10);
@@ -166,6 +154,26 @@ const realtimeMetrics = computed<BrandRealtimeMetric[]>(() => {
 const accuracyProgress = computed(() => {
   return clampNumber(precisionRate.value, 95, 100);
 });
+
+const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
+  if (!certificate.imageUrl) {
+    $q.notify({
+      type: 'info',
+      message: '证书图片待补充',
+      position: 'top',
+      timeout: 1200,
+    });
+    return;
+  }
+
+  activeCertificate.value = certificate;
+  previewVisible.value = true;
+};
+
+const resetCertificatePreview = (): void => {
+  previewVisible.value = false;
+  activeCertificate.value = null;
+};
 
 onMounted(() => {
   syncAnimatedDisplays();
@@ -312,9 +320,10 @@ onBeforeUnmount(() => {
       <div class="auth-brand-footer-title">软件著作权</div>
       <div class="copyright-grid">
         <article
-          v-for="copyright in defaultCopyrights"
-          :key="copyright.name"
-          class="copyright-card"
+          v-for="copyright in sortedSoftwareCopyrights"
+          :key="copyright.id"
+          class="copyright-card copyright-card--clickable"
+          @click="openCertificatePreview(copyright)"
         >
           <div class="copyright-head">
             <div class="copyright-icon-wrapper">
@@ -334,6 +343,28 @@ onBeforeUnmount(() => {
         </article>
       </div>
     </footer>
+
+    <q-dialog v-model="previewVisible" @hide="resetCertificatePreview">
+      <q-card style="width: min(92vw, 960px); max-width: 960px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-weight-bold">
+            {{ activeCertificate?.name }}
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <q-img
+            v-if="activeCertificate?.imageUrl"
+            :src="activeCertificate.imageUrl"
+            :alt="activeCertificate.name"
+            fit="contain"
+            class="certificate-preview-image"
+          />
+          <div v-else class="text-center text-grey-7 q-py-xl">证书图片待补充</div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -765,6 +796,18 @@ onBeforeUnmount(() => {
   padding: 10px 12px;
 }
 
+.copyright-card--clickable {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.copyright-card--clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
 .copyright-head {
   display: flex;
   align-items: center;
@@ -821,6 +864,12 @@ onBeforeUnmount(() => {
   font-family: monospace;
   margin-left: 2px;
   font-weight: 500;
+}
+
+.certificate-preview-image {
+  max-height: 72vh;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
 /* =========================================
@@ -963,6 +1012,10 @@ body.body--dark .copyright-badge {
 
 body.body--dark .copyright-meta-row {
   color: #cbd5e1;
+}
+
+body.body--dark .certificate-preview-image {
+  background: rgba(15, 23, 42, 0.6);
 }
 
 @media (max-width: 1400px) {

@@ -869,7 +869,10 @@
             <!-- 软著展示 (置顶优化) -->
             <div class="q-gutter-y-sm q-mb-md">
               <div
+                v-for="copyright in sortedSoftwareCopyrights"
+                :key="copyright.id"
                 class="bg-purple-1 rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
+                @click="openCertificatePreview(copyright)"
               >
                 <div class="row items-center relative-position" style="z-index: 1">
                   <q-icon name="verified" color="purple" size="sm" class="q-mr-sm col-auto" />
@@ -878,9 +881,9 @@
                       class="text-subtitle2 text-purple-9 text-weight-bold"
                       style="line-height: 1.2"
                     >
-                      宫颈智能阅片与分级管理系统
+                      {{ copyright.name }}
                       <q-badge color="purple-3" text-color="purple-9" class="q-ml-xs" align="top"
-                        >V1.0.0</q-badge
+                        >{{ copyright.version }}</q-badge
                       >
                     </div>
                   </div>
@@ -891,50 +894,11 @@
                 >
                   <div class="col-12 row items-center" style="line-height: 1.5">
                     <span class="q-mr-sm text-weight-bold opacity-70">登记号</span>
-                    <span class="text-weight-medium">2026SR0224083</span>
+                    <span class="text-weight-medium">{{ copyright.registrationNo }}</span>
                   </div>
                   <div class="col-12 row items-center" style="line-height: 1.5">
                     <span class="q-mr-sm text-weight-bold opacity-70">证书号</span>
-                    <span class="text-weight-medium">软著登字第17438364号</span>
-                  </div>
-                </div>
-                <!-- 装饰背景 -->
-                <q-icon
-                  name="copyright"
-                  class="absolute-bottom-right text-purple-2"
-                  size="48px"
-                  style="bottom: -12px; right: -8px; transform: rotate(-15deg)"
-                />
-              </div>
-
-              <div
-                class="bg-purple-1 rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
-              >
-                <div class="row items-center relative-position" style="z-index: 1">
-                  <q-icon name="verified" color="purple" size="sm" class="q-mr-sm col-auto" />
-                  <div class="col">
-                    <div
-                      class="text-subtitle2 text-purple-9 text-weight-bold"
-                      style="line-height: 1.2"
-                    >
-                      宫颈护航智能辅助筛查系统
-                      <q-badge color="purple-3" text-color="purple-9" class="q-ml-xs" align="top"
-                        >V1.0.0</q-badge
-                      >
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="row q-mt-xs text-caption text-purple-8 q-pl-lg relative-position"
-                  style="z-index: 1"
-                >
-                  <div class="col-12 row items-center" style="line-height: 1.5">
-                    <span class="q-mr-sm text-weight-bold opacity-70">登记号</span>
-                    <span class="text-weight-medium">2026SR0207339</span>
-                  </div>
-                  <div class="col-12 row items-center" style="line-height: 1.5">
-                    <span class="q-mr-sm text-weight-bold opacity-70">证书号</span>
-                    <span class="text-weight-medium">软著登字第17421620号</span>
+                    <span class="text-weight-medium">{{ copyright.certificateNo }}</span>
                   </div>
                 </div>
                 <!-- 装饰背景 -->
@@ -1299,6 +1263,26 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="previewVisible" @hide="resetCertificatePreview">
+      <q-card style="width: min(92vw, 960px); max-width: 960px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-weight-bold">{{ activeCertificate?.name }}</div>
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <q-img
+            v-if="activeCertificate?.imageUrl"
+            :src="activeCertificate.imageUrl"
+            :alt="activeCertificate.name"
+            fit="contain"
+            class="certificate-preview-image"
+          />
+          <div v-else class="text-center text-grey-7 q-py-xl">证书图片待补充</div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
     <!-- 协议弹窗 -->
     <AgreementDialog
       v-model="showPaymentAgreementDialog"
@@ -1314,9 +1298,36 @@ import { ref, onMounted } from 'vue';
 import { useQuasar, date } from 'quasar';
 import { paymentAPI, userAPI } from 'src/services/api';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
+import {
+  SORTED_SOFTWARE_COPYRIGHTS,
+  type SoftwareCopyrightItem,
+} from 'src/constants/softwareCopyrights';
 import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 const $q = useQuasar();
+const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
+const previewVisible = ref(false);
+const activeCertificate = ref<SoftwareCopyrightItem | null>(null);
+
+const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
+  if (!certificate.imageUrl) {
+    $q.notify({
+      type: 'info',
+      message: '证书图片待补充',
+      position: 'top',
+      timeout: 1200,
+    });
+    return;
+  }
+
+  activeCertificate.value = certificate;
+  previewVisible.value = true;
+};
+
+const resetCertificatePreview = (): void => {
+  previewVisible.value = false;
+  activeCertificate.value = null;
+};
 
 // 选中的订阅计划
 const selectedPlan = ref<'pay-per-use' | 'monthly' | 'yearly' | null>(null);
@@ -2017,6 +2028,12 @@ onMounted(() => {
 .agreement-link:hover {
   text-decoration: underline;
 }
+
+.certificate-preview-image {
+  max-height: 72vh;
+  border-radius: 8px;
+  background: #f8fafc;
+}
 </style>
 
 <style lang="scss">
@@ -2041,6 +2058,10 @@ body.body--dark {
 
   .agreement-link {
     color: var(--q-primary) !important;
+  }
+
+  .certificate-preview-image {
+    background: var(--app-elevated-bg) !important;
   }
 
   // 套餐包卡片 hover
