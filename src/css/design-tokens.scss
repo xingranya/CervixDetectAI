@@ -132,7 +132,12 @@
   --app-table-hover-bg: rgba(0, 0, 0, 0.02);
   --app-table-footer-color: #64748b;
   --app-chip-bg: #f1f5f9;
-  --app-dialog-bg: #ffffff;
+  --app-dialog-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.42));
+  --app-dialog-border: rgba(148, 163, 184, 0.48);
+  --app-dialog-text: #0f172a;
+  --app-dialog-muted-text: #475569;
+  --app-dialog-saturate: 2.2;
+  --app-dialog-blur: 34px;
 
   // 通用背景色令牌（替代硬编码）
   --app-bg-white: #ffffff;
@@ -230,7 +235,12 @@ body.body--dark {
   --app-table-hover-bg: rgba(255, 255, 255, 0.03);
   --app-table-footer-color: #94a3b8;
   --app-chip-bg: #2a2a2a;
-  --app-dialog-bg: #1e1e1e;
+  --app-dialog-bg: linear-gradient(145deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.58));
+  --app-dialog-border: rgba(148, 163, 184, 0.38);
+  --app-dialog-text: #e2e8f0;
+  --app-dialog-muted-text: #cbd5e1;
+  --app-dialog-saturate: 1.9;
+  --app-dialog-blur: 38px;
 
   // 暗色背景令牌
   --app-bg-white: #1e1e1e;

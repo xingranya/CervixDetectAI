@@ -37,12 +37,39 @@
 }
 
 .q-dialog__inner > .q-card {
-  background: var(--app-glass-bg);
-  border: 1px solid var(--app-glass-border);
+  background: var(--app-dialog-bg);
+  border: 1px solid var(--app-dialog-border);
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-lg);
-  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
+  -webkit-backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
+  color: var(--app-dialog-text);
+}
+
+.q-dialog__backdrop {
+  background: rgba(15, 23, 42, 0.2) !important;
+}
+
+.q-dialog__inner > .q-card .text-dark,
+.q-dialog__inner > .q-card .text-black {
+  color: var(--app-dialog-text) !important;
+}
+
+.q-dialog__inner > .q-card .text-grey,
+.q-dialog__inner > .q-card .text-grey-5,
+.q-dialog__inner > .q-card .text-grey-6,
+.q-dialog__inner > .q-card .text-grey-7,
+.q-dialog__inner > .q-card .text-grey-8 {
+  color: var(--app-dialog-muted-text) !important;
+}
+
+.q-dialog__inner > .q-card .q-field__label {
+  color: var(--app-dialog-muted-text) !important;
+}
+
+.q-dialog__inner > .q-card .q-field__native,
+.q-dialog__inner > .q-card .q-field__input {
+  color: var(--app-dialog-text) !important;
 }
 
 .q-field--outlined .q-field__control {
@@ -250,10 +277,15 @@ body.body--dark {
 
   // q-dialog 弹窗
   .q-dialog__inner > .q-card {
-    background: var(--app-glass-bg);
-    border-color: var(--app-glass-border);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+    background: var(--app-dialog-bg);
+    border-color: var(--app-dialog-border);
+    color: var(--app-dialog-text);
+    backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
+    -webkit-backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
+  }
+
+  .q-dialog__backdrop {
+    background: rgba(2, 6, 23, 0.34) !important;
   }
 
   // ---- 通用颜色工具类覆盖（Quasar 工具类使用 !important，故此处保持） ----

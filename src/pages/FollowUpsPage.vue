@@ -270,6 +270,7 @@
               <q-input
                 v-model="form.reason"
                 outlined
+                stack-label
                 label="随访原因（可选）"
                 placeholder="如：LSIL复查、术后3个月复评"
               />
@@ -280,6 +281,7 @@
                 outlined
                 type="textarea"
                 autogrow
+                stack-label
                 label="备注（可选）"
                 placeholder="补充说明、注意事项、沟通记录"
               />
