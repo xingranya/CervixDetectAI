@@ -395,11 +395,11 @@ const result = await authAPI.resetPassword('13800138000', '123456', 'newpassword
       "avatar": {
         "id": 1,
         "user_id": 1,
-        "original_url": "/uploads/avatars/avatar-1-large.jpg",
-        "large_url": "/uploads/avatars/avatar-1-large.jpg",
-        "medium_url": "/uploads/avatars/avatar-1-medium.jpg",
-        "small_url": "/uploads/avatars/avatar-1-small.jpg",
-        "thumbnail_url": "/uploads/avatars/avatar-1-thumbnail.jpg",
+        "original_url": "https://img1.tucang.cc/...",
+        "large_url": "https://img1.tucang.cc/...",
+        "medium_url": "https://img1.tucang.cc/...",
+        "small_url": "https://img1.tucang.cc/...",
+        "thumbnail_url": "https://img1.tucang.cc/...",
         "file_size": 102400
       }
     }
@@ -524,16 +524,21 @@ const result = await userAPI.updatePassword({
     "avatar": {
       "id": 1,
       "user_id": 1,
-      "original_url": "/uploads/avatars/avatar-1-large.jpg",
-      "large_url": "/uploads/avatars/avatar-1-large.jpg",
-      "medium_url": "/uploads/avatars/avatar-1-medium.jpg",
-      "small_url": "/uploads/avatars/avatar-1-small.jpg",
-      "thumbnail_url": "/uploads/avatars/avatar-1-thumbnail.jpg",
-      "file_size": 102400
+      "original_url": "https://img1.tucang.cc/...",
+      "large_url": "https://img1.tucang.cc/...",
+      "medium_url": "https://img1.tucang.cc/...",
+      "small_url": "https://img1.tucang.cc/...",
+      "thumbnail_url": "https://img1.tucang.cc/...",
+      "file_size": 102400,
+      "mime_type": "image/png",
+      "width": 512,
+      "height": 512
     }
   }
 }
 ```
+
+> 说明：当前实现使用图仓直传，`sharp` 仅用于读取元数据；多尺寸字段仍保留，但当前统一写入同一远程 URL。
 
 **HTTP状态码**
 - `200 OK`: 头像上传成功
@@ -653,11 +658,11 @@ const result = await studyAPI.createStudy({
         "study_id": 1,
         "original_filename": "image1.jpg",
         "stored_filename": "study-1234567890.jpg",
-        "file_path": "/uploads/studies/study-1234567890.jpg",
+        "file_path": "https://img1.tucang.cc/...",
         "file_size": 102400,
         "mime_type": "image/jpeg",
         "file_format": "JPEG",
-        "is_primary": false,
+        "is_primary": true,
         "upload_status": "completed",
         "created_at": "2024-01-01T00:00:00Z"
       }
@@ -665,6 +670,8 @@ const result = await studyAPI.createStudy({
   }
 }
 ```
+
+> 说明：主事务会先完成本地持久化与数据库写入，随后异步尝试同步图仓；`file_path` 在不同阶段可能是本地相对路径或图仓远程 URL。
 
 **HTTP状态码**
 - `200 OK`: 影像上传成功
@@ -1087,6 +1094,8 @@ const result = await analysisTaskAPI.createTask({
 });
 ```
 
+> 说明：分析触发前会优先通过 `prepareStudyImageForAnalysis(...)` 解析远程 URL；若图仓同步失败，则回退本地绝对路径继续分析。
+
 **Section sources**
 - [analysis-tasks.js](file://server/routes/analysis-tasks.js#L12-L71)
 
@@ -1388,7 +1397,7 @@ const result = await analysisTaskAPI.saveResult(1, {
 - `Content-Type: multipart/form-data`
 
 **请求体参数**
-- `image` (file, 必填): 图像文件（JPG, PNG, TIFF格式）
+- `image` (file, 必填): 图像文件（JPG, PNG, TIFF, BMP格式）
 - `patientName` (string, 必填): 患者姓名
 - `patientId` (string, 必填): 患者ID
 - `studyDate` (string, 必填): 检查日期（YYYY-MM-DD）
@@ -1418,6 +1427,8 @@ const result = await analysisTaskAPI.saveResult(1, {
 ```typescript
 // 该接口不通过api.ts调用，而是直接通过axios调用
 ```
+
+> 说明：单图分析上传会先写入安全临时目录并持久化为病例影像，后台任务分析前优先尝试图仓远程 URL，失败时自动回退本地路径。
 
 **Section sources**
 - [analyze.js](file://server/routes/analyze.js#L51-L106)

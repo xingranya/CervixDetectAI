@@ -95,6 +95,18 @@ TEMPLATE_ID_REPORT_READY=42476
 TEMPLATE_ID_REGISTER_SUCCESS=42477
 ```
 
+#### 图仓存储
+
+```env
+TUCANG_TOKEN=your_tucang_token
+TUCANG_API_BASE_URL=https://api.tucang.cc
+TUCANG_TIMEOUT_MS=15000
+TUCANG_RETRY_MAX=2
+TUCANG_TLS_REJECT_UNAUTHORIZED=true
+TUCANG_STUDY_FOLDER_ID=your_study_folder_id
+TUCANG_AVATAR_FOLDER_ID=your_avatar_folder_id
+```
+
 ## 常用命令
 
 ```bash
@@ -125,6 +137,21 @@ quasar build -m capacitor -T android  # Android 构建
 - 登录页 footer 的注册引导文案优先使用“开始注册”这类直接表达。
 
 ## 近期更新
+
+- **[2026-03-09] 认证页软著预览与对话框主题优化**
+  - `AuthBrandPanel` 与 `ApiSettingsPage` 新增软件著作权卡片，支持点击预览证书图片与缺图提示
+  - 新增 `src/constants/softwareCopyrights.ts` 统一维护软著信息，多个页面复用同一数据源
+  - `AuthSplitLayout` 修复溢出与滚动显示问题，保证证书预览与长内容场景可访问
+  - 对话框背景、边框、文字层级、蒙版颜色统一到浅色/深色设计令牌
+  - `FollowUpsPage` 输入框补充 `stack-label`，修复随访表单标签显示挤压问题
+
+- **[2026-03-03] 影像存储链路重构与图仓集成**
+  - 新增 `server/services/tucang.service.js`，支持缓冲区上传、超时控制、重试与 TLS 校验开关
+  - `studyImageStorage.service.js` 统一接管病例影像持久化、图仓同步、序列化与分析前路径准备
+  - 病例影像上传改为“先本地持久化，后异步同步图仓”，分析前优先使用远程 URL，失败时回退本地路径
+  - 头像上传改为内存存储并直接上传图仓，`UserAvatar` 多尺寸字段当前写入同一远程 URL，`sharp` 仅保留元数据读取
+  - `qwenService` 支持直接消费 HTTP URL，避免已远程可访问影像重复转 Base64
+  - 批量上传、单图分析与任务创建链路均补齐安全清理与回滚逻辑
 
 - **[2026-03-01] 患者洞察中心完善与全站视觉统一**
   - 患者洞察中心 `F2/F8/F9` 已形成完整页面链路：历史趋势、检查对比、时间线与风险画像联动
@@ -244,6 +271,8 @@ Order (支付订单)
 - 双 Token 认证 (Access + Refresh)
 - 401 自动刷新重试机制
 - 模块化封装 (authAPI, patientAPI, studyAPI 等)
+- 图像存储服务统一封装（本地持久化、图仓同步、序列化、分析前路径准备）
+- AI 分析支持远程 URL 直传与本地文件 Base64 兼容双路径
 - **随访管理 API** (`/api/followups`)
   - 覆盖创建、分页查询、编辑、完成/取消、重点关注、立即提醒
 - **站内通知 API** (`/api/notifications`)
@@ -264,6 +293,7 @@ Order (支付订单)
 - 阿里云 DYPNS (号码认证)
 - 阿里云 ESA AI 验证码（登录/注册安全验证）
 - 阿里云 SMS (短信验证码)
+- 图仓 (影像与头像远程存储)
 - **腾讯云 SES (验证码 + 业务通知邮件推送)**
 - 通义千问大模型 (AI 诊断建议)
 - Sharp (医学影像处理)
