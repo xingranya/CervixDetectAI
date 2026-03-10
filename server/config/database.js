@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-require('dotenv').config();
+require('./loadEnv');
 
 module.exports = {
   development: {

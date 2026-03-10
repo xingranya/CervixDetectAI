@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-require('dotenv').config();
+require('./config/loadEnv');
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -189,18 +189,26 @@ app.listen(PORT, async () => {
     await testConnection();
     console.log('✅ 数据库连接成功');
 
+    const isDbSyncEnabled = String(process.env.DB_SYNC || '')
+      .trim()
+      .toLowerCase() === 'true';
+
+    console.log(`🧭 DB_SYNC 当前值: ${process.env.DB_SYNC || '未设置'}`);
+
+    // 数据库同步（通过 DB_SYNC 环境变量控制）
+    // DB_SYNC=true 时先做全量同步，避免功能表因外键依赖在基础表之前创建失败
+    if (isDbSyncEnabled) {
+      console.log('🔄 正在同步数据库表结构...');
+      await syncDatabase({ alter: true });
+      console.log('✅ 数据库表结构同步完成');
+    } else {
+      console.log('⏭️ 已跳过全量数据库同步（DB_SYNC 未开启）');
+    }
+
     // 独立保障随访模块表结构，避免 DB_SYNC=false 导致新功能直接报 500
     await ensureFollowUpInfrastructure();
     // 独立保障邮箱验证码枚举，避免 DB_SYNC=false 导致 change_email 不可用
     await ensureEmailInfrastructure();
-
-    // 数据库同步（通过 DB_SYNC 环境变量控制）
-    // DB_SYNC=true 启用同步，DB_SYNC=false 或不设置则跳过
-    if (process.env.DB_SYNC === 'true') {
-      console.log('🔄 正在同步数据库表结构...');
-      await syncDatabase({ alter: true });
-      console.log('✅ 数据库表结构同步完成');
-    }
   } catch (error) {
     console.error('❌ 数据库连接失败:', error.message);
   }
