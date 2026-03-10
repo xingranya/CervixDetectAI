@@ -55,6 +55,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { normalizeApiBaseUrl, DEFAULT_API_BASE_URL } from 'src/utils/apiBaseUrl';
 
 const router = useRouter();
 
@@ -92,7 +93,7 @@ let pollCount = 0;
 const MAX_POLL_COUNT = 15;
 
 // API 基础路径
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 
 const formatDate = (val: string) => {
   if (!val) return '-';

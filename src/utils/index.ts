@@ -1,5 +1,6 @@
 // 导出所有工具函数
 export * from './storage';
+export * from './apiBaseUrl';
 export * from './formatters';
 export * from './mappers';
 export * from './pdfGenerator';

@@ -1,9 +1,10 @@
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import axios from 'axios';
 import { getItem, removeItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
+import { normalizeApiBaseUrl, DEFAULT_API_BASE_URL } from 'src/utils/apiBaseUrl';
 
 // API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 
 // Token 刷新 singleflight：并发 401 只触发一次刷新请求
 let refreshPromise: Promise<string> | null = null;

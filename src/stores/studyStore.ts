@@ -2,21 +2,9 @@ import { defineStore } from 'pinia';
 import type { AnalysisResult } from './analysisStore';
 import { studyAPI, analysisTaskAPI } from 'src/services/api';
 import type { StudyRaw } from 'src/services/api';
+import { normalizeApiBaseUrl, getServerBaseUrl, DEFAULT_API_BASE_URL } from 'src/utils/apiBaseUrl';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-
-/**
- * 计算静态资源的服务端基础地址
- */
-const getServerBaseUrl = (apiBaseUrl: string): string => {
-  if (!apiBaseUrl) return '';
-  const apiIndex = apiBaseUrl.indexOf('/api');
-  if (apiIndex === -1) {
-    return apiBaseUrl.replace(/\/$/, '');
-  }
-  return apiBaseUrl.slice(0, apiIndex);
-};
-
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
 type LatestTaskStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';

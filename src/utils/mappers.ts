@@ -1,16 +1,9 @@
 /**
  * 数据映射和转换工具函数
  */
+import { normalizeApiBaseUrl, getServerBaseUrl, DEFAULT_API_BASE_URL } from './apiBaseUrl';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-const getServerBaseUrl = (apiBaseUrl: string): string => {
-  if (!apiBaseUrl) return '';
-  const apiIndex = apiBaseUrl.indexOf('/api');
-  if (apiIndex === -1) {
-    return apiBaseUrl.replace(/\/$/, '');
-  }
-  return apiBaseUrl.slice(0, apiIndex);
-};
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
 /**
