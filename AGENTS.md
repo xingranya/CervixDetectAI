@@ -138,6 +138,12 @@ quasar build -m capacitor -T android  # Android 构建
 
 ## 近期更新
 
+- **[2026-03-11] 套餐订阅页与 AI 偏好页拆分**
+  - `src/pages/ApiSettingsPage.vue` 收敛为纯“套餐订阅”页面，聚焦套餐档位、权益状态、能力对比、性能指标与支付流程
+  - 新增 `src/pages/AiPreferencesPage.vue`，将 AI 引擎配置与服务偏好配置独立为设置页，并按 `AI引擎 / 通知与分析 / 报告与安全 / 账单偏好` 分类展示
+  - `src/layouts/MainLayout.vue` 左侧导航将“订阅与AI设置”拆分为“套餐订阅”和“AI与偏好设置”
+  - `src/router/routes.ts` 新增 `/app/ai-preferences` 路由，订阅与参数维护职责分离更清晰
+
 - **[2026-03-09] 认证页软著预览与对话框主题优化**
   - `AuthBrandPanel` 与 `ApiSettingsPage` 新增软件著作权卡片，支持点击预览证书图片与缺图提示
   - 新增 `src/constants/softwareCopyrights.ts` 统一维护软著信息，多个页面复用同一数据源
@@ -252,6 +258,8 @@ quasar build -m capacitor -T android  # Android 构建
 | StudyDetailPage | AI诊断结论展示     | src/pages/StudyDetailPage.vue |
 | StudiesPage     | 病例中心           | src/pages/StudiesPage.vue     |
 | PatientsPage    | 患者管理           | src/pages/PatientsPage.vue    |
+| ApiSettingsPage | 套餐订阅与支付     | src/pages/ApiSettingsPage.vue |
+| AiPreferencesPage | AI与偏好设置     | src/pages/AiPreferencesPage.vue |
 
 ### 后端数据模型关系
 
