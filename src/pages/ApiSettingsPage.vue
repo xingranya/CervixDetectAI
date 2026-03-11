@@ -15,175 +15,344 @@
       <!-- 左侧主内容 -->
       <div class="col-lg-8 col-md-12">
         <!-- 订阅计划选择 -->
-        <q-card flat bordered class="q-mb-md">
+        <q-card flat bordered class="q-mb-md subscription-demo-shell">
+          <q-card-section class="subscription-demo-hero">
+            <div class="row items-start q-col-gutter-lg">
+              <div class="col-12 col-md-7">
+                <q-chip dense color="primary" text-color="white" icon="workspace_premium">
+                  订阅服务中心
+                </q-chip>
+                <div class="text-h4 subscription-demo-title q-mt-md">
+                  为不同机构场景匹配合适的订阅方案
+                </div>
+                <div class="text-body1 text-grey-7 q-mt-sm subscription-demo-subtitle">
+                  基础套餐覆盖常规筛查与标准报告交付，顶级套餐补齐随访管理、多格式报告与水印配置。
+                  选定套餐后，右侧订阅状态会即时同步。
+                </div>
+                <div class="row q-col-gutter-sm q-mt-md">
+                  <div class="col-auto" v-for="pill in heroHighlights" :key="pill">
+                    <q-chip dense color="white" text-color="primary" class="subscription-hero-chip">
+                      {{ pill }}
+                    </q-chip>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-5">
+                <q-card flat class="subscription-demo-highlight">
+                  <q-card-section>
+                    <div class="subscription-demo-highlight__eyebrow">当前主推档位</div>
+                    <div class="row items-start no-wrap q-mt-sm">
+                      <div class="col">
+                        <div class="text-h6 text-weight-bold">
+                          {{ currentHeroOffer.planName }}
+                        </div>
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                          {{ currentHeroOffer.description }}
+                        </div>
+                      </div>
+                      <q-badge outline color="primary" class="subscription-demo-highlight__tier">
+                        {{ currentHeroGroup.title }}
+                      </q-badge>
+                    </div>
+
+                    <div class="subscription-demo-highlight__price-band q-mt-md">
+                      <div>
+                        <div
+                          v-if="currentHeroOffer.originalAmount"
+                          class="text-caption text-grey-5 text-strike"
+                        >
+                          ¥{{ formatCurrency(currentHeroOffer.originalAmount) }}
+                        </div>
+                        <div class="row items-end no-wrap">
+                          <div class="text-h3 text-weight-bold text-primary">
+                            ¥{{ formatCurrency(currentHeroOffer.amount) }}
+                          </div>
+                          <div class="text-body2 text-grey-7 q-ml-sm q-mb-xs">
+                            /{{ currentHeroOffer.unitLabel }}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="subscription-demo-highlight__price-note">
+                        <div class="subscription-demo-highlight__price-note-label">开通建议</div>
+                        <div class="subscription-demo-highlight__price-note-value">
+                          {{ currentHeroOffer.billingLabel }}
+                        </div>
+                        <div class="text-caption text-grey-6">
+                          {{ getOfferSupportText(currentHeroOffer) }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="subscription-demo-highlight__metrics q-mt-md">
+                      <div class="subscription-demo-highlight__metric">
+                        <span class="subscription-demo-highlight__metric-label">适用方案</span>
+                        <strong>{{ currentHeroGroup.badge }}</strong>
+                      </div>
+                      <div class="subscription-demo-highlight__metric">
+                        <span class="subscription-demo-highlight__metric-label">核心权益</span>
+                        <strong>{{ currentHeroOffer.featureSummary.length }} 项</strong>
+                      </div>
+                      <div class="subscription-demo-highlight__metric">
+                        <span class="subscription-demo-highlight__metric-label">节省金额</span>
+                        <strong>{{ getOfferSavingsText(currentHeroOffer) }}</strong>
+                      </div>
+                      <div class="subscription-demo-highlight__metric">
+                        <span class="subscription-demo-highlight__metric-label">开通后</span>
+                        <strong>状态即时同步</strong>
+                      </div>
+                    </div>
+
+                    <div class="row q-gutter-sm q-mt-md">
+                      <q-badge color="orange" class="q-mr-sm">
+                        {{ currentHeroOffer.badge }}
+                      </q-badge>
+                      <q-badge
+                        v-if="currentHeroOffer.autoRenewHint"
+                        color="blue-9"
+                        text-color="white"
+                      >
+                        {{ currentHeroOffer.autoRenewHint }}
+                      </q-badge>
+                    </div>
+
+                    <q-btn
+                      unelevated
+                      color="primary"
+                      class="full-width q-mt-md subscription-demo-highlight__cta"
+                      no-caps
+                      :label="getActionLabel(activeTier)"
+                      @click="openPaymentDialog(currentHeroOffer)"
+                    />
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+          </q-card-section>
+
           <q-card-section>
-            <div class="text-h6 q-mb-md">订阅服务计划</div>
-            <div class="row q-col-gutter-md">
-              <!-- 按次付费 -->
-              <div class="col-12 col-md-4">
+            <div class="row q-col-gutter-lg">
+              <div
+                v-for="group in demoPlanGroups"
+                :key="group.tier"
+                class="col-12 col-xl-6"
+              >
                 <q-card
                   flat
-                  bordered
-                  class="cursor-pointer"
-                  :class="{ 'bg-blue-1': selectedPlan === 'pay-per-use' }"
-                  @click="selectedPlan = 'pay-per-use'"
+                  class="plan-stage-card"
+                  :class="[
+                    `plan-stage-card--${group.tier}`,
+                    { 'plan-stage-card--active': activeTier === group.tier },
+                  ]"
                 >
-                  <q-card-section class="text-center">
-                    <q-icon name="payments" size="48px" color="primary" class="q-mb-sm" />
-                    <div class="text-h6 q-mb-xs">按次付费</div>
-                    <div class="text-h4 text-primary q-my-sm">
-                      ¥19<span class="text-body2">/次</span>
+                  <q-card-section class="plan-stage-card__header">
+                    <div class="row items-start no-wrap">
+                      <div class="col">
+                        <div class="row items-center q-gutter-sm">
+                          <div class="text-overline" :class="group.accentTextClass">
+                            {{ group.eyebrow }}
+                          </div>
+                          <q-badge :color="group.badgeColor">
+                            {{ group.badge }}
+                          </q-badge>
+                        </div>
+                        <div class="text-h5 text-weight-bold q-mt-sm">{{ group.title }}</div>
+                        <div class="text-body2 text-grey-7 q-mt-sm">
+                          {{ group.summary }}
+                        </div>
+                      </div>
+                      <q-avatar :color="group.avatarColor" text-color="white" size="52px">
+                        <q-icon :name="group.icon" size="28px" />
+                      </q-avatar>
                     </div>
-                    <div class="text-caption text-grey-7">灵活支付，按需使用</div>
-                  </q-card-section>
-                  <q-separator />
-                  <q-card-section>
-                    <div class="q-gutter-xs">
+
+                    <div class="q-mt-lg">
+                      <div class="plan-stage-card__focus-strip">
+                        <div>
+                          <div class="plan-stage-card__focus-label">当前已选</div>
+                          <div class="plan-stage-card__focus-name">
+                            {{ getSelectedOffer(group.tier).label }}
+                          </div>
+                        </div>
+                        <div class="text-right">
+                          <div class="plan-stage-card__focus-price">
+                            ¥{{ formatCurrency(getSelectedOffer(group.tier).amount) }}
+                            <span>/{{ getSelectedOffer(group.tier).unitLabel }}</span>
+                          </div>
+                          <div class="plan-stage-card__focus-saving">
+                            {{ getOfferSavingsText(getSelectedOffer(group.tier)) }}
+                          </div>
+                        </div>
+                      </div>
+
                       <div
-                        v-for="feature in payPerUseFeatures"
-                        :key="feature.text"
-                        class="row items-center no-wrap"
+                        v-if="getSelectedOffer(group.tier).originalAmount"
+                        class="text-caption text-grey-5 text-strike"
                       >
-                        <q-icon
-                          :name="feature.icon"
-                          :color="feature.color"
-                          size="xs"
-                          class="q-mr-xs"
-                        />
-                        <span class="text-body2" :class="feature.enabled ? '' : 'text-grey-5'">{{
-                          feature.text
-                        }}</span>
+                        ¥{{ formatCurrency(getSelectedOffer(group.tier).originalAmount) }}
+                      </div>
+                      <div class="row items-end no-wrap">
+                        <div class="text-h3 text-weight-bold" :class="group.accentTextClass">
+                          ¥{{ formatCurrency(getSelectedOffer(group.tier).amount) }}
+                        </div>
+                        <div class="text-body2 text-grey-7 q-ml-sm q-mb-xs">
+                          /{{ getSelectedOffer(group.tier).unitLabel }}
+                        </div>
+                      </div>
+                      <div class="row q-gutter-sm q-mt-sm">
+                        <q-badge :color="group.badgeColor">
+                          {{ getSelectedOffer(group.tier).badge }}
+                        </q-badge>
+                        <q-badge
+                          v-if="getSelectedOffer(group.tier).autoRenewHint"
+                          color="blue-9"
+                          text-color="white"
+                        >
+                          {{ getSelectedOffer(group.tier).autoRenewHint }}
+                        </q-badge>
+                      </div>
+                    </div>
+
+                    <div class="row q-col-gutter-sm q-mt-md">
+                      <div class="col-12 col-sm-6" v-for="feature in group.features" :key="feature">
+                        <div class="plan-feature-pill">
+                          <q-icon name="check_circle" color="positive" size="16px" />
+                          <span>{{ feature }}</span>
+                        </div>
                       </div>
                     </div>
                   </q-card-section>
-                  <q-card-actions>
-                    <q-btn
-                      flat
-                      color="primary"
-                      label="选择套餐包"
-                      no-caps
-                      class="full-width"
-                      @click.stop="showPackageDialog = true"
-                    />
-                  </q-card-actions>
-                </q-card>
-              </div>
 
-              <!-- 月度订阅 -->
-              <div class="col-12 col-md-4">
-                <q-card
-                  flat
-                  bordered
-                  class="cursor-pointer subscription-card"
-                  :class="{ 'bg-blue-1': selectedPlan === 'monthly' }"
-                  @click="selectedPlan = 'monthly'"
-                >
-                  <q-badge color="orange" floating>
-                    <q-icon name="star" size="xs" class="q-mr-xs" />
-                    推荐
-                  </q-badge>
-                  <q-card-section class="text-center">
-                    <q-icon name="calendar_month" size="48px" color="primary" class="q-mb-sm" />
-                    <div class="text-h6 q-mb-xs">月度订阅</div>
-
-                    <!-- 价格显示优化 -->
-                    <div class="price-container q-my-sm">
-                      <div class="original-price text-caption text-grey-6 text-strike">¥299</div>
-                      <div class="current-price">
-                        <span class="text-h4 text-primary text-weight-bold">¥270</span>
-                        <span class="text-body2 text-grey-7">/月</span>
-                      </div>
-                      <div class="discount-tag q-mt-xs">首月立减29元</div>
-                    </div>
-
-                    <div class="text-caption text-grey-7">包含20次AI分析</div>
-                  </q-card-section>
-                  <q-separator />
-                  <q-card-section>
-                    <div class="q-gutter-xs">
+                  <q-card-section class="plan-stage-card__offers">
+                    <div class="text-subtitle2 text-weight-medium q-mb-sm">按天数收费</div>
+                    <div class="row q-col-gutter-sm">
                       <div
-                        v-for="feature in monthlyFeatures"
-                        :key="feature.text"
-                        class="row items-center no-wrap"
+                        v-for="offer in group.durationOffers"
+                        :key="offer.code"
+                        class="col-12 col-sm-6"
                       >
-                        <q-icon
-                          :name="feature.icon"
-                          :color="feature.color"
-                          size="xs"
-                          class="q-mr-xs"
-                        />
-                        <span class="text-body2">{{ feature.text }}</span>
+                        <button
+                          type="button"
+                          class="offer-tile"
+                          :class="{ 'offer-tile--active': selectedOfferByTier[group.tier] === offer.code }"
+                          @click="selectOffer(group.tier, offer.code)"
+                        >
+                          <div class="offer-tile__topline">
+                            <q-badge
+                              outline
+                              :color="group.tier === 'premium' ? 'deep-orange' : 'primary'"
+                            >
+                              {{ offer.badge }}
+                            </q-badge>
+                            <span class="offer-tile__saving">
+                              {{ getOfferSavingsText(offer) }}
+                            </span>
+                          </div>
+                          <div class="row items-start no-wrap">
+                            <div class="col text-left">
+                              <div class="text-body1 text-weight-medium">{{ offer.label }}</div>
+                              <div class="text-caption text-grey-7 q-mt-xs">
+                                {{ offer.description }}
+                              </div>
+                            </div>
+                            <q-icon
+                              :name="
+                                selectedOfferByTier[group.tier] === offer.code
+                                  ? 'radio_button_checked'
+                                  : 'radio_button_unchecked'
+                              "
+                              :color="
+                                selectedOfferByTier[group.tier] === offer.code
+                                  ? 'primary'
+                                  : 'grey-5'
+                              "
+                              size="18px"
+                            />
+                          </div>
+                          <div class="q-mt-md text-left">
+                            <div
+                              v-if="offer.originalAmount"
+                              class="text-caption text-grey-5 text-strike"
+                            >
+                              ¥{{ formatCurrency(offer.originalAmount) }}
+                            </div>
+                            <div class="text-h6 text-weight-bold">
+                              ¥{{ formatCurrency(offer.amount) }}
+                            </div>
+                            <div class="offer-tile__footnote">
+                              <span>{{ offer.billingLabel }}</span>
+                              <span v-if="offer.autoRenewHint">{{ offer.autoRenewHint }}</span>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="group.usageOffers.length" class="q-mt-lg">
+                      <div class="text-subtitle2 text-weight-medium q-mb-sm">按次数收费</div>
+                      <div class="row q-col-gutter-sm">
+                        <div
+                          v-for="offer in group.usageOffers"
+                          :key="offer.code"
+                          class="col-12 col-sm-6"
+                        >
+                          <button
+                            type="button"
+                            class="offer-tile offer-tile--usage"
+                            :class="{ 'offer-tile--active': selectedOfferByTier[group.tier] === offer.code }"
+                            @click="selectOffer(group.tier, offer.code)"
+                          >
+                            <div class="offer-tile__topline">
+                              <q-badge outline color="teal">
+                                {{ offer.badge }}
+                              </q-badge>
+                              <span class="offer-tile__saving">
+                                {{ getOfferSupportText(offer) }}
+                              </span>
+                            </div>
+                            <div class="row items-start no-wrap">
+                              <div class="col text-left">
+                                <div class="text-body1 text-weight-medium">{{ offer.label }}</div>
+                                <div class="text-caption text-grey-7 q-mt-xs">
+                                  {{ offer.description }}
+                                </div>
+                              </div>
+                              <q-icon
+                                :name="
+                                  selectedOfferByTier[group.tier] === offer.code
+                                    ? 'radio_button_checked'
+                                    : 'radio_button_unchecked'
+                                "
+                                :color="
+                                  selectedOfferByTier[group.tier] === offer.code
+                                    ? 'primary'
+                                    : 'grey-5'
+                                "
+                                size="18px"
+                              />
+                            </div>
+                            <div class="q-mt-md text-left">
+                              <div class="text-h6 text-weight-bold">
+                                ¥{{ formatCurrency(offer.amount) }}
+                              </div>
+                              <div class="offer-tile__footnote">
+                                <span>{{ offer.billingLabel }}</span>
+                                <span>即开即用</span>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </q-card-section>
-                  <q-card-actions>
+
+                  <q-card-actions class="plan-stage-card__actions">
                     <q-btn
                       unelevated
-                      color="primary"
-                      label="立即订阅"
+                      :color="group.actionColor"
+                      :label="getActionLabel(group.tier)"
                       no-caps
                       class="full-width"
-                      @click.stop="handleSubscribe('monthly')"
-                    />
-                  </q-card-actions>
-                </q-card>
-              </div>
-
-              <!-- 年度订阅 -->
-              <div class="col-12 col-md-4">
-                <q-card
-                  flat
-                  bordered
-                  class="cursor-pointer subscription-card"
-                  :class="{ 'bg-blue-1': selectedPlan === 'yearly' }"
-                  @click="selectedPlan = 'yearly'"
-                >
-                  <q-badge color="positive" floating>
-                    <q-icon name="trending_up" size="xs" class="q-mr-xs" />
-                    超值
-                  </q-badge>
-                  <q-card-section class="text-center">
-                    <q-icon name="workspace_premium" size="48px" color="positive" class="q-mb-sm" />
-                    <div class="text-h6 q-mb-xs">年度订阅</div>
-
-                    <!-- 价格显示优化 -->
-                    <div class="price-container q-my-sm">
-                      <div class="original-price text-caption text-grey-6 text-strike">¥2,999</div>
-                      <div class="current-price">
-                        <span class="text-h4 text-positive text-weight-bold">¥2,700</span>
-                        <span class="text-body2 text-grey-7">/年</span>
-                      </div>
-                      <div class="discount-tag q-mt-xs">年度特惠299元</div>
-                    </div>
-
-                    <div class="text-caption text-positive text-weight-medium">相当于¥225/月</div>
-                  </q-card-section>
-                  <q-separator />
-                  <q-card-section>
-                    <div class="q-gutter-xs">
-                      <div
-                        v-for="feature in yearlyFeatures"
-                        :key="feature.text"
-                        class="row items-center no-wrap"
-                      >
-                        <q-icon
-                          :name="feature.icon"
-                          :color="feature.color"
-                          size="xs"
-                          class="q-mr-xs"
-                        />
-                        <span class="text-body2">{{ feature.text }}</span>
-                      </div>
-                    </div>
-                  </q-card-section>
-                  <q-card-actions>
-                    <q-btn
-                      unelevated
-                      color="positive"
-                      label="立即订阅"
-                      no-caps
-                      class="full-width"
-                      @click.stop="handleSubscribe('yearly')"
+                      @click="openPaymentDialog(getSelectedOffer(group.tier))"
                     />
                   </q-card-actions>
                 </q-card>
@@ -528,7 +697,7 @@
                       <q-toggle v-model="preferences.privacy.desensitization" color="red" dense />
                     </div>
                     <div class="text-caption text-grey-7 q-mb-sm">
-                      在导出报告和演示模式中自动隐藏患者姓名、身份证号
+                      在导出报告和共享预览中自动隐藏患者姓名、身份证号
                     </div>
 
                     <q-separator class="q-my-sm" />
@@ -598,52 +767,88 @@
       <!-- 侧边栏信息 -->
       <div class="col-lg-4 col-md-12">
         <!-- 订阅状态 -->
-        <q-card flat bordered>
-          <q-card-section class="text-center">
-            <q-icon :name="subscriptionStatus.icon" :color="subscriptionStatus.color" size="3rem" />
-            <div class="text-h6 q-mt-md">
-              {{ subscriptionStatus.title }}
-            </div>
-            <div class="text-caption text-grey-6 q-mt-xs">
-              {{ subscriptionStatus.subtitle }}
-            </div>
-            <q-badge
-              :color="subscriptionStatus.badgeColor"
-              class="q-mt-md"
-              :outline="subscriptionStatus.type === 'trial'"
-            >
-              <q-icon name="schedule" size="14px" class="q-mr-xs" />
-              {{ subscriptionStatus.badge }}
-            </q-badge>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <div class="q-gutter-sm">
-              <div class="row items-center">
-                <div class="col-6 text-grey-6">订阅类型</div>
-                <div class="col-6 text-weight-medium text-right">
-                  {{ subscriptionStatus.planName }}
+        <q-card flat bordered class="subscription-status-card">
+          <q-card-section class="subscription-status-card__header">
+            <div class="row items-start no-wrap">
+              <div class="col">
+                <div class="subscription-status-card__eyebrow">当前订阅状态</div>
+                <div class="text-h6 text-weight-bold q-mt-xs">
+                  {{ subscriptionStatus.title }}
+                </div>
+                <div class="subscription-status-card__summary q-mt-sm">
+                  {{ subscriptionStatus.subtitle }}
                 </div>
               </div>
-              <div class="row items-center">
-                <div class="col-6 text-grey-6">到期时间</div>
-                <div class="col-6 text-weight-medium text-right">
-                  {{ subscriptionStatus.expireDate }}
-                </div>
+              <div class="subscription-status-card__icon-shell">
+                <q-icon :name="subscriptionStatus.icon" size="30px" :color="subscriptionStatus.color" />
               </div>
-              <div class="row items-center">
-                <div class="col-6 text-grey-6">剩余次数</div>
-                <div class="col-6 text-primary text-weight-bold text-right">
-                  {{ subscriptionStatus.remainingCount }} 次
-                </div>
+            </div>
+
+            <div class="row q-col-gutter-sm q-mt-md">
+              <div class="col-auto">
+                <q-chip dense square class="subscription-status-chip subscription-status-chip--primary">
+                  {{ subscriptionStatus.badge }}
+                </q-chip>
+              </div>
+              <div class="col-auto" v-if="subscriptionStatus.renewalNote">
+                <q-chip dense square class="subscription-status-chip subscription-status-chip--muted">
+                  {{ subscriptionStatus.renewalNote }}
+                </q-chip>
               </div>
             </div>
           </q-card-section>
-          <q-card-actions v-if="subscriptionStatus.type === 'trial'">
+
+          <q-separator class="subscription-status-card__separator" />
+
+          <q-card-section class="subscription-status-card__body">
+            <div class="status-grid">
+              <div class="status-grid__item">
+                <div class="status-grid__label">当前套餐</div>
+                <div class="status-grid__value">{{ subscriptionStatus.planName }}</div>
+              </div>
+              <div class="status-grid__item">
+                <div class="status-grid__label">套餐层级</div>
+                <div class="status-grid__value">{{ subscriptionStatus.tierLabel }}</div>
+              </div>
+              <div class="status-grid__item">
+                <div class="status-grid__label">到期时间</div>
+                <div class="status-grid__value">{{ subscriptionStatus.expireDate }}</div>
+              </div>
+              <div class="status-grid__item">
+                <div class="status-grid__label">{{ subscriptionStatus.quotaLabel }}</div>
+                <div class="status-grid__value status-grid__value--accent">
+                  {{ subscriptionStatus.remainingCount }}
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-separator class="subscription-status-card__separator" />
+
+          <q-card-section class="subscription-status-card__footer">
+            <div class="row items-center justify-between q-mb-sm">
+              <div class="text-subtitle2 text-weight-medium">已开通权益</div>
+              <div class="text-caption text-grey-6">{{ subscriptionStatus.tierLabel }}</div>
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div
+                class="col-12"
+                v-for="tag in subscriptionStatus.featureTags"
+                :key="tag"
+              >
+                <div class="status-feature-item">
+                  <q-icon name="task_alt" color="positive" size="16px" />
+                  <span>{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-card-actions v-if="subscriptionStatus.type === 'trial'" class="q-pa-md q-pt-none">
             <q-btn
               unelevated
               color="primary"
-              label="立即升级"
+              label="选择订阅套餐"
               icon="arrow_upward"
               class="full-width"
               @click="showUpgradeDialog = true"
@@ -652,63 +857,25 @@
         </q-card>
 
         <!-- 订阅计划对比 -->
-        <q-card flat bordered class="q-mt-md">
+        <q-card flat bordered class="q-mt-md comparison-card">
           <q-card-section>
             <div class="text-h6 q-mb-md">
               <q-icon name="compare" color="primary" class="q-mr-sm" />
-              订阅计划对比
+              套餐能力对比
             </div>
-            <q-markup-table flat dense>
+            <q-markup-table flat dense class="comparison-table">
               <thead>
                 <tr>
-                  <th class="text-left">功能</th>
-                  <th class="text-center">按次</th>
-                  <th class="text-center">月度</th>
-                  <th class="text-center">年度</th>
+                  <th class="text-left">维度</th>
+                  <th class="text-center">基础套餐</th>
+                  <th class="text-center">顶级套餐</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>AI分析</td>
-                  <td class="text-center">¥19/次</td>
-                  <td class="text-center">20次</td>
-                  <td class="text-center">300次</td>
-                </tr>
-                <tr>
-                  <td>报告保存</td>
-                  <td class="text-center">7天</td>
-                  <td class="text-center">永久</td>
-                  <td class="text-center">永久</td>
-                </tr>
-                <tr>
-                  <td>优先处理</td>
-                  <td class="text-center">
-                    <q-icon name="close" color="grey" size="xs" />
-                  </td>
-                  <td class="text-center">
-                    <q-icon name="check" color="positive" size="xs" />
-                  </td>
-                  <td class="text-center">
-                    <q-icon name="check" color="positive" size="xs" />
-                  </td>
-                </tr>
-                <tr>
-                  <td>客服支持</td>
-                  <td class="text-center">基础</td>
-                  <td class="text-center">标准</td>
-                  <td class="text-center">VIP</td>
-                </tr>
-                <tr>
-                  <td>数据统计</td>
-                  <td class="text-center">
-                    <q-icon name="close" color="grey" size="xs" />
-                  </td>
-                  <td class="text-center">
-                    <q-icon name="close" color="grey" size="xs" />
-                  </td>
-                  <td class="text-center">
-                    <q-icon name="check" color="positive" size="xs" />
-                  </td>
+                <tr v-for="row in planComparisonRows" :key="row.label">
+                  <td>{{ row.label }}</td>
+                  <td class="text-center">{{ row.basic }}</td>
+                  <td class="text-center">{{ row.premium }}</td>
                 </tr>
               </tbody>
             </q-markup-table>
@@ -952,146 +1119,148 @@
       </div>
     </div>
 
-    <!-- 套餐包选择弹窗 -->
-    <q-dialog v-model="showPackageDialog">
-      <q-card style="min-width: 500px; max-width: 600px">
-        <q-card-section class="bg-primary text-white">
-          <div class="text-h6">
-            <q-icon name="redeem" class="q-mr-sm" />
-            选择套餐包
-          </div>
-          <div class="text-caption">更多次数，更多优惠</div>
-        </q-card-section>
-        <q-card-section>
-          <div class="row q-col-gutter-md">
-            <div v-for="pkg in packageOptions" :key="pkg.type" class="col-12">
-              <q-card
-                flat
-                bordered
-                class="cursor-pointer package-card"
-                @click="handlePackagePurchase(pkg.type, pkg.amount)"
-              >
-                <q-card-section class="row items-center q-pa-md">
-                  <div class="col">
-                    <div class="text-h6 text-weight-medium">{{ pkg.name }}</div>
-                    <div class="text-caption text-grey-7 q-mt-xs">{{ pkg.credits }}</div>
-                    <!-- 优惠信息 -->
-                    <div v-if="pkg.discount" class="package-discount-tag q-mt-xs">
-                      {{ pkg.discountText }}
-                    </div>
-                  </div>
-                  <div class="col-auto text-right">
-                    <div
-                      v-if="pkg.originalAmount"
-                      class="original-price text-caption text-grey-6 text-strike"
-                    >
-                      ¥{{ pkg.originalAmount }}
-                    </div>
-                    <div class="text-h5 text-primary text-weight-bold">¥{{ pkg.amount }}</div>
-                    <div class="text-caption text-positive text-weight-medium">
-                      ¥{{ pkg.pricePerUnit }}/次
-                    </div>
-                    <div
-                      v-if="pkg.saveAmount"
-                      class="text-caption text-orange text-weight-medium q-mt-xs"
-                    >
-                      节省¥{{ pkg.saveAmount }}
-                    </div>
-                  </div>
-                  <div class="col-auto q-ml-md">
-                    <q-icon name="arrow_forward_ios" color="grey-5" size="sm" />
-                  </div>
-                </q-card-section>
-                <q-badge
-                  v-if="pkg.recommended"
-                  color="orange"
-                  floating
-                  style="top: 8px; right: 8px"
-                >
-                  <q-icon name="star" size="xs" class="q-mr-xs" />
-                  推荐
-                </q-badge>
-              </q-card>
+        <!-- 订阅支付弹窗 -->
+    <q-dialog v-model="showPaymentDialog" persistent>
+      <q-card class="demo-payment-dialog">
+        <q-card-section class="demo-payment-dialog__header">
+          <div class="text-overline text-white-7">订阅支付</div>
+          <div class="row items-center justify-between q-mt-sm q-col-gutter-md">
+            <div class="col">
+              <div class="text-h6">
+                <q-icon name="shopping_cart" class="q-mr-sm" />
+                确认支付
+              </div>
+              <div class="text-caption q-mt-xs demo-payment-dialog__caption">
+                {{ paymentInfo.planName || '请选择需要开通的订阅套餐' }}
+              </div>
+            </div>
+            <div class="col-auto" v-if="paymentInfo.amount">
+              <div class="demo-payment-dialog__hero-amount">
+                ¥{{ formatCurrency(paymentInfo.amount) }}
+              </div>
             </div>
           </div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="取消" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- 订阅支付弹窗 -->
-    <q-dialog v-model="showPaymentDialog" persistent>
-      <q-card style="width: 100%; max-width: 650px">
-        <q-card-section class="bg-primary text-white">
-          <div class="text-h6">
-            <q-icon name="shopping_cart" class="q-mr-sm" />
-            确认订阅
+          <div class="text-caption q-mt-sm">
+            支付完成后将即时同步当前页面的套餐状态，正式计费规则以签约或支付说明为准。
           </div>
-          <div class="text-caption">安全、便捷的支付流程</div>
         </q-card-section>
 
-        <!-- 步骤指示器 -->
-        <q-stepper v-model="paymentStep" ref="stepper" flat>
-          <!-- 步骤1: 订单确认 -->
+        <q-stepper v-model="paymentStep" ref="stepper" flat class="payment-stepper-shell">
           <q-step :name="1" title="订单确认" icon="receipt" :done="paymentStep > 1">
             <div class="q-pa-md">
-              <div class="text-h6 q-mb-md">订单详情</div>
-              <q-list bordered separator class="rounded-borders">
-                <q-item>
-                  <q-item-section avatar>
-                    <q-icon name="workspace_premium" color="primary" size="md" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-weight-medium">{{
-                      paymentInfo.planName
-                    }}</q-item-label>
-                    <q-item-label caption>{{ paymentInfo.credits }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-item-label class="text-h6 text-primary text-weight-bold">
-                      ¥{{ paymentInfo.amount }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
+              <div class="row q-col-gutter-md">
+                <div class="col-12 col-md-7">
+                  <div class="text-h6 q-mb-md">订单详情</div>
+                  <q-card flat bordered class="demo-order-card">
+                    <q-card-section class="row items-center q-col-gutter-md">
+                      <div class="col-auto">
+                        <q-avatar size="58px" color="primary" text-color="white">
+                          <q-icon :name="paymentInfo.icon || 'workspace_premium'" size="28px" />
+                        </q-avatar>
+                      </div>
+                      <div class="col">
+                        <div class="text-h6 text-weight-bold">{{ paymentInfo.planName }}</div>
+                        <div class="text-caption text-grey-7 q-mt-xs">{{ paymentInfo.description }}</div>
+                        <div class="row q-gutter-sm q-mt-sm">
+                          <q-badge color="primary">{{ paymentInfo.tierLabel }}</q-badge>
+                          <q-badge color="blue-8">{{ paymentInfo.billingLabel }}</q-badge>
+                          <q-badge
+                            v-if="paymentInfo.autoRenewHint"
+                            color="orange"
+                            text-color="white"
+                          >
+                            {{ paymentInfo.autoRenewHint }}
+                          </q-badge>
+                        </div>
+                      </div>
+                      <div class="col-auto text-right">
+                        <div
+                          v-if="paymentInfo.originalAmount"
+                          class="text-caption text-grey-5 text-strike"
+                        >
+                          ¥{{ formatCurrency(paymentInfo.originalAmount) }}
+                        </div>
+                        <div class="text-h5 text-primary text-weight-bold">
+                          ¥{{ formatCurrency(paymentInfo.amount) }}
+                        </div>
+                      </div>
+                    </q-card-section>
+                  </q-card>
 
-              <div class="payment-summary q-mt-lg">
-                <div class="summary-row">
-                  <span class="text-grey-7">订阅费用</span>
-                  <span class="text-weight-medium"
-                    >¥{{ paymentInfo.originalAmount || paymentInfo.amount }}</span
-                  >
+                  <div class="payment-summary q-mt-lg">
+                    <div class="summary-row">
+                      <span class="text-grey-7">套餐金额</span>
+                      <span class="text-weight-medium">
+                        ¥{{ formatCurrency(paymentInfo.originalAmount || paymentInfo.amount) }}
+                      </span>
+                    </div>
+                    <div
+                      v-if="paymentInfo.discount && paymentInfo.discount > 0"
+                      class="summary-row discount-row"
+                    >
+                      <span class="text-grey-7">
+                        <q-icon name="local_offer" size="xs" class="q-mr-xs" />
+                        {{ paymentInfo.discountReason }}
+                      </span>
+                      <span class="text-positive text-weight-medium">-¥{{ paymentInfo.discount }}</span>
+                    </div>
+                    <q-separator spaced />
+                    <div class="summary-row total">
+                      <span class="text-h6">应付总额</span>
+                      <span class="text-h5 text-primary text-weight-bold">
+                        ¥{{ formatCurrency(paymentInfo.amount) }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div
-                  v-if="paymentInfo.discount && paymentInfo.discount > 0"
-                  class="summary-row discount-row"
-                >
-                  <span class="text-grey-7">
-                    <q-icon name="local_offer" size="xs" class="q-mr-xs" />
-                    {{ paymentInfo.discountReason }}
-                  </span>
-                  <span class="text-positive text-weight-medium">-¥{{ paymentInfo.discount }}</span>
-                </div>
-                <q-separator spaced />
-                <div class="summary-row total">
-                  <span class="text-h6">应付总额</span>
-                  <span class="text-h5 text-primary text-weight-bold"
-                    >¥{{ paymentInfo.amount }}</span
-                  >
-                </div>
-                <div
-                  v-if="paymentInfo.discount && paymentInfo.discount > 0"
-                  class="text-center q-mt-sm"
-                >
-                  <q-chip dense color="orange" text-color="white" icon="celebration" size="sm">
-                    已为您节省 ¥{{ paymentInfo.discount }}
-                  </q-chip>
+
+                <div class="col-12 col-md-5">
+                  <div class="text-h6 q-mb-md">开通后将同步</div>
+                  <div class="checkout-aside-card">
+                    <div class="checkout-aside-card__head">
+                      <div class="checkout-aside-card__title">权益同步摘要</div>
+                      <div class="checkout-aside-card__badge">{{ paymentInfo.tierLabel }}</div>
+                    </div>
+                    <div class="checkout-aside-card__list">
+                      <div
+                        class="checkout-aside-card__item"
+                        v-for="feature in paymentInfo.featureSummary"
+                        :key="feature"
+                      >
+                        <q-icon name="check_circle" color="positive" size="16px" />
+                        <span>{{ feature }}</span>
+                      </div>
+                    </div>
+                    <div class="checkout-aside-card__footer">
+                      <div>
+                        <span>状态同步</span>
+                        <strong>实时更新</strong>
+                      </div>
+                      <div>
+                        <span>套餐金额</span>
+                        <strong>¥{{ formatCurrency(paymentInfo.amount) }}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- 协议确认复选框 -->
+              <div class="q-mt-lg">
+                <div class="text-subtitle2 text-weight-medium q-mb-sm">本次开通后将同步的权益</div>
+                <div class="row q-col-gutter-sm">
+                  <div
+                    class="col-12 col-sm-6"
+                    v-for="feature in paymentInfo.featureSummary"
+                    :key="feature"
+                  >
+                    <div class="demo-feature-item">
+                      <q-icon name="check_circle" color="positive" size="16px" />
+                      <span>{{ feature }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="agreement-section q-mt-lg">
                 <q-checkbox v-model="agreePaymentTerms" dense>
                   <span class="text-body2 text-grey-8">
@@ -1118,17 +1287,27 @@
             </div>
           </q-step>
 
-          <!-- 步骤2: 支付方式 -->
           <q-step :name="2" title="选择支付方式" icon="payment" :done="paymentStep > 2">
             <div class="q-pa-md">
+              <div class="payment-selection-banner q-mb-md">
+                <div>
+                  <div class="payment-selection-banner__label">当前订单</div>
+                  <div class="payment-selection-banner__value">
+                    {{ paymentInfo.planName }} · ¥{{ formatCurrency(paymentInfo.amount) }}
+                  </div>
+                </div>
+                <q-badge color="primary" outline>
+                  {{ paymentInfo.billingLabel }}
+                </q-badge>
+              </div>
               <div class="text-h6 q-mb-md">支付方式</div>
               <div class="row q-col-gutter-md">
                 <div v-for="method in paymentMethods" :key="method.value" class="col-12">
                   <q-card
                     flat
                     bordered
-                    class="cursor-pointer"
-                    :class="{ 'bg-blue-1': selectedPaymentMethod === method.value }"
+                    class="cursor-pointer payment-method-card"
+                    :class="{ 'payment-method-card--active': selectedPaymentMethod === method.value }"
                     @click="selectedPaymentMethod = method.value"
                   >
                     <q-card-section class="row items-center q-pa-md">
@@ -1139,7 +1318,16 @@
                         class="q-mr-md"
                       />
                       <div class="col">
-                        <div class="text-body1 text-weight-medium">{{ method.label }}</div>
+                        <div class="row items-center q-gutter-sm">
+                          <div class="text-body1 text-weight-medium">{{ method.label }}</div>
+                          <q-badge
+                            v-if="method.value === 'alipay'"
+                            color="blue-8"
+                            text-color="white"
+                          >
+                            常用
+                          </q-badge>
+                        </div>
                         <div class="text-caption text-grey-6">{{ method.description }}</div>
                       </div>
                       <q-radio
@@ -1152,65 +1340,112 @@
                 </div>
               </div>
 
-              <!-- 安全信息 -->
+              <div class="demo-payment-note q-mt-md">
+                确认支付后，当前页面的订阅状态、套餐信息与权益摘要将立即刷新。
+              </div>
+
               <div class="row q-col-gutter-sm q-mt-md">
                 <div class="col-auto">
                   <q-chip dense color="positive" text-color="white" icon="verified_user">
-                    安全加密
+                    状态即时同步
                   </q-chip>
                 </div>
                 <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="lock"> SSL证书 </q-chip>
-                </div>
-                <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="shield">
-                    隐私保护
+                  <q-chip dense color="positive" text-color="white" icon="assignment">
+                    套餐信息更新
                   </q-chip>
                 </div>
                 <div class="col-auto">
                   <q-chip dense color="positive" text-color="white" icon="support_agent">
-                    7x24客服
+                    支持再次选购
+                  </q-chip>
+                </div>
+                <div class="col-auto" v-if="paymentInfo.autoRenewHint">
+                  <q-chip dense color="orange" text-color="white" icon="autorenew">
+                    {{ paymentInfo.autoRenewHint }}
                   </q-chip>
                 </div>
               </div>
             </div>
           </q-step>
 
-          <!-- 导航按钮 -->
+          <q-step :name="3" title="支付完成" icon="verified">
+            <div class="q-pa-xl text-center">
+              <q-icon name="task_alt" color="positive" size="72px" />
+              <div class="text-h5 text-weight-bold q-mt-md">支付已完成</div>
+              <div class="text-body2 text-grey-7 q-mt-sm">
+                右侧订阅状态卡已同步切换到 {{ subscriptionStatus.planName }}。
+              </div>
+              <q-card flat bordered class="q-mt-lg demo-success-card">
+                <q-card-section>
+                  <div class="text-subtitle2 text-weight-medium">同步结果</div>
+                  <div class="row q-col-gutter-sm q-mt-sm">
+                    <div class="col-12 col-sm-6">
+                      <div class="demo-success-item">
+                        <span class="text-grey-6">套餐名称</span>
+                        <span class="text-weight-medium">{{ subscriptionStatus.planName }}</span>
+                      </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                      <div class="demo-success-item">
+                        <span class="text-grey-6">到期时间</span>
+                        <span class="text-weight-medium">{{ subscriptionStatus.expireDate }}</span>
+                      </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                      <div class="demo-success-item">
+                        <span class="text-grey-6">{{ subscriptionStatus.quotaLabel }}</span>
+                        <span class="text-weight-medium">{{ subscriptionStatus.remainingCount }}</span>
+                      </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                      <div class="demo-success-item">
+                        <span class="text-grey-6">状态标识</span>
+                        <span class="text-weight-medium">{{ subscriptionStatus.badge }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </q-step>
+
           <template v-slot:navigation>
             <q-stepper-navigation class="q-pa-md">
               <div class="row items-center">
                 <q-btn
-                  v-if="paymentStep > 1"
+                  v-if="paymentStep > 1 && paymentStep < 3"
                   flat
                   color="grey-8"
                   label="上一步"
                   icon="arrow_back"
-                  @click="stepper.previous()"
+                  @click="stepper?.previous()"
                   no-caps
+                  :disable="paymentProcessing"
                 />
                 <q-space />
                 <q-btn
                   flat
                   color="grey-8"
-                  label="取消订单"
-                  @click="cancelPayment"
+                  :label="paymentStep === 3 ? '关闭' : '取消订单'"
+                  @click="paymentStep === 3 ? finishDemoPayment() : cancelPayment()"
                   no-caps
                   class="q-mr-sm"
+                  :disable="paymentProcessing"
                 />
                 <q-btn
-                  v-if="paymentStep < 2"
+                  v-if="paymentStep === 1"
                   unelevated
                   label="下一步：选择支付方式"
                   color="primary"
                   icon-right="arrow_forward"
-                  @click="stepper.next()"
+                  @click="stepper?.next()"
                   no-caps
                   size="md"
                   :disabled="!agreePaymentTerms"
                 />
                 <q-btn
-                  v-else
+                  v-else-if="paymentStep === 2"
                   unelevated
                   label="确认支付"
                   color="positive"
@@ -1225,6 +1460,15 @@
                     <q-spinner-dots color="white" />
                   </template>
                 </q-btn>
+                <q-btn
+                  v-else
+                  unelevated
+                  color="primary"
+                  label="完成并返回页面"
+                  icon-right="arrow_forward"
+                  no-caps
+                  @click="finishDemoPayment"
+                />
               </div>
             </q-stepper-navigation>
           </template>
@@ -1232,30 +1476,44 @@
       </q-card>
     </q-dialog>
 
-    <!-- 升级弹窗 -->
     <q-dialog v-model="showUpgradeDialog">
-      <q-card style="min-width: 400px">
+      <q-card class="upgrade-dialog-card">
         <q-card-section class="bg-primary text-white">
-          <div class="text-h6">升级订阅</div>
+          <div class="text-h6">切换订阅套餐</div>
         </q-card-section>
         <q-card-section>
           <div class="text-body1 q-mb-md">
-            试用期即将结束，升级到正式订阅以继续享受AI辅助筛查服务。
+            选择一个推荐档位后，直接进入支付确认流程。
           </div>
-          <q-list bordered separator>
-            <q-item clickable v-ripple @click="handleUpgrade('monthly')">
-              <q-item-section>
-                <q-item-label>月度订阅</q-item-label>
-                <q-item-label caption>¥299/月 · 20次AI分析</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item clickable v-ripple @click="handleUpgrade('yearly')">
-              <q-item-section>
-                <q-item-label>年度订阅 (推荐)</q-item-label>
-                <q-item-label caption>¥2,999/年 · 立省590元</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-6" v-for="group in demoPlanGroups" :key="group.tier">
+              <q-card flat bordered class="upgrade-option-card">
+                <q-card-section>
+                  <div class="row items-center justify-between">
+                    <div class="text-subtitle1 text-weight-bold">{{ group.title }}</div>
+                    <q-badge :color="group.badgeColor">{{ group.badge }}</q-badge>
+                  </div>
+                  <div class="text-caption text-grey-7 q-mt-sm">
+                    {{ getSelectedOffer(group.tier).label }} ·
+                    ¥{{ formatCurrency(getSelectedOffer(group.tier).amount) }}
+                  </div>
+                  <div class="text-caption text-grey-6 q-mt-xs">
+                    {{ getSelectedOffer(group.tier).description }}
+                  </div>
+                </q-card-section>
+                <q-card-actions>
+                  <q-btn
+                    unelevated
+                    :color="group.actionColor"
+                    class="full-width"
+                    no-caps
+                    label="选择该套餐"
+                    @click="handleUpgrade(group.tier)"
+                  />
+                </q-card-actions>
+              </q-card>
+            </div>
+          </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="稍后再说" color="grey" v-close-popup />
@@ -1294,129 +1552,121 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useQuasar, date } from 'quasar';
-import { paymentAPI, userAPI } from 'src/services/api';
+import { computed, onMounted, ref } from 'vue';
+import { date, useQuasar } from 'quasar';
+import { userAPI } from 'src/services/api';
 import AgreementDialog from 'src/components/common/AgreementDialog.vue';
+import {
+  demoHeroHighlights,
+  demoPlanComparisonRows,
+  demoSubscriptionCatalog,
+  type DemoOffer,
+  type DemoPlanTier,
+} from 'src/constants/demoSubscriptionCatalog';
 import {
   SORTED_SOFTWARE_COPYRIGHTS,
   type SoftwareCopyrightItem,
 } from 'src/constants/softwareCopyrights';
 import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
+type DemoSubscriptionSource = 'demo' | 'backend' | 'default';
+
+interface DemoSubscriptionStatus {
+  type: 'trial' | 'active' | 'expired';
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  badge: string;
+  badgeColor: string;
+  planName: string;
+  tierLabel: string;
+  expireDate: string;
+  quotaLabel: string;
+  remainingCount: string;
+  featureTags: string[];
+  renewalNote?: string;
+  source: DemoSubscriptionSource;
+}
+
+interface DemoPaymentInfo {
+  planType: string;
+  planName: string;
+  amount: number;
+  icon: string;
+  description: string;
+  tierLabel: string;
+  billingLabel: string;
+  featureSummary: string[];
+  originalAmount?: number;
+  discount?: number;
+  discountReason?: string;
+  autoRenewHint?: string;
+}
+
 const $q = useQuasar();
 const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
+const heroHighlights = demoHeroHighlights;
+const planComparisonRows = demoPlanComparisonRows;
+const demoPlanGroups = [demoSubscriptionCatalog.basic, demoSubscriptionCatalog.premium];
+
 const previewVisible = ref(false);
 const activeCertificate = ref<SoftwareCopyrightItem | null>(null);
+const activeTier = ref<DemoPlanTier>('premium');
+const selectedOfferByTier = ref<Record<DemoPlanTier, string>>({
+  basic: 'basic-monthly-auto',
+  premium: 'premium-monthly-auto',
+});
 
-const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
-  if (!certificate.imageUrl) {
-    $q.notify({
-      type: 'info',
-      message: '证书图片待补充',
-      position: 'top',
-      timeout: 1200,
-    });
-    return;
-  }
+const showPaymentDialog = ref(false);
+const showUpgradeDialog = ref(false);
+const paymentProcessing = ref(false);
+const stepper = ref<{ next: () => void; previous: () => void } | null>(null);
+const paymentStep = ref(1);
+const selectedPaymentMethod = ref<'alipay' | 'wxpay' | 'bank'>('alipay');
+const agreePaymentTerms = ref(false);
+const showPaymentAgreementDialog = ref(false);
+const paymentAgreementTab = ref<'agreement' | 'privacy'>('agreement');
+const hasDemoOverride = ref(false);
+const currentPaymentOffer = ref<DemoOffer | null>(null);
 
-  activeCertificate.value = certificate;
-  previewVisible.value = true;
-};
+const createDefaultSubscriptionStatus = (): DemoSubscriptionStatus => ({
+  type: 'trial',
+  title: '试用体验已就绪',
+  subtitle: '当前为试用体验，可直接切换基础套餐或顶级套餐并查看状态变化。',
+  icon: 'verified_user',
+  color: 'positive',
+  badge: '试用体验',
+  badgeColor: 'positive',
+  planName: '基础套餐按次体验',
+  tierLabel: '试用权益',
+  expireDate: '单次有效',
+  quotaLabel: '剩余次数',
+  remainingCount: '1次',
+  featureTags: ['三种检测方式', 'AI 医疗助手', '完整 PDF 报告'],
+  source: 'default',
+});
 
-const resetCertificatePreview = (): void => {
-  previewVisible.value = false;
-  activeCertificate.value = null;
-};
+const createEmptyPaymentInfo = (): DemoPaymentInfo => ({
+  planType: '',
+  planName: '',
+  amount: 0,
+  icon: 'workspace_premium',
+  description: '',
+  tierLabel: '',
+  billingLabel: '',
+  featureSummary: [],
+});
 
-// 选中的订阅计划
-const selectedPlan = ref<'pay-per-use' | 'monthly' | 'yearly' | null>(null);
+const subscriptionStatus = ref<DemoSubscriptionStatus>(createDefaultSubscriptionStatus());
+const paymentInfo = ref<DemoPaymentInfo>(createEmptyPaymentInfo());
 
-// 订阅计划功能列表
-const payPerUseFeatures = [
-  { icon: 'check_circle', color: 'positive', text: '单次AI分析', enabled: true },
-  { icon: 'check_circle', color: 'positive', text: '完整分析报告', enabled: true },
-  { icon: 'check_circle', color: 'positive', text: '7天报告保存', enabled: true },
-  { icon: 'cancel', color: 'grey-4', text: '优先处理', enabled: false },
-];
-
-const monthlyFeatures = [
-  { icon: 'check_circle', color: 'positive', text: '20次/月 AI分析' },
-  { icon: 'check_circle', color: 'positive', text: '完整分析报告' },
-  { icon: 'check_circle', color: 'positive', text: '永久报告保存' },
-  { icon: 'check_circle', color: 'positive', text: '优先处理' },
-  { icon: 'check_circle', color: 'positive', text: '智能提醒服务' },
-];
-
-const yearlyFeatures = [
-  { icon: 'check_circle', color: 'positive', text: '300次/年 AI分析' },
-  { icon: 'check_circle', color: 'positive', text: '完整分析报告' },
-  { icon: 'check_circle', color: 'positive', text: '永久报告保存' },
-  { icon: 'check_circle', color: 'positive', text: 'VIP优先处理' },
-  { icon: 'check_circle', color: 'positive', text: '专属客服支持' },
-  { icon: 'check_circle', color: 'positive', text: '数据统计分析' },
-];
-
-// 套餐包选项
-const packageOptions = [
-  {
-    type: 'test',
-    name: '测试套餐',
-    credits: '1次AI分析',
-    originalAmount: 0.01,
-    amount: 0.01,
-    discount: 0,
-    discountText: '',
-    saveAmount: 0,
-    pricePerUnit: '0.01',
-    recommended: false,
-  },
-  {
-    type: 'package-10',
-    name: '10次套餐包',
-    credits: '10次AI分析',
-    originalAmount: 190,
-    amount: 158,
-    discount: 10,
-    discountText: '首次立减10元',
-    saveAmount: 32,
-    pricePerUnit: '15.8',
-    recommended: false,
-  },
-  {
-    type: 'package-30',
-    name: '30次套餐包',
-    credits: '30次AI分析',
-    originalAmount: 570,
-    amount: 438,
-    discount: 30,
-    discountText: '阶梯优惠30元',
-    saveAmount: 132,
-    pricePerUnit: '14.6',
-    recommended: false,
-  },
-  {
-    type: 'package-50',
-    name: '50次套餐包',
-    credits: '50次AI分析',
-    originalAmount: 950,
-    amount: 649,
-    discount: 50,
-    discountText: '超值立减50元',
-    saveAmount: 301,
-    pricePerUnit: '13.0',
-    recommended: true,
-  },
-];
-
-// API配置数据 (AI引擎配置)
 const apiConfig = ref({
   model: 'qwen-vl-max',
   confidence: 0.85,
   sensitivity: 0.9,
 });
 
-// 模型选项
 const modelOptions = [
   {
     label: 'CervixDetect Pro (推荐)',
@@ -1427,7 +1677,6 @@ const modelOptions = [
   { label: 'CervixDetect Lite', value: 'qwen-vl-v1', description: '快速筛查模式' },
 ];
 
-// 用户偏好设置
 const preferences = ref({
   notifications: {
     enable: true,
@@ -1459,244 +1708,322 @@ const preferences = ref({
   },
 });
 
-// 订阅状态信息
-interface SubscriptionStatus {
-  type: 'trial' | 'active' | 'expired';
-  title: string;
-  subtitle: string;
-  icon: string;
-  color: string;
-  badge: string;
-  badgeColor: string;
-  planName: string;
-  expireDate: string;
-  remainingCount: number;
-}
-
-const subscriptionStatus = ref<SubscriptionStatus>({
-  type: 'trial',
-  title: '试用期激活中',
-  subtitle: '体验完整AI辅助筛查功能',
-  icon: 'verified_user',
-  color: 'positive',
-  badge: '剩余 7 天',
-  badgeColor: 'positive',
-  planName: '试用版',
-  expireDate: '2026-01-13',
-  remainingCount: 10,
-});
-
-// 支付相关
-const showPaymentDialog = ref(false);
-const showPackageDialog = ref(false);
-const showUpgradeDialog = ref(false);
-const paymentProcessing = ref(false);
-// 支付流程步骤控制
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stepper = ref<any>(null);
-const paymentStep = ref(1); // 支付流程步骤
-const selectedPaymentMethod = ref('alipay'); // 选中的支付方式
-
-// 支付协议相关状态
-const agreePaymentTerms = ref(false);
-const showPaymentAgreementDialog = ref(false);
-const paymentAgreementTab = ref<'agreement' | 'privacy'>('agreement');
-
-/**
- * 显示支付协议弹窗
- * @param tab 要显示的协议类型
- */
-const showPaymentAgreement = (tab: 'agreement' | 'privacy') => {
-  paymentAgreementTab.value = tab;
-  showPaymentAgreementDialog.value = true;
-};
-
-// 支付方式选项
 const paymentMethods = [
   {
     value: 'alipay',
     label: '支付宝',
-    description: '快捷安全的移动支付',
+    description: '快捷安全的移动支付展示方式',
     icon: 'account_balance_wallet',
     color: 'blue',
   },
   {
     value: 'wxpay',
     label: '微信支付',
-    description: '十亿用户的选择',
+    description: '适合移动端场景的快捷支付方式',
     icon: 'chat',
     color: 'green',
   },
   {
     value: 'bank',
     label: '银行卡支付',
-    description: '支持各大银行储蓄卡/信用卡',
+    description: '保留传统支付方式入口，不发起真实扣费',
     icon: 'credit_card',
     color: 'orange',
   },
-];
+] as const;
 
-interface PaymentInfo {
-  planType: string;
-  planName: string;
-  amount: number;
-  credits: string;
-  originalAmount?: number; // 原价
-  discount?: number; // 优惠金额
-  discountReason?: string; // 优惠原因
-}
+const currentHeroOffer = computed(() => getSelectedOffer(activeTier.value));
+const currentHeroGroup = computed(() => demoSubscriptionCatalog[activeTier.value]);
 
-const paymentInfo = ref<PaymentInfo>({
-  planType: '',
-  planName: '',
-  amount: 0,
-  credits: '',
-  originalAmount: 0,
-  discount: 0,
-  discountReason: '',
-});
-
-// 计算优惠金额
-const calculateDiscount = (
-  planType: string,
-  originalAmount: number,
-): { discount: number; reason: string } => {
-  // 月度订阅优惠策略
-  if (planType === 'monthly') {
-    if (originalAmount >= 299) {
-      return { discount: 29, reason: '首月立减29元' };
-    }
+const formatCurrency = (amount: number | undefined): string => {
+  if (amount === undefined) {
+    return '0';
   }
 
-  // 年度订阅优惠策略
-  if (planType === 'yearly') {
-    if (originalAmount >= 2999) {
-      return { discount: 299, reason: '年度会员特惠299元' };
-    }
-  }
-
-  // 套餐包阶梯优惠
-  if (planType.startsWith('package-')) {
-    if (originalAmount >= 699) {
-      return { discount: 50, reason: '套餐优惠立减50元' };
-    } else if (originalAmount >= 468) {
-      return { discount: 30, reason: '套餐优惠立减30元' };
-    } else if (originalAmount >= 168) {
-      return { discount: 10, reason: '首次购买立减10元' };
-    }
-  }
-
-  return { discount: 0, reason: '' };
+  const digits = Number.isInteger(amount) ? 0 : 1;
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 };
 
-// 处理订阅
-const handleSubscribe = (planType: 'monthly' | 'yearly') => {
-  const plans = {
-    monthly: {
-      planName: '月度订阅',
-      originalAmount: 299,
-      credits: '20次AI分析/月',
-    },
-    yearly: {
-      planName: '年度订阅',
-      originalAmount: 2999,
-      credits: '300次AI分析/年',
-    },
+const getOfferSavings = (offer: DemoOffer): number => {
+  if (!offer.originalAmount) {
+    return 0;
+  }
+
+  return Number((offer.originalAmount - offer.amount).toFixed(1));
+};
+
+const getOfferSavingsText = (offer: DemoOffer): string => {
+  const savings = getOfferSavings(offer);
+  if (savings > 0) {
+    return `省 ¥${formatCurrency(savings)}`;
+  }
+
+  return offer.billingMode === 'usage' ? '单次开通' : '标准定价';
+};
+
+const getOfferSupportText = (offer: DemoOffer): string => {
+  if (offer.billingMode === 'usage') {
+    return offer.amount < 1 ? '适合首次体验开通' : '适合按单次快速开通';
+  }
+
+  if (offer.autoRenewHint) {
+    return '适合长期稳定使用';
+  }
+
+  return offer.durationDays ? `适合 ${offer.durationDays} 天周期使用` : '适合阶段性使用';
+};
+
+const getTierOffers = (tier: DemoPlanTier): DemoOffer[] => {
+  const group = demoSubscriptionCatalog[tier];
+  return [...group.durationOffers, ...group.usageOffers];
+};
+
+const getSelectedOffer = (tier: DemoPlanTier): DemoOffer => {
+  const offers = getTierOffers(tier);
+  if (!offers.length) {
+    throw new Error(`未配置订阅套餐：${tier}`);
+  }
+
+  return offers.find((offer) => offer.code === selectedOfferByTier.value[tier]) ?? offers[0]!;
+};
+
+const getActionLabel = (tier: DemoPlanTier): string => {
+  const selectedOffer = getSelectedOffer(tier);
+  if (selectedOffer.billingMode === 'usage') {
+    return selectedOffer.amount < 1 ? '立即开通试用' : '购买单次版';
+  }
+
+  return tier === 'premium' ? '选择顶级套餐' : '选择基础套餐';
+};
+
+const selectOffer = (tier: DemoPlanTier, offerCode: string): void => {
+  selectedOfferByTier.value = {
+    ...selectedOfferByTier.value,
+    [tier]: offerCode,
+  };
+  activeTier.value = tier;
+};
+
+const buildPaymentInfo = (offer: DemoOffer): DemoPaymentInfo => {
+  const base: DemoPaymentInfo = {
+    planType: offer.code,
+    planName: offer.planName,
+    amount: offer.amount,
+    icon: offer.statusCard.icon,
+    description: offer.description,
+    tierLabel: offer.statusCard.tierLabel,
+    billingLabel: offer.billingLabel,
+    featureSummary: offer.featureSummary,
   };
 
-  const plan = plans[planType];
-  const { discount, reason } = calculateDiscount(planType, plan.originalAmount);
+  if (offer.originalAmount) {
+    base.originalAmount = offer.originalAmount;
+    const discount = Number((offer.originalAmount - offer.amount).toFixed(1));
+    if (discount > 0) {
+      base.discount = discount;
+      base.discountReason = '对比原价节省';
+    }
+  }
 
-  paymentInfo.value = {
-    planType,
-    planName: plan.planName,
-    originalAmount: plan.originalAmount,
-    discount,
-    discountReason: reason,
-    amount: plan.originalAmount - discount,
-    credits: plan.credits,
+  if (offer.autoRenewHint) {
+    base.autoRenewHint = offer.autoRenewHint;
+  }
+
+  return base;
+};
+
+const buildDemoStatusFromOffer = (offer: DemoOffer): DemoSubscriptionStatus => {
+  const expireDate =
+    offer.billingMode === 'duration' && offer.durationDays
+      ? date.formatDate(
+          new Date(Date.now() + offer.durationDays * 24 * 60 * 60 * 1000),
+          'YYYY-MM-DD',
+        )
+      : '单次有效';
+
+  const base: DemoSubscriptionStatus = {
+    type: 'active',
+    title: offer.statusCard.title,
+    subtitle: offer.statusCard.subtitle,
+    icon: offer.statusCard.icon,
+    color: offer.statusCard.color,
+    badge: offer.statusCard.badge,
+    badgeColor: offer.statusCard.badgeColor,
+    planName: offer.statusCard.planName,
+    tierLabel: offer.statusCard.tierLabel,
+    expireDate,
+    quotaLabel: offer.statusCard.quotaLabel,
+    remainingCount: offer.statusCard.remainingCount,
+    featureTags: offer.statusCard.featureTags,
+    source: 'demo',
   };
+
+  if (offer.statusCard.renewalNote) {
+    base.renewalNote = offer.statusCard.renewalNote;
+  }
+
+  return base;
+};
+
+const isDemoSubscriptionStatus = (value: unknown): value is DemoSubscriptionStatus => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.title === 'string' &&
+    typeof candidate.subtitle === 'string' &&
+    typeof candidate.icon === 'string' &&
+    typeof candidate.color === 'string' &&
+    typeof candidate.badge === 'string' &&
+    typeof candidate.badgeColor === 'string' &&
+    typeof candidate.planName === 'string' &&
+    typeof candidate.tierLabel === 'string' &&
+    typeof candidate.expireDate === 'string' &&
+    typeof candidate.quotaLabel === 'string' &&
+    typeof candidate.remainingCount === 'string' &&
+    Array.isArray(candidate.featureTags) &&
+    typeof candidate.source === 'string'
+  );
+};
+
+const readDemoSubscriptionState = (): DemoSubscriptionStatus | null => {
+  const savedState = getItem<DemoSubscriptionStatus>(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE);
+  return isDemoSubscriptionStatus(savedState) ? savedState : null;
+};
+
+const createBackendFallbackStatus = (user: {
+  subscription_type?: string;
+  subscription_expires_at?: string;
+  remaining_credits?: number;
+}): DemoSubscriptionStatus | null => {
+  const now = new Date();
+  const expiresAt = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
+  const hasActiveSubscription =
+    Boolean(user.subscription_type && user.subscription_type !== 'none') &&
+    expiresAt !== null &&
+    expiresAt >= now;
+  const remainingCredits = user.remaining_credits || 0;
+
+  if (!hasActiveSubscription && remainingCredits <= 0) {
+    return null;
+  }
+
+  return {
+    type: 'active',
+    title: '已检测到真实账号权益',
+    subtitle: '当前尚未应用本地订阅状态，右侧展示为账号真实权益的只读回退信息。',
+    icon: hasActiveSubscription ? 'shield' : 'payments',
+    color: hasActiveSubscription ? 'secondary' : 'primary',
+    badge: hasActiveSubscription ? '真实权益回退' : '真实按次回退',
+    badgeColor: hasActiveSubscription ? 'secondary' : 'primary',
+    planName: hasActiveSubscription ? '真实账号订阅' : '真实账号按次权益',
+    tierLabel: '后端回退',
+    expireDate: expiresAt ? date.formatDate(expiresAt, 'YYYY-MM-DD') : '按真实账号权益',
+    quotaLabel: '可用次数',
+    remainingCount: remainingCredits > 0 ? `${remainingCredits}次` : '按真实账号权益',
+    featureTags: ['来自真实账号数据', '未改动真实权限控制', '完成套餐购买后将优先显示当前页面状态'],
+    source: 'backend',
+  };
+};
+
+const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
+  if (!certificate.imageUrl) {
+    $q.notify({
+      type: 'info',
+      message: '证书图片待补充',
+      position: 'top',
+      timeout: 1200,
+    });
+    return;
+  }
+
+  activeCertificate.value = certificate;
+  previewVisible.value = true;
+};
+
+const resetCertificatePreview = (): void => {
+  previewVisible.value = false;
+  activeCertificate.value = null;
+};
+
+const showPaymentAgreement = (tab: 'agreement' | 'privacy') => {
+  paymentAgreementTab.value = tab;
+  showPaymentAgreementDialog.value = true;
+};
+
+const openPaymentDialog = (offer: DemoOffer): void => {
+  activeTier.value = offer.tier;
+  currentPaymentOffer.value = offer;
+  paymentInfo.value = buildPaymentInfo(offer);
+  paymentStep.value = 1;
+  selectedPaymentMethod.value = 'alipay';
+  agreePaymentTerms.value = false;
+  showUpgradeDialog.value = false;
   showPaymentDialog.value = true;
 };
 
-// 处理套餐包购买
-const handlePackagePurchase = (packageType: string, originalAmount: number) => {
-  const packages: Record<string, { planName: string; credits: string }> = {
-    test: { planName: '测试套餐', credits: '1次AI分析' },
-    'package-10': { planName: '10次套餐包', credits: '10次AI分析' },
-    'package-30': { planName: '30次套餐包', credits: '30次AI分析' },
-    'package-50': { planName: '50次套餐包', credits: '50次AI分析' },
-  };
+const handleUpgrade = (tier: DemoPlanTier): void => {
+  openPaymentDialog(getSelectedOffer(tier));
+};
 
-  const packageInfo = packages[packageType];
-  if (!packageInfo) {
+const resetPaymentFlow = (): void => {
+  showPaymentDialog.value = false;
+  paymentStep.value = 1;
+  paymentProcessing.value = false;
+  selectedPaymentMethod.value = 'alipay';
+  agreePaymentTerms.value = false;
+  currentPaymentOffer.value = null;
+  paymentInfo.value = createEmptyPaymentInfo();
+};
+
+const cancelPayment = (): void => {
+  resetPaymentFlow();
+};
+
+const finishDemoPayment = (): void => {
+  resetPaymentFlow();
+};
+
+const processPayment = async (): Promise<void> => {
+  if (!currentPaymentOffer.value) {
     $q.notify({
       type: 'negative',
-      message: '无效的套餐包',
+      message: '当前未选择套餐',
       position: 'top',
     });
     return;
   }
 
-  const { discount, reason } = calculateDiscount(packageType, originalAmount);
-
-  paymentInfo.value = {
-    planType: packageType,
-    planName: packageInfo.planName,
-    originalAmount,
-    discount,
-    discountReason: reason,
-    amount: originalAmount - discount,
-    credits: packageInfo.credits,
-  };
-  showPackageDialog.value = false;
-  showPaymentDialog.value = true;
-};
-
-// 处理升级
-const handleUpgrade = (planType: 'monthly' | 'yearly') => {
-  showUpgradeDialog.value = false;
-  handleSubscribe(planType);
-};
-
-// 取消支付
-const cancelPayment = () => {
-  showPaymentDialog.value = false;
-  paymentStep.value = 1;
-  selectedPaymentMethod.value = 'alipay';
-};
-
-// 模拟支付流程
-const processPayment = async () => {
   paymentProcessing.value = true;
 
   try {
-    const { data } = await paymentAPI.createOrder(
-      paymentInfo.value.planType,
-      selectedPaymentMethod.value,
-    );
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 900);
+    });
 
-    // 跳转到支付页面
-    if (data.success && data.data && data.data.payUrl) {
-      window.location.href = data.data.payUrl;
-    } else {
-      throw new Error(data.message || '获取支付链接失败');
-    }
-  } catch (error) {
-    console.error('创建订单失败:', error);
+    const nextStatus = buildDemoStatusFromOffer(currentPaymentOffer.value);
+    subscriptionStatus.value = nextStatus;
+    hasDemoOverride.value = true;
+    setItem(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE, nextStatus);
+    paymentStep.value = 3;
+
     $q.notify({
-      type: 'negative',
-      message: '创建订单失败',
-      caption: '请稍后重试或联系客服',
+      type: 'positive',
+      message: `${nextStatus.planName} 支付完成`,
+      caption: '右侧订阅状态已立即同步更新',
       position: 'top',
-      icon: 'error',
+      icon: 'task_alt',
     });
   } finally {
     paymentProcessing.value = false;
   }
 };
 
-// 保存AI配置
 const saveAIConfig = () => {
   setItem(STORAGE_KEYS.AI_CONFIG, apiConfig.value);
   $q.notify({
@@ -1707,7 +2034,6 @@ const saveAIConfig = () => {
   });
 };
 
-// 重置AI配置
 const resetAIConfig = () => {
   apiConfig.value = {
     model: 'qwen-vl-max',
@@ -1721,7 +2047,6 @@ const resetAIConfig = () => {
   });
 };
 
-// 保存用户偏好
 const savePreferences = () => {
   setItem(STORAGE_KEYS.USER_PREFERENCES, preferences.value);
   $q.notify({
@@ -1732,7 +2057,6 @@ const savePreferences = () => {
   });
 };
 
-// 重置用户偏好为默认值
 const resetPreferences = () => {
   preferences.value = {
     notifications: {
@@ -1771,7 +2095,6 @@ const resetPreferences = () => {
   });
 };
 
-// 加载保存的配置
 const loadSavedConfig = () => {
   const savedAIConfig = getItem<typeof apiConfig.value>(STORAGE_KEYS.AI_CONFIG);
   if (savedAIConfig && typeof savedAIConfig === 'object') {
@@ -1784,276 +2107,913 @@ const loadSavedConfig = () => {
   }
 };
 
-// 从后端获取真实的用户权益数据
-const loadUserSubscription = async () => {
+const loadUserSubscription = async (): Promise<void> => {
+  if (hasDemoOverride.value) {
+    return;
+  }
+
   try {
     const response = await userAPI.getProfile();
-    const user = response.data.user;
 
-    // 根据后端返回的数据更新订阅状态
-    const now = new Date();
-    const expiresAt = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
-    const isExpired = !expiresAt || expiresAt < now;
-    const remainingCredits = user.remaining_credits || 0;
-
-    if (user.subscription_type && user.subscription_type !== 'none' && !isExpired) {
-      // 有效订阅
-      const planNames: Record<string, string> = {
-        monthly: '月度订阅',
-        yearly: '年度订阅',
-        package: '套餐包',
-      };
-      subscriptionStatus.value = {
-        type: 'active',
-        title: `${planNames[user.subscription_type] || '订阅'}已激活`,
-        subtitle: '享受完整AI辅助筛查服务',
-        icon: user.subscription_type === 'yearly' ? 'workspace_premium' : 'check_circle',
-        color: user.subscription_type === 'yearly' ? 'amber' : 'positive',
-        badge: `有效期至 ${date.formatDate(expiresAt, 'YYYY-MM-DD')}`,
-        badgeColor: user.subscription_type === 'yearly' ? 'amber' : 'primary',
-        planName: planNames[user.subscription_type] || '订阅会员',
-        expireDate: date.formatDate(expiresAt, 'YYYY-MM-DD'),
-        remainingCount: remainingCredits,
-      };
-    } else if (remainingCredits > 0) {
-      // 有剩余点数但无订阅
-      subscriptionStatus.value = {
-        type: 'active',
-        title: '套餐包用户',
-        subtitle: '按次使用AI分析服务',
-        icon: 'payments',
-        color: 'primary',
-        badge: `剩余 ${remainingCredits} 次`,
-        badgeColor: 'primary',
-        planName: '按次付费',
-        expireDate: '永久有效',
-        remainingCount: remainingCredits,
-      };
-    } else {
-      // 无订阅无点数
-      subscriptionStatus.value = {
-        type: 'trial',
-        title: '未订阅',
-        subtitle: '开始体验AI辅助筛查服务',
-        icon: 'info',
-        color: 'grey',
-        badge: '暂无权益',
-        badgeColor: 'grey',
-        planName: '未订阅',
-        expireDate: '-',
-        remainingCount: 0,
-      };
+    if (hasDemoOverride.value) {
+      return;
     }
-  } catch (e) {
-    console.error('获取用户权益失败:', e);
+
+    const backendStatus = createBackendFallbackStatus(response.data.user);
+    subscriptionStatus.value = backendStatus ?? createDefaultSubscriptionStatus();
+  } catch (error) {
+    if (!hasDemoOverride.value) {
+      subscriptionStatus.value = createDefaultSubscriptionStatus();
+    }
+
+    console.error('获取用户权益失败:', error);
   }
 };
 
-// 页面加载时读取配置
 onMounted(() => {
   loadSavedConfig();
+
+  const savedDemoState = readDemoSubscriptionState();
+  if (savedDemoState) {
+    subscriptionStatus.value = savedDemoState;
+    hasDemoOverride.value = true;
+    return;
+  }
+
   void loadUserSubscription();
 });
 </script>
 
 <style scoped>
-/* 订阅卡片样式 */
-.subscription-card {
-  transition: all 0.3s ease;
-}
-
-.subscription-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-/* 价格容器样式 */
-.price-container {
+.subscription-demo-shell {
   position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top left, rgba(115, 179, 255, 0.24), transparent 34%),
+    radial-gradient(circle at right center, rgba(43, 147, 164, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 250, 255, 0.98) 100%);
+  box-shadow: 0 24px 60px rgba(15, 57, 87, 0.12);
 }
 
-.original-price {
-  text-decoration: line-through;
-  opacity: 0.7;
+.subscription-demo-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.3), transparent 30%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(18, 88, 138, 0.03) 0,
+      rgba(18, 88, 138, 0.03) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+  pointer-events: none;
 }
 
-.current-price {
+.subscription-demo-hero {
+  position: relative;
+  padding: 28px;
+  background: linear-gradient(
+    135deg,
+    rgba(237, 246, 255, 0.96) 0%,
+    rgba(249, 252, 255, 0.96) 100%
+  );
+  border-bottom: 1px solid rgba(28, 86, 129, 0.08);
+}
+
+.subscription-demo-title {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  line-height: 1.16;
+  letter-spacing: 0.02em;
+  color: #11324d;
+}
+
+.subscription-demo-subtitle {
+  max-width: 560px;
+  line-height: 1.8;
+}
+
+.subscription-hero-chip {
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.76) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+}
+
+.subscription-demo-highlight {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(21, 102, 151, 0.1);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(233, 245, 255, 0.92) 100%
+  );
+  box-shadow: 0 18px 40px rgba(20, 70, 104, 0.12);
+}
+
+.subscription-demo-highlight__eyebrow {
+  color: #116ca8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subscription-demo-highlight__tier {
+  align-self: flex-start;
+  border-radius: 999px;
+}
+
+.subscription-demo-highlight__price-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.subscription-demo-highlight__price-note {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.subscription-demo-highlight__price-note-label,
+.subscription-demo-highlight__metric-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #70879a;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+.subscription-demo-highlight__price-note-value {
+  margin-bottom: 6px;
+  color: #163a56;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.subscription-demo-highlight__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.subscription-demo-highlight__metric {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.subscription-demo-highlight__metric strong {
+  color: #163a56;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.subscription-demo-highlight__cta {
+  min-height: 46px;
+  box-shadow: 0 16px 32px rgba(17, 108, 168, 0.2);
+}
+
+.subscription-demo-highlight::after {
+  content: '';
+  position: absolute;
+  inset: auto -50px -60px auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(69, 162, 224, 0.15) 0%, transparent 72%);
+}
+
+.plan-stage-card {
+  height: 100%;
+  border-radius: 28px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.96) 100%);
+  box-shadow: 0 18px 40px rgba(15, 57, 87, 0.08);
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.plan-stage-card:hover,
+.plan-stage-card--active {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 46px rgba(15, 57, 87, 0.12);
+}
+
+.plan-stage-card--basic {
+  border-color: rgba(25, 118, 210, 0.12);
+}
+
+.plan-stage-card--premium {
+  border-color: rgba(255, 87, 34, 0.12);
+}
+
+.plan-stage-card__header {
+  padding: 24px 24px 18px;
+}
+
+.plan-stage-card__offers {
+  padding: 0 24px 20px;
+}
+
+.plan-stage-card__actions {
+  padding: 0 24px 24px;
+}
+
+.plan-stage-card__focus-strip {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: linear-gradient(135deg, rgba(240, 248, 252, 0.92) 0%, rgba(255, 255, 255, 0.9) 100%);
+}
+
+.plan-stage-card__focus-label {
+  color: #70879a;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.plan-stage-card__focus-name {
+  color: #173852;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.plan-stage-card__focus-price {
+  color: #153d59;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.plan-stage-card__focus-price span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #668095;
+}
+
+.plan-stage-card__focus-saving {
+  color: #0a7f5a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plan-feature-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(242, 248, 252, 0.88);
+  border: 1px solid rgba(17, 76, 114, 0.06);
+  color: #33556e;
+}
+
+.offer-tile {
+  width: 100%;
+  min-height: 150px;
+  padding: 16px;
+  border: 1px solid rgba(17, 76, 114, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.offer-tile__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.offer-tile__saving {
+  color: #0a7f5a;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.offer-tile__footnote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: #688296;
+  font-size: 12px;
+}
+
+.offer-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(25, 118, 210, 0.22);
+  box-shadow: 0 18px 28px rgba(17, 76, 114, 0.08);
+}
+
+.offer-tile--active {
+  border-color: rgba(25, 118, 210, 0.32);
+  background: linear-gradient(180deg, rgba(235, 246, 255, 0.96) 0%, rgba(255, 255, 255, 0.96) 100%);
+  box-shadow: 0 16px 28px rgba(25, 118, 210, 0.12);
+}
+
+.offer-tile--usage {
+  background: linear-gradient(180deg, rgba(241, 251, 248, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.comparison-card,
+.upgrade-option-card {
+  border: 0;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 18px 42px rgba(15, 57, 87, 0.1);
+}
+
+.subscription-status-card {
+  position: relative;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
+  box-shadow:
+    0 18px 42px rgba(15, 57, 87, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.subscription-status-card__header,
+.subscription-status-card__body,
+.subscription-status-card__footer {
+  position: relative;
+  padding: 20px 22px;
+}
+
+.subscription-status-card__header {
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(240, 248, 252, 0.96) 0%, rgba(255, 255, 255, 0.92) 100%);
+}
+
+.subscription-status-card__header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(17, 108, 168, 0.92) 0%, rgba(43, 147, 164, 0.65) 46%, transparent 100%);
+}
+
+.subscription-status-card__body,
+.subscription-status-card__footer {
+  background: transparent;
+}
+
+.subscription-status-card__separator {
+  opacity: 0.56;
+}
+
+.subscription-status-card__eyebrow {
+  color: #6b8397;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subscription-status-card__summary {
+  color: #5c7488;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.subscription-status-card__icon-shell {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 24px rgba(15, 57, 87, 0.08);
+}
+
+.subscription-status-chip {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.subscription-status-chip--primary {
+  color: #115d93;
+  background: rgba(17, 108, 168, 0.1);
+  border: 1px solid rgba(17, 108, 168, 0.12);
+}
+
+.subscription-status-chip--muted {
+  color: #6b5b22;
+  background: rgba(180, 125, 31, 0.1);
+  border: 1px solid rgba(180, 125, 31, 0.14);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-grid__item {
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.status-grid__label {
+  margin-bottom: 5px;
+  color: #688296;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+.status-grid__value {
+  color: #18364d;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.status-grid__value--accent {
+  color: #0f6caa;
+}
+
+.status-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 76, 114, 0.07);
+  background: rgba(248, 251, 253, 0.92);
+}
+
+.demo-feature-item,
+.demo-success-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(245, 250, 255, 0.94);
+}
+
+.comparison-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
+}
+
+.comparison-table :deep(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.comparison-table :deep(th) {
+  color: #476177;
+  font-weight: 700;
+}
+
+.comparison-table :deep(td),
+.comparison-table :deep(th) {
+  padding: 12px 10px;
+}
+
+.comparison-table :deep(tbody tr:nth-child(odd)) {
+  background: rgba(242, 248, 252, 0.8);
+}
+
+.demo-payment-dialog {
+  width: min(92vw, 860px);
+  max-width: 860px;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.demo-payment-dialog__header {
+  color: white;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(17, 62, 93, 0.98) 0%, rgba(26, 98, 125, 0.98) 52%, rgba(36, 128, 144, 0.94) 100%);
+}
+
+.demo-payment-dialog__caption {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.demo-payment-dialog__hero-amount {
+  padding: 10px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.payment-stepper-shell :deep(.q-stepper__header) {
+  padding: 8px 14px 0;
+  background: rgba(247, 251, 255, 0.72);
+}
+
+.payment-stepper-shell :deep(.q-stepper__tab) {
+  min-height: 62px;
+}
+
+.payment-stepper-shell :deep(.q-stepper__title) {
+  font-weight: 700;
+}
+
+.payment-stepper-shell :deep(.q-stepper__label) {
+  color: #33556e;
+}
+
+.demo-order-card,
+.demo-success-card {
+  border-radius: 20px;
+  border-color: rgba(17, 76, 114, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 250, 255, 0.98) 100%);
+}
+
+.checkout-aside-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 249, 252, 0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 14px 30px rgba(15, 57, 87, 0.06);
+}
+
+.checkout-aside-card__head,
+.checkout-aside-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.checkout-aside-card__title {
+  color: #153b57;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.checkout-aside-card__badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #12689f;
+  background: rgba(17, 108, 168, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.checkout-aside-card__list {
+  display: grid;
+  gap: 10px;
+}
+
+.checkout-aside-card__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(17, 76, 114, 0.06);
+}
+
+.checkout-aside-card__footer {
+  padding-top: 14px;
+  border-top: 1px solid rgba(17, 76, 114, 0.08);
+}
+
+.checkout-aside-card__footer div {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 
-/* 优惠标签样式 */
-.discount-tag {
-  display: inline-block;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
+.checkout-aside-card__footer span {
+  color: #70879a;
   font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
-  position: relative;
-  overflow: hidden;
 }
 
-.discount-tag::before {
-  content: '🎫';
-  margin-right: 4px;
+.checkout-aside-card__footer strong {
+  color: #153b57;
+  font-size: 14px;
 }
 
-.discount-tag::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-  }
-  100% {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
-  }
-}
-
-/* 套餐包优惠标签 */
-.package-discount-tag {
-  display: inline-block;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
-  padding: 3px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.25);
-}
-
-.package-discount-tag::before {
-  content: '🎫';
-  margin-right: 3px;
-}
-
-/* 套餐包卡片样式 */
-.package-card {
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.package-card:hover {
-  border-color: #1976d2;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
-  transform: translateX(4px);
-}
-
-.package-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: linear-gradient(180deg, #1976d2 0%, #42a5f5 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.package-card:hover::before {
-  opacity: 1;
-}
-
-/* 支付摘要样式 */
 .payment-summary {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(244, 249, 253, 0.96);
+  border: 1px solid rgba(17, 76, 114, 0.07);
 }
 
 .summary-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 8px 0;
 }
 
 .summary-row.discount-row {
-  color: #21ba45;
-  background: linear-gradient(90deg, rgba(33, 186, 69, 0.05) 0%, transparent 100%);
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin: 4px 0;
+  color: #13795b;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(19, 121, 91, 0.08);
 }
 
 .summary-row.total {
-  border-top: 1px solid #e0e0e0;
   margin-top: 8px;
   padding-top: 12px;
-  font-weight: bold;
+  border-top: 1px solid rgba(17, 76, 114, 0.08);
 }
 
-/* 支付按钮特殊样式 */
+.payment-selection-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(244, 249, 253, 0.92);
+}
+
+.payment-selection-banner__label {
+  color: #70879a;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.payment-selection-banner__value {
+  color: #163a56;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.payment-method-card {
+  border-radius: 20px;
+  border-color: rgba(17, 76, 114, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 251, 255, 0.94) 100%);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.payment-method-card:hover,
+.payment-method-card--active {
+  transform: translateY(-2px);
+  border-color: rgba(25, 118, 210, 0.28);
+  box-shadow: 0 16px 28px rgba(17, 76, 114, 0.08);
+}
+
+.demo-payment-note {
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #1b5d78;
+  background: rgba(43, 147, 164, 0.08);
+  border: 1px solid rgba(43, 147, 164, 0.12);
+}
+
 .payment-confirm-btn {
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-  transition: all 0.3s ease;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(33, 150, 83, 0.24);
 }
 
-.payment-confirm-btn:hover {
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-  transform: translateY(-1px);
-}
-
-/* 协议复选框样式 */
 .agreement-section {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(244, 249, 253, 0.94);
+  border: 1px solid rgba(17, 76, 114, 0.08);
 }
 
 .agreement-link {
-  color: #1976d2;
+  color: #116ca8;
   cursor: pointer;
-  text-decoration: none;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .agreement-link:hover {
   text-decoration: underline;
 }
 
+.upgrade-dialog-card {
+  width: min(92vw, 720px);
+  max-width: 720px;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.upgrade-option-card {
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.upgrade-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(15, 57, 87, 0.08);
+}
+
+.copyright-card {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.copyright-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(112, 71, 180, 0.16);
+}
+
 .certificate-preview-image {
   max-height: 72vh;
-  border-radius: 8px;
+  border-radius: 12px;
   background: #f8fafc;
+}
+
+@media (max-width: 1023px) {
+  .subscription-demo-hero,
+  .plan-stage-card__header,
+  .plan-stage-card__offers,
+  .plan-stage-card__actions,
+  .subscription-status-card__header,
+  .subscription-status-card__body,
+  .subscription-status-card__footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+@media (max-width: 599px) {
+  .subscription-demo-shell,
+  .subscription-status-card,
+  .comparison-card {
+    border-radius: 22px;
+  }
+
+  .subscription-demo-title {
+    font-size: 2rem;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-demo-highlight__price-band,
+  .subscription-demo-highlight__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-stage-card__focus-strip,
+  .payment-selection-banner,
+  .checkout-aside-card__head,
+  .checkout-aside-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .offer-tile {
+    min-height: auto;
+  }
+
+  .demo-payment-dialog,
+  .upgrade-dialog-card {
+    width: 96vw;
+  }
 }
 </style>
 
 <style lang="scss">
 body.body--dark {
-  // 支付摘要区域暗色适配
-  .payment-summary {
+  .subscription-demo-shell,
+  .plan-stage-card,
+  .subscription-status-card,
+  .comparison-card,
+  .demo-order-card,
+  .demo-success-card,
+  .upgrade-option-card {
+    background: var(--app-surface) !important;
+  }
+
+  .subscription-demo-hero,
+  .subscription-demo-highlight,
+  .subscription-status-card__header,
+  .subscription-demo-highlight__price-note,
+  .subscription-demo-highlight__metric,
+  .plan-stage-card__focus-strip,
+  .offer-tile,
+  .status-grid__item,
+  .status-feature-item,
+  .demo-feature-item,
+  .demo-success-item,
+  .payment-summary,
+  .agreement-section,
+  .subscription-status-card__icon-shell,
+  .checkout-aside-card,
+  .checkout-aside-card__item,
+  .payment-selection-banner,
+  .payment-method-card {
     background: var(--app-elevated-bg) !important;
+    border-color: var(--app-border-default) !important;
   }
 
-  .summary-row.total {
-    border-top-color: var(--app-border-default) !important;
+  .subscription-demo-title,
+  .status-grid__value,
+  .subscription-demo-highlight__metric strong,
+  .subscription-demo-highlight__price-note-value,
+  .plan-stage-card__focus-name,
+  .plan-stage-card__focus-price,
+  .checkout-aside-card__title,
+  .checkout-aside-card__footer strong,
+  .payment-selection-banner__value {
+    color: var(--q-grey-2) !important;
   }
 
-  .summary-row.discount-row {
-    background: linear-gradient(90deg, rgba(33, 186, 69, 0.15) 0%, transparent 100%) !important;
+  .subscription-status-card__summary,
+  .subscription-status-card__eyebrow,
+  .status-grid__label,
+  .subscription-status-card__footer .text-caption,
+  .subscription-demo-highlight__price-note-label,
+  .subscription-demo-highlight__metric-label,
+  .plan-stage-card__focus-label,
+  .plan-stage-card__focus-price span,
+  .plan-stage-card__focus-saving,
+  .checkout-aside-card__footer span,
+  .payment-selection-banner__label {
+    color: var(--app-text-secondary) !important;
   }
 
-  // 协议和支付相关暗色适配
-  .agreement-section {
-    background: var(--app-elevated-bg) !important;
+  .subscription-status-chip--primary,
+  .subscription-status-chip--muted,
+  .checkout-aside-card__badge {
+    background: rgba(148, 163, 184, 0.12) !important;
+    border-color: rgba(148, 163, 184, 0.24) !important;
+    color: var(--q-grey-3) !important;
+  }
+
+  .demo-payment-dialog__hero-amount {
+    background: rgba(148, 163, 184, 0.12) !important;
+    border-color: rgba(148, 163, 184, 0.24) !important;
+  }
+
+  .subscription-demo-shell,
+  .plan-stage-card,
+  .subscription-status-card,
+  .comparison-card {
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.22) !important;
+  }
+
+  .subscription-hero-chip {
+    background: rgba(18, 29, 41, 0.82) !important;
+    border-color: rgba(148, 163, 184, 0.12) !important;
+  }
+
+  .comparison-table tbody tr:nth-child(odd) {
+    background: rgba(148, 163, 184, 0.06) !important;
   }
 
   .agreement-link {
@@ -2062,12 +3022,6 @@ body.body--dark {
 
   .certificate-preview-image {
     background: var(--app-elevated-bg) !important;
-  }
-
-  // 套餐包卡片 hover
-  .package-card:hover {
-    border-color: var(--q-primary) !important;
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
   }
 }
 </style>

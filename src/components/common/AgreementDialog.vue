@@ -55,7 +55,7 @@
                 <div class="text-center q-mb-lg">
                   <q-icon name="workspace_premium" color="primary" size="48px" />
                   <div class="text-h5 text-weight-medium q-mt-sm">CervixDetect AI 用户服务协议</div>
-                  <div class="text-caption text-grey-6">更新日期：2026年1月</div>
+                  <div class="text-caption text-grey-6">更新日期：2026年3月11日</div>
                 </div>
 
                 <q-banner class="bg-blue-1 text-primary q-mb-lg" rounded>
@@ -95,9 +95,10 @@
 
                   <h4 class="text-primary q-mb-md">三、订阅与付费</h4>
                   <ul>
-                    <li>我们提供按次付费、月度订阅和年度订阅等多种服务计划</li>
-                    <li>套餐包购买后如未使用，可在7日内申请全额退款</li>
-                    <li>订阅开通后24小时内可申请退款（已使用服务的除外）</li>
+                    <li>我们提供“基础套餐 / 顶级套餐”两级订阅方案，可在订阅页选择不同档位</li>
+                    <li>订阅页内的“支付流程”为页面内状态同步流程，用于展示套餐开通后的交互效果，不产生真实交易</li>
+                    <li>连续包月档位会展示“自动扣费提示”，实际计费与续费规则以届时签约/支付说明为准</li>
+                    <li>若未来启用真实支付，将在支付页面、合同或补充协议中另行说明价格、对账与退款规则</li>
                   </ul>
 
                   <h4 class="text-primary q-mb-md">四、医疗免责声明</h4>
@@ -153,7 +154,7 @@
                 <div class="text-center q-mb-lg">
                   <q-icon name="security" color="positive" size="48px" />
                   <div class="text-h5 text-weight-medium q-mt-sm">CervixDetect AI 隐私政策</div>
-                  <div class="text-caption text-grey-6">更新日期：2026年1月</div>
+                  <div class="text-caption text-grey-6">更新日期：2026年3月11日</div>
                 </div>
 
                 <q-banner class="bg-green-1 text-positive q-mb-lg" rounded>
@@ -211,7 +212,9 @@
                   <ul>
                     <li><strong>阿里云短信服务：</strong>用于发送验证码</li>
                     <li><strong>通义千问AI：</strong>用于医学影像分析</li>
-                    <li><strong>支付服务商：</strong>处理订阅支付（支付宝、微信）</li>
+                    <li>
+                      <strong>支付相关服务：</strong>订阅页可能展示支付方式选项或记录支付方式偏好（页面交互用途）。若未来启用真实支付，将以实际接入的第三方服务为准
+                    </li>
                   </ul>
 
                   <h4 class="text-positive q-mb-md">五、您的权利</h4>

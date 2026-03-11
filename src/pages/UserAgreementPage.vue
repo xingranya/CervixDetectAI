@@ -14,7 +14,7 @@
           <div class="col-auto">
             <q-chip color="white" text-color="primary" dense>
               <q-icon name="update" size="xs" class="q-mr-xs" />
-              更新于 2026年1月
+              更新于 2026年3月11日
             </q-chip>
           </div>
         </div>
@@ -89,7 +89,7 @@
                 <p><strong>1.3 服务模式</strong></p>
                 <p>
                   本系统采用"互联网+医疗"的SaaS云服务模式，用户可通过网页端访问和使用服务，
-                  无需安装额外软件。我们提供按次付费、月度订阅和年度订阅等多种灵活的服务计划。
+                  无需安装额外软件。我们提供“基础套餐 / 顶级套餐”两级方案，订阅页支持套餐选择、支付交互与状态联动展示。
                 </p>
 
                 <q-banner class="bg-orange-1 text-orange-9 q-mt-md" rounded>
@@ -146,64 +146,65 @@
                 <q-markup-table flat bordered class="q-my-md">
                   <thead>
                     <tr>
-                      <th class="text-left">计划类型</th>
-                      <th class="text-left">价格</th>
-                      <th class="text-left">包含服务</th>
-                      <th class="text-left">有效期</th>
+                      <th class="text-left">套餐层级</th>
+                      <th class="text-left">套餐档位（示例）</th>
+                      <th class="text-left">主要权益</th>
+                      <th class="text-left">说明</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>按次付费</td>
-                      <td>¥19/次</td>
-                      <td>单次AI分析、完整报告、7天报告保存</td>
-                      <td>单次有效</td>
+                      <td>基础套餐</td>
+                      <td>按天数：连续包月 / 一月 / 半年 / 一年；按次数：试用一次 / 单次版</td>
+                      <td>
+                        三种检测方式（巴氏染色涂片、液基细胞学、宫颈活检切片）、AI 医疗助手、完整 PDF 报告
+                      </td>
+                      <td>用于说明订阅闭环与状态联动，不影响真实账号权益</td>
                     </tr>
                     <tr>
-                      <td>月度订阅</td>
-                      <td>¥299/月</td>
-                      <td>20次AI分析、永久报告保存、优先处理</td>
-                      <td>30天</td>
-                    </tr>
-                    <tr>
-                      <td>年度订阅</td>
-                      <td>¥2,999/年</td>
-                      <td>300次AI分析、VIP服务、数据统计</td>
-                      <td>365天</td>
+                      <td>顶级套餐</td>
+                      <td>按天数：连续包月 / 一月 / 半年 / 一年</td>
+                      <td>
+                        随访管理、五种检测方式（基础三种 + HPV 分型检测图像 + p16/Ki67 双染图像）、
+                        给患者使用的小程序（即将开放 / 可定制接入）、多格式完整报告、自定义水印
+                      </td>
+                      <td>连续包月展示“自动扣费提示”（仅文案展示）</td>
                     </tr>
                   </tbody>
                 </q-markup-table>
 
-                <p><strong>3.2 支付方式</strong></p>
-                <p>我们支持以下支付方式：</p>
+                <p class="text-grey-7">
+                  订阅页展示的价格、档位与权益信息用于页面说明，不构成对外要约。正式计费与权益发放规则以届时签约、支付页面或补充协议说明为准。
+                </p>
+
+                <p><strong>3.2 支付方式说明</strong></p>
+                <p>订阅页可能展示以下支付方式选项（页面交互用途）：</p>
                 <ul>
                   <li>支付宝</li>
                   <li>微信支付</li>
                   <li>银行卡（Visa、Mastercard等）</li>
                 </ul>
+                <p class="text-grey-7">
+                  订阅页内的“支付流程”为页面内状态同步流程，用于说明交互与状态联动效果，不代表已发生真实交易或扣费。
+                </p>
 
-                <p><strong>3.3 自动续费</strong></p>
+                <p><strong>3.3 自动续费说明</strong></p>
                 <ul>
-                  <li>订阅用户可选择开启自动续费功能</li>
-                  <li>自动续费将在订阅到期前1天自动扣款</li>
-                  <li>用户可随时在设置中关闭自动续费</li>
-                  <li>关闭自动续费后，当前订阅期内的服务不受影响</li>
+                  <li>连续包月档位会在页面中展示“自动扣费提示”</li>
+                  <li>当前页面不触发真实自动扣费与续费逻辑</li>
+                  <li>如未来启用真实续费功能，将以届时签约、支付页面或补充协议说明为准</li>
                 </ul>
 
-                <p><strong>3.4 退款政策</strong></p>
+                <p><strong>3.4 支付与退款说明</strong></p>
                 <ul>
-                  <li>套餐包购买后如未使用任何分析次数，可在<strong>7日内</strong>申请全额退款</li>
-                  <li>
-                    月度/年度订阅开通后<strong>24小时内</strong>可申请退款（已使用服务的除外）
-                  </li>
-                  <li>因服务质量问题导致的退款，我们将在核实后按比例退还</li>
-                  <li>退款将原路返回，处理时间为<strong>3-7个工作日</strong></li>
+                  <li>订阅页内的支付流程为页面内状态同步流程，不产生真实交易记录</li>
+                  <li>当前页面不提供真实退款、对账、开票等规则承诺</li>
+                  <li>如未来启用真实支付与订阅，将在支付页面、合同或补充协议中另行说明对应规则</li>
                 </ul>
 
-                <p><strong>3.5 价格调整</strong></p>
+                <p><strong>3.5 价格说明</strong></p>
                 <p>
-                  我们保留调整服务价格的权利。价格调整将提前<strong>30日</strong>通过系统公告或邮件通知用户。
-                  已购买的服务不受价格调整影响。
+                  订阅页展示的价格与优惠信息可能随页面版本迭代而调整。若未来启用正式计费，相关价格与变更机制以届时签约、支付页面或补充协议说明为准。
                 </p>
               </div>
             </section>
@@ -442,7 +443,7 @@
                     </div>
                     <div class="col-12 col-md-6">
                       <div class="text-subtitle2 text-grey-7">协议版本</div>
-                      <div class="text-body1">v1.0.0（2026年1月）</div>
+                      <div class="text-body1">v1.0.0（2026年3月11日）</div>
                     </div>
                   </div>
                 </q-card>

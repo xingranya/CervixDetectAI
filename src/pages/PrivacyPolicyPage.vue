@@ -14,7 +14,7 @@
           <div class="col-auto">
             <q-chip color="white" text-color="positive" dense>
               <q-icon name="update" size="xs" class="q-mr-xs" />
-              更新于 2026年1月
+              更新于 2026年3月11日
             </q-chip>
           </div>
         </div>
@@ -199,7 +199,7 @@
                   <li>处理您的账户注册、登录和身份验证</li>
                   <li>对上传的医学影像进行AI分析处理</li>
                   <li>生成并存储分析报告</li>
-                  <li>处理您的订阅和支付请求</li>
+                  <li>记录或处理您的套餐选择与订阅页交互（如套餐档位、支付方式偏好）</li>
                 </ul>
 
                 <p><strong>2.2 服务优化与改进</strong></p>
@@ -218,7 +218,7 @@
 
                 <p><strong>2.4 通知与沟通</strong></p>
                 <ul>
-                  <li>发送服务相关的重要通知（如订阅到期、系统维护）</li>
+                  <li>发送服务相关的重要通知（如权益到期提醒、系统维护）</li>
                   <li>回复您的咨询和反馈</li>
                   <li>发送产品更新和优惠信息（可随时取消订阅）</li>
                 </ul>
@@ -264,14 +264,14 @@
                       <td>账户注销后保留3年以满足法规要求</td>
                     </tr>
                     <tr>
-                      <td>医学影像（按次付费）</td>
+                      <td>医学影像（单次体验流程）</td>
                       <td>7天</td>
                       <td>分析完成后自动删除</td>
                     </tr>
                     <tr>
-                      <td>医学影像（订阅用户）</td>
-                      <td>订阅期间永久</td>
-                      <td>订阅结束后保留90天</td>
+                      <td>医学影像（套餐开通流程）</td>
+                      <td>权益期间</td>
+                      <td>权益结束后保留90天</td>
                     </tr>
                     <tr>
                       <td>分析报告</td>
@@ -455,11 +455,11 @@
                       </q-avatar>
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label>支付服务商</q-item-label>
+                      <q-item-label>支付相关服务</q-item-label>
                       <q-item-label caption>
-                        用途：处理订阅和支付交易<br />
-                        共享信息：订单金额、支付状态（不含完整支付信息）<br />
-                        合作方：支付宝、微信支付
+                        用途：订阅页可能展示支付方式选项或记录支付方式偏好（页面交互用途）<br />
+                        共享信息：可能包含所选档位、金额展示与交互状态（不含完整支付信息）<br />
+                        说明：若未来启用真实支付，将以实际接入的第三方服务为准
                       </q-item-label>
                     </q-item-section>
                   </q-item>
@@ -652,7 +652,7 @@
                     </div>
                     <div class="col-12 col-md-6">
                       <div class="text-subtitle2 text-grey-7">政策版本</div>
-                      <div class="text-body1">v1.0.0（2026年1月）</div>
+                      <div class="text-body1">v1.0.0（2026年3月11日）</div>
                     </div>
                   </div>
                 </q-card>

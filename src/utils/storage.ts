@@ -94,5 +94,6 @@ export const STORAGE_KEYS = {
   LOCALE: 'locale',
   AI_CONFIG: 'ai_engine_config',
   USER_PREFERENCES: 'user_preferences',
-  SUBSCRIPTION_STATUS: 'subscription_status'
+  SUBSCRIPTION_STATUS: 'subscription_status',
+  DEMO_SUBSCRIPTION_STATE: 'demo_subscription_state',
 } as const;
