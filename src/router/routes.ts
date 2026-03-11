@@ -81,6 +81,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/ApiSettingsPage.vue'),
       },
       {
+        path: 'ai-preferences',
+        name: 'ai-preferences',
+        component: () => import('pages/AiPreferencesPage.vue'),
+      },
+      {
         path: 'settings',
         name: 'settings',
         component: () => import('pages/SettingsPage.vue'),

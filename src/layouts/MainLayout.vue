@@ -308,10 +308,16 @@ const analysisLinks = [
     route: '/app/follow-ups',
   },
   {
-    title: '订阅与AI设置',
-    caption: '模型配置',
+    title: '套餐订阅',
+    caption: '套餐权益',
     icon: 'api',
     route: '/app/models',
+  },
+  {
+    title: 'AI与偏好设置',
+    caption: '引擎与服务',
+    icon: 'tune',
+    route: '/app/ai-preferences',
   },
   {
     title: '系统设置',
