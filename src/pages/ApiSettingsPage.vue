@@ -30,21 +30,16 @@
                       订阅服务中心
                     </q-chip>
                   </div>
-                  <div class="col-auto">
-                    <div class="subscription-demo-hero__signal">
-                      订阅状态与套餐权益同屏联动
-                    </div>
-                  </div>
                 </div>
 
-                <div class="subscription-demo-kicker q-mt-md">面向门诊、专科与区域协同筛查</div>
+                <div class="subscription-demo-kicker q-mt-md">面向门诊、体检与专科筛查场景</div>
                 <div class="subscription-demo-title q-mt-sm">
-                  让宫颈筛查能力
-                  <span class="subscription-demo-title__accent">即刻成型</span>
+                  用更合适的套餐
+                  <span class="subscription-demo-title__accent">匹配实际筛查规模</span>
                 </div>
                 <div class="text-body1 text-grey-7 q-mt-sm subscription-demo-subtitle">
-                  从首诊体验到年度合作，把 AI 检测、结构化报告与随访闭环整合在同一套订阅能力里，
-                  选中方案后右侧订阅状态与权益标签立即同步。
+                  从按次开通到年度持续使用，按机构规模选择更合适的检测能力、报告支持与服务范围，
+                  减少重复采购，也让不同阶段的投入更清晰。
                 </div>
 
                 <div class="row q-col-gutter-sm q-mt-md subscription-demo-stat-grid">
@@ -71,7 +66,7 @@
               <div class="col-12 col-md-5">
                 <q-card flat class="subscription-demo-highlight">
                   <q-card-section>
-                    <div class="subscription-demo-highlight__eyebrow">当前主推档位</div>
+                    <div class="subscription-demo-highlight__eyebrow">推荐套餐</div>
                     <div class="row items-start no-wrap q-mt-sm">
                       <div class="col">
                         <div class="text-h6 text-weight-bold">
@@ -104,7 +99,7 @@
                         </div>
                       </div>
                       <div class="subscription-demo-highlight__price-note">
-                        <div class="subscription-demo-highlight__price-note-label">开通建议</div>
+                        <div class="subscription-demo-highlight__price-note-label">适用说明</div>
                         <div class="subscription-demo-highlight__price-note-value">
                           {{ currentHeroOffer.billingLabel }}
                         </div>
@@ -116,16 +111,16 @@
 
                     <div class="subscription-demo-highlight__metrics q-mt-md">
                       <div class="subscription-demo-highlight__metric">
-                        <span class="subscription-demo-highlight__metric-label">建议开通</span>
+                        <span class="subscription-demo-highlight__metric-label">适用阶段</span>
                         <strong>{{ currentHeroOffer.billingLabel }}</strong>
                       </div>
                       <div class="subscription-demo-highlight__metric">
-                        <span class="subscription-demo-highlight__metric-label">核心权益</span>
+                        <span class="subscription-demo-highlight__metric-label">权益覆盖</span>
                         <strong>{{ currentHeroOffer.featureSummary.length }} 项</strong>
                       </div>
                       <div class="subscription-demo-highlight__metric">
-                        <span class="subscription-demo-highlight__metric-label">开通后</span>
-                        <strong>状态即时同步</strong>
+                        <span class="subscription-demo-highlight__metric-label">服务周期</span>
+                        <strong>{{ getOfferCycleText(currentHeroOffer) }}</strong>
                       </div>
                     </div>
 
@@ -538,8 +533,8 @@
         <q-card flat bordered class="q-mt-md">
           <q-card-section>
             <div class="text-h6 q-mb-md">
-              <q-icon name="star" color="amber" class="q-mr-sm" />
-              核心技术特性
+              <q-icon name="workspace_premium" color="primary" class="q-mr-sm" />
+              套餐服务优势
             </div>
             <q-list dense>
               <q-item>
@@ -547,8 +542,8 @@
                   <q-icon color="primary" name="verified" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>多尺度特征融合</q-item-label>
-                  <q-item-label caption>结合ResNet-152与Vision Transformer架构</q-item-label>
+                  <q-item-label>按使用规模灵活开通</q-item-label>
+                  <q-item-label caption>支持按次、按月、半年和年度周期选择，便于按预算安排。</q-item-label>
                 </q-item-section>
               </q-item>
 
@@ -557,8 +552,8 @@
                   <q-icon color="primary" name="verified" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>注意力机制增强</q-item-label>
-                  <q-item-label caption>精准定位异常细胞区域</q-item-label>
+                  <q-item-label>基础与高阶能力分层清晰</q-item-label>
+                  <q-item-label caption>常规筛查与高阶协同场景分别对应不同套餐，选型更直接。</q-item-label>
                 </q-item-section>
               </q-item>
 
@@ -567,8 +562,8 @@
                   <q-icon color="primary" name="verified" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>对抗训练优化</q-item-label>
-                  <q-item-label caption>提升模型泛化能力与鲁棒性</q-item-label>
+                  <q-item-label>报告与管理支持更完整</q-item-label>
+                  <q-item-label caption>高阶套餐覆盖多格式报告、随访管理与自定义水印等扩展能力。</q-item-label>
                 </q-item-section>
               </q-item>
 
@@ -577,8 +572,8 @@
                   <q-icon color="primary" name="verified" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>迁移学习增强</q-item-label>
-                  <q-item-label caption>基于ImageNet与医学影像双重预训练</q-item-label>
+                  <q-item-label>长期使用成本更可控</q-item-label>
+                  <q-item-label caption>周期越长，单位时间投入越稳定，适合固定筛查计划和持续运营。</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -658,25 +653,25 @@
               <div
                 v-for="copyright in sortedSoftwareCopyrights"
                 :key="copyright.id"
-                class="bg-purple-1 rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
+                class="compliance-copyright-card rounded-borders q-pa-sm relative-position overflow-hidden cursor-pointer copyright-card"
                 @click="openCertificatePreview(copyright)"
               >
                 <div class="row items-center relative-position" style="z-index: 1">
-                  <q-icon name="verified" color="purple" size="sm" class="q-mr-sm col-auto" />
+                  <q-icon name="verified" color="primary" size="sm" class="q-mr-sm col-auto" />
                   <div class="col">
                     <div
-                      class="text-subtitle2 text-purple-9 text-weight-bold"
+                      class="text-subtitle2 text-weight-bold compliance-copyright-card__title"
                       style="line-height: 1.2"
                     >
                       {{ copyright.name }}
-                      <q-badge color="purple-3" text-color="purple-9" class="q-ml-xs" align="top"
+                      <q-badge color="blue-1" text-color="primary" class="q-ml-xs" align="top"
                         >{{ copyright.version }}</q-badge
                       >
                     </div>
                   </div>
                 </div>
                 <div
-                  class="row q-mt-xs text-caption text-purple-8 q-pl-lg relative-position"
+                  class="row q-mt-xs text-caption q-pl-lg relative-position compliance-copyright-card__meta"
                   style="z-index: 1"
                 >
                   <div class="col-12 row items-center" style="line-height: 1.5">
@@ -691,7 +686,7 @@
                 <!-- 装饰背景 -->
                 <q-icon
                   name="copyright"
-                  class="absolute-bottom-right text-purple-2"
+                  class="absolute-bottom-right compliance-copyright-card__decor"
                   size="48px"
                   style="bottom: -12px; right: -8px; transform: rotate(-15deg)"
                 />
@@ -743,12 +738,12 @@
     <q-dialog v-model="showPaymentDialog" persistent>
       <q-card class="demo-payment-dialog">
         <q-card-section class="demo-payment-dialog__header">
-          <div class="text-overline text-white-7">订阅支付</div>
+          <div class="text-overline demo-payment-dialog__eyebrow">订单确认</div>
           <div class="row items-center justify-between q-mt-sm q-col-gutter-md">
             <div class="col">
-              <div class="text-h6">
-                <q-icon name="shopping_cart" class="q-mr-sm" />
-                确认支付
+              <div class="text-h6 demo-payment-dialog__title">
+                <q-icon name="workspace_premium" class="q-mr-sm" />
+                套餐开通
               </div>
               <div class="text-caption q-mt-xs demo-payment-dialog__caption">
                 {{ paymentInfo.planName || '请选择需要开通的订阅套餐' }}
@@ -760,14 +755,14 @@
               </div>
             </div>
           </div>
-          <div class="text-caption q-mt-sm">
-            支付完成后将即时同步当前页面的套餐状态，正式计费规则以签约或支付说明为准。
+          <div class="text-caption q-mt-sm demo-payment-dialog__note">
+            请确认本次所选套餐、周期与支付方式，开通后即可按所购权益使用相关服务。
           </div>
         </q-card-section>
 
         <q-stepper v-model="paymentStep" ref="stepper" flat class="payment-stepper-shell">
           <q-step :name="1" title="订单确认" icon="receipt" :done="paymentStep > 1">
-            <div class="q-pa-md">
+            <div class="q-pa-md payment-step-content">
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-md-7">
                   <div class="text-h6 q-mb-md">订单详情</div>
@@ -835,10 +830,10 @@
                 </div>
 
                 <div class="col-12 col-md-5">
-                  <div class="text-h6 q-mb-md">开通后将同步</div>
+                  <div class="text-h6 q-mb-md">套餐权益概览</div>
                   <div class="checkout-aside-card">
                     <div class="checkout-aside-card__head">
-                      <div class="checkout-aside-card__title">权益同步摘要</div>
+                      <div class="checkout-aside-card__title">本次包含内容</div>
                       <div class="checkout-aside-card__badge">{{ paymentInfo.tierLabel }}</div>
                     </div>
                     <div class="checkout-aside-card__list">
@@ -853,29 +848,13 @@
                     </div>
                     <div class="checkout-aside-card__footer">
                       <div>
-                        <span>状态同步</span>
-                        <strong>实时更新</strong>
+                        <span>服务周期</span>
+                        <strong>{{ getOfferCycleText(currentPaymentOffer) }}</strong>
                       </div>
                       <div>
                         <span>套餐金额</span>
                         <strong>¥{{ formatCurrency(paymentInfo.amount) }}</strong>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="q-mt-lg">
-                <div class="text-subtitle2 text-weight-medium q-mb-sm">本次开通后将同步的权益</div>
-                <div class="row q-col-gutter-sm">
-                  <div
-                    class="col-12 col-sm-6"
-                    v-for="feature in paymentInfo.featureSummary"
-                    :key="feature"
-                  >
-                    <div class="demo-feature-item">
-                      <q-icon name="check_circle" color="positive" size="16px" />
-                      <span>{{ feature }}</span>
                     </div>
                   </div>
                 </div>
@@ -908,7 +887,7 @@
           </q-step>
 
           <q-step :name="2" title="选择支付方式" icon="payment" :done="paymentStep > 2">
-            <div class="q-pa-md">
+            <div class="q-pa-md payment-step-content">
               <div class="payment-selection-banner q-mb-md">
                 <div>
                   <div class="payment-selection-banner__label">当前订单</div>
@@ -959,46 +938,19 @@
                   </q-card>
                 </div>
               </div>
-
-              <div class="demo-payment-note q-mt-md">
-                确认支付后，当前页面的订阅状态、套餐信息与权益摘要将立即刷新。
-              </div>
-
-              <div class="row q-col-gutter-sm q-mt-md">
-                <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="verified_user">
-                    状态即时同步
-                  </q-chip>
-                </div>
-                <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="assignment">
-                    套餐信息更新
-                  </q-chip>
-                </div>
-                <div class="col-auto">
-                  <q-chip dense color="positive" text-color="white" icon="support_agent">
-                    支持再次选购
-                  </q-chip>
-                </div>
-                <div class="col-auto" v-if="paymentInfo.autoRenewHint">
-                  <q-chip dense color="orange" text-color="white" icon="autorenew">
-                    {{ paymentInfo.autoRenewHint }}
-                  </q-chip>
-                </div>
-              </div>
             </div>
           </q-step>
 
           <q-step :name="3" title="支付完成" icon="verified">
-            <div class="q-pa-xl text-center">
+            <div class="q-pa-xl text-center payment-step-content">
               <q-icon name="task_alt" color="positive" size="72px" />
               <div class="text-h5 text-weight-bold q-mt-md">支付已完成</div>
               <div class="text-body2 text-grey-7 q-mt-sm">
-                右侧订阅状态卡已同步切换到 {{ subscriptionStatus.planName }}。
+                {{ subscriptionStatus.planName }} 已开通，可按当前套餐权益使用相关服务。
               </div>
               <q-card flat bordered class="q-mt-lg demo-success-card">
                 <q-card-section>
-                  <div class="text-subtitle2 text-weight-medium">同步结果</div>
+                  <div class="text-subtitle2 text-weight-medium">开通结果</div>
                   <div class="row q-col-gutter-sm q-mt-sm">
                     <div class="col-12 col-sm-6">
                       <div class="demo-success-item">
@@ -1031,7 +983,7 @@
           </q-step>
 
           <template v-slot:navigation>
-            <q-stepper-navigation class="q-pa-md">
+            <q-stepper-navigation class="q-pa-md payment-stepper-navigation">
               <div class="row items-center">
                 <q-btn
                   v-if="paymentStep > 1 && paymentStep < 3"
@@ -1098,12 +1050,12 @@
 
     <q-dialog v-model="showUpgradeDialog">
       <q-card class="upgrade-dialog-card">
-        <q-card-section class="bg-primary text-white">
+        <q-card-section class="upgrade-dialog-card__header">
           <div class="text-h6">切换订阅套餐</div>
         </q-card-section>
         <q-card-section>
           <div class="text-body1 q-mb-md">
-            选择一个推荐档位后，直接进入支付确认流程。
+            选择合适套餐后，可直接进入订单确认与支付流程。
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6" v-for="group in demoPlanGroups" :key="group.tier">
@@ -1239,33 +1191,33 @@ const $q = useQuasar();
 const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
 const heroHighlights: HeroHighlightItem[] = [
   {
-    label: demoHeroHighlights[0] ?? '双套餐分层方案',
-    value: '从单次体验到年度合作',
+    label: demoHeroHighlights[0] ?? '双层套餐覆盖',
+    value: '从单次开通到长期合作均可匹配',
   },
   {
-    label: demoHeroHighlights[1] ?? '支付流程一页完成',
-    value: '从选购到开通闭环完成',
+    label: demoHeroHighlights[1] ?? '周期选择清晰',
+    value: '按次、包月、半年和年度方案一目了然',
   },
   {
-    label: demoHeroHighlights[2] ?? '订阅状态即时同步',
-    value: '状态、权益、配置同屏刷新',
+    label: demoHeroHighlights[2] ?? '权益边界明确',
+    value: '检测方式、报告支持和扩展能力清楚可见',
   },
 ];
 const heroStatCards: HeroStatCardItem[] = [
   {
     label: '机构适配',
     value: '门诊到区域协同',
-    description: '基础版覆盖常规筛查，旗舰版补齐协作闭环。',
+    description: '基础套餐覆盖常规筛查，顶级套餐适配更高频与协同场景。',
   },
   {
     label: '报告闭环',
     value: '结构化一体交付',
-    description: '检测、导出、随访与留痕在同页打通。',
+    description: '标准报告与高阶输出能力分层明确，便于按需采购。',
   },
   {
-    label: '开通效率',
-    value: '选择后即时生效',
-    description: '右侧订阅状态与配置入口同步切换。',
+    label: '成本规划',
+    value: '周期越长越稳',
+    description: '按次试用适合启动阶段，周期套餐更适合固定筛查计划。',
   },
 ];
 const planComparisonRows = demoPlanComparisonRows;
@@ -1293,18 +1245,18 @@ const currentPaymentOffer = ref<DemoOffer | null>(null);
 
 const createDefaultSubscriptionStatus = (): DemoSubscriptionStatus => ({
   type: 'trial',
-  title: '试用体验已就绪',
-  subtitle: '当前为试用体验，可直接切换基础套餐或顶级套餐并查看状态变化。',
+  title: '当前未开通订阅',
+  subtitle: '选择合适套餐后即可启用对应检测能力、报告支持与服务周期。',
   icon: 'verified_user',
   color: 'positive',
-  badge: '试用体验',
+  badge: '待开通',
   badgeColor: 'positive',
-  planName: '基础套餐按次体验',
-  tierLabel: '试用权益',
-  expireDate: '单次有效',
-  quotaLabel: '剩余次数',
-  remainingCount: '1次',
-  featureTags: ['三种检测方式', 'AI 医疗助手', '完整 PDF 报告'],
+  planName: '请选择套餐',
+  tierLabel: '套餐权益',
+  expireDate: '开通后生效',
+  quotaLabel: '推荐起步',
+  remainingCount: '按次或包月',
+  featureTags: ['基础检测能力', '结构化报告支持', '可按机构规模扩展'],
   source: 'default',
 });
 
@@ -1326,21 +1278,21 @@ const paymentMethods = [
   {
     value: 'alipay',
     label: '支付宝',
-    description: '快捷安全的移动支付展示方式',
+    description: '适合移动端与日常快捷支付场景',
     icon: 'account_balance_wallet',
     color: 'blue',
   },
   {
     value: 'wxpay',
     label: '微信支付',
-    description: '适合移动端场景的快捷支付方式',
+    description: '适合院内移动端与微信生态支付场景',
     icon: 'chat',
     color: 'green',
   },
   {
     value: 'bank',
     label: '银行卡支付',
-    description: '保留传统支付方式入口，不发起真实扣费',
+    description: '适合对公结算与常规银行卡支付场景',
     icon: 'credit_card',
     color: 'orange',
   },
@@ -1352,9 +1304,9 @@ const currentHeroBullets = computed(() => {
   const offer = currentHeroOffer.value;
 
   return [
-    `${currentHeroGroup.value.badge}主推`,
-    `${offer.featureSummary.length} 项核心权益`,
-    offer.autoRenewHint ?? getOfferSupportText(offer),
+    `${currentHeroGroup.value.badge}适配`,
+    `覆盖 ${offer.featureSummary.length} 项核心权益`,
+    getOfferSupportText(offer),
   ];
 });
 
@@ -1389,7 +1341,7 @@ const getOfferSavingsText = (offer: DemoOffer): string => {
 
 const getOfferSupportText = (offer: DemoOffer): string => {
   if (offer.billingMode === 'usage') {
-    return offer.amount < 1 ? '适合首次体验开通' : '适合按单次快速开通';
+    return offer.amount < 1 ? '适合首次试用或短期体验' : '适合低频按次使用';
   }
 
   if (offer.autoRenewHint) {
@@ -1401,7 +1353,7 @@ const getOfferSupportText = (offer: DemoOffer): string => {
 
 const getOfferCompactDescription = (offer: DemoOffer): string => {
   if (offer.billingMode === 'usage') {
-    return offer.amount < 1 ? '快速体验支付与状态联动。' : '适合正式单次开通与演示。';
+    return offer.amount < 1 ? '适合先行试用基础能力。' : '适合按需开通正式单次服务。';
   }
 
   if (offer.durationDays) {
@@ -1409,6 +1361,22 @@ const getOfferCompactDescription = (offer: DemoOffer): string => {
   }
 
   return offer.description;
+};
+
+const getOfferCycleText = (offer: DemoOffer | null): string => {
+  if (!offer) {
+    return '-';
+  }
+
+  if (offer.billingMode === 'usage') {
+    return '按次开通';
+  }
+
+  if (offer.durationDays) {
+    return `${offer.durationDays}天`;
+  }
+
+  return offer.billingLabel;
 };
 
 const getTierOffers = (tier: DemoPlanTier): DemoOffer[] => {
@@ -1550,18 +1518,18 @@ const createBackendFallbackStatus = (user: {
 
   return {
     type: 'active',
-    title: '已检测到真实账号权益',
-    subtitle: '当前尚未应用本地订阅状态，右侧展示为账号真实权益的只读回退信息。',
+    title: '账号已有开通权益',
+    subtitle: '当前展示为账号现有套餐信息，可继续按需升级或续费。',
     icon: hasActiveSubscription ? 'shield' : 'payments',
     color: hasActiveSubscription ? 'secondary' : 'primary',
-    badge: hasActiveSubscription ? '真实权益回退' : '真实按次回退',
+    badge: hasActiveSubscription ? '已开通' : '按次权益',
     badgeColor: hasActiveSubscription ? 'secondary' : 'primary',
-    planName: hasActiveSubscription ? '真实账号订阅' : '真实账号按次权益',
-    tierLabel: '后端回退',
-    expireDate: expiresAt ? date.formatDate(expiresAt, 'YYYY-MM-DD') : '按真实账号权益',
+    planName: hasActiveSubscription ? '当前账号订阅' : '当前账号按次权益',
+    tierLabel: '账号权益',
+    expireDate: expiresAt ? date.formatDate(expiresAt, 'YYYY-MM-DD') : '按账号权益',
     quotaLabel: '可用次数',
-    remainingCount: remainingCredits > 0 ? `${remainingCredits}次` : '按真实账号权益',
-    featureTags: ['来自真实账号数据', '未改动真实权限控制', '完成套餐购买后将优先显示当前页面状态'],
+    remainingCount: remainingCredits > 0 ? `${remainingCredits}次` : '以账号权益为准',
+    featureTags: ['以当前账号权益为准', '支持继续升级套餐', '到期前可按需续费'],
     source: 'backend',
   };
 };
@@ -1650,7 +1618,7 @@ const processPayment = async (): Promise<void> => {
     $q.notify({
       type: 'positive',
       message: `${nextStatus.planName} 支付完成`,
-      caption: '右侧订阅状态已立即同步更新',
+      caption: '套餐权益已更新',
       position: 'top',
       icon: 'task_alt',
     });
@@ -1731,13 +1699,13 @@ onMounted(() => {
 .subscription-demo-shell {
   position: relative;
   overflow: hidden;
-  border: 0;
+  border: 1px solid rgba(22, 71, 104, 0.08);
   border-radius: 32px;
   background:
-    radial-gradient(circle at top left, rgba(115, 179, 255, 0.24), transparent 34%),
-    radial-gradient(circle at right center, rgba(43, 147, 164, 0.18), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 250, 255, 0.98) 100%);
-  box-shadow: 0 24px 60px rgba(15, 57, 87, 0.12);
+    radial-gradient(circle at top left, rgba(126, 176, 214, 0.16), transparent 32%),
+    radial-gradient(circle at right center, rgba(46, 121, 138, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%);
+  box-shadow: 0 22px 54px rgba(15, 57, 87, 0.1);
 }
 
 .subscription-demo-shell::before {
@@ -1745,13 +1713,13 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.3), transparent 30%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.24), transparent 28%),
     repeating-linear-gradient(
       135deg,
-      rgba(18, 88, 138, 0.03) 0,
-      rgba(18, 88, 138, 0.03) 1px,
+      rgba(20, 71, 104, 0.024) 0,
+      rgba(20, 71, 104, 0.024) 1px,
       transparent 1px,
-      transparent 18px
+      transparent 20px
     );
   pointer-events: none;
 }
@@ -1761,11 +1729,11 @@ onMounted(() => {
   padding: 30px;
   background: linear-gradient(
     135deg,
-    rgba(233, 246, 255, 0.98) 0%,
-    rgba(249, 252, 255, 0.96) 48%,
-    rgba(240, 252, 249, 0.92) 100%
+    rgba(245, 249, 252, 0.98) 0%,
+    rgba(252, 253, 255, 0.96) 48%,
+    rgba(246, 250, 249, 0.94) 100%
   );
-  border-bottom: 1px solid rgba(28, 86, 129, 0.08);
+  border-bottom: 1px solid rgba(22, 71, 104, 0.07);
 }
 
 .subscription-demo-hero__topline {
@@ -1785,7 +1753,7 @@ onMounted(() => {
 }
 
 .subscription-demo-kicker {
-  color: #0d6e8c;
+  color: #2b6981;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1805,8 +1773,8 @@ onMounted(() => {
 
 .subscription-demo-title__accent {
   display: block;
-  color: #0e7a8f;
-  text-shadow: 0 12px 24px rgba(17, 108, 168, 0.12);
+  color: #195f74;
+  text-shadow: 0 10px 18px rgba(24, 95, 116, 0.08);
 }
 
 .subscription-demo-subtitle {
@@ -1885,13 +1853,13 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   border-radius: 26px;
-  border: 1px solid rgba(21, 102, 151, 0.1);
+  border: 1px solid rgba(22, 71, 104, 0.08);
   background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.96) 0%,
-    rgba(233, 245, 255, 0.92) 100%
+    rgba(245, 249, 252, 0.94) 100%
   );
-  box-shadow: 0 18px 40px rgba(20, 70, 104, 0.12);
+  box-shadow: 0 18px 34px rgba(20, 70, 104, 0.09);
 }
 
 .subscription-demo-highlight__eyebrow {
@@ -1991,7 +1959,7 @@ onMounted(() => {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(69, 162, 224, 0.15) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(87, 141, 170, 0.12) 0%, transparent 72%);
 }
 
 .plan-stage-card {
@@ -2199,8 +2167,8 @@ onMounted(() => {
 
 .subscription-status-card__header {
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 34%),
-    linear-gradient(180deg, rgba(240, 248, 252, 0.96) 0%, rgba(255, 255, 255, 0.92) 100%);
+    radial-gradient(circle at top right, rgba(121, 164, 196, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(247, 250, 252, 0.98) 0%, rgba(255, 255, 255, 0.94) 100%);
 }
 
 .subscription-status-card__header::before {
@@ -2208,7 +2176,7 @@ onMounted(() => {
   position: absolute;
   inset: 0 0 auto 0;
   height: 3px;
-  background: linear-gradient(90deg, rgba(17, 108, 168, 0.92) 0%, rgba(43, 147, 164, 0.65) 46%, transparent 100%);
+  background: linear-gradient(90deg, rgba(31, 94, 126, 0.76) 0%, rgba(69, 128, 144, 0.48) 42%, transparent 100%);
 }
 
 .subscription-status-card__body,
@@ -2308,6 +2276,24 @@ onMounted(() => {
   border-radius: 14px;
   border: 1px solid rgba(17, 76, 114, 0.07);
   background: rgba(248, 251, 253, 0.92);
+}
+
+.compliance-copyright-card {
+  border: 1px solid rgba(22, 71, 104, 0.08);
+  background: linear-gradient(135deg, rgba(246, 250, 252, 0.98) 0%, rgba(239, 247, 250, 0.96) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.compliance-copyright-card__title {
+  color: #18445f;
+}
+
+.compliance-copyright-card__meta {
+  color: #4f7288;
+}
+
+.compliance-copyright-card__decor {
+  color: rgba(140, 186, 205, 0.45);
 }
 
 .demo-feature-item,
@@ -2416,38 +2402,71 @@ onMounted(() => {
 .demo-payment-dialog {
   width: min(92vw, 860px);
   max-width: 860px;
+  max-height: min(88vh, 920px);
   border-radius: 28px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 251, 253, 0.99) 100%);
+  box-shadow: 0 30px 90px rgba(8, 31, 46, 0.26);
 }
 
 .demo-payment-dialog__header {
-  color: white;
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(17, 62, 93, 0.98) 0%, rgba(26, 98, 125, 0.98) 52%, rgba(36, 128, 144, 0.94) 100%);
+    radial-gradient(circle at top right, rgba(56, 132, 214, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(243, 249, 255, 0.98) 0%, rgba(232, 243, 255, 0.98) 100%);
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid rgba(25, 118, 210, 0.1);
+}
+
+.demo-payment-dialog__eyebrow {
+  color: #3b6f9f;
+  letter-spacing: 0.08em;
+}
+
+.demo-payment-dialog__title {
+  color: #163e6b;
+  font-weight: 700;
 }
 
 .demo-payment-dialog__caption {
-  color: rgba(255, 255, 255, 0.72);
+  color: #4f6f91;
+}
+
+.demo-payment-dialog__note {
+  color: #365b84;
 }
 
 .demo-payment-dialog__hero-amount {
-  padding: 10px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 28px;
+  padding: 12px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(25, 118, 210, 0.16);
+  background: linear-gradient(135deg, #2d7dd2 0%, #1e67b1 100%);
+  color: #ffffff;
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: 0.01em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 24px rgba(30, 103, 177, 0.22);
+}
+
+.payment-stepper-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
 }
 
 .payment-stepper-shell :deep(.q-stepper__header) {
-  padding: 8px 14px 0;
-  background: rgba(247, 251, 255, 0.72);
+  padding: 10px 18px 0;
+  background: rgba(248, 251, 253, 0.94);
+  border-bottom: 1px solid rgba(22, 71, 104, 0.06);
 }
 
 .payment-stepper-shell :deep(.q-stepper__tab) {
-  min-height: 62px;
+  min-height: 58px;
 }
 
 .payment-stepper-shell :deep(.q-stepper__title) {
@@ -2456,6 +2475,16 @@ onMounted(() => {
 
 .payment-stepper-shell :deep(.q-stepper__label) {
   color: #33556e;
+}
+
+.payment-stepper-shell :deep(.q-stepper__content),
+.payment-stepper-shell :deep(.q-stepper__nav) {
+  background: transparent;
+}
+
+.payment-step-content {
+  max-height: min(54vh, 520px);
+  overflow-y: auto;
 }
 
 .demo-order-card,
@@ -2607,17 +2636,18 @@ onMounted(() => {
   box-shadow: 0 16px 28px rgba(17, 76, 114, 0.08);
 }
 
-.demo-payment-note {
-  padding: 12px 14px;
-  border-radius: 16px;
-  color: #1b5d78;
-  background: rgba(43, 147, 164, 0.08);
-  border: 1px solid rgba(43, 147, 164, 0.12);
-}
-
 .payment-confirm-btn {
   font-weight: 700;
   box-shadow: 0 10px 24px rgba(33, 150, 83, 0.24);
+}
+
+.payment-stepper-navigation {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(248, 251, 253, 0.92) 0%, rgba(255, 255, 255, 0.98) 100%);
+  border-top: 1px solid rgba(22, 71, 104, 0.07);
+  backdrop-filter: blur(12px);
 }
 
 .agreement-section {
@@ -2642,6 +2672,16 @@ onMounted(() => {
   max-width: 720px;
   border-radius: 24px;
   overflow: hidden;
+  border: 1px solid rgba(22, 71, 104, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 251, 253, 0.99) 100%);
+  box-shadow: 0 24px 72px rgba(8, 31, 46, 0.22);
+}
+
+.upgrade-dialog-card__header {
+  color: white;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 30%),
+    linear-gradient(135deg, rgba(24, 66, 90, 0.98) 0%, rgba(36, 94, 116, 0.98) 100%);
 }
 
 .upgrade-option-card {
@@ -2664,7 +2704,7 @@ onMounted(() => {
 
 .copyright-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 24px rgba(112, 71, 180, 0.16);
+  box-shadow: 0 14px 24px rgba(28, 78, 103, 0.12);
 }
 
 .certificate-preview-image {
@@ -2778,7 +2818,8 @@ body.body--dark {
   .checkout-aside-card,
   .checkout-aside-card__item,
   .payment-selection-banner,
-  .payment-method-card {
+  .payment-method-card,
+  .compliance-copyright-card {
     background: var(--app-elevated-bg) !important;
     border-color: var(--app-border-default) !important;
   }
@@ -2818,6 +2859,7 @@ body.body--dark {
   .plan-stage-card__focus-saving,
   .config-brief-card__label,
   .config-brief-card__desc,
+  .compliance-copyright-card__meta,
   .checkout-aside-card__footer span,
   .payment-selection-banner__label {
     color: var(--app-text-secondary) !important;
@@ -2832,8 +2874,9 @@ body.body--dark {
   }
 
   .demo-payment-dialog__hero-amount {
-    background: rgba(148, 163, 184, 0.12) !important;
-    border-color: rgba(148, 163, 184, 0.24) !important;
+    background: linear-gradient(135deg, rgba(45, 125, 210, 0.86) 0%, rgba(30, 103, 177, 0.88) 100%) !important;
+    border-color: rgba(96, 165, 250, 0.28) !important;
+    color: #fff !important;
   }
 
   .subscription-demo-shell,
@@ -2859,6 +2902,11 @@ body.body--dark {
 
   .certificate-preview-image {
     background: var(--app-elevated-bg) !important;
+  }
+
+  .payment-stepper-navigation {
+    background: rgba(15, 23, 42, 0.92) !important;
+    border-color: var(--app-border-default) !important;
   }
 }
 </style>
