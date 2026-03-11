@@ -153,11 +153,10 @@
 
   .auth-split-layout__brand-panel {
     display: block;
-    height: 100vh;
+    min-height: 100%;
     position: relative;
     z-index: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
   }
 
   .auth-split-layout__workspace-panel {

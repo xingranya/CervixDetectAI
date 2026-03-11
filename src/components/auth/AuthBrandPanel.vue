@@ -1027,4 +1027,53 @@ body.body--dark .certificate-preview-image {
     font-size: 2rem;
   }
 }
+
+@media (min-width: 1024px) and (max-height: 860px) {
+  .auth-brand-panel {
+    padding: 24px 28px;
+  }
+
+  .auth-brand-header {
+    margin-bottom: 24px;
+  }
+
+  .hero-text-group {
+    margin-bottom: 20px;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 2.8vw, 2.56rem);
+    margin-bottom: 10px;
+  }
+
+  .hero-subtitle {
+    max-width: 100%;
+  }
+
+  .hud-dashboard {
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .hud-header,
+  .hud-grid {
+    margin-bottom: 16px;
+  }
+
+  .feature-grid,
+  .copyright-grid,
+  .hud-metrics-row {
+    gap: 10px;
+  }
+
+  .feature-card,
+  .copyright-card {
+    padding: 10px;
+  }
+
+  .auth-brand-footer {
+    margin-top: 18px;
+    padding-top: 12px;
+  }
+}
 </style>
