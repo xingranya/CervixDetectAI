@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md app-gradient-page">
+  <q-page class="q-pa-md app-gradient-page api-settings-page">
     <!-- 页面头部 -->
     <div class="row items-center q-mb-md">
       <div class="col">
@@ -15,25 +15,56 @@
       <!-- 左侧主内容 -->
       <div class="col-lg-8 col-md-12">
         <!-- 订阅计划选择 -->
-        <q-card flat bordered class="q-mb-md subscription-demo-shell">
+        <q-card
+          id="subscription-plans"
+          flat
+          bordered
+          class="q-mb-md subscription-demo-shell page-section-anchor"
+        >
           <q-card-section class="subscription-demo-hero">
             <div class="row items-start q-col-gutter-lg">
               <div class="col-12 col-md-7">
-                <q-chip dense color="primary" text-color="white" icon="workspace_premium">
-                  订阅服务中心
-                </q-chip>
-                <div class="text-h4 subscription-demo-title q-mt-md">
-                  为不同机构场景匹配合适的订阅方案
+                <div class="row items-center q-col-gutter-sm subscription-demo-hero__topline">
+                  <div class="col-auto">
+                    <q-chip dense color="primary" text-color="white" icon="workspace_premium">
+                      订阅服务中心
+                    </q-chip>
+                  </div>
+                  <div class="col-auto">
+                    <div class="subscription-demo-hero__signal">
+                      订阅状态与能力配置同屏联动
+                    </div>
+                  </div>
+                </div>
+
+                <div class="subscription-demo-kicker q-mt-md">面向门诊、专科与区域协同筛查</div>
+                <div class="subscription-demo-title q-mt-sm">
+                  让宫颈筛查能力
+                  <span class="subscription-demo-title__accent">即刻成型</span>
                 </div>
                 <div class="text-body1 text-grey-7 q-mt-sm subscription-demo-subtitle">
-                  基础套餐覆盖常规筛查与标准报告交付，顶级套餐补齐随访管理、多格式报告与水印配置。
-                  选定套餐后，右侧订阅状态会即时同步。
+                  从首诊体验到年度合作，把 AI 检测、结构化报告与随访闭环整合在同一套订阅能力里，
+                  选中方案后右侧状态与可用配置立即同步。
                 </div>
+
+                <div class="row q-col-gutter-sm q-mt-md subscription-demo-stat-grid">
+                  <div class="col-12 col-sm-4" v-for="item in heroStatCards" :key="item.label">
+                    <div class="subscription-demo-stat-card">
+                      <div class="subscription-demo-stat-card__label">{{ item.label }}</div>
+                      <div class="subscription-demo-stat-card__value">{{ item.value }}</div>
+                      <div class="subscription-demo-stat-card__description">
+                        {{ item.description }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="row q-col-gutter-sm q-mt-md">
-                  <div class="col-auto" v-for="pill in heroHighlights" :key="pill">
-                    <q-chip dense color="white" text-color="primary" class="subscription-hero-chip">
-                      {{ pill }}
-                    </q-chip>
+                  <div class="col-12 col-sm-6" v-for="pill in heroHighlights" :key="pill.label">
+                    <div class="subscription-hero-chip">
+                      <div class="subscription-hero-chip__label">{{ pill.label }}</div>
+                      <div class="subscription-hero-chip__value">{{ pill.value }}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -46,8 +77,8 @@
                         <div class="text-h6 text-weight-bold">
                           {{ currentHeroOffer.planName }}
                         </div>
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          {{ currentHeroOffer.description }}
+                        <div class="text-caption text-grey-7 q-mt-xs subscription-demo-highlight__desc">
+                          {{ getOfferCompactDescription(currentHeroOffer) }}
                         </div>
                       </div>
                       <q-badge outline color="primary" class="subscription-demo-highlight__tier">
@@ -85,16 +116,12 @@
 
                     <div class="subscription-demo-highlight__metrics q-mt-md">
                       <div class="subscription-demo-highlight__metric">
-                        <span class="subscription-demo-highlight__metric-label">适用方案</span>
-                        <strong>{{ currentHeroGroup.badge }}</strong>
+                        <span class="subscription-demo-highlight__metric-label">建议开通</span>
+                        <strong>{{ currentHeroOffer.billingLabel }}</strong>
                       </div>
                       <div class="subscription-demo-highlight__metric">
                         <span class="subscription-demo-highlight__metric-label">核心权益</span>
                         <strong>{{ currentHeroOffer.featureSummary.length }} 项</strong>
-                      </div>
-                      <div class="subscription-demo-highlight__metric">
-                        <span class="subscription-demo-highlight__metric-label">节省金额</span>
-                        <strong>{{ getOfferSavingsText(currentHeroOffer) }}</strong>
                       </div>
                       <div class="subscription-demo-highlight__metric">
                         <span class="subscription-demo-highlight__metric-label">开通后</span>
@@ -102,17 +129,15 @@
                       </div>
                     </div>
 
-                    <div class="row q-gutter-sm q-mt-md">
-                      <q-badge color="orange" class="q-mr-sm">
-                        {{ currentHeroOffer.badge }}
-                      </q-badge>
-                      <q-badge
-                        v-if="currentHeroOffer.autoRenewHint"
-                        color="blue-9"
-                        text-color="white"
+                    <div class="subscription-demo-highlight__bullet-list q-mt-md">
+                      <div
+                        class="subscription-demo-highlight__bullet"
+                        v-for="point in currentHeroBullets"
+                        :key="point"
                       >
-                        {{ currentHeroOffer.autoRenewHint }}
-                      </q-badge>
+                        <q-icon name="task_alt" color="positive" size="16px" />
+                        <span>{{ point }}</span>
+                      </div>
                     </div>
 
                     <q-btn
@@ -184,31 +209,11 @@
                         </div>
                       </div>
 
-                      <div
-                        v-if="getSelectedOffer(group.tier).originalAmount"
-                        class="text-caption text-grey-5 text-strike"
-                      >
-                        ¥{{ formatCurrency(getSelectedOffer(group.tier).originalAmount) }}
-                      </div>
-                      <div class="row items-end no-wrap">
-                        <div class="text-h3 text-weight-bold" :class="group.accentTextClass">
-                          ¥{{ formatCurrency(getSelectedOffer(group.tier).amount) }}
-                        </div>
-                        <div class="text-body2 text-grey-7 q-ml-sm q-mb-xs">
-                          /{{ getSelectedOffer(group.tier).unitLabel }}
-                        </div>
-                      </div>
-                      <div class="row q-gutter-sm q-mt-sm">
+                      <div class="plan-stage-card__selected-meta q-mt-md">
                         <q-badge :color="group.badgeColor">
                           {{ getSelectedOffer(group.tier).badge }}
                         </q-badge>
-                        <q-badge
-                          v-if="getSelectedOffer(group.tier).autoRenewHint"
-                          color="blue-9"
-                          text-color="white"
-                        >
-                          {{ getSelectedOffer(group.tier).autoRenewHint }}
-                        </q-badge>
+                        <span>{{ getOfferSupportText(getSelectedOffer(group.tier)) }}</span>
                       </div>
                     </div>
 
@@ -250,8 +255,8 @@
                           <div class="row items-start no-wrap">
                             <div class="col text-left">
                               <div class="text-body1 text-weight-medium">{{ offer.label }}</div>
-                              <div class="text-caption text-grey-7 q-mt-xs">
-                                {{ offer.description }}
+                              <div class="text-caption text-grey-7 q-mt-xs offer-tile__description">
+                                {{ getOfferCompactDescription(offer) }}
                               </div>
                             </div>
                             <q-icon
@@ -275,8 +280,11 @@
                             >
                               ¥{{ formatCurrency(offer.originalAmount) }}
                             </div>
-                            <div class="text-h6 text-weight-bold">
-                              ¥{{ formatCurrency(offer.amount) }}
+                            <div class="row items-end no-wrap offer-tile__price-row">
+                              <div class="text-h6 text-weight-bold">
+                                ¥{{ formatCurrency(offer.amount) }}
+                              </div>
+                              <span class="offer-tile__price-unit">/{{ offer.unitLabel }}</span>
                             </div>
                             <div class="offer-tile__footnote">
                               <span>{{ offer.billingLabel }}</span>
@@ -312,8 +320,8 @@
                             <div class="row items-start no-wrap">
                               <div class="col text-left">
                                 <div class="text-body1 text-weight-medium">{{ offer.label }}</div>
-                                <div class="text-caption text-grey-7 q-mt-xs">
-                                  {{ offer.description }}
+                                <div class="text-caption text-grey-7 q-mt-xs offer-tile__description">
+                                  {{ getOfferCompactDescription(offer) }}
                                 </div>
                               </div>
                               <q-icon
@@ -331,8 +339,11 @@
                               />
                             </div>
                             <div class="q-mt-md text-left">
-                              <div class="text-h6 text-weight-bold">
-                                ¥{{ formatCurrency(offer.amount) }}
+                              <div class="row items-end no-wrap offer-tile__price-row">
+                                <div class="text-h6 text-weight-bold">
+                                  ¥{{ formatCurrency(offer.amount) }}
+                                </div>
+                                <span class="offer-tile__price-unit">/{{ offer.unitLabel }}</span>
                               </div>
                               <div class="offer-tile__footnote">
                                 <span>{{ offer.billingLabel }}</span>
@@ -362,51 +373,104 @@
         </q-card>
 
         <!-- AI模型配置 -->
-        <q-card flat bordered class="q-mb-md">
-          <q-card-section>
-            <div class="text-h6 q-mb-md">AI引擎配置</div>
-            <q-form class="q-gutter-md">
-              <q-select
-                v-model="apiConfig.model"
-                outlined
-                label="AI引擎版本"
-                :options="modelOptions"
-                emit-value
-                map-options
-                hint="选择要使用的CervixDetect AI引擎版本"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="psychology" />
-                </template>
-              </q-select>
-
-              <q-slider
-                v-model="apiConfig.confidence"
-                :min="0.7"
-                :max="0.95"
-                :step="0.05"
-                label
-                label-always
-                :label-value="'置信度阈值: ' + (apiConfig.confidence * 100).toFixed(0) + '%'"
-                color="primary"
-                class="q-mt-lg"
-              />
-              <div class="text-caption text-grey-6 q-mt-sm">
-                AI诊断结果的最低置信度要求，值越高诊断越保守
+        <q-card id="ai-engine-config" flat bordered class="q-mb-md page-section-anchor settings-block-card">
+          <q-card-section class="settings-block-card__section">
+            <div class="settings-block-card__head q-mb-md">
+              <div>
+                <div class="text-h6">AI引擎配置</div>
+                <div class="settings-block-card__summary">
+                  统一控制模型版本、诊断阈值与敏感性，适配不同科室筛查强度。
+                </div>
               </div>
+            </div>
 
-              <q-slider
-                v-model="apiConfig.sensitivity"
-                :min="0.8"
-                :max="1.0"
-                :step="0.05"
-                label
-                label-always
-                :label-value="'敏感性: ' + (apiConfig.sensitivity * 100).toFixed(0) + '%'"
-                color="orange"
-                class="q-mt-lg"
-              />
-              <div class="text-caption text-grey-6 q-mt-sm">调整AI对异常细胞的检测敏感度</div>
+            <q-form>
+              <div class="row q-col-gutter-md items-start">
+                <div class="col-12 col-lg-5">
+                  <q-select
+                    v-model="apiConfig.model"
+                    outlined
+                    label="AI引擎版本"
+                    :options="modelOptions"
+                    emit-value
+                    map-options
+                    hint="选择要使用的CervixDetect AI引擎版本"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="psychology" />
+                    </template>
+                  </q-select>
+
+                  <div class="row q-col-gutter-sm q-mt-sm">
+                    <div class="col-12 col-sm-6 col-lg-12">
+                      <div class="config-brief-card">
+                        <div class="config-brief-card__label">当前阈值</div>
+                        <div class="config-brief-card__value">
+                          {{ (apiConfig.confidence * 100).toFixed(0) }}%
+                        </div>
+                        <div class="config-brief-card__desc">更高阈值更保守</div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-12">
+                      <div class="config-brief-card config-brief-card--accent">
+                        <div class="config-brief-card__label">当前敏感性</div>
+                        <div class="config-brief-card__value">
+                          {{ (apiConfig.sensitivity * 100).toFixed(0) }}%
+                        </div>
+                        <div class="config-brief-card__desc">更适合异常细胞优先检出</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12 col-lg-7">
+                  <div class="config-slider-card">
+                    <div class="config-slider-card__head">
+                      <div class="config-slider-card__title">置信度阈值</div>
+                      <div class="config-slider-card__value">
+                        {{ (apiConfig.confidence * 100).toFixed(0) }}%
+                      </div>
+                    </div>
+                    <q-slider
+                      v-model="apiConfig.confidence"
+                      :min="0.7"
+                      :max="0.95"
+                      :step="0.05"
+                      label
+                      label-always
+                      :label-value="'阈值 ' + (apiConfig.confidence * 100).toFixed(0) + '%'"
+                      color="primary"
+                      class="q-mt-md"
+                    />
+                    <div class="text-caption text-grey-6 q-mt-xs">
+                      调整 AI 诊断输出的保守程度。
+                    </div>
+                  </div>
+
+                  <div class="config-slider-card q-mt-sm">
+                    <div class="config-slider-card__head">
+                      <div class="config-slider-card__title">异常检出敏感性</div>
+                      <div class="config-slider-card__value config-slider-card__value--warm">
+                        {{ (apiConfig.sensitivity * 100).toFixed(0) }}%
+                      </div>
+                    </div>
+                    <q-slider
+                      v-model="apiConfig.sensitivity"
+                      :min="0.8"
+                      :max="1.0"
+                      :step="0.05"
+                      label
+                      label-always
+                      :label-value="'敏感性 ' + (apiConfig.sensitivity * 100).toFixed(0) + '%'"
+                      color="orange"
+                      class="q-mt-md"
+                    />
+                    <div class="text-caption text-grey-6 q-mt-xs">
+                      控制异常细胞优先检出的灵敏程度。
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div class="row q-mt-md">
                 <q-space />
@@ -418,12 +482,22 @@
         </q-card>
 
         <!-- 服务偏好设置 (UI优化版) -->
-        <q-card flat bordered>
-          <q-card-section>
+        <q-card
+          id="service-preferences"
+          flat
+          bordered
+          class="settings-block-card page-section-anchor"
+        >
+          <q-card-section class="settings-block-card__section">
             <div class="row items-center justify-between q-mb-md">
-              <div class="text-h6">
-                <q-icon name="tune" color="primary" class="q-mr-sm" />
-                服务偏好设置
+              <div>
+                <div class="text-h6">
+                  <q-icon name="tune" color="primary" class="q-mr-sm" />
+                  服务偏好设置
+                </div>
+                <div class="settings-block-card__summary">
+                  在同一页内统一配置通知、分析、报告、安全与账单偏好。
+                </div>
               </div>
               <q-btn
                 flat
@@ -444,7 +518,7 @@
                   <q-icon name="notifications" class="q-mr-xs" />
                   智能通知中心
                 </div>
-                <q-list separator class="rounded-borders bg-grey-1">
+                <q-list separator class="rounded-borders bg-grey-1 preference-list-card">
                   <q-item tag="label" v-ripple>
                     <q-item-section>
                       <q-item-label>启用全渠道通知</q-item-label>
@@ -562,7 +636,7 @@
                   <q-icon name="science" class="q-mr-xs" />
                   分析与诊断习惯
                 </div>
-                <q-card flat bordered class="bg-grey-1">
+                <q-card flat bordered class="bg-grey-1 preference-panel-card">
                   <q-card-section class="q-pa-sm">
                     <q-toggle
                       v-model="preferences.analysis.autoStart"
@@ -625,7 +699,7 @@
                   <q-icon name="assignment" class="q-mr-xs" />
                   报告与导出配置
                 </div>
-                <q-list separator class="rounded-borders bg-grey-1">
+                <q-list separator class="rounded-borders bg-grey-1 preference-list-card">
                   <q-item>
                     <q-item-section>
                       <q-item-label>自动保存历史记录</q-item-label>
@@ -690,7 +764,7 @@
                   <q-icon name="security" class="q-mr-xs" />
                   隐私与安全
                 </div>
-                <q-card flat bordered class="bg-grey-1">
+                <q-card flat bordered class="bg-grey-1 preference-panel-card">
                   <q-card-section class="q-pa-sm">
                     <div class="row items-center justify-between q-mb-sm">
                       <div class="text-body2">患者敏感信息脱敏</div>
@@ -715,7 +789,7 @@
                 </div>
                 <div class="row q-col-gutter-sm">
                   <div class="col-6">
-                    <q-card flat bordered class="bg-grey-1">
+                    <q-card flat bordered class="bg-grey-1 preference-panel-card">
                       <q-card-section class="q-pa-sm row items-center justify-between">
                         <div class="text-body2">自动续费</div>
                         <q-toggle v-model="preferences.billing.autoRenewal" color="primary" dense />
@@ -723,7 +797,7 @@
                     </q-card>
                   </div>
                   <div class="col-6">
-                    <q-card flat bordered class="bg-grey-1">
+                    <q-card flat bordered class="bg-grey-1 preference-panel-card">
                       <q-card-section class="q-pa-sm row items-center justify-between">
                         <div class="text-body2">余额预警</div>
                         <q-toggle
@@ -883,7 +957,12 @@
         </q-card>
 
         <!-- AI引擎性能指标 -->
-        <q-card flat bordered class="q-mt-md">
+        <q-card
+          id="performance-metrics"
+          flat
+          bordered
+          class="q-mt-md page-section-anchor performance-card"
+        >
           <q-card-section>
             <div class="text-h6 q-mb-md">
               <q-icon name="analytics" color="primary" class="q-mr-sm" />
@@ -1026,7 +1105,12 @@
         </q-card>
 
         <!-- 认证信息 -->
-        <q-card flat bordered class="q-mt-md">
+        <q-card
+          id="compliance-certifications"
+          flat
+          bordered
+          class="q-mt-md page-section-anchor"
+        >
           <q-card-section>
             <div class="text-h6 q-mb-md">
               <q-icon name="workspace_premium" color="purple" class="q-mr-sm" />
@@ -1604,9 +1688,50 @@ interface DemoPaymentInfo {
   autoRenewHint?: string;
 }
 
+interface HeroHighlightItem {
+  label: string;
+  value: string;
+}
+
+interface HeroStatCardItem {
+  label: string;
+  value: string;
+  description: string;
+}
+
 const $q = useQuasar();
 const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
-const heroHighlights = demoHeroHighlights;
+const heroHighlights: HeroHighlightItem[] = [
+  {
+    label: demoHeroHighlights[0] ?? '双套餐分层方案',
+    value: '从单次体验到年度合作',
+  },
+  {
+    label: demoHeroHighlights[1] ?? '支付流程一页完成',
+    value: '从选购到开通闭环完成',
+  },
+  {
+    label: demoHeroHighlights[2] ?? '订阅状态即时同步',
+    value: '状态、权益、配置同屏刷新',
+  },
+];
+const heroStatCards: HeroStatCardItem[] = [
+  {
+    label: '机构适配',
+    value: '门诊到区域协同',
+    description: '基础版覆盖常规筛查，旗舰版补齐协作闭环。',
+  },
+  {
+    label: '报告闭环',
+    value: '结构化一体交付',
+    description: '检测、导出、随访与留痕在同页打通。',
+  },
+  {
+    label: '开通效率',
+    value: '选择后即时生效',
+    description: '右侧订阅状态与配置入口同步切换。',
+  },
+];
 const planComparisonRows = demoPlanComparisonRows;
 const demoPlanGroups = [demoSubscriptionCatalog.basic, demoSubscriptionCatalog.premium];
 
@@ -1734,6 +1859,15 @@ const paymentMethods = [
 
 const currentHeroOffer = computed(() => getSelectedOffer(activeTier.value));
 const currentHeroGroup = computed(() => demoSubscriptionCatalog[activeTier.value]);
+const currentHeroBullets = computed(() => {
+  const offer = currentHeroOffer.value;
+
+  return [
+    `${currentHeroGroup.value.badge}主推`,
+    `${offer.featureSummary.length} 项核心权益`,
+    offer.autoRenewHint ?? getOfferSupportText(offer),
+  ];
+});
 
 const formatCurrency = (amount: number | undefined): string => {
   if (amount === undefined) {
@@ -1774,6 +1908,18 @@ const getOfferSupportText = (offer: DemoOffer): string => {
   }
 
   return offer.durationDays ? `适合 ${offer.durationDays} 天周期使用` : '适合阶段性使用';
+};
+
+const getOfferCompactDescription = (offer: DemoOffer): string => {
+  if (offer.billingMode === 'usage') {
+    return offer.amount < 1 ? '快速体验支付与状态联动。' : '适合正式单次开通与演示。';
+  }
+
+  if (offer.durationDays) {
+    return `适合 ${offer.durationDays} 天周期使用与稳定筛查。`;
+  }
+
+  return offer.description;
 };
 
 const getTierOffers = (tier: DemoPlanTier): DemoOffer[] => {
@@ -2137,14 +2283,47 @@ onMounted(() => {
   if (savedDemoState) {
     subscriptionStatus.value = savedDemoState;
     hasDemoOverride.value = true;
-    return;
+  } else {
+    void loadUserSubscription();
   }
-
-  void loadUserSubscription();
 });
 </script>
 
 <style scoped>
+.api-settings-page {
+  --api-settings-sticky-top: 88px;
+}
+
+.page-section-anchor {
+  scroll-margin-top: 104px;
+}
+
+.settings-block-card {
+  border: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 251, 255, 0.98) 100%);
+  box-shadow: 0 18px 42px rgba(15, 57, 87, 0.08);
+}
+
+.settings-block-card__section {
+  padding: 22px 24px;
+}
+
+.settings-block-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-block-card__summary {
+  margin-top: 6px;
+  color: #627b8e;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .subscription-demo-shell {
   position: relative;
   overflow: hidden;
@@ -2175,32 +2354,127 @@ onMounted(() => {
 
 .subscription-demo-hero {
   position: relative;
-  padding: 28px;
+  padding: 30px;
   background: linear-gradient(
     135deg,
-    rgba(237, 246, 255, 0.96) 0%,
-    rgba(249, 252, 255, 0.96) 100%
+    rgba(233, 246, 255, 0.98) 0%,
+    rgba(249, 252, 255, 0.96) 48%,
+    rgba(240, 252, 249, 0.92) 100%
   );
   border-bottom: 1px solid rgba(28, 86, 129, 0.08);
 }
 
+.subscription-demo-hero__topline {
+  row-gap: 8px;
+}
+
+.subscription-demo-hero__signal {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 108, 168, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  color: #0f5c8f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+.subscription-demo-kicker {
+  color: #0d6e8c;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .subscription-demo-title {
   font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
-  line-height: 1.16;
-  letter-spacing: 0.02em;
+  max-width: 560px;
   color: #11324d;
+  font-size: clamp(2.45rem, 3vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+
+.subscription-demo-title__accent {
+  display: block;
+  color: #0e7a8f;
+  text-shadow: 0 12px 24px rgba(17, 108, 168, 0.12);
 }
 
 .subscription-demo-subtitle {
   max-width: 560px;
-  line-height: 1.8;
+  color: #5f7588 !important;
+  line-height: 1.72;
+}
+
+.subscription-demo-stat-grid {
+  row-gap: 10px;
+}
+
+.subscription-demo-stat-card {
+  height: 100%;
+  min-height: 132px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, rgba(244, 250, 255, 0.9) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 14px 28px rgba(15, 57, 87, 0.05);
+}
+
+.subscription-demo-stat-card__label {
+  color: #70879a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subscription-demo-stat-card__value {
+  color: #11324d;
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.subscription-demo-stat-card__description {
+  margin-top: 8px;
+  color: #5e7488;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .subscription-hero-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  min-height: 82px;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 1px solid rgba(17, 76, 114, 0.08);
-  background: rgba(255, 255, 255, 0.76) !important;
+  background: rgba(255, 255, 255, 0.78);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
+}
+
+.subscription-hero-chip__label {
+  color: #688296;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.subscription-hero-chip__value {
+  color: #123d59;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .subscription-demo-highlight {
@@ -2227,6 +2501,10 @@ onMounted(() => {
 .subscription-demo-highlight__tier {
   align-self: flex-start;
   border-radius: 999px;
+}
+
+.subscription-demo-highlight__desc {
+  line-height: 1.55;
 }
 
 .subscription-demo-highlight__price-band {
@@ -2262,12 +2540,12 @@ onMounted(() => {
 
 .subscription-demo-highlight__metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .subscription-demo-highlight__metric {
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-radius: 16px;
   border: 1px solid rgba(17, 76, 114, 0.08);
   background: rgba(255, 255, 255, 0.7);
@@ -2282,6 +2560,24 @@ onMounted(() => {
 .subscription-demo-highlight__cta {
   min-height: 46px;
   box-shadow: 0 16px 32px rgba(17, 108, 168, 0.2);
+}
+
+.subscription-demo-highlight__bullet-list {
+  display: grid;
+  gap: 10px;
+}
+
+.subscription-demo-highlight__bullet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  color: #224760;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .subscription-demo-highlight::after {
@@ -2374,22 +2670,33 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.plan-stage-card__selected-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #5d788d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .plan-feature-pill {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
-  padding: 12px 14px;
+  min-height: 46px;
+  padding: 11px 13px;
   border-radius: 18px;
   background: rgba(242, 248, 252, 0.88);
   border: 1px solid rgba(17, 76, 114, 0.06);
   color: #33556e;
+  font-size: 13px;
 }
 
 .offer-tile {
   width: 100%;
-  min-height: 150px;
-  padding: 16px;
+  min-height: 132px;
+  padding: 14px;
   border: 1px solid rgba(17, 76, 114, 0.1);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.9);
@@ -2413,6 +2720,25 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   text-align: right;
+}
+
+.offer-tile__description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 38px;
+  line-height: 1.55;
+}
+
+.offer-tile__price-row {
+  gap: 6px;
+}
+
+.offer-tile__price-unit {
+  color: #688296;
+  font-size: 12px;
+  margin-bottom: 2px;
 }
 
 .offer-tile__footnote {
@@ -2594,6 +2920,74 @@ onMounted(() => {
 
 .comparison-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
+}
+
+.config-brief-card,
+.config-slider-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 76, 114, 0.08);
+  background: rgba(247, 251, 255, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.config-brief-card--accent {
+  background: rgba(255, 249, 242, 0.92);
+  border-color: rgba(237, 137, 54, 0.12);
+}
+
+.config-brief-card__label {
+  color: #72889a;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.config-brief-card__value {
+  margin-top: 8px;
+  color: #153b57;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.config-brief-card__desc {
+  margin-top: 6px;
+  color: #688296;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.config-slider-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.config-slider-card__title {
+  color: #153b57;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.config-slider-card__value {
+  color: #0f6caa;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.config-slider-card__value--warm {
+  color: #d97706;
+}
+
+.preference-list-card :deep(.q-item) {
+  min-height: 58px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.preference-panel-card {
+  border-color: rgba(17, 76, 114, 0.08);
+  box-shadow: none;
 }
 
 .comparison-table :deep(table) {
@@ -2880,23 +3274,30 @@ onMounted(() => {
   .plan-stage-card__header,
   .plan-stage-card__offers,
   .plan-stage-card__actions,
+  .settings-block-card__section,
   .subscription-status-card__header,
   .subscription-status-card__body,
   .subscription-status-card__footer {
     padding-left: 18px;
     padding-right: 18px;
   }
+
+  .page-section-anchor {
+    scroll-margin-top: 88px;
+  }
+
 }
 
 @media (max-width: 599px) {
   .subscription-demo-shell,
   .subscription-status-card,
-  .comparison-card {
+  .comparison-card,
+  .settings-block-card {
     border-radius: 22px;
   }
 
   .subscription-demo-title {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
   .status-grid {
@@ -2908,7 +3309,15 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .subscription-demo-stat-card,
+  .subscription-hero-chip,
+  .config-brief-card,
+  .config-slider-card {
+    min-height: auto;
+  }
+
   .plan-stage-card__focus-strip,
+  .plan-stage-card__selected-meta,
   .payment-selection-banner,
   .checkout-aside-card__head,
   .checkout-aside-card__footer {
@@ -2930,6 +3339,7 @@ onMounted(() => {
 <style lang="scss">
 body.body--dark {
   .subscription-demo-shell,
+  .settings-block-card,
   .plan-stage-card,
   .subscription-status-card,
   .comparison-card,
@@ -2940,14 +3350,22 @@ body.body--dark {
   }
 
   .subscription-demo-hero,
+  .subscription-demo-stat-card,
+  .subscription-demo-hero__signal,
+  .subscription-hero-chip,
   .subscription-demo-highlight,
   .subscription-status-card__header,
   .subscription-demo-highlight__price-note,
   .subscription-demo-highlight__metric,
+  .subscription-demo-highlight__bullet,
   .plan-stage-card__focus-strip,
+  .plan-stage-card__selected-meta,
   .offer-tile,
   .status-grid__item,
   .status-feature-item,
+  .config-brief-card,
+  .config-slider-card,
+  .preference-panel-card,
   .demo-feature-item,
   .demo-success-item,
   .payment-summary,
@@ -2962,9 +3380,14 @@ body.body--dark {
   }
 
   .subscription-demo-title,
+  .subscription-demo-title__accent,
+  .subscription-demo-stat-card__value,
+  .subscription-hero-chip__value,
   .status-grid__value,
   .subscription-demo-highlight__metric strong,
   .subscription-demo-highlight__price-note-value,
+  .config-brief-card__value,
+  .config-slider-card__title,
   .plan-stage-card__focus-name,
   .plan-stage-card__focus-price,
   .checkout-aside-card__title,
@@ -2974,14 +3397,23 @@ body.body--dark {
   }
 
   .subscription-status-card__summary,
+  .subscription-demo-kicker,
+  .subscription-demo-subtitle,
+  .subscription-demo-stat-card__label,
+  .subscription-demo-stat-card__description,
+  .subscription-hero-chip__label,
   .subscription-status-card__eyebrow,
   .status-grid__label,
   .subscription-status-card__footer .text-caption,
   .subscription-demo-highlight__price-note-label,
   .subscription-demo-highlight__metric-label,
+  .subscription-demo-highlight__bullet,
+  .plan-stage-card__selected-meta,
   .plan-stage-card__focus-label,
   .plan-stage-card__focus-price span,
   .plan-stage-card__focus-saving,
+  .config-brief-card__label,
+  .config-brief-card__desc,
   .checkout-aside-card__footer span,
   .payment-selection-banner__label {
     color: var(--app-text-secondary) !important;
@@ -3007,7 +3439,8 @@ body.body--dark {
     box-shadow: 0 22px 50px rgba(0, 0, 0, 0.22) !important;
   }
 
-  .subscription-hero-chip {
+  .subscription-hero-chip,
+  .subscription-demo-hero__signal {
     background: rgba(18, 29, 41, 0.82) !important;
     border-color: rgba(148, 163, 184, 0.12) !important;
   }
