@@ -76,11 +76,7 @@
                 <div class="bubble-text">{{ msg.content }}</div>
               </div>
               <div class="bubble-avatar user-avatar">
-                <img
-                  v-if="authStore.user?.avatar_url"
-                  :src="authStore.user.avatar_url"
-                  alt="User"
-                />
+                <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="User" />
                 <q-icon v-else name="person" size="18px" />
               </div>
             </div>
@@ -242,11 +238,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onUnmounted } from 'vue';
+import { computed, ref, watch, nextTick, onUnmounted } from 'vue';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { sendChatMessage, type ChatMessage } from 'src/services/chatService';
 import { useAuthStore } from 'src/stores/authStore';
+import { getImageUrl } from 'src/utils/mappers';
 
 interface Props {
   modelValue: boolean;
@@ -258,6 +255,7 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>();
 
 const authStore = useAuthStore();
 const aiAvatar = '/logo.svg';
+const userAvatarUrl = computed(() => getImageUrl(authStore.user?.avatar_url) || '');
 
 const quickQuestions = ['诊断结论解读', '风险评估分析', '后续建议'];
 

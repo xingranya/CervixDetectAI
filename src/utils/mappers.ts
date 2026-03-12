@@ -6,6 +6,24 @@ import { normalizeApiBaseUrl, getServerBaseUrl, DEFAULT_API_BASE_URL } from './a
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
+function normalizeLocalAssetPath(filePath: string): string {
+  const trimmed = filePath.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  const normalizedPath = trimmed.replace(/^\/+/, '');
+  if (/^(uploads|reports)\//i.test(normalizedPath)) {
+    return `/${normalizedPath}`;
+  }
+
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
 /**
  * 处理图片 URL
  * 将相对路径转换为完整 URL
@@ -16,12 +34,10 @@ export const getImageUrl = (filePath: string | undefined): string | undefined =>
   if (!filePath) return undefined;
   // 如果已经是完整URL，直接返回
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    return filePath;
+    return filePath.trim();
   }
-  // 否则拼接服务器地址
-  // 移除开头可能存在的 / 防止双斜杠，但 SERVER_BASE_URL 可能不带斜杠
-  // 假设 filePath 类似 "/uploads/..."
-  const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+
+  const cleanPath = normalizeLocalAssetPath(filePath);
   return `${SERVER_BASE_URL}${cleanPath}`;
 };
 

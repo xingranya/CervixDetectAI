@@ -38,15 +38,34 @@ function isRemoteFilePath(value) {
   return /^https?:\/\//i.test(String(value || ''));
 }
 
+function normalizeStoredFilePath(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || isRemoteFilePath(trimmed)) {
+    return trimmed;
+  }
+
+  const normalizedPath = trimmed.replace(/^\/+/, '');
+  if (/^(uploads|reports)\//i.test(normalizedPath)) {
+    return `/${normalizedPath}`;
+  }
+
+  return trimmed;
+}
+
 function resolveUploadAbsolutePath(storedPath) {
-  if (!storedPath || typeof storedPath !== 'string') {
+  const normalizedStoredPath = normalizeStoredFilePath(storedPath);
+  if (!normalizedStoredPath || typeof normalizedStoredPath !== 'string') {
     return null;
   }
-  if (isRemoteFilePath(storedPath)) {
+  if (isRemoteFilePath(normalizedStoredPath)) {
     return null;
   }
 
-  const trimmed = storedPath.replace(/^\/+/, '');
+  const trimmed = normalizedStoredPath.replace(/^\/+/, '');
   const absPath = path.resolve(serverRootDir, trimmed);
   const relativeToUploads = path.relative(uploadsRootDir, absPath);
 
@@ -116,18 +135,19 @@ async function persistStudyImage({ file }) {
 
 async function syncStudyImageToTucang(studyImageRecord) {
   const plain = toPlainRecord(studyImageRecord);
-  if (!plain?.file_path) {
+  const normalizedFilePath = normalizeStoredFilePath(plain?.file_path);
+  if (!normalizedFilePath) {
     throw new Error('影像文件路径为空，无法同步到图仓');
   }
-  if (isRemoteFilePath(plain.file_path)) {
+  if (isRemoteFilePath(normalizedFilePath)) {
     return {
       uploaded: false,
-      filePath: plain.file_path,
+      filePath: normalizedFilePath,
       storedFilename: plain.stored_filename,
     };
   }
 
-  const localAbsolutePath = resolveUploadAbsolutePath(plain.file_path);
+  const localAbsolutePath = resolveUploadAbsolutePath(normalizedFilePath);
   if (!localAbsolutePath) {
     throw new Error('本地影像路径无效，无法同步到图仓');
   }
@@ -167,9 +187,10 @@ async function removeStudyImageFile(studyImageRecord) {
 
 async function prepareStudyImageForAnalysis(studyImageRecord) {
   const plain = toPlainRecord(studyImageRecord);
-  if (isRemoteFilePath(plain?.file_path)) {
+  const normalizedFilePath = normalizeStoredFilePath(plain?.file_path);
+  if (isRemoteFilePath(normalizedFilePath)) {
     return {
-      imagePath: plain.file_path,
+      imagePath: normalizedFilePath,
       cleanup: async () => {},
     };
   }
@@ -186,7 +207,7 @@ async function prepareStudyImageForAnalysis(studyImageRecord) {
     console.warn(`[StudyImageStorage] 分析前图仓同步失败，将使用本地路径: ${error.message}`);
   }
 
-  const localPath = resolveUploadAbsolutePath(plain?.file_path);
+  const localPath = resolveUploadAbsolutePath(normalizedFilePath);
   return {
     imagePath: localPath,
     cleanup: async () => {},
@@ -198,7 +219,7 @@ async function serializeStudyImageForResponse(studyImageRecord) {
   if (!plain) return plain;
   return {
     ...plain,
-    file_path: plain.file_path,
+    file_path: normalizeStoredFilePath(plain.file_path),
   };
 }
 
@@ -222,4 +243,5 @@ module.exports = {
   serializeStudyForResponse,
   resolveUploadAbsolutePath,
   isRemoteFilePath,
+  normalizeStoredFilePath,
 };
