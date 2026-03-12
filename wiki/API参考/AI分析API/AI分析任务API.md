@@ -14,7 +14,8 @@
 6. [数据模型说明](#数据模型说明)
 7. [API端点参考](#api端点参考)
 8. [批量创建任务（新增）](#批量创建任务新增)
-9. [错误响应格式](#错误响应格式)
+9. [进度语义与失败收口](#进度语义与失败收口)
+10. [错误响应格式](#错误响应格式)
 
 ## 简介
 AI分析任务API提供了一套完整的分析任务管理功能，支持创建、批量创建、查询、更新和删除分析任务。该API专为宫颈癌AI检测系统设计，确保用户能够安全、高效地管理其医学影像分析任务。
@@ -54,8 +55,8 @@ AI分析任务API提供了一套完整的分析任务管理功能，支持创建
 ## 状态更新与时间戳处理
 系统在更新任务状态时会自动处理相关时间戳：
 
-- **started_at**：当状态变更为"running"且尚未设置开始时间时，自动记录当前时间
-- **completed_at**：当状态变更为"completed"、"failed"或"cancelled"时，自动记录完成时间
+- **started_at**：当状态变更为 `PROCESSING` 且尚未设置开始时间时，自动记录当前时间
+- **completed_at**：当状态变更为 `SUCCESS` 或 `FAILED` 时，自动记录完成时间
 
 这种自动化处理确保了任务生命周期的时间数据准确无误。
 
@@ -404,7 +405,7 @@ Database-->>Client : 返回创建的任务
 #### 请求体JSON Schema
 ```json
 {
-  "status": "running",
+  "status": "PROCESSING",
   "progress": 50,
   "error_message": "处理中..."
 }
@@ -421,7 +422,7 @@ Database-->>Client : 返回创建的任务
       "task_id": "TASK1700000000abc123",
       "study_id": 123,
       "user_id": 789,
-      "status": "running",
+      "status": "PROCESSING",
       "progress": 50,
       "started_at": "2024-01-01T00:00:00.000Z",
       "created_at": "2024-01-01T00:00:00.000Z",
@@ -443,6 +444,68 @@ Database-->>Client : 返回创建的任务
 
 **Section sources**
 - [analysis-tasks.js](file://server/routes/analysis-tasks.js#L204-L263)
+
+## 进度语义与失败收口
+
+### 阶段性进度口径
+
+当前分析任务的 `progress` 字段采用“阶段估算 + 终态确认”的表达方式：
+
+- `0-30%`：任务创建、病例状态更新与图像准备
+- `30-85%`：模型分析期间的阶段性估算进度
+- `90-100%`：结果落库、任务完成与病例状态同步
+
+因此：
+
+- `progress` 不是模型的真实内部百分比
+- `status=SUCCESS` 或 `status=FAILED` 才是最终可信结果
+
+### 统一失败收口行为
+
+当前 `POST /api/analysis-tasks`、`POST /api/analysis-tasks/batch` 与 `POST /api/analyze` 共用统一失败收口逻辑：
+
+- 图像路径解析失败时写入 `FAILED`
+- 找不到主图或最新图时写入 `FAILED`
+- 异步预处理抛错时写入 `FAILED`
+- 模型调用超时或异常时写入 `FAILED`
+- 失败时同步写入 `error_message`、`completed_at`，并将病例状态回写为 `failed`
+
+```mermaid
+sequenceDiagram
+participant Client
+participant Route as 路由入口
+participant Service as analysisService
+participant Task as analysis_tasks
+participant Study as studies
+
+Client->>Route : 创建任务
+Route->>Service : processTask(...)
+Service->>Task : status=PROCESSING
+Service->>Service : 调用 Qwen / 进度估算
+alt 成功
+  Service->>Task : status=SUCCESS, progress=100
+  Service->>Study : status=completed
+else 超时或异常
+  Service->>Task : status=FAILED, error_message, completed_at
+  Service->>Study : status=failed
+end
+```
+
+### 关键示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "task": {
+      "status": "FAILED",
+      "progress": 0,
+      "error_message": "AI分析超时，请重试",
+      "completed_at": "2026-03-12T10:00:00.000Z"
+    }
+  }
+}
+```
 
 ### 删除分析任务
 删除指定的分析任务（软删除）。

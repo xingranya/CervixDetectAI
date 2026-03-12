@@ -108,7 +108,8 @@
 | **☁️ 图仓同步** | 影像本地持久化后异步同步图仓，异常时保留本地回退链路 |
 | **📦 批量任务** | 单次最多 10 张影像，批量创建任务并返回成功/失败明细 |
 | **🌐 远程 URL 分析** | 分析前优先使用图仓远程 URL，失败时自动回退本地路径 |
-| **⚡ 实时分析** | AI 自动分析处理，实时进度跟踪      |
+| **⚡ 阶段进度跟踪** | 0-85% 为阶段性进度估算，`SUCCESS / FAILED` 为可靠终态 |
+| **🛡️ 超时与失败收口** | 默认 180 秒超时保护，预处理/模型异常会统一落为失败态 |
 | **📈 结果展示** | 详细的诊断结果和置信度             |
 | **💡 临床建议** | 提供专业的临床建议和生物标志物信息 |
 | **📄 报告生成** | 自动生成 PDF 报告，支持下载        |
@@ -615,6 +616,9 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 QWEN_API_KEY=your_qwen_api_key_here
 QWEN_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 QWEN_MODEL=qwen-vl-max
+
+# 分析任务超时控制（毫秒，默认 180000）
+ANALYSIS_TIMEOUT_MS=180000
 ```
 
 ### ☁️ 图仓存储配置
@@ -677,6 +681,7 @@ TEMPLATE_ID_REGISTER_SUCCESS=42477
 
 ### 🆕 近期更新（2026-03）
 
+- **2026-03-12**：分析任务稳定性修复：后端新增统一失败收口与 `180s` 超时保护，异步预处理失败不再只记日志；`qwenService` 支持从围栏文本中提取首个 JSON；病例详情页轮询改为单飞行模式，并增加连续失败/高进度卡住保护。
 - **2026-03-12**：主布局拆分为 `NotificationBell`、`HeaderUserMenu`、`MainNavDrawer`，通知逻辑收口到 `useNotifications`；病例中心改为查询状态驱动并同步 URL；`studyStore` 收口病例 mapper；随访“立即提醒”支持同步通知当前操作者。
 - **2026-03-11**：`ApiSettingsPage.vue` 收敛为“套餐订阅”页，左侧导航将“订阅与AI设置”拆分为“套餐订阅”和“AI与偏好设置”，新增 `AiPreferencesPage.vue` 集中管理 AI 引擎与服务偏好。
 - **2026-03-09**：认证页新增软件著作权卡片与证书预览对话框，`AuthBrandPanel`、`ApiSettingsPage`、`AuthSplitLayout` 同步完成交互与滚动适配。
@@ -741,6 +746,8 @@ TEMPLATE_ID_REGISTER_SUCCESS=42477
 | GET  | `/study/:studyId` | 按病例 ID 查询结果     |
 
 > 单图分析链路说明：上传文件会先落地到安全临时目录并持久化为病例影像，后台分析前优先尝试同步图仓；若图仓不可用，则自动回退本地路径继续分析。
+>
+> 任务状态口径补充：`progress` 在 `0-85%` 区间为阶段性估算进度，用于表达“预处理 / 推理 / 报告生成”阶段；`SUCCESS / FAILED` 为真实终态。若模型调用超过默认 `180s`，任务会自动标记为 `FAILED`。
 
 ### AI 任务管理 `/api/analysis-tasks`
 
@@ -753,6 +760,8 @@ TEMPLATE_ID_REGISTER_SUCCESS=42477
 | PUT  | `/:id/status` | 更新任务状态和进度                    |
 | POST | `/:id/result` | 保存分析结果                          |
 | DELETE | `/:id`      | 删除分析任务（软删除）                |
+
+> 稳定性说明：`POST /api/analysis-tasks`、`POST /api/analysis-tasks/batch` 与 `POST /api/analyze` 现在共用统一失败收口逻辑。图像准备失败、路径解析失败、模型超时或后台触发异常都会显式写入 `FAILED`、`error_message` 与 `completed_at`，避免任务长时间停留在 `PENDING / PROCESSING / 85%`。
 
 ### 近期存储与分析口径
 
