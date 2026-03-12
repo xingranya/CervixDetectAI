@@ -38,6 +38,10 @@ const currentRoute = useRoute()
 
 const isActive = computed(() => {
   if (!props.route) return false
-  return currentRoute.path.startsWith(props.route)
+  if (props.route === '/app') {
+    return currentRoute.path === props.route
+  }
+
+  return currentRoute.path === props.route || currentRoute.path.startsWith(`${props.route}/`)
 })
 </script>

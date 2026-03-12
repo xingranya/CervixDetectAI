@@ -622,26 +622,41 @@ router.post('/:id/remind', authenticate, async (req, res) => {
       });
     }
 
-    const receiverId = followUp.assigned_doctor_id || followUp.created_by;
-    if (!receiverId) {
+    const receiverIds = Array.from(
+      new Set(
+        [followUp.assigned_doctor_id, followUp.created_by, req.user.id]
+          .filter((value) => Number.isFinite(Number(value)) && Number(value) > 0)
+          .map((value) => Number(value)),
+      ),
+    );
+
+    if (receiverIds.length === 0) {
       return res.status(400).json({
         success: false,
         message: '随访计划未配置接收提醒的用户',
       });
     }
 
-    const notification = await createFollowUpNotification({
-      userId: receiverId,
-      followUp,
-      patientName: followUp.patient?.name || '未知患者',
-      updateReminderAt: true,
-    });
+    const notifications = [];
+    for (const [index, receiverId] of receiverIds.entries()) {
+      const notification = await createFollowUpNotification({
+        userId: receiverId,
+        followUp,
+        patientName: followUp.patient?.name || '未知患者',
+        updateReminderAt: index === 0,
+      });
+
+      if (notification) {
+        notifications.push(notification);
+      }
+    }
 
     res.json({
       success: true,
       message: '站内提醒已发送',
       data: {
-        notification,
+        notification: notifications[0] || null,
+        notifications,
       },
     });
   } catch (error) {

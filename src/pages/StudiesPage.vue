@@ -1,6 +1,5 @@
 <template>
   <q-page class="q-pa-md app-gradient-page">
-    <!-- 页面标题 -->
     <div class="row items-center q-mb-md">
       <div class="col">
         <div class="text-h5">数据报表</div>
@@ -11,7 +10,6 @@
       </div>
     </div>
 
-    <!-- Tab 切换 -->
     <q-card flat bordered class="q-mb-md">
       <q-tabs
         v-model="activeTab"
@@ -26,35 +24,32 @@
           <q-badge color="green" floating>{{ completedCount }}</q-badge>
         </q-tab>
         <q-tab name="processing" label="处理中" icon="hourglass_empty">
-          <q-badge color="orange" floating v-if="processingCount > 0">{{
-            processingCount
-          }}</q-badge>
+          <q-badge v-if="processingCount > 0" color="orange" floating>{{ processingCount }}</q-badge>
         </q-tab>
         <q-tab name="failed" label="失败" icon="error">
-          <q-badge color="red" floating v-if="failedCount > 0">{{ failedCount }}</q-badge>
+          <q-badge v-if="failedCount > 0" color="red" floating>{{ failedCount }}</q-badge>
         </q-tab>
       </q-tabs>
     </q-card>
 
-    <!-- 搜索和筛选 -->
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="q-py-sm">
         <div class="row q-gutter-md items-center">
           <div class="col-md-4 col-sm-6 col-xs-12">
             <q-input
-              v-model="filter"
+              v-model="keyword"
               outlined
               dense
               placeholder="搜索患者姓名、ID..."
               clearable
               debounce="300"
             >
-              <template v-slot:prepend>
+              <template #prepend>
                 <q-icon name="search" />
               </template>
             </q-input>
           </div>
-          <div class="col-md-3 col-sm-6 col-xs-12" v-if="patientOptions.length > 0">
+          <div v-if="patientOptions.length > 0" class="col-md-3 col-sm-6 col-xs-12">
             <q-select
               v-model="selectedPatientId"
               outlined
@@ -65,7 +60,7 @@
               map-options
               clearable
             >
-              <template v-slot:prepend>
+              <template #prepend>
                 <q-icon name="person" />
               </template>
             </q-select>
@@ -74,25 +69,22 @@
       </q-card-section>
     </q-card>
 
-    <!-- 数据表格 -->
     <q-card flat bordered>
       <q-card-section class="q-pa-none">
         <q-table
+          v-model:pagination="pagination"
           :rows="filteredStudies"
           :columns="studyColumns"
           :loading="studyStore.loading"
           row-key="id"
-          :pagination="{ rowsPerPage: 10 }"
         >
-          <!-- 检查日期列 -->
-          <template v-slot:body-cell-studyDate="props">
+          <template #body-cell-studyDate="props">
             <q-td :props="props">
               {{ formatDate(props.row.studyDate) }}
             </q-td>
           </template>
 
-          <!-- 状态列 -->
-          <template v-slot:body-cell-status="props">
+          <template #body-cell-status="props">
             <q-td :props="props">
               <q-chip :color="getStatusColor(props.row.status)" text-color="white" size="sm" dense>
                 {{ getStatusLabel(props.row.status) }}
@@ -100,8 +92,7 @@
             </q-td>
           </template>
 
-          <!-- 最新任务状态列 -->
-          <template v-slot:body-cell-latestTaskStatus="props">
+          <template #body-cell-latestTaskStatus="props">
             <q-td :props="props">
               <q-chip
                 :color="getTaskStatusColor(props.row.latestTaskStatus)"
@@ -114,8 +105,7 @@
             </q-td>
           </template>
 
-          <!-- 风险等级列 -->
-          <template v-slot:body-cell-riskLevel="props">
+          <template #body-cell-riskLevel="props">
             <q-td :props="props">
               <q-chip
                 :color="getRiskLevelColor(props.row.riskLevel)"
@@ -128,15 +118,13 @@
             </q-td>
           </template>
 
-          <!-- 置信度列 -->
-          <template v-slot:body-cell-confidence="props">
+          <template #body-cell-confidence="props">
             <q-td :props="props">
               {{ formatConfidence(props.row.confidence) }}
             </q-td>
           </template>
 
-          <!-- 操作列 -->
-          <template v-slot:body-cell-actions="props">
+          <template #body-cell-actions="props">
             <q-td :props="props">
               <q-btn
                 flat
@@ -152,8 +140,8 @@
                 size="sm"
                 icon="picture_as_pdf"
                 color="secondary"
-                @click="downloadReport(props.row.id)"
                 :disable="props.row.status !== 'completed'"
+                @click="downloadReport(props.row.id)"
               >
                 <q-tooltip>{{
                   props.row.status === 'completed' ? '下载报告' : '等待分析完成'
@@ -171,8 +159,7 @@
             </q-td>
           </template>
 
-          <!-- 空状态 -->
-          <template v-slot:no-data>
+          <template #no-data>
             <div class="full-width column flex-center q-pa-lg text-grey-6">
               <q-icon name="folder_open" size="64px" class="q-mb-md" />
               <div class="text-h6">暂无病例数据</div>
@@ -186,269 +173,332 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { type QTableProps, useQuasar } from 'quasar';
+import { downloadStudyReport } from 'src/composables/useStudyReportDownload';
 import { useStudyStore } from 'stores/studyStore';
-import { useQuasar } from 'quasar';
-import { getStudyAnalysis } from 'src/services/apiService';
+import {
+  buildStudiesQuery,
+  DEFAULT_STUDIES_QUERY_STATE,
+  parseStudiesQuery,
+  type StudiesQueryState,
+} from 'src/utils/studiesQuery';
 
 const router = useRouter();
 const route = useRoute();
 const studyStore = useStudyStore();
 const $q = useQuasar();
 
-// Tab 状态
-const activeTab = ref('all');
-const filter = ref('');
-const selectedPatientId = ref<number | null>(null);
+const MANAGED_QUERY_KEYS = ['status', 'patient_id', 'keyword', 'page', 'rowsPerPage'] as const;
 
-// 表格列定义
-const studyColumns = [
-  { name: 'id', label: 'ID', field: 'id', align: 'left' as const, sortable: true },
-  {
-    name: 'patientName',
-    label: '患者姓名',
-    field: 'patientName',
-    align: 'left' as const,
-    sortable: true,
-  },
-  { name: 'patientId', label: '患者ID', field: 'patientId', align: 'left' as const },
-  {
-    name: 'studyDate',
-    label: '检查日期',
-    field: 'studyDate',
-    align: 'left' as const,
-    sortable: true,
-  },
-  { name: 'modality', label: '检查方式', field: 'modality', align: 'left' as const },
-  { name: 'status', label: '状态', field: 'status', align: 'center' as const, sortable: true },
+const queryState = ref<StudiesQueryState>({ ...DEFAULT_STUDIES_QUERY_STATE });
+const syncingFromRoute = ref(false);
+
+const pagination = ref<QTableProps['pagination']>({
+  page: DEFAULT_STUDIES_QUERY_STATE.page,
+  rowsPerPage: DEFAULT_STUDIES_QUERY_STATE.rowsPerPage,
+  rowsNumber: 0,
+  sortBy: 'studyDate',
+  descending: true,
+});
+
+const isSameQueryState = (left: StudiesQueryState, right: StudiesQueryState) =>
+  left.status === right.status &&
+  left.patientId === right.patientId &&
+  left.keyword === right.keyword &&
+  left.page === right.page &&
+  left.rowsPerPage === right.rowsPerPage;
+
+const isSamePagination = (
+  left: QTableProps['pagination'] | undefined,
+  right: QTableProps['pagination'] | undefined,
+) =>
+  left?.page === right?.page &&
+  left?.rowsPerPage === right?.rowsPerPage &&
+  left?.rowsNumber === right?.rowsNumber &&
+  left?.sortBy === right?.sortBy &&
+  left?.descending === right?.descending;
+
+const setQueryState = (nextState: StudiesQueryState) => {
+  if (isSameQueryState(queryState.value, nextState)) return;
+  queryState.value = nextState;
+};
+
+const setPagination = (nextPagination: QTableProps['pagination']) => {
+  if (isSamePagination(pagination.value, nextPagination)) return;
+  pagination.value = nextPagination;
+};
+
+const studyColumns: QTableProps['columns'] = [
+  { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: true },
+  { name: 'patientName', label: '患者姓名', field: 'patientName', align: 'left', sortable: true },
+  { name: 'patientId', label: '患者ID', field: 'patientId', align: 'left' },
+  { name: 'studyDate', label: '检查日期', field: 'studyDate', align: 'left', sortable: true },
+  { name: 'modality', label: '检查方式', field: 'modality', align: 'left' },
+  { name: 'status', label: '状态', field: 'status', align: 'center', sortable: true },
   {
     name: 'latestTaskStatus',
     label: '任务状态',
     field: 'latestTaskStatus',
-    align: 'center' as const,
+    align: 'center',
     sortable: true,
   },
-  { name: 'riskLevel', label: '风险等级', field: 'riskLevel', align: 'center' as const },
-  { name: 'confidence', label: '置信度', field: 'confidence', align: 'center' as const },
-  { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
+  { name: 'riskLevel', label: '风险等级', field: 'riskLevel', align: 'center' },
+  { name: 'confidence', label: '置信度', field: 'confidence', align: 'center' },
+  { name: 'actions', label: '操作', field: 'actions', align: 'center' },
 ];
 
-// 患者筛选选项
+const activeTab = computed<StudiesQueryState['status']>({
+  get: () => queryState.value.status,
+  set: (value) => {
+    setQueryState({ ...queryState.value, status: value, page: 1 });
+  },
+});
+
+const keyword = computed<string>({
+  get: () => queryState.value.keyword,
+  set: (value) => {
+    setQueryState({ ...queryState.value, keyword: value, page: 1 });
+  },
+});
+
+const selectedPatientId = computed<number | null>({
+  get: () => queryState.value.patientId,
+  set: (value) => {
+    setQueryState({ ...queryState.value, patientId: value, page: 1 });
+  },
+});
+
 const patientOptions = computed(() => {
   const patients = new Map<number, string>();
-  studyStore.allStudies.forEach((s) => {
-    if (s.patient_id && s.patientName) {
-      patients.set(s.patient_id, s.patientName);
+  studyStore.allStudies.forEach((study) => {
+    if (study.patient_id && study.patientName) {
+      patients.set(study.patient_id, study.patientName);
     }
   });
+
   return Array.from(patients.entries()).map(([id, name]) => ({
     value: id,
     label: name,
   }));
 });
 
-// 统计数量
 const completedCount = computed(
-  () => studyStore.allStudies.filter((s) => s.status === 'completed').length,
+  () => studyStore.allStudies.filter((study) => study.status === 'completed').length,
 );
 const processingCount = computed(
-  () => studyStore.allStudies.filter((s) => s.status === 'processing').length,
+  () => studyStore.allStudies.filter((study) => study.status === 'processing').length,
 );
 const failedCount = computed(
-  () => studyStore.allStudies.filter((s) => s.status === 'failed').length,
+  () => studyStore.allStudies.filter((study) => study.status === 'failed').length,
 );
 
-// 根据 Tab 和筛选条件过滤数据
 const filteredStudies = computed(() => {
   let result = studyStore.allStudies;
 
-  // Tab 筛选
-  if (activeTab.value !== 'all') {
-    result = result.filter((s) => s.status === activeTab.value);
+  if (queryState.value.status !== 'all') {
+    result = result.filter((study) => study.status === queryState.value.status);
   }
 
-  // 患者筛选
-  if (selectedPatientId.value) {
-    result = result.filter((s) => s.patient_id === selectedPatientId.value);
+  if (queryState.value.patientId) {
+    result = result.filter((study) => study.patient_id === queryState.value.patientId);
   }
 
-  // 搜索筛选
-  if (filter.value) {
-    const keyword = filter.value.toLowerCase();
+  if (queryState.value.keyword.trim()) {
+    const normalizedKeyword = queryState.value.keyword.trim().toLowerCase();
     result = result.filter(
-      (s) =>
-        s.patientName?.toLowerCase().includes(keyword) ||
-        s.patientId?.toLowerCase().includes(keyword) ||
-        s.modality?.toLowerCase().includes(keyword),
+      (study) =>
+        study.patientName?.toLowerCase().includes(normalizedKeyword) ||
+        study.patientId?.toLowerCase().includes(normalizedKeyword) ||
+        study.modality?.toLowerCase().includes(normalizedKeyword),
     );
   }
 
   return result;
 });
 
-// 格式化日期
+const applyRouteQueryState = (nextState: StudiesQueryState) => {
+  syncingFromRoute.value = true;
+  setQueryState(nextState);
+  setPagination({
+    ...pagination.value,
+    page: nextState.page,
+    rowsPerPage: nextState.rowsPerPage,
+  });
+  syncingFromRoute.value = false;
+};
+
+const syncRouteWithQueryState = async () => {
+  const nextQuery = buildStudiesQuery(queryState.value);
+  const mergedQuery = Object.fromEntries(
+    Object.entries(route.query).filter(([key]) => !MANAGED_QUERY_KEYS.includes(key as never)),
+  );
+
+  const currentManagedQuery = Object.fromEntries(
+    MANAGED_QUERY_KEYS.map((key) => [key, route.query[key]]),
+  );
+  const expectedManagedQuery = {
+    status: nextQuery.status,
+    patient_id: nextQuery.patient_id,
+    keyword: nextQuery.keyword,
+    page: nextQuery.page,
+    rowsPerPage: nextQuery.rowsPerPage,
+  };
+
+  if (JSON.stringify(currentManagedQuery) === JSON.stringify(expectedManagedQuery)) {
+    return;
+  }
+
+  await router.replace({
+    query: {
+      ...mergedQuery,
+      ...nextQuery,
+    },
+  });
+};
+
+watch(
+  () => route.query,
+  (routeQuery) => {
+    applyRouteQueryState(parseStudiesQuery(routeQuery));
+  },
+  { immediate: true },
+);
+
+watch(
+  queryState,
+  async () => {
+    if (syncingFromRoute.value) return;
+    await syncRouteWithQueryState();
+  },
+  { deep: true },
+);
+
+watch(
+  () =>
+    [
+      pagination.value?.page ?? DEFAULT_STUDIES_QUERY_STATE.page,
+      pagination.value?.rowsPerPage ?? DEFAULT_STUDIES_QUERY_STATE.rowsPerPage,
+    ] as const,
+  ([page, rowsPerPage]) => {
+    if (syncingFromRoute.value) return;
+
+    if (
+      queryState.value.page === page &&
+      queryState.value.rowsPerPage === rowsPerPage
+    ) {
+      return;
+    }
+
+    setQueryState({
+      ...queryState.value,
+      page,
+      rowsPerPage,
+    });
+  },
+);
+
+watch(
+  () =>
+    ({
+      rowsNumber: filteredStudies.value.length,
+      currentPage: queryState.value.page,
+      rowsPerPage: pagination.value?.rowsPerPage ?? DEFAULT_STUDIES_QUERY_STATE.rowsPerPage,
+    }),
+  ({ rowsNumber, currentPage, rowsPerPage }) => {
+    const maxPage = Math.max(1, Math.ceil(rowsNumber / rowsPerPage));
+    const nextPage = Math.min(currentPage, maxPage);
+
+    setPagination({
+      ...pagination.value,
+      rowsNumber,
+      page: nextPage,
+      rowsPerPage,
+    });
+
+    if (nextPage !== currentPage) {
+      setQueryState({
+        ...queryState.value,
+        page: nextPage,
+      });
+    }
+  },
+  { immediate: true },
+);
+
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('zh-CN');
 };
 
-// 获取状态颜色
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'completed':
-      return 'green';
-    case 'processing':
-      return 'orange';
-    case 'failed':
-      return 'red';
-    default:
-      return 'grey';
-  }
-};
-
-// 获取状态标签
-const getStatusLabel = (status: string): string => {
-  switch (status) {
-    case 'completed':
-      return '已完成';
-    case 'processing':
-      return '处理中';
-    case 'failed':
-      return '失败';
-    case 'pending':
-      return '待处理';
-    default:
-      return status;
-  }
-};
-
-// 获取任务状态颜色
-const getTaskStatusColor = (status: string | undefined): string => {
-  switch (status) {
-    case 'SUCCESS':
-      return 'green';
-    case 'PROCESSING':
-      return 'orange';
-    case 'FAILED':
-      return 'red';
-    case 'PENDING':
-      return 'grey';
-    default:
-      return 'grey-5';
-  }
-};
-
-// 获取任务状态标签
-const getTaskStatusLabel = (status: string | undefined): string => {
-  switch (status) {
-    case 'SUCCESS':
-      return '成功';
-    case 'PROCESSING':
-      return '处理中';
-    case 'FAILED':
-      return '失败';
-    case 'PENDING':
-      return '待处理';
-    default:
-      return '暂无任务';
-  }
-};
-
-// 获取风险等级颜色
-const getRiskLevelColor = (riskLevel: string | undefined): string => {
-  switch (riskLevel) {
-    case 'critical':
-      return 'deep-orange';
-    case 'high':
-      return 'red';
-    case 'medium':
-      return 'orange';
-    case 'low':
-      return 'green';
-    default:
-      return 'grey-3';
-  }
-};
-
-// 获取风险等级标签
-const getRiskLevelLabel = (riskLevel: string | undefined): string => {
-  switch (riskLevel) {
-    case 'critical':
-      return '极高';
-    case 'high':
-      return '高';
-    case 'medium':
-      return '中';
-    case 'low':
-      return '低';
-    default:
-      return '未评估';
-  }
-};
-
-// 格式化置信度
 const formatConfidence = (confidence: unknown): string => {
-  if (confidence === null || confidence === undefined) {
-    return '-';
-  }
+  if (confidence === null || confidence === undefined) return '-';
 
   const raw = typeof confidence === 'number' ? confidence : Number(confidence);
-  if (!Number.isFinite(raw) || raw < 0) {
-    return '-';
-  }
+  if (!Number.isFinite(raw) || raw < 0) return '-';
 
-  // 兼容历史百分比值（0-100）
   const normalized = raw > 1 && raw <= 100 ? raw / 100 : raw;
-  if (normalized > 1) {
-    return '-';
-  }
+  if (normalized > 1) return '-';
 
   return `${Math.round(normalized * 100)}%`;
 };
 
-// 查看病例详情
+const getStatusColor = (status: string): string => {
+  if (status === 'completed') return 'green';
+  if (status === 'processing') return 'orange';
+  if (status === 'failed') return 'red';
+  return 'grey';
+};
+
+const getStatusLabel = (status: string): string => {
+  if (status === 'completed') return '已完成';
+  if (status === 'processing') return '处理中';
+  if (status === 'failed') return '失败';
+  if (status === 'pending') return '待处理';
+  return status;
+};
+
+const getTaskStatusColor = (status: string | undefined): string => {
+  if (status === 'SUCCESS') return 'green';
+  if (status === 'PROCESSING') return 'orange';
+  if (status === 'FAILED') return 'red';
+  if (status === 'PENDING') return 'grey';
+  return 'grey-5';
+};
+
+const getTaskStatusLabel = (status: string | undefined): string => {
+  if (status === 'SUCCESS') return '成功';
+  if (status === 'PROCESSING') return '处理中';
+  if (status === 'FAILED') return '失败';
+  if (status === 'PENDING') return '待处理';
+  return '暂无任务';
+};
+
+const getRiskLevelColor = (riskLevel: string | undefined): string => {
+  if (riskLevel === 'critical') return 'deep-orange';
+  if (riskLevel === 'high') return 'red';
+  if (riskLevel === 'medium') return 'orange';
+  if (riskLevel === 'low') return 'green';
+  return 'grey-3';
+};
+
+const getRiskLevelLabel = (riskLevel: string | undefined): string => {
+  if (riskLevel === 'critical') return '极高';
+  if (riskLevel === 'high') return '高';
+  if (riskLevel === 'medium') return '中';
+  if (riskLevel === 'low') return '低';
+  return '未评估';
+};
+
 const viewStudy = (id: number) => {
   void router.push(`/app/studies/${id}`);
 };
 
-// 下载报告
 const downloadReport = async (id: number) => {
-  try {
-    $q.loading.show({ message: '正在获取病例数据...', spinnerColor: 'primary' });
-
-    const studyData = await getStudyAnalysis(String(id));
-
-    if (!studyData.result) {
-      $q.notify({ type: 'warning', message: '该病例暂无分析结果，无法生成报告', position: 'top' });
-      return;
-    }
-
-    $q.loading.show({ message: '正在生成PDF报告...', spinnerColor: 'primary' });
-
-    const { generatePDFReport } = await import('../utils/pdfGenerator');
-
-    await generatePDFReport({
-      study: {
-        id: String(id),
-        patientName: studyData.studyInfo.patientName,
-        patientId: studyData.studyInfo.patientId,
-        studyDate: studyData.studyInfo.studyDate,
-        modality: studyData.studyInfo.modality,
-      },
-      result: studyData.result,
-    });
-
-    $q.notify({ type: 'positive', message: '报告已成功下载！', position: 'top', icon: 'download' });
-  } catch (error) {
-    console.error('生成 PDF 报告失败:', error);
-    $q.notify({ type: 'negative', message: '生成报告失败，请稍后重试', position: 'top' });
-  } finally {
-    $q.loading.hide();
-  }
+  await downloadStudyReport({ id, $q });
 };
 
-// 确认删除
 const confirmDelete = (id: number, patientName: string) => {
   $q.dialog({
     title: '确认删除',
@@ -467,7 +517,6 @@ const confirmDelete = (id: number, patientName: string) => {
           position: 'top',
           icon: 'check_circle',
         });
-        await studyStore.fetchStudies();
       } catch (error) {
         console.error('删除病例失败:', error);
         $q.notify({ type: 'negative', message: '删除病例失败，请稍后重试', position: 'top' });
@@ -478,18 +527,6 @@ const confirmDelete = (id: number, patientName: string) => {
   });
 };
 
-// 监听路由参数（支持从患者页面跳转）
-watch(
-  () => route.query.patient_id,
-  (newVal) => {
-    if (newVal) {
-      selectedPatientId.value = Number(newVal);
-    }
-  },
-  { immediate: true },
-);
-
-// 组件挂载时加载数据
 onMounted(async () => {
   try {
     const batchQuery = route.query.batch;
@@ -502,6 +539,7 @@ onMounted(async () => {
         timeout: 2500,
       });
     }
+
     await studyStore.fetchStudies();
   } catch (error) {
     console.error('加载病例数据失败:', error);

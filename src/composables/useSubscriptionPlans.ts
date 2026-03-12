@@ -1,0 +1,563 @@
+import { computed, onMounted, ref } from 'vue';
+import { date, useQuasar } from 'quasar';
+import { userAPI } from 'src/services/api';
+import {
+  demoHeroHighlights,
+  demoPlanComparisonRows,
+  demoSubscriptionCatalog,
+  type DemoOffer,
+  type DemoPlanTier,
+} from 'src/constants/demoSubscriptionCatalog';
+import {
+  SORTED_SOFTWARE_COPYRIGHTS,
+  type SoftwareCopyrightItem,
+} from 'src/constants/softwareCopyrights';
+import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
+
+type DemoSubscriptionSource = 'demo' | 'backend' | 'default';
+
+interface DemoSubscriptionStatus {
+  type: 'trial' | 'active' | 'expired';
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  badge: string;
+  badgeColor: string;
+  planName: string;
+  tierLabel: string;
+  expireDate: string;
+  quotaLabel: string;
+  remainingCount: string;
+  featureTags: string[];
+  renewalNote?: string;
+  source: DemoSubscriptionSource;
+}
+
+interface DemoPaymentInfo {
+  planType: string;
+  planName: string;
+  amount: number;
+  icon: string;
+  description: string;
+  tierLabel: string;
+  billingLabel: string;
+  featureSummary: string[];
+  originalAmount?: number;
+  discount?: number;
+  discountReason?: string;
+  autoRenewHint?: string;
+}
+
+interface HeroHighlightItem {
+  label: string;
+  value: string;
+}
+
+interface HeroStatCardItem {
+  label: string;
+  value: string;
+  description: string;
+}
+
+/**
+ * 统一管理订阅页的套餐、支付流程与演示权益状态。
+ */
+export function useSubscriptionPlans() {
+  const $q = useQuasar();
+
+  const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
+  const heroHighlights: HeroHighlightItem[] = [
+    {
+      label: demoHeroHighlights[0] ?? '双层套餐覆盖',
+      value: '从单次开通到长期合作均可匹配',
+    },
+    {
+      label: demoHeroHighlights[1] ?? '周期选择清晰',
+      value: '按次、包月、半年和年度方案一目了然',
+    },
+    {
+      label: demoHeroHighlights[2] ?? '权益边界明确',
+      value: '检测方式、报告支持和扩展能力清楚可见',
+    },
+  ];
+  const heroStatCards: HeroStatCardItem[] = [
+    {
+      label: '机构适配',
+      value: '门诊到区域协同',
+      description: '基础套餐覆盖常规筛查，顶级套餐适配更高频与协同场景。',
+    },
+    {
+      label: '报告闭环',
+      value: '结构化一体交付',
+      description: '标准报告与高阶输出能力分层明确，便于按需采购。',
+    },
+    {
+      label: '成本规划',
+      value: '周期越长越稳',
+      description: '按次试用适合启动阶段，周期套餐更适合固定筛查计划。',
+    },
+  ];
+  const planComparisonRows = demoPlanComparisonRows;
+  const demoPlanGroups = [demoSubscriptionCatalog.basic, demoSubscriptionCatalog.premium];
+
+  const previewVisible = ref(false);
+  const activeCertificate = ref<SoftwareCopyrightItem | null>(null);
+  const activeTier = ref<DemoPlanTier>('premium');
+  const selectedOfferByTier = ref<Record<DemoPlanTier, string>>({
+    basic: 'basic-monthly-auto',
+    premium: 'premium-monthly-auto',
+  });
+
+  const showPaymentDialog = ref(false);
+  const showUpgradeDialog = ref(false);
+  const paymentProcessing = ref(false);
+  const stepper = ref<{ next: () => void; previous: () => void } | null>(null);
+  const paymentStep = ref(1);
+  const selectedPaymentMethod = ref<'alipay' | 'wxpay' | 'bank'>('alipay');
+  const agreePaymentTerms = ref(false);
+  const showPaymentAgreementDialog = ref(false);
+  const paymentAgreementTab = ref<'agreement' | 'privacy'>('agreement');
+  const hasDemoOverride = ref(false);
+  const currentPaymentOffer = ref<DemoOffer | null>(null);
+
+  const createDefaultSubscriptionStatus = (): DemoSubscriptionStatus => ({
+    type: 'trial',
+    title: '当前未开通订阅',
+    subtitle: '选择合适套餐后即可启用对应检测能力、报告支持与服务周期。',
+    icon: 'verified_user',
+    color: 'positive',
+    badge: '待开通',
+    badgeColor: 'positive',
+    planName: '请选择套餐',
+    tierLabel: '套餐权益',
+    expireDate: '开通后生效',
+    quotaLabel: '推荐起步',
+    remainingCount: '按次或包月',
+    featureTags: ['基础检测能力', '结构化报告支持', '可按机构规模扩展'],
+    source: 'default',
+  });
+
+  const createEmptyPaymentInfo = (): DemoPaymentInfo => ({
+    planType: '',
+    planName: '',
+    amount: 0,
+    icon: 'workspace_premium',
+    description: '',
+    tierLabel: '',
+    billingLabel: '',
+    featureSummary: [],
+  });
+
+  const subscriptionStatus = ref<DemoSubscriptionStatus>(createDefaultSubscriptionStatus());
+  const paymentInfo = ref<DemoPaymentInfo>(createEmptyPaymentInfo());
+
+  const paymentMethods = [
+    {
+      value: 'alipay',
+      label: '支付宝',
+      description: '适合移动端与日常快捷支付场景',
+      icon: 'account_balance_wallet',
+      color: 'blue',
+    },
+    {
+      value: 'wxpay',
+      label: '微信支付',
+      description: '适合院内移动端与微信生态支付场景',
+      icon: 'chat',
+      color: 'green',
+    },
+    {
+      value: 'bank',
+      label: '银行卡支付',
+      description: '适合对公结算与常规银行卡支付场景',
+      icon: 'credit_card',
+      color: 'orange',
+    },
+  ] as const;
+
+  const getTierOffers = (tier: DemoPlanTier): DemoOffer[] => {
+    const group = demoSubscriptionCatalog[tier];
+    return [...group.durationOffers, ...group.usageOffers];
+  };
+
+  const getSelectedOffer = (tier: DemoPlanTier): DemoOffer => {
+    const offers = getTierOffers(tier);
+    if (!offers.length) {
+      throw new Error(`未配置订阅套餐：${tier}`);
+    }
+
+    return offers.find((offer) => offer.code === selectedOfferByTier.value[tier]) ?? offers[0]!;
+  };
+
+  const currentHeroOffer = computed(() => getSelectedOffer(activeTier.value));
+  const currentHeroGroup = computed(() => demoSubscriptionCatalog[activeTier.value]);
+  const currentHeroBullets = computed(() => {
+    const offer = currentHeroOffer.value;
+
+    return [
+      `${currentHeroGroup.value.badge}适配`,
+      `覆盖 ${offer.featureSummary.length} 项核心权益`,
+      getOfferSupportText(offer),
+    ];
+  });
+
+  const formatCurrency = (amount: number | undefined): string => {
+    if (amount === undefined) return '0';
+
+    const digits = Number.isInteger(amount) ? 0 : 1;
+    return amount.toLocaleString('zh-CN', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
+
+  const getOfferSavings = (offer: DemoOffer): number => {
+    if (!offer.originalAmount) return 0;
+    return Number((offer.originalAmount - offer.amount).toFixed(1));
+  };
+
+  const getOfferSavingsText = (offer: DemoOffer): string => {
+    const savings = getOfferSavings(offer);
+    if (savings > 0) {
+      return `省 ¥${formatCurrency(savings)}`;
+    }
+
+    return offer.billingMode === 'usage' ? '单次开通' : '标准定价';
+  };
+
+  const getOfferSupportText = (offer: DemoOffer): string => {
+    if (offer.billingMode === 'usage') {
+      return offer.amount < 1 ? '适合首次试用或短期体验' : '适合低频按次使用';
+    }
+
+    if (offer.autoRenewHint) {
+      return '适合长期稳定使用';
+    }
+
+    return offer.durationDays ? `适合 ${offer.durationDays} 天周期使用` : '适合阶段性使用';
+  };
+
+  const getOfferCompactDescription = (offer: DemoOffer): string => {
+    if (offer.billingMode === 'usage') {
+      return offer.amount < 1 ? '适合先行试用基础能力。' : '适合按需开通正式单次服务。';
+    }
+
+    if (offer.durationDays) {
+      return `适合 ${offer.durationDays} 天周期使用与稳定筛查。`;
+    }
+
+    return offer.description;
+  };
+
+  const getOfferCycleText = (offer: DemoOffer | null): string => {
+    if (!offer) return '-';
+    if (offer.billingMode === 'usage') return '按次开通';
+    if (offer.durationDays) return `${offer.durationDays}天`;
+    return offer.billingLabel;
+  };
+
+  const getActionLabel = (tier: DemoPlanTier): string => {
+    const selectedOffer = getSelectedOffer(tier);
+    if (selectedOffer.billingMode === 'usage') {
+      return selectedOffer.amount < 1 ? '立即开通试用' : '购买单次版';
+    }
+
+    return tier === 'premium' ? '选择顶级套餐' : '选择基础套餐';
+  };
+
+  const selectOffer = (tier: DemoPlanTier, offerCode: string): void => {
+    selectedOfferByTier.value = {
+      ...selectedOfferByTier.value,
+      [tier]: offerCode,
+    };
+    activeTier.value = tier;
+  };
+
+  const buildPaymentInfo = (offer: DemoOffer): DemoPaymentInfo => {
+    const info: DemoPaymentInfo = {
+      planType: offer.code,
+      planName: offer.planName,
+      amount: offer.amount,
+      icon: offer.statusCard.icon,
+      description: offer.description,
+      tierLabel: offer.statusCard.tierLabel,
+      billingLabel: offer.billingLabel,
+      featureSummary: offer.featureSummary,
+    };
+
+    if (offer.originalAmount) {
+      info.originalAmount = offer.originalAmount;
+      const discount = Number((offer.originalAmount - offer.amount).toFixed(1));
+      if (discount > 0) {
+        info.discount = discount;
+        info.discountReason = '对比原价节省';
+      }
+    }
+
+    if (offer.autoRenewHint) {
+      info.autoRenewHint = offer.autoRenewHint;
+    }
+
+    return info;
+  };
+
+  const buildDemoStatusFromOffer = (offer: DemoOffer): DemoSubscriptionStatus => {
+    const expireDate =
+      offer.billingMode === 'duration' && offer.durationDays
+        ? date.formatDate(
+            new Date(Date.now() + offer.durationDays * 24 * 60 * 60 * 1000),
+            'YYYY-MM-DD',
+          )
+        : '单次有效';
+
+    const status: DemoSubscriptionStatus = {
+      type: 'active',
+      title: offer.statusCard.title,
+      subtitle: offer.statusCard.subtitle,
+      icon: offer.statusCard.icon,
+      color: offer.statusCard.color,
+      badge: offer.statusCard.badge,
+      badgeColor: offer.statusCard.badgeColor,
+      planName: offer.statusCard.planName,
+      tierLabel: offer.statusCard.tierLabel,
+      expireDate,
+      quotaLabel: offer.statusCard.quotaLabel,
+      remainingCount: offer.statusCard.remainingCount,
+      featureTags: offer.statusCard.featureTags,
+      source: 'demo',
+    };
+
+    if (offer.statusCard.renewalNote) {
+      status.renewalNote = offer.statusCard.renewalNote;
+    }
+
+    return status;
+  };
+
+  const isDemoSubscriptionStatus = (value: unknown): value is DemoSubscriptionStatus => {
+    if (!value || typeof value !== 'object') return false;
+
+    const candidate = value as Record<string, unknown>;
+    return (
+      typeof candidate.title === 'string' &&
+      typeof candidate.subtitle === 'string' &&
+      typeof candidate.icon === 'string' &&
+      typeof candidate.color === 'string' &&
+      typeof candidate.badge === 'string' &&
+      typeof candidate.badgeColor === 'string' &&
+      typeof candidate.planName === 'string' &&
+      typeof candidate.tierLabel === 'string' &&
+      typeof candidate.expireDate === 'string' &&
+      typeof candidate.quotaLabel === 'string' &&
+      typeof candidate.remainingCount === 'string' &&
+      Array.isArray(candidate.featureTags) &&
+      typeof candidate.source === 'string'
+    );
+  };
+
+  const readDemoSubscriptionState = (): DemoSubscriptionStatus | null => {
+    const savedState = getItem<DemoSubscriptionStatus>(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE);
+    return isDemoSubscriptionStatus(savedState) ? savedState : null;
+  };
+
+  const createBackendFallbackStatus = (user: {
+    subscription_type?: string;
+    subscription_expires_at?: string;
+    remaining_credits?: number;
+  }): DemoSubscriptionStatus | null => {
+    const now = new Date();
+    const expiresAt = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
+    const hasActiveSubscription =
+      Boolean(user.subscription_type && user.subscription_type !== 'none') &&
+      expiresAt !== null &&
+      expiresAt >= now;
+    const remainingCredits = user.remaining_credits || 0;
+
+    if (!hasActiveSubscription && remainingCredits <= 0) {
+      return null;
+    }
+
+    return {
+      type: 'active',
+      title: '账号已有开通权益',
+      subtitle: '当前展示为账号现有套餐信息，可继续按需升级或续费。',
+      icon: hasActiveSubscription ? 'shield' : 'payments',
+      color: hasActiveSubscription ? 'secondary' : 'primary',
+      badge: hasActiveSubscription ? '已开通' : '按次权益',
+      badgeColor: hasActiveSubscription ? 'secondary' : 'primary',
+      planName: hasActiveSubscription ? '当前账号订阅' : '当前账号按次权益',
+      tierLabel: '账号权益',
+      expireDate: expiresAt ? date.formatDate(expiresAt, 'YYYY-MM-DD') : '按账号权益',
+      quotaLabel: '可用次数',
+      remainingCount: remainingCredits > 0 ? `${remainingCredits}次` : '以账号权益为准',
+      featureTags: ['以当前账号权益为准', '支持继续升级套餐', '到期前可按需续费'],
+      source: 'backend',
+    };
+  };
+
+  const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
+    if (!certificate.imageUrl) {
+      $q.notify({
+        type: 'info',
+        message: '证书图片待补充',
+        position: 'top',
+        timeout: 1200,
+      });
+      return;
+    }
+
+    activeCertificate.value = certificate;
+    previewVisible.value = true;
+  };
+
+  const resetCertificatePreview = (): void => {
+    previewVisible.value = false;
+    activeCertificate.value = null;
+  };
+
+  const showPaymentAgreement = (tab: 'agreement' | 'privacy') => {
+    paymentAgreementTab.value = tab;
+    showPaymentAgreementDialog.value = true;
+  };
+
+  const openPaymentDialog = (offer: DemoOffer): void => {
+    activeTier.value = offer.tier;
+    currentPaymentOffer.value = offer;
+    paymentInfo.value = buildPaymentInfo(offer);
+    paymentStep.value = 1;
+    selectedPaymentMethod.value = 'alipay';
+    agreePaymentTerms.value = false;
+    showUpgradeDialog.value = false;
+    showPaymentDialog.value = true;
+  };
+
+  const handleUpgrade = (tier: DemoPlanTier): void => {
+    openPaymentDialog(getSelectedOffer(tier));
+  };
+
+  const resetPaymentFlow = (): void => {
+    showPaymentDialog.value = false;
+    paymentStep.value = 1;
+    paymentProcessing.value = false;
+    selectedPaymentMethod.value = 'alipay';
+    agreePaymentTerms.value = false;
+    currentPaymentOffer.value = null;
+    paymentInfo.value = createEmptyPaymentInfo();
+  };
+
+  const cancelPayment = (): void => {
+    resetPaymentFlow();
+  };
+
+  const finishDemoPayment = (): void => {
+    resetPaymentFlow();
+  };
+
+  const processPayment = async (): Promise<void> => {
+    if (!currentPaymentOffer.value) {
+      $q.notify({
+        type: 'negative',
+        message: '当前未选择套餐',
+        position: 'top',
+      });
+      return;
+    }
+
+    paymentProcessing.value = true;
+
+    try {
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 900);
+      });
+
+      const nextStatus = buildDemoStatusFromOffer(currentPaymentOffer.value);
+      subscriptionStatus.value = nextStatus;
+      hasDemoOverride.value = true;
+      setItem(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE, nextStatus);
+      paymentStep.value = 3;
+
+      $q.notify({
+        type: 'positive',
+        message: `${nextStatus.planName} 支付完成`,
+        caption: '套餐权益已更新',
+        position: 'top',
+        icon: 'task_alt',
+      });
+    } finally {
+      paymentProcessing.value = false;
+    }
+  };
+
+  const loadUserSubscription = async (): Promise<void> => {
+    if (hasDemoOverride.value) return;
+
+    try {
+      const response = await userAPI.getProfile();
+      if (hasDemoOverride.value) return;
+
+      const backendStatus = createBackendFallbackStatus(response.data.user);
+      subscriptionStatus.value = backendStatus ?? createDefaultSubscriptionStatus();
+    } catch (error) {
+      if (!hasDemoOverride.value) {
+        subscriptionStatus.value = createDefaultSubscriptionStatus();
+      }
+      console.error('获取用户权益失败:', error);
+    }
+  };
+
+  onMounted(() => {
+    const savedDemoState = readDemoSubscriptionState();
+    if (savedDemoState) {
+      subscriptionStatus.value = savedDemoState;
+      hasDemoOverride.value = true;
+    } else {
+      void loadUserSubscription();
+    }
+  });
+
+  return {
+    activeCertificate,
+    activeTier,
+    agreePaymentTerms,
+    cancelPayment,
+    currentHeroBullets,
+    currentHeroGroup,
+    currentHeroOffer,
+    currentPaymentOffer,
+    demoPlanGroups,
+    finishDemoPayment,
+    formatCurrency,
+    getActionLabel,
+    getOfferCompactDescription,
+    getOfferCycleText,
+    getOfferSavingsText,
+    getOfferSupportText,
+    getSelectedOffer,
+    handleUpgrade,
+    heroHighlights,
+    heroStatCards,
+    openCertificatePreview,
+    openPaymentDialog,
+    paymentAgreementTab,
+    paymentInfo,
+    paymentMethods,
+    paymentProcessing,
+    paymentStep,
+    planComparisonRows,
+    previewVisible,
+    processPayment,
+    resetCertificatePreview,
+    resetPaymentFlow,
+    selectedOfferByTier,
+    selectedPaymentMethod,
+    selectOffer,
+    showPaymentAgreement,
+    showPaymentAgreementDialog,
+    showPaymentDialog,
+    showUpgradeDialog,
+    sortedSoftwareCopyrights,
+    stepper,
+    subscriptionStatus,
+  };
+}

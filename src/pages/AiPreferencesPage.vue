@@ -477,224 +477,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useQuasar } from 'quasar';
-import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
+import { useAiPreferences } from 'src/composables/useAiPreferences';
 
-interface SelectOption {
-  label: string;
-  value: string;
-}
-
-interface ModelOption extends SelectOption {
-  description: string;
-}
-
-const $q = useQuasar();
-const activeTab = ref<'engine' | 'workflow' | 'delivery' | 'billing'>('engine');
-
-const createDefaultApiConfig = () => ({
-  model: 'qwen-vl-max',
-  confidence: 0.85,
-  sensitivity: 0.9,
-});
-
-const createDefaultPreferences = () => ({
-  notifications: {
-    enable: true,
-    channels: ['in_app', 'email', 'browser'] as string[],
-    types: ['analysis', 'alert', 'security'] as string[],
-    dndMode: false,
-  },
-  analysis: {
-    autoStart: true,
-    aiSecondOpinion: false,
-    roiStyle: 'box',
-    heatmapColor: 'jet',
-  },
-  reports: {
-    autoSave: true,
-    defaultFormat: { label: 'PDF 专业版', value: 'pdf_pro' },
-    imageQuality: { label: '高质量 (High)', value: 'high' },
-    watermark: false,
-    watermarkText: '',
-  },
-  privacy: {
-    desensitization: true,
-    mfa: false,
-  },
-  billing: {
-    autoRenewal: false,
-    lowBalanceAlert: true,
-    threshold: 50,
-  },
-});
-
-const apiConfig = ref(createDefaultApiConfig());
-const preferences = ref(createDefaultPreferences());
-
-const modelOptions: ModelOption[] = [
-  {
-    label: 'CervixDetect Pro (推荐)',
-    value: 'qwen-vl-max',
-    description: '最高精度，适用于复杂病例',
-  },
-  {
-    label: 'CervixDetect Standard',
-    value: 'qwen-vl-plus',
-    description: '平衡性能与速度',
-  },
-  {
-    label: 'CervixDetect Lite',
-    value: 'qwen-vl-v1',
-    description: '快速筛查模式',
-  },
-];
-
-const notificationTypeOptions: SelectOption[] = [
-  { label: '分析完成报告', value: 'analysis' },
-  { label: '高风险病变预警', value: 'alert' },
-  { label: '系统安全通知', value: 'security' },
-  { label: '周度/月度汇总', value: 'report' },
-  { label: '营销与优惠', value: 'marketing' },
-];
-
-const roiStyleOptions: SelectOption[] = [
-  { label: '矩形框 (Box)', value: 'box' },
-  { label: '轮廓遮罩 (Mask)', value: 'mask' },
-  { label: '热力图 (Heatmap)', value: 'heatmap' },
-  { label: '混合显示 (Hybrid)', value: 'hybrid' },
-];
-
-const heatmapColorOptions: SelectOption[] = [
-  { label: '经典红蓝 (Jet)', value: 'jet' },
-  { label: '医学灰阶 (Gray)', value: 'gray' },
-  { label: '警告红黄 (Hot)', value: 'hot' },
-  { label: '荧光绿 (Viridis)', value: 'viridis' },
-];
-
-const reportFormatOptions: SelectOption[] = [
-  { label: 'PDF 专业版', value: 'pdf_pro' },
-  { label: 'PDF 精简版', value: 'pdf_lite' },
-  { label: 'Word 文档', value: 'docx' },
-  { label: 'Excel 数据表', value: 'xlsx' },
-];
-
-const imageQualityOptions: SelectOption[] = [
-  { label: '无损原始图 (RAW)', value: 'lossless' },
-  { label: '高质量 (High)', value: 'high' },
-  { label: '标准压缩 (Standard)', value: 'standard' },
-];
-
-const activeModel = computed(() => {
-  return (
-    modelOptions.find((item) => item.value === apiConfig.value.model) ?? {
-      label: 'CervixDetect Pro (推荐)',
-      value: 'qwen-vl-max',
-      description: '最高精度，适用于复杂病例',
-    }
-  );
-});
-
-const activeModelLabel = computed(() => activeModel.value.label);
-const activeModelDescription = computed(() => activeModel.value.description);
-
-const overviewCards = computed(() => {
-  return [
-    {
-      label: '当前模型',
-      value: activeModelLabel.value.replace(' (推荐)', ''),
-      description: activeModelDescription.value,
-    },
-    {
-      label: '通知状态',
-      value: preferences.value.notifications.enable ? '已启用' : '已关闭',
-      description: `${preferences.value.notifications.channels.length} 个通道`,
-    },
-    {
-      label: '默认导出',
-      value: preferences.value.reports.defaultFormat.label,
-      description: '报告格式与存档策略',
-    },
-    {
-      label: '账单提醒',
-      value: preferences.value.billing.lowBalanceAlert ? '开启' : '关闭',
-      description: `阈值 ¥${preferences.value.billing.threshold}`,
-    },
-  ];
-});
-
-const securitySummary = computed(() => {
-  const desensitization = preferences.value.privacy.desensitization ? '已启用脱敏导出' : '未启用脱敏导出';
-  const mfa = preferences.value.privacy.mfa ? '敏感操作需要二次验证' : '敏感操作当前为单步确认';
-  return `${desensitization}，${mfa}。`;
-});
-
-const billingSummary = computed(() => {
-  if (!preferences.value.billing.lowBalanceAlert) {
-    return preferences.value.billing.autoRenewal
-      ? '已开启自动续费，当前关闭余额预警。'
-      : '当前关闭自动续费与余额预警，适合人工管控账单。';
-  }
-
-  return `余额低于 ¥${preferences.value.billing.threshold} 时提醒${
-    preferences.value.billing.autoRenewal ? '，并保持自动续费开启。' : '，当前自动续费关闭。'
-  }`;
-});
-
-const saveAIConfig = () => {
-  setItem(STORAGE_KEYS.AI_CONFIG, apiConfig.value);
-  $q.notify({
-    type: 'positive',
-    message: 'AI引擎配置已保存',
-    position: 'top',
-    icon: 'check_circle',
-  });
-};
-
-const resetAIConfig = () => {
-  apiConfig.value = createDefaultApiConfig();
-  $q.notify({
-    type: 'info',
-    message: '已恢复默认引擎配置',
-    position: 'top',
-  });
-};
-
-const savePreferences = () => {
-  setItem(STORAGE_KEYS.USER_PREFERENCES, preferences.value);
-  $q.notify({
-    type: 'positive',
-    message: '服务偏好设置已保存',
-    position: 'top',
-    icon: 'check_circle',
-  });
-};
-
-const resetPreferences = () => {
-  preferences.value = createDefaultPreferences();
-  $q.notify({
-    type: 'info',
-    message: '已恢复默认偏好设置',
-    position: 'top',
-  });
-};
-
-const loadSavedConfig = () => {
-  const savedAIConfig = getItem<typeof apiConfig.value>(STORAGE_KEYS.AI_CONFIG);
-  if (savedAIConfig && typeof savedAIConfig === 'object') {
-    apiConfig.value = { ...apiConfig.value, ...savedAIConfig };
-  }
-
-  const savedPreferences = getItem<typeof preferences.value>(STORAGE_KEYS.USER_PREFERENCES);
-  if (savedPreferences && typeof savedPreferences === 'object') {
-    preferences.value = { ...preferences.value, ...savedPreferences };
-  }
-};
-
-onMounted(() => {
-  loadSavedConfig();
-});
+const {
+  activeModelDescription,
+  activeModelLabel,
+  activeTab,
+  apiConfig,
+  billingSummary,
+  heatmapColorOptions,
+  imageQualityOptions,
+  modelOptions,
+  notificationTypeOptions,
+  overviewCards,
+  preferences,
+  reportFormatOptions,
+  resetAIConfig,
+  resetPreferences,
+  roiStyleOptions,
+  saveAIConfig,
+  savePreferences,
+  securitySummary,
+} = useAiPreferences();
 </script>
 
 <style scoped>

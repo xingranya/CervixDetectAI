@@ -121,6 +121,13 @@
   // Quasar 组件覆盖令牌
   --app-card-bg: #ffffff;
   --app-page-bg: #f8fafc;
+  --app-panel-bg: rgba(255, 255, 255, 0.94);
+  --app-panel-border: rgba(148, 163, 184, 0.24);
+  --app-kpi-bg: linear-gradient(180deg, rgba(237, 247, 255, 0.96), rgba(255, 255, 255, 0.94));
+  --app-section-eyebrow: #0f6caa;
+  --app-soft-info-bg: rgba(244, 249, 253, 0.94);
+  --app-soft-warning-bg: rgba(255, 247, 237, 0.94);
+  --app-soft-success-bg: rgba(240, 253, 244, 0.94);
   --app-separator-color: #dde5ef;
   --app-item-hover-bg: rgba(0, 0, 0, 0.04);
   --app-field-control-color: #1e293b;
@@ -224,6 +231,13 @@ body.body--dark {
   // Quasar 组件暗色令牌
   --app-card-bg: #1e1e1e;
   --app-page-bg: #121212;
+  --app-panel-bg: rgba(37, 37, 37, 0.92);
+  --app-panel-border: rgba(71, 85, 105, 0.45);
+  --app-kpi-bg: rgba(30, 41, 59, 0.88);
+  --app-section-eyebrow: #93c5fd;
+  --app-soft-info-bg: rgba(30, 41, 59, 0.82);
+  --app-soft-warning-bg: rgba(120, 53, 15, 0.2);
+  --app-soft-success-bg: rgba(20, 83, 45, 0.2);
   --app-separator-color: #334155;
   --app-item-hover-bg: rgba(255, 255, 255, 0.05);
   --app-field-control-color: #e2e8f0;
