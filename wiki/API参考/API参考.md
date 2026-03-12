@@ -9,6 +9,8 @@
 > - [analyze.js](file://server/routes/analyze.js)
 > - [chat.js](file://server/routes/chat.js)
 > - [reports.js](file://server/routes/reports.js)
+> - [followups.js](file://server/routes/followups.js)
+> - [notifications.js](file://server/routes/notifications.js)
 > - [api.ts](file://src/services/api.ts)
 > - [User.js](file://server/models/User.js)
 > - [Study.js](file://server/models/Study.js)
@@ -26,6 +28,7 @@
 4. [AI分析API](#ai分析api)
 5. [AI对话API](#ai对话api)
 6. [报告管理API](#报告管理api)
+7. [随访与通知补充](#随访与通知补充)
 
 ## 认证API
 
@@ -2018,3 +2021,96 @@ const result = await reportAPI.deleteReport(1);
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L443-L476)
+
+## 随访与通知补充
+
+本节补充本轮前端重构直接依赖的随访提醒与站内通知接口口径，重点覆盖 `FollowUpsPage.vue` 的“立即提醒”和顶栏通知中心的通知刷新链路。
+
+### POST /api/followups/:id/remind
+立即发送站内提醒
+
+**请求头**
+- `Authorization: Bearer <access_token>`
+
+**路径参数**
+- `id` (number, 必填): 随访计划 ID
+
+**行为说明**
+- 服务端会对以下接收人做去重后批量投递：
+  - `assigned_doctor_id`
+  - `created_by`
+  - 当前操作者 `req.user.id`
+- 因此当前页面点击“立即发送提醒”的用户，也能立即在自己的通知中心看到新提醒。
+
+**响应体JSON Schema**
+```json
+{
+  "success": true,
+  "message": "站内提醒已发送",
+  "data": {
+    "notification": {
+      "id": 101,
+      "user_id": 12,
+      "type": "followup_due",
+      "title": "复查提醒",
+      "content": "患者【张三】随访计划（FU-20260312-001）今日到期，计划复查日期：2026-03-12。",
+      "related_type": "followup",
+      "related_id": 88,
+      "is_read": false
+    },
+    "notifications": [
+      {
+        "id": 101,
+        "user_id": 12,
+        "type": "followup_due"
+      }
+    ]
+  }
+}
+```
+
+**HTTP状态码**
+- `200 OK`: 提醒发送成功
+- `400 Bad Request`: 随访计划未配置可接收提醒的用户
+- `404 Not Found`: 随访计划不存在
+- `401 Unauthorized`: 未授权（令牌无效）
+- `500 Internal Server Error`: 手动发送提醒失败
+
+**前端调用示例**
+```typescript
+await followUpAPI.remindNow(item.id);
+window.dispatchEvent(new Event('notification-updated'));
+```
+
+**Section sources**
+- [followups.js](file://server/routes/followups.js#L606-L654)
+- [api.ts](file://src/services/api.ts#L809-L814)
+
+### 通知中心接口
+
+顶栏通知中心当前通过 `useNotifications.ts` 统一消费以下接口：
+
+| 方法 | 路径 | 说明 |
+| :--- | :--- | :--- |
+| `GET` | `/api/notifications` | 获取当前用户通知列表 |
+| `GET` | `/api/notifications/unread-count` | 获取未读数量 |
+| `PATCH` | `/api/notifications/:id/read` | 标记单条通知为已读 |
+| `PATCH` | `/api/notifications/read-all` | 全部标记为已读 |
+
+```mermaid
+sequenceDiagram
+participant FU as "FollowUpsPage"
+participant API as "/api/followups/:id/remind"
+participant Bell as "NotificationBell"
+participant NotifyAPI as "/api/notifications/*"
+FU->>API: POST remind
+API-->>FU: success + notification(s)
+FU->>Bell: dispatch notification-updated
+Bell->>NotifyAPI: GET unread-count
+Bell->>NotifyAPI: GET notifications
+NotifyAPI-->>Bell: 最新未读数与通知列表
+```
+
+**Section sources**
+- [notifications.js](file://server/routes/notifications.js#L54-L196)
+- [api.ts](file://src/services/api.ts#L1078-L1108)
