@@ -288,6 +288,7 @@ router.get('/', authenticate, async (req, res) => {
           model: AnalysisResult,
           as: 'analysis_results',
           attributes: ['id', 'diagnosis', 'risk_level', 'confidence'],
+          separate: true,
           limit: 1,
           order: [['created_at', 'DESC']],
         },
@@ -348,10 +349,13 @@ router.get('/:id', authenticate, async (req, res) => {
         {
           model: AnalysisTask,
           as: 'analysis_tasks',
+          separate: true,
+          order: [['created_at', 'DESC']],
         },
         {
           model: AnalysisResult,
           as: 'analysis_results',
+          separate: true,
           limit: 1,
           order: [['created_at', 'DESC']],
         },

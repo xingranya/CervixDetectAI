@@ -6,6 +6,92 @@ function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || ''));
 }
 
+function stripMarkdownCodeFence(content) {
+  let normalized = String(content || '').trim();
+
+  if (normalized.startsWith('```json')) {
+    normalized = normalized.replace(/^```json\s*/i, '');
+  } else if (normalized.startsWith('```')) {
+    normalized = normalized.replace(/^```\s*/, '');
+  }
+
+  if (normalized.endsWith('```')) {
+    normalized = normalized.replace(/\s*```$/, '');
+  }
+
+  return normalized.trim();
+}
+
+function extractFirstJsonObject(content) {
+  const source = String(content || '');
+  const startIndex = source.indexOf('{');
+  if (startIndex === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = startIndex; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaping = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(startIndex, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function parseStructuredJsonContent(content) {
+  const normalized = stripMarkdownCodeFence(content);
+  const parseCandidates = [normalized];
+  const extractedObject = extractFirstJsonObject(normalized);
+
+  if (extractedObject && extractedObject !== normalized) {
+    parseCandidates.push(extractedObject);
+  }
+
+  let lastError = null;
+  for (const candidate of parseCandidates) {
+    if (!candidate) continue;
+    try {
+      return JSON.parse(candidate);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const parseError = new Error(`解析AI响应失败: ${lastError ? lastError.message : '未找到有效JSON'}`);
+  parseError.stage = 'response_parse';
+  throw parseError;
+}
+
 /**
  * 根据检查方式生成优化的提示词
  * @param {string} modality - 检查方式类型
@@ -279,6 +365,7 @@ class QwenService {
    * @returns {Promise<Object>} 分析结果
    */
   async analyzeImage(imagePath, modality = '巴氏染色涂片（Pap Smear）', retryCount = 3) {
+    const startedAt = Date.now();
     try {
       // 远程URL直传模型；本地路径转换为Base64
       const imageDataUrl = isHttpUrl(imagePath) ? imagePath : await this.imageToBase64(imagePath);
@@ -317,37 +404,22 @@ class QwenService {
 
       // 解析响应
       if (!response.data || !response.data.choices || response.data.choices.length === 0) {
-        throw new Error('API响应格式错误：缺少choices字段');
+        const responseError = new Error('API响应格式错误：缺少choices字段');
+        responseError.stage = 'response_validate';
+        throw responseError;
       }
 
       const content = response.data.choices[0].message.content;
-      console.log('✅ API调用成功，正在解析结果...');
+      console.log(`✅ API调用成功，正在解析结果... (耗时 ${Date.now() - startedAt}ms)`);
 
       // 解析JSON结果
       let result;
       try {
-        // 清理可能的markdown代码块标记
-        let cleanContent = content.trim();
-
-        // 移除markdown代码块标记
-        if (cleanContent.startsWith('```json')) {
-          cleanContent = cleanContent.replace(/^```json\s*/, '');
-        } else if (cleanContent.startsWith('```')) {
-          cleanContent = cleanContent.replace(/^```\s*/, '');
-        }
-
-        if (cleanContent.endsWith('```')) {
-          cleanContent = cleanContent.replace(/\s*```$/, '');
-        }
-
-        // 去除首尾空白
-        cleanContent = cleanContent.trim();
-
-        result = JSON.parse(cleanContent);
-        console.log('✅ JSON解析成功');
+        result = parseStructuredJsonContent(content);
+        console.log(`✅ JSON解析成功 (耗时 ${Date.now() - startedAt}ms)`);
       } catch (parseError) {
         console.error('JSON解析失败，原始内容:', content);
-        throw new Error(`解析AI响应失败: ${parseError.message}`);
+        throw parseError;
       }
 
       // 验证必需字段
@@ -386,7 +458,12 @@ class QwenService {
         rawResponse: content, // 保存原始响应用于调试
       };
     } catch (error) {
-      console.error(`❌ API调用失败 (剩余重试次数: ${retryCount - 1}):`, error.message);
+      const elapsedMs = Date.now() - startedAt;
+      const stage = error.stage || (error.response ? 'api_request' : 'runtime');
+      console.error(
+        `❌ API调用失败 [stage=${stage}] [耗时=${elapsedMs}ms] (剩余重试次数: ${retryCount - 1}):`,
+        error.message,
+      );
 
       // 重试逻辑
       if (retryCount > 1 && this.shouldRetry(error)) {

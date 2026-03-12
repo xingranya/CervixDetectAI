@@ -6,6 +6,7 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const analysisService = require('../services/analysisService');
+const { markAnalysisTaskFailed } = analysisService;
 const {
   Patient,
   Study,
@@ -229,13 +230,11 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
       (async () => {
         const preparedImage = await prepareStudyImageForAnalysis(createdImage);
         if (!preparedImage.imagePath) {
-          await analysisTask.update({
-            status: 'FAILED',
-            progress: 0,
-            error_message: '图像路径解析失败，无法开始分析',
-            completed_at: new Date(),
+          await markAnalysisTaskFailed({
+            analysisTaskId: analysisTask.id,
+            studyId: study.id,
+            error: '图像路径解析失败，无法开始分析',
           });
-          await Study.update({ status: 'failed' }, { where: { id: study.id } });
           return;
         }
 
@@ -246,9 +245,21 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
           })
           .catch((err) => {
             console.error(`❌ 任务后台执行失败:`, err);
+            void markAnalysisTaskFailed({
+              analysisTaskId: analysisTask.id,
+              studyId: study.id,
+              error: err,
+              fallbackMessage: '分析任务启动失败，请重试',
+            });
           });
       })().catch((err) => {
         console.error(`❌ 单图分析预处理失败:`, err);
+        void markAnalysisTaskFailed({
+          analysisTaskId: analysisTask.id,
+          studyId: study.id,
+          error: err,
+          fallbackMessage: '图像预处理失败，无法开始分析',
+        });
       });
     } catch (dbError) {
       console.error('❌ 数据库操作失败:', dbError);

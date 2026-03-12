@@ -896,12 +896,21 @@ const lastUpdated = ref(new Date().toLocaleString());
 const chartRef = ref<HTMLElement | null>(null);
 const previewCardRef = ref<{ $el: HTMLElement } | null>(null);
 let chartInstance: echarts.ECharts | null = null;
-let pollingIntervalId: NodeJS.Timeout | null = null;
+let pollingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let pollingSessionToken = 0;
+let pollingRequestInFlight = false;
+let pollingFailureCount = 0;
+let stalledProgressPollCount = 0;
+let lastServerProgress = 0;
 const currentTaskId = ref<string | null>(null);
 const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
 // 用于跟踪当前进度阶段，避免重复添加日志
 let lastProgressPhase = '';
 const aiZoomLevel = ref(1);
+const POLLING_INTERVAL_MS = 2000;
+const MAX_POLLING_FAILURES = 3;
+const STALLED_PROGRESS_MIN = 80;
+const MAX_STALLED_PROGRESS_POLLS = 12;
 
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
@@ -1055,10 +1064,12 @@ const startAnalysis = async () => {
     return;
   }
 
+  clearPollingTaskStatus();
   // 清除失败状态
   lastFailedTask.value = null;
   isAnalyzing.value = true;
   progress.value = 0;
+  progressStatus.value = '等待开始...';
   logs.value = [];
   lastProgressPhase = ''; // 重置进度阶段
   addLog('分析任务已启动...');
@@ -1095,11 +1106,20 @@ const startAnalysis = async () => {
   }
 };
 
+const resetPollingState = () => {
+  pollingRequestInFlight = false;
+  pollingFailureCount = 0;
+  stalledProgressPollCount = 0;
+  lastServerProgress = 0;
+};
+
 const clearPollingTaskStatus = () => {
-  if (pollingIntervalId) {
-    clearInterval(pollingIntervalId);
-    pollingIntervalId = null;
+  pollingSessionToken += 1;
+  if (pollingTimeoutId) {
+    clearTimeout(pollingTimeoutId);
+    pollingTimeoutId = null;
   }
+  resetPollingState();
 };
 
 const completeAnalysisFromResult = (message?: string) => {
@@ -1108,6 +1128,7 @@ const completeAnalysisFromResult = (message?: string) => {
   isAnalyzing.value = false;
   progress.value = 100;
   progressStatus.value = '分析完成';
+  lastFailedTask.value = null;
   if (message) {
     addLog(message, 100);
   }
@@ -1121,133 +1142,240 @@ const stopAnalysis = () => {
   addLog('分析已手动停止');
 };
 
-// 轮询任务状态
-const startPollingTaskStatus = (taskId: string) => {
-  if (pollingIntervalId) {
-    clearInterval(pollingIntervalId);
+const scheduleNextTaskPoll = (taskId: string, sessionId: number, delay = POLLING_INTERVAL_MS) => {
+  if (pollingTimeoutId) {
+    clearTimeout(pollingTimeoutId);
+  }
+  if (sessionId !== pollingSessionToken || currentTaskId.value !== taskId) {
+    return;
+  }
+  pollingTimeoutId = setTimeout(() => {
+    void pollTaskStatusOnce(taskId, sessionId);
+  }, delay);
+};
+
+const stopPollingAndRefresh = async ({
+  statusText,
+  logMessage,
+  notifyType = 'warning',
+  notifyMessage,
+}: {
+  statusText: string;
+  logMessage: string;
+  notifyType?: 'warning' | 'negative';
+  notifyMessage: string;
+}) => {
+  clearPollingTaskStatus();
+  currentTaskId.value = null;
+  isAnalyzing.value = false;
+  progressStatus.value = statusText;
+  addLog(logMessage, progress.value);
+
+  await refreshStudyData({ allowResumePolling: false });
+  if (studyStore.currentStudy?.analysisResult) {
+    completeAnalysisFromResult('检测到分析结果，已同步完成状态');
+    return;
   }
 
-  const poll = async () => {
-    try {
-      const task = await analysisStore.getTaskStatus(taskId);
+  $q.notify({
+    type: notifyType,
+    message: notifyMessage,
+    position: 'top',
+    timeout: 6000,
+  });
+};
 
-      // 平滑更新进度：如果后端进度大于当前进度，逐步增加
-      const targetProgress = task.progress;
-      if (targetProgress > progress.value) {
-        // 计算每次增加的步长（目标进度 - 当前进度）/ 4，实现平滑过渡
-        const step = Math.ceil((targetProgress - progress.value) / 4);
-        progress.value = Math.min(progress.value + step, targetProgress);
-      } else if (targetProgress < progress.value) {
-        // 如果后端进度小于当前进度，直接设置（避免回退）
-        progress.value = targetProgress;
-      }
+const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
+  if (sessionId !== pollingSessionToken || currentTaskId.value !== taskId || pollingRequestInFlight) {
+    return;
+  }
 
-      if (task.status === 'PROCESSING') {
-        progressStatus.value = '分析中...';
-        // 根据进度阶段添加日志，与蓝色进度条同步
-        let currentPhase = '';
-        if (task.progress >= 35 && task.progress < 65) {
-          progressStatus.value = '图像预处理中...';
-          currentPhase = 'preprocessing';
-        } else if (task.progress >= 65 && task.progress < 80) {
-          progressStatus.value = 'AI模型推理中...';
-          currentPhase = 'feature_extraction';
-        } else if (task.progress >= 80 && task.progress < 92) {
-          progressStatus.value = '生成分析报告...';
-          currentPhase = 'risk_assessment';
-        } else if (task.progress >= 92) {
-          progressStatus.value = '报告生成中...';
-          currentPhase = 'report_generation';
-        }
-        // 只有阶段变化时才添加日志
-        if (currentPhase && currentPhase !== lastProgressPhase) {
-          lastProgressPhase = currentPhase;
-          if (currentPhase === 'preprocessing') {
-            addLog('图像预处理进行中', 35);
-          } else if (currentPhase === 'feature_extraction') {
-            addLog('特征提取中...', 65);
-          } else if (currentPhase === 'risk_assessment') {
-            addLog('风险评估中...', 80);
-          } else if (currentPhase === 'report_generation') {
-            addLog('正在生成诊断报告...', 92);
-          }
-        }
-      } else if (task.status === 'SUCCESS') {
-        clearPollingTaskStatus();
-        currentTaskId.value = null;
-        progressStatus.value = '分析完成';
-        addLog('分析完成，正在加载结果...', 99);
+  pollingRequestInFlight = true;
 
-        // 平滑过渡到100%
-        const animateToComplete = async () => {
-          while (progress.value < 100) {
-            progress.value = Math.min(progress.value + 2, 100);
-            await new Promise((resolve) => setTimeout(resolve, 50));
-          }
-        };
-
-        await animateToComplete();
-
-        // 短暂延迟后关闭进度条
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        isAnalyzing.value = false;
-
-        // 重新加载病例数据以获取最新的分析结果
-        await refreshStudyData();
-
-        // 显示完成通知
-        $q.notify({
-          type: 'positive',
-          message: '🎉 AI分析完成！诊断结果已更新',
-          position: 'top',
-          timeout: 5000,
-          icon: 'check_circle',
-        });
-
-        // 等待500ms后自动滚动到诊断结果区域
-        setTimeout(() => {
-          const resultCard = document.querySelector('.ai-result-card');
-          if (resultCard) {
-            resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 500);
-      } else if (task.status === 'FAILED') {
-        clearPollingTaskStatus();
-        currentTaskId.value = null;
-        isAnalyzing.value = false;
-        progressStatus.value = '分析失败';
-        addLog(`分析失败: ${task.error || '未知错误'}`, 0);
-
-        $q.notify({
-          type: 'negative',
-          message: `❌ 分析失败: ${task.error || '未知错误'}`,
-          position: 'top',
-          actions: [
-            {
-              label: '重试',
-              color: 'white',
-              handler: () => {
-                void startAnalysis();
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error('轮询任务状态失败:', error);
-      addLog('轮询任务状态失败，稍后重试...', 0);
+  try {
+    const task = await analysisStore.getTaskStatus(taskId);
+    if (sessionId !== pollingSessionToken || currentTaskId.value !== taskId) {
+      return;
     }
-  };
 
-  // 立即执行一次
-  void poll();
-  // 每2秒轮询一次
-  pollingIntervalId = setInterval(() => void poll(), 2000);
+    pollingFailureCount = 0;
+
+    // 平滑更新进度：如果后端进度大于当前进度，逐步增加
+    const targetProgress = task.progress;
+    if (targetProgress > progress.value) {
+      // 计算每次增加的步长（目标进度 - 当前进度）/ 4，实现平滑过渡
+      const step = Math.ceil((targetProgress - progress.value) / 4);
+      progress.value = Math.min(progress.value + step, targetProgress);
+    } else if (targetProgress < progress.value) {
+      // 如果后端进度小于当前进度，直接设置（避免回退）
+      progress.value = targetProgress;
+    }
+
+    if (task.progress > lastServerProgress) {
+      lastServerProgress = task.progress;
+      stalledProgressPollCount = 0;
+    } else if (task.status === 'PROCESSING' && task.progress >= STALLED_PROGRESS_MIN) {
+      stalledProgressPollCount += 1;
+    } else {
+      lastServerProgress = task.progress;
+      stalledProgressPollCount = 0;
+    }
+
+    if (task.status === 'PENDING') {
+      progressStatus.value = '等待开始...';
+      scheduleNextTaskPoll(taskId, sessionId);
+      return;
+    }
+
+    if (task.status === 'PROCESSING') {
+      progressStatus.value = '分析中...';
+      // 根据进度阶段添加日志，与蓝色进度条同步
+      let currentPhase = '';
+      if (task.progress >= 35 && task.progress < 65) {
+        progressStatus.value = '图像预处理中...';
+        currentPhase = 'preprocessing';
+      } else if (task.progress >= 65 && task.progress < 80) {
+        progressStatus.value = 'AI模型推理中...';
+        currentPhase = 'feature_extraction';
+      } else if (task.progress >= 80 && task.progress < 92) {
+        progressStatus.value = '生成分析报告...';
+        currentPhase = 'risk_assessment';
+      } else if (task.progress >= 92) {
+        progressStatus.value = '报告生成中...';
+        currentPhase = 'report_generation';
+      }
+      // 只有阶段变化时才添加日志
+      if (currentPhase && currentPhase !== lastProgressPhase) {
+        lastProgressPhase = currentPhase;
+        if (currentPhase === 'preprocessing') {
+          addLog('图像预处理进行中', 35);
+        } else if (currentPhase === 'feature_extraction') {
+          addLog('特征提取中...', 65);
+        } else if (currentPhase === 'risk_assessment') {
+          addLog('风险评估中...', 80);
+        } else if (currentPhase === 'report_generation') {
+          addLog('正在生成诊断报告...', 92);
+        }
+      }
+
+      if (stalledProgressPollCount >= MAX_STALLED_PROGRESS_POLLS) {
+        await stopPollingAndRefresh({
+          statusText: '任务可能卡住',
+          logMessage: '分析进度长时间无变化，已停止自动轮询',
+          notifyMessage: '分析进度长时间停留未变化，已停止自动轮询，请稍后重试',
+        });
+        return;
+      }
+
+      scheduleNextTaskPoll(taskId, sessionId);
+      return;
+    }
+
+    if (task.status === 'SUCCESS') {
+      clearPollingTaskStatus();
+      currentTaskId.value = null;
+      progressStatus.value = '分析完成';
+      lastFailedTask.value = null;
+      addLog('分析完成，正在加载结果...', 99);
+
+      // 平滑过渡到100%
+      const animateToComplete = async () => {
+        while (progress.value < 100) {
+          progress.value = Math.min(progress.value + 2, 100);
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+      };
+
+      await animateToComplete();
+
+      // 短暂延迟后关闭进度条
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      isAnalyzing.value = false;
+
+      // 重新加载病例数据以获取最新的分析结果
+      await refreshStudyData();
+
+      // 显示完成通知
+      $q.notify({
+        type: 'positive',
+        message: '🎉 AI分析完成！诊断结果已更新',
+        position: 'top',
+        timeout: 5000,
+        icon: 'check_circle',
+      });
+
+      // 等待500ms后自动滚动到诊断结果区域
+      setTimeout(() => {
+        const resultCard = document.querySelector('.ai-result-card');
+        if (resultCard) {
+          resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 500);
+      return;
+    }
+
+    if (task.status === 'FAILED') {
+      clearPollingTaskStatus();
+      currentTaskId.value = null;
+      isAnalyzing.value = false;
+      progressStatus.value = '分析失败';
+      lastFailedTask.value = {
+        id: task.taskId,
+        ...(task.error && { error: task.error }),
+      };
+      addLog(`分析失败: ${task.error || '未知错误'}`, 0);
+
+      $q.notify({
+        type: 'negative',
+        message: `❌ 分析失败: ${task.error || '未知错误'}`,
+        position: 'top',
+        actions: [
+          {
+            label: '重试',
+            color: 'white',
+            handler: () => {
+              void startAnalysis();
+            },
+          },
+        ],
+      });
+    }
+  } catch (error) {
+    if (sessionId !== pollingSessionToken || currentTaskId.value !== taskId) {
+      return;
+    }
+
+    pollingFailureCount += 1;
+    console.error('轮询任务状态失败:', error);
+    addLog('轮询任务状态失败，稍后重试...', 0);
+
+    if (pollingFailureCount >= MAX_POLLING_FAILURES) {
+      await stopPollingAndRefresh({
+        statusText: '状态同步失败',
+        logMessage: '分析状态请求连续失败，已停止自动轮询',
+        notifyMessage: '分析状态同步连续失败，已停止自动轮询，请稍后重试',
+      });
+      return;
+    }
+
+    scheduleNextTaskPoll(taskId, sessionId);
+  } finally {
+    pollingRequestInFlight = false;
+  }
+};
+
+// 轮询任务状态
+const startPollingTaskStatus = (taskId: string) => {
+  clearPollingTaskStatus();
+  const sessionId = pollingSessionToken;
+  lastServerProgress = progress.value;
+  void pollTaskStatusOnce(taskId, sessionId);
 };
 
 // 刷新病例数据
-const refreshStudyData = async () => {
+const refreshStudyData = async (options?: { allowResumePolling?: boolean }) => {
   const studyId = route.params.id;
+  const allowResumePolling = options?.allowResumePolling ?? true;
   if (studyId) {
     try {
       console.log('🔄 刷新病例数据...');
@@ -1258,7 +1386,7 @@ const refreshStudyData = async () => {
       // 优先级：已有分析结果时，直接视为完成，避免被历史任务状态覆盖
       if (updatedStudy?.analysisResult && !currentTaskId.value) {
         completeAnalysisFromResult();
-      } else if (updatedStudy?.status === 'processing' && updatedStudy.taskId) {
+      } else if (allowResumePolling && updatedStudy?.status === 'processing' && updatedStudy.taskId) {
         // 检查是否有正在进行的任务，如果有则自动开始轮询
         console.log('🔄 检测到正在进行的任务，恢复轮询:', updatedStudy.taskId);
         isAnalyzing.value = true;
@@ -1268,6 +1396,9 @@ const refreshStudyData = async () => {
         clearPollingTaskStatus();
         currentTaskId.value = null;
         isAnalyzing.value = false;
+        if (!updatedStudy?.analysisResult && updatedStudy?.status === 'processing') {
+          progressStatus.value = allowResumePolling ? '分析中...' : '任务状态待确认';
+        }
       }
 
       // 强制更新图表
@@ -1570,10 +1701,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   // 清理轮询定时器
-  if (pollingIntervalId) {
-    clearInterval(pollingIntervalId);
-    pollingIntervalId = null;
-  }
+  clearPollingTaskStatus();
   window.removeEventListener('resize', () => chartInstance?.resize());
   chartInstance?.dispose();
 });

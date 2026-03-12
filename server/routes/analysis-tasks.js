@@ -14,6 +14,7 @@ const {
 } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const analysisService = require('../services/analysisService');
+const { markAnalysisTaskFailed } = analysisService;
 const { createAnalysisNotifications } = require('../services/notificationService');
 const emailService = require('../services/email.service');
 const {
@@ -212,10 +213,10 @@ router.post('/', authenticate, async (req, res) => {
         if (studyImage) {
           const preparedImage = await prepareStudyImageForAnalysis(studyImage);
           if (!preparedImage.imagePath) {
-            await task.update({
-              status: 'FAILED',
-              error_message: '图像路径解析失败，无法开始分析',
-              completed_at: new Date(),
+            await markAnalysisTaskFailed({
+              analysisTaskId: task.id,
+              studyId: study.id,
+              error: '图像路径解析失败，无法开始分析',
             });
             return;
           }
@@ -232,14 +233,20 @@ router.post('/', authenticate, async (req, res) => {
           console.error(
             `❌ [POST /analysis-tasks] 无法触发分析: 未找到病例图像 (StudyID=${study.id})`,
           );
-          await task.update({
-            status: 'FAILED',
-            error_message: '未找到病例图像，无法开始分析',
-            completed_at: new Date(),
+          await markAnalysisTaskFailed({
+            analysisTaskId: task.id,
+            studyId: study.id,
+            error: '未找到病例图像，无法开始分析',
           });
         }
       } catch (err) {
         console.error(`❌ [POST /analysis-tasks] 触发分析失败:`, err);
+        await markAnalysisTaskFailed({
+          analysisTaskId: task.id,
+          studyId: study.id,
+          error: err,
+          fallbackMessage: '分析任务启动失败，请重试',
+        });
       }
     })();
   } catch (error) {
@@ -391,13 +398,11 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
         // 异步触发分析，不阻塞响应
         const preparedImage = await prepareStudyImageForAnalysis(image);
         if (!preparedImage.imagePath) {
-          await task.update({
-            status: 'FAILED',
-            progress: 0,
-            error_message: '图像路径解析失败，无法开始分析',
-            completed_at: new Date(),
+          await markAnalysisTaskFailed({
+            analysisTaskId: task.id,
+            studyId: study.id,
+            error: '图像路径解析失败，无法开始分析',
           });
-          await Study.update({ status: 'failed' }, { where: { id: study.id } });
           item.status = 'FAILED';
           item.error = '图像路径解析失败，无法开始分析';
           continue;
@@ -413,6 +418,12 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
               `❌ [POST /analysis-tasks/batch] 异步分析失败: Task=${task.id}, Study=${study.id}`,
               error,
             );
+            void markAnalysisTaskFailed({
+              analysisTaskId: task.id,
+              studyId: study.id,
+              error,
+              fallbackMessage: '分析任务启动失败，请重试',
+            });
           });
       } catch (error) {
         if (transaction) {

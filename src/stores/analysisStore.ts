@@ -40,6 +40,7 @@ interface ApiTaskResponse {
   created_at: string;
   completed_at?: string;
   error?: string;
+  error_message?: string;
 }
 
 export const useAnalysisStore = defineStore('analysis', {
@@ -124,7 +125,9 @@ export const useAnalysisStore = defineStore('analysis', {
               progress: task.progress || 0,
               createdAt: task.created_at,
               ...(task.completed_at && { completedAt: task.completed_at }),
-              ...(task.error && { error: task.error }),
+              ...((task.error || task.error_message) && {
+                error: task.error || task.error_message,
+              }),
             };
           });
 
