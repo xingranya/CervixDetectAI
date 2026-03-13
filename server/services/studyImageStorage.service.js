@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
-const { uploadBufferToTucang } = require('./tucang.service');
+const {
+  uploadBufferToTucang,
+  buildTucangImageUrl,
+  isMd5,
+  isStandardTucangImageUrl,
+} = require('./tucang.service');
 
 const serverRootDir = path.resolve(__dirname, '..');
 const uploadsRootDir = path.resolve(serverRootDir, 'uploads');
@@ -54,6 +59,23 @@ function normalizeStoredFilePath(value) {
   }
 
   return trimmed;
+}
+
+function resolvePreferredStudyImagePath(record) {
+  const normalizedFilePath = normalizeStoredFilePath(record?.file_path);
+  if (isStandardTucangImageUrl(normalizedFilePath)) {
+    return normalizedFilePath;
+  }
+
+  const storedFilename = String(record?.stored_filename || '').trim();
+  if (isMd5(storedFilename)) {
+    const canonicalUrl = buildTucangImageUrl(storedFilename);
+    if (canonicalUrl) {
+      return canonicalUrl;
+    }
+  }
+
+  return normalizedFilePath;
 }
 
 function resolveUploadAbsolutePath(storedPath) {
@@ -187,7 +209,7 @@ async function removeStudyImageFile(studyImageRecord) {
 
 async function prepareStudyImageForAnalysis(studyImageRecord) {
   const plain = toPlainRecord(studyImageRecord);
-  const normalizedFilePath = normalizeStoredFilePath(plain?.file_path);
+  const normalizedFilePath = resolvePreferredStudyImagePath(plain);
   if (isRemoteFilePath(normalizedFilePath)) {
     return {
       imagePath: normalizedFilePath,
@@ -219,7 +241,7 @@ async function serializeStudyImageForResponse(studyImageRecord) {
   if (!plain) return plain;
   return {
     ...plain,
-    file_path: normalizeStoredFilePath(plain.file_path),
+    file_path: resolvePreferredStudyImagePath(plain),
   };
 }
 
@@ -244,4 +266,5 @@ module.exports = {
   resolveUploadAbsolutePath,
   isRemoteFilePath,
   normalizeStoredFilePath,
+  resolvePreferredStudyImagePath,
 };

@@ -5,6 +5,7 @@ const axios = require('axios');
 
 const DEFAULT_TUCANG_API_BASE_URL = 'https://api.tucang.cc';
 const DEFAULT_UPLOAD_PATH = '/api/v1/upload';
+const DEFAULT_TUCANG_IMAGE_BASE_URL = 'https://img1.tucang.cc/api/image/show';
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_RETRY_MAX = 2;
 const DEFAULT_TLS_REJECT_UNAUTHORIZED = true;
@@ -23,6 +24,43 @@ function normalizeApiBaseUrl(value) {
     return DEFAULT_TUCANG_API_BASE_URL;
   }
   return raw.replace(/\/+$/, '');
+}
+
+function normalizeImageBaseUrl(value) {
+  const raw = String(value || DEFAULT_TUCANG_IMAGE_BASE_URL).trim();
+  if (!raw) {
+    return DEFAULT_TUCANG_IMAGE_BASE_URL;
+  }
+  return raw.replace(/\/+$/, '');
+}
+
+function isMd5(value) {
+  return /^[a-f0-9]{32}$/i.test(String(value || '').trim());
+}
+
+function normalizeRemoteUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+  if (raw.startsWith('//')) {
+    return `https:${raw}`;
+  }
+  return raw;
+}
+
+function isStandardTucangImageUrl(value) {
+  return /https?:\/\/[^/]*tucang\.cc\/api\/image\/show\/[a-f0-9]{32}$/i.test(
+    String(value || '').trim(),
+  );
+}
+
+function buildTucangImageUrl(md5) {
+  if (!isMd5(md5)) {
+    return '';
+  }
+  const imageBaseUrl = normalizeImageBaseUrl(process.env.TUCANG_IMAGE_BASE_URL);
+  return `${imageBaseUrl}/${String(md5).trim()}`;
 }
 
 function parseBoolean(value, fallback = true) {
@@ -134,14 +172,18 @@ async function doUpload({
     const payload = response?.data || null;
 
     const success = payload?.success === true || String(payload?.code) === '200';
-    const url = payload?.data?.url;
-    if (!success || !url) {
+    const md5 = payload?.data?.md5 || null;
+    const rawUrl = normalizeRemoteUrl(payload?.data?.url);
+    const canonicalUrl = buildTucangImageUrl(md5);
+    const finalUrl = isStandardTucangImageUrl(rawUrl) ? rawUrl : canonicalUrl || rawUrl;
+
+    if (!success || !finalUrl) {
       throw new Error(payload?.msg || '图仓上传失败：返回数据无效');
     }
 
     return {
-      url,
-      md5: payload?.data?.md5 || null,
+      url: finalUrl,
+      md5,
       raw: payload,
     };
   } catch (error) {
@@ -160,7 +202,6 @@ async function doUpload({
     }
 
     const causeCode = String(error?.cause?.code || error?.code || '');
-    const causeMessage = String(error?.cause?.message || error?.message || '');
     if (causeCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
       throw new Error(
         '图仓上传失败：TLS 证书链校验失败（UNABLE_TO_VERIFY_LEAF_SIGNATURE），请配置 TUCANG_TLS_REJECT_UNAUTHORIZED=false 或修复服务器 CA 证书链',
@@ -221,5 +262,8 @@ async function uploadBufferToTucang({
 }
 
 module.exports = {
+  buildTucangImageUrl,
+  isMd5,
+  isStandardTucangImageUrl,
   uploadBufferToTucang,
 };

@@ -19,6 +19,7 @@ const { optionalAuth } = require('../middleware/auth');
 const {
   serializeStudyImageForResponse,
   persistStudyImage,
+  syncStudyImageToTucang,
   prepareStudyImageForAnalysis,
 } = require('../services/studyImageStorage.service');
 
@@ -213,6 +214,12 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
 
       await transaction.commit();
       console.log('✅ 事务提交成功');
+
+      try {
+        await syncStudyImageToTucang(createdImage);
+      } catch (error) {
+        console.warn(`[POST /analyze] 图仓同步失败，分析将回退本地路径: ${error.message}`);
+      }
 
       // 返回结果
       res.status(200).json({
