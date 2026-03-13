@@ -6,10 +6,34 @@ import { normalizeApiBaseUrl, getServerBaseUrl, DEFAULT_API_BASE_URL } from './a
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
 const SERVER_BASE_URL = getServerBaseUrl(API_BASE_URL);
 
+function normalizeMalformedUploadsUrl(filePath: string): string {
+  const trimmed = filePath.trim();
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname.toLowerCase() !== 'uploads') {
+      return '';
+    }
+
+    const pathname = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+    return pathname.startsWith('/uploads/') ? pathname : `/uploads${pathname}`;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeLocalAssetPath(filePath: string): string {
   const trimmed = filePath.trim();
   if (!trimmed) {
     return trimmed;
+  }
+
+  const normalizedMalformedUploadsPath = normalizeMalformedUploadsUrl(trimmed);
+  if (normalizedMalformedUploadsPath) {
+    return normalizedMalformedUploadsPath;
   }
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
@@ -32,13 +56,14 @@ function normalizeLocalAssetPath(filePath: string): string {
  */
 export const getImageUrl = (filePath: string | undefined): string | undefined => {
   if (!filePath) return undefined;
+  const normalizedPath = normalizeLocalAssetPath(filePath);
+
   // 如果已经是完整URL，直接返回
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    return filePath.trim();
+  if (normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')) {
+    return normalizedPath;
   }
 
-  const cleanPath = normalizeLocalAssetPath(filePath);
-  return `${SERVER_BASE_URL}${cleanPath}`;
+  return `${SERVER_BASE_URL}${normalizedPath}`;
 };
 
 /**

@@ -43,12 +43,36 @@ function isRemoteFilePath(value) {
   return /^https?:\/\//i.test(String(value || ''));
 }
 
+function normalizeMalformedUploadsUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || !isRemoteFilePath(raw)) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.toLowerCase() !== 'uploads') {
+      return '';
+    }
+
+    const pathname = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+    return pathname.startsWith('/uploads/') ? pathname : `/uploads${pathname}`;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeStoredFilePath(value) {
   if (typeof value !== 'string') {
     return value;
   }
 
   const trimmed = value.trim();
+  const normalizedMalformedUploadsPath = normalizeMalformedUploadsUrl(trimmed);
+  if (normalizedMalformedUploadsPath) {
+    return normalizedMalformedUploadsPath;
+  }
+
   if (!trimmed || isRemoteFilePath(trimmed)) {
     return trimmed;
   }
