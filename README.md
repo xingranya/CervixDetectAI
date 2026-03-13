@@ -941,7 +941,7 @@ chore: 构建/工具变动
 | :----------- | :---------------- |
 | 最大文件大小 | 20MB（头像 5MB）  |
 | 支持格式     | JPG, PNG, JPEG, TIFF, BMP |
-| 存储位置     | `server/uploads/` + 图仓远程 URL |
+| 存储位置     | 本地持久化目录 `server/uploads/`，对外响应优先返回图床直链 |
 | 报告生成位置 | `server/reports/` |
 
 ### 🗄️ 数据库设计

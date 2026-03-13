@@ -31,8 +31,8 @@
 | id | BIGINT | 否 | - | 主键，自增 |
 | study_id | BIGINT | 否 | - | 关联病例ID，外键引用 `studies.id`，级联更新/删除 |
 | original_filename | STRING(255) | 否 | - | 原始文件名 |
-| stored_filename | STRING(255) | 否 | - | 存储文件名（UUID） |
-| file_path | STRING(500) | 否 | - | 文件存储路径 |
+| stored_filename | STRING(255) | 否 | - | 存储文件名；本地持久化阶段为生成文件名，图仓同步成功后可能更新为 `md5` |
+| file_path | STRING(500) | 否 | - | 文件路径；库内可为本地路径或图仓 URL，对外响应优先序列化为图床直链 |
 | thumbnail_path | STRING(500) | 是 | NULL | 缩略图路径 |
 | file_size | BIGINT | 否 | - | 文件大小（字节） |
 | mime_type | STRING(50) | 否 | - | MIME类型 |
@@ -68,22 +68,16 @@ F --> G
 - [StudyImage.js](file://server/models/StudyImage.js#L71-L75)
 
 ## UUID命名避免冲突
-为防止文件名重复导致的覆盖问题，系统采用UUID作为存储文件名。在 `analyze.js` 路由中，通过 `uuidv4()` 生成唯一文件名：
+为防止文件名重复导致的覆盖问题，当前实现不再依赖单纯 UUID，而是使用“前缀 + 时间戳 + 随机数 + 清洗后的原始文件名”生成本地存储名；同步图仓成功后，`stored_filename` 会进一步收敛为图仓返回的 `md5`。
 
 ```javascript
-const { v4: uuidv4 } = require('uuid');
-// ...
-filename: function (req, file, cb) {
-  const ext = path.extname(file.originalname);
-  const filename = `${uuidv4()}${ext}`;
-  cb(null, filename);
-}
+return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeBase}${ext}`;
 ```
 
-此策略确保每个上传的文件都拥有全局唯一的存储名称，极大提升了系统的稳定性和安全性。
+此策略确保本地文件名具备可读性与足够的唯一性，同时为后续图仓 `md5` 收敛保留兼容空间。
 
 **Section sources**
-- [analyze.js](file://server/routes/analyze.js#L6-L22)
+- [studyImageStorage.service.js](file://server/services/studyImageStorage.service.js#L23-L35)
 
 ## 缩略图生成策略
 系统支持为上传的影像生成缩略图，路径存储于 `thumbnail_path` 字段。该字段允许为空，表明缩略图生成为可选操作。实际生成逻辑可能由异步任务或中间件完成，未在当前代码中直接体现。
@@ -105,22 +99,21 @@ filename: function (req, file, cb) {
 - [StudyImage.js](file://server/models/StudyImage.js#L61-L75)
 
 ## 文件路径安全访问控制
-文件路径通过 `file_path` 字段存储，且路径为相对路径（如 `/uploads/studies/filename.jpg`）。系统通过以下机制保障访问安全：
+文件路径通过 `file_path` 字段存储。数据库内部既可能保存本地相对路径（如 `/uploads/studies/filename.jpg`），也可能保存图仓远程 URL；对外响应时，服务层会优先返回标准化后的图床直链，并兼容修正历史异常值（如 `https://uploads/...`）。系统通过以下机制保障访问安全：
 1. **权限校验**：在访问病例或影像前，检查用户角色和所有权
 2. **路径隔离**：所有文件统一存储于 `uploads/studies` 目录下，避免路径穿越
-3. **删除同步**：删除数据库记录时同步删除物理文件
+3. **响应规范化**：统一在序列化阶段纠正历史错误主机名并优先输出可访问路径
+4. **删除同步**：删除数据库记录时同步删除本地物理文件
 
 例如，在删除影像时：
 ```javascript
-const filePath = path.join(__dirname, '..', image.file_path);
-if (fs.existsSync(filePath)) {
-  fs.unlinkSync(filePath);
-}
-await image.destroy();
+const localFilePath = resolveUploadAbsolutePath(image.file_path);
+await safeUnlink(localFilePath);
 ```
 
 **Section sources**
-- [studies.js](file://server/routes/studies.js#L507-L513)
+- [studyImageStorage.service.js](file://server/services/studyImageStorage.service.js#L100-L117)
+- [studyImageStorage.service.js](file://server/services/studyImageStorage.service.js#L206-L274)
 
 ## 数据完整性与索引设计
 表结构通过外键约束和索引设计保障数据完整性：
@@ -157,7 +150,7 @@ ENUM upload_status
 - `completed`：上传完成
 - `failed`：上传失败
 
-该字段可用于监控上传进度、重试失败任务或清理临时文件。例如，在异步处理任务中，成功保存后会将状态更新为 `completed`。
+该字段可用于监控上传进度、重试失败任务或清理临时文件。当前实现会先以 `pending` 落库，本地图像同步图仓成功后更新为 `completed`；若同步失败，则保留本地回退链路。
 
 **Section sources**
 - [StudyImage.js](file://server/models/StudyImage.js#L81-L85)

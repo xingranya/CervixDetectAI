@@ -112,9 +112,9 @@ Server-->>Client : 处理请求并返回响应
 
 **字段说明**
 - `study_id`: 所属病例ID（外键，级联删除）
-- `file_path`: 文件存储路径（相对于服务器根目录）
+- `file_path`: 文件路径；数据库内可能为本地路径或图仓 URL，对外响应优先标准化为图床直链
 - `original_filename`: 原始文件名
-- `stored_filename`: 存储文件名（唯一标识）
+- `stored_filename`: 存储文件名；图仓同步成功后可能被更新为图仓 `md5`
 - `file_size`: 文件大小（字节）
 - `mime_type`: MIME类型
 - `file_format`: 文件格式（JPEG, PNG, TIFF, BMP）
@@ -268,9 +268,9 @@ STUDY ||--o{ STUDY_IMAGE : "contains"
       {
         "id": 101,
         "study_id": 456,
-        "file_path": "/uploads/studies/study-1705280000123.jpg",
+        "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
         "original_filename": "cervix1.jpg",
-        "stored_filename": "study-1705280000123.jpg",
+        "stored_filename": "0509ae4c6c3aaaf714c4684952e70a00",
         "file_size": 1572864,
         "mime_type": "image/jpeg",
         "file_format": "JPEG",
@@ -287,6 +287,12 @@ STUDY ||--o{ STUDY_IMAGE : "contains"
 - `403 Forbidden`: 无权上传影像
 - `400 Bad Request`: 未上传文件或文件格式不支持
 - `500 Internal Server Error`: 上传失败
+
+**实现说明**
+- 本地文件会先落到 `server/uploads/studies/`
+- 提交事务后会优先尝试图仓同步
+- 响应中的 `file_path` 默认优先返回规范化后的图床直链
+- 历史错误值（如 `https://uploads/...`）会在服务层被纠正
 
 **Section sources**
 - [studies.js](file://server/routes/studies.js#L132-L202)
@@ -333,7 +339,7 @@ STUDY ||--o{ STUDY_IMAGE : "contains"
         "images": [
           {
             "id": 101,
-            "file_path": "/uploads/studies/study-1705280000123.jpg",
+            "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
             "original_filename": "cervix1.jpg"
           }
         ]
@@ -400,7 +406,7 @@ STUDY ||--o{ STUDY_IMAGE : "contains"
       "images": [
         {
           "id": 101,
-          "file_path": "/uploads/studies/study-1705280000123.jpg",
+          "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
           "original_filename": "cervix1.jpg",
           "file_size": 1572864,
           "created_at": "2024-01-15T10:30:00.000Z"

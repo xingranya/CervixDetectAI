@@ -283,7 +283,7 @@
                     :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
                   >
                     <img
-                      :src="study.imageUrl"
+                      :src="displayImageUrl"
                       class="fit object-contain"
                       :style="{
                         transform: `scale(${zoomLevel})`,
@@ -311,8 +311,8 @@
                     :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
                   >
                     <ImageAnalyzer
-                      v-if="study.imageUrl"
-                      :src="study.imageUrl"
+                      v-if="displayImageUrl"
+                      :src="displayImageUrl"
                       :initial-annotations="aiAnnotations"
                       @zoom="handleAiZoom"
                     />
@@ -859,6 +859,7 @@ import { useAnalysisStore } from 'stores/analysisStore';
 import { type SuspiciousArea } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
+import { getImageUrl } from 'src/utils/mappers';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -918,6 +919,9 @@ const imageTypeOptions = ['细胞学涂片', '阴道镜图像', '组织病理切
 
 // Computed
 const study = computed(() => studyStore.currentStudy);
+const displayImageUrl = computed(
+  () => getImageUrl(study.value?.imageUrl || study.value?.images?.[0]?.file_path) || '',
+);
 
 const analysisResult = computed(() => studyStore.currentStudy?.analysisResult || null);
 

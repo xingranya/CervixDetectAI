@@ -660,8 +660,8 @@ const result = await studyAPI.createStudy({
         "id": 1,
         "study_id": 1,
         "original_filename": "image1.jpg",
-        "stored_filename": "study-1234567890.jpg",
-        "file_path": "https://img1.tucang.cc/...",
+        "stored_filename": "0509ae4c6c3aaaf714c4684952e70a00",
+        "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
         "file_size": 102400,
         "mime_type": "image/jpeg",
         "file_format": "JPEG",
@@ -674,7 +674,7 @@ const result = await studyAPI.createStudy({
 }
 ```
 
-> 说明：主事务会先完成本地持久化与数据库写入，随后异步尝试同步图仓；`file_path` 在不同阶段可能是本地相对路径或图仓远程 URL。
+> 说明：主事务会先完成本地持久化与数据库写入，随后在返回响应前尽量完成一次图仓同步；`file_path` 对外响应优先返回图床直链，图仓失败时才回退为本地相对路径。历史异常值（如 `https://uploads/...`）会在响应序列化阶段被纠正。
 
 **HTTP状态码**
 - `200 OK`: 影像上传成功
@@ -745,7 +745,7 @@ const result = await studyAPI.uploadImages(1, [file1, file2]);
             "id": 1,
             "study_id": 1,
             "original_filename": "image1.jpg",
-            "file_path": "/uploads/studies/study-1234567890.jpg",
+            "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
             "created_at": "2024-01-01T00:00:00Z"
           }
         ]
@@ -840,8 +840,8 @@ const result = await studyAPI.getStudies({
           "id": 1,
           "study_id": 1,
           "original_filename": "image1.jpg",
-          "stored_filename": "study-1234567890.jpg",
-          "file_path": "/uploads/studies/study-1234567890.jpg",
+          "stored_filename": "0509ae4c6c3aaaf714c4684952e70a00",
+          "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
           "file_size": 102400,
           "mime_type": "image/jpeg",
           "file_format": "JPEG",
@@ -1431,7 +1431,7 @@ const result = await analysisTaskAPI.saveResult(1, {
 // 该接口不通过api.ts调用，而是直接通过axios调用
 ```
 
-> 说明：单图分析上传会先写入安全临时目录并持久化为病例影像，后台任务分析前优先尝试图仓远程 URL，失败时自动回退本地路径。
+> 说明：单图分析上传会先写入安全临时目录并持久化为病例影像，提交事务后会尽量先完成一次图仓同步，再返回任务响应；后台任务分析前仍优先尝试图仓远程 URL，失败时自动回退本地路径。
 
 **Section sources**
 - [analyze.js](file://server/routes/analyze.js#L51-L106)
@@ -1514,7 +1514,7 @@ const result = await analysisTaskAPI.saveResult(1, {
       "studyDate": "2024-01-01",
       "modality": "宫颈细胞学检查",
       "description": "常规检查",
-      "imageUrl": "/uploads/study-1234567890.jpg"
+      "imageUrl": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00"
     },
     "result": {
       "diagnosis": "HSIL",

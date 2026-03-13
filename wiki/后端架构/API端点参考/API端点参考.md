@@ -294,7 +294,7 @@ CervixDetectAI后端API提供了一套完整的RESTful接口，用于支持宫�
       "images": [
         {
           "id": 1,
-          "file_path": "/uploads/studies/study-123.jpg",
+          "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
           "original_filename": "cervix.jpg",
           "created_at": "2024-01-01T00:00:00.000Z"
         }
@@ -322,6 +322,8 @@ CervixDetectAI后端API提供了一套完整的RESTful接口，用于支持宫�
   - `500`: 服务器内部错误
 - **认证要求**: 必需 (JWT访问令牌)
 
+> 说明：病例详情中的 `images[].file_path` 会优先序列化为图床直链；仅在图仓同步失败时，才回退为本地相对路径。历史异常值（如 `https://uploads/...`）会在服务层统一纠正。
+
 **Section sources**
 - [studies.js](file://server/routes/studies.js#L306-L349)
 
@@ -346,7 +348,7 @@ CervixDetectAI后端API提供了一套完整的RESTful接口，用于支持宫�
     "images": [
       {
         "id": 1,
-        "file_path": "/uploads/studies/study-123.jpg",
+        "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
         "original_filename": "cervix1.jpg",
         "file_size": 153600,
         "mime_type": "image/jpeg",
@@ -354,7 +356,7 @@ CervixDetectAI后端API提供了一套完整的RESTful接口，用于支持宫�
       },
       {
         "id": 2,
-        "file_path": "/uploads/studies/study-456.png",
+        "file_path": "https://img1.tucang.cc/api/image/show/9c6f2a9f4d62428c8df2a7056fb4d5fb",
         "original_filename": "cervix2.png",
         "file_size": 204800,
         "mime_type": "image/png",

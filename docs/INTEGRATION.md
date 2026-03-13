@@ -262,8 +262,8 @@ interface DbMetrics {
 
 1.  **Mock 数据**: 目前后端仅 `reports/settings` 使用 Mock/演示数据；`patients/studies/analysis-tasks` 等为数据库数据。
 2.  **文件上传**:
-    - 病例影像上传：`POST /api/studies/:id/images`（保存到 `server/uploads/studies/`）
-    - 快捷上传：`POST /api/analyze`（保存到 `server/uploads/`）
+    - 病例影像上传：`POST /api/studies/:id/images`（先本地持久化到 `server/uploads/studies/`，响应优先返回图床直链）
+    - 快捷上传：`POST /api/analyze`（先写入本地持久化链路，返回前尽量完成一次图仓同步）
 3.  **实时同步**:
     - 数据库监控页面每 5 秒轮询一次 `/api/system/db-metrics`。
     - 影像分析进度通过前端模拟轮询实现，实际生产环境应使用 WebSocket。

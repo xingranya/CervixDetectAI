@@ -152,9 +152,9 @@ POST
       {
         "id": 101,
         "study_id": 123,
-        "file_path": "/uploads/studies/study-1704085800000-123456789.jpg",
+        "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
         "original_filename": "cervix1.jpg",
-        "stored_filename": "study-1704085800000-123456789.jpg",
+        "stored_filename": "0509ae4c6c3aaaf714c4684952e70a00",
         "file_size": 153600,
         "mime_type": "image/jpeg",
         "file_format": "JPEG",
@@ -176,7 +176,8 @@ POST
 **业务规则**  
 - 支持JPEG、PNG、TIFF、BMP格式
 - 单个文件大小限制为20MB
-- 文件存储在`/uploads/studies/`目录下
+- 本地文件先落到 `server/uploads/studies/`，随后尽量同步到图仓
+- 上传响应优先返回规范化后的图床直链；图仓失败时才回退为 `/uploads/...`
 - 上传失败时会自动清理已上传的临时文件
 
 **代码示例**  
@@ -244,7 +245,7 @@ GET
         "images": [
           {
             "id": 101,
-            "file_path": "/uploads/studies/study-1704085800000-123456789.jpg",
+            "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
             "original_filename": "cervix1.jpg",
             "created_at": "2024-01-01T10:30:00.000Z"
           }
@@ -340,7 +341,7 @@ GET
         {
           "id": 101,
           "study_id": 123,
-          "file_path": "/uploads/studies/study-1704085800000-123456789.jpg",
+          "file_path": "https://img1.tucang.cc/api/image/show/0509ae4c6c3aaaf714c4684952e70a00",
           "original_filename": "cervix1.jpg",
           "file_size": 153600,
           "mime_type": "image/jpeg",
@@ -617,6 +618,7 @@ API->>文件系统 : 保存上传的影像文件
 文件系统-->>API : 返回文件路径
 API->>数据库 : 插入影像记录
 数据库-->>API : 返回影像信息
+API->>API : 尝试同步图仓并标准化 file_path
 API-->>前端 : 200 OK + 影像数据
 前端->>API : GET /api/studies/{id} 获取病例详情
 API->>数据库 : 查询病例及关联数据
