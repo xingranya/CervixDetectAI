@@ -87,7 +87,9 @@ function parseStructuredJsonContent(content) {
     }
   }
 
-  const parseError = new Error(`解析AI响应失败: ${lastError ? lastError.message : '未找到有效JSON'}`);
+  const parseError = new Error(
+    `解析AI响应失败: ${lastError ? lastError.message : '未找到有效JSON'}`,
+  );
   parseError.stage = 'response_parse';
   throw parseError;
 }
@@ -464,19 +466,19 @@ class QwenService {
     } catch (error) {
       const elapsedMs = Date.now() - startedAt;
       const stage = error.stage || (error.response ? 'api_request' : 'runtime');
-          
+
       // 详细错误日志
       console.error(`❌ API 调用失败:`);
       console.error(`   [stage=${stage}]`);
       console.error(`   [耗时=${elapsedMs}ms]`);
       console.error(`   [剩余重试次数：${retryCount - 1}]`);
       console.error(`   [错误消息：${error.message}]`);
-          
+
       if (error.response) {
         console.error(`   [状态码：${error.response.status}]`);
         console.error(`   [响应数据:`, error.response.data, ']');
       }
-          
+
       if (error.code) {
         console.error(`   [错误代码：${error.code}]`);
       }

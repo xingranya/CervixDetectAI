@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const analysisService = require('./analysisService');
 const { markAnalysisTaskFailed } = analysisService;
-const {
-  prepareStudyImageForAnalysis,
-} = require('./studyImageStorage.service');
+const { prepareStudyImageForAnalysis } = require('./studyImageStorage.service');
 
 /**
  * 简单的并发控制队列（无需 Redis）
@@ -106,18 +104,15 @@ async function queueAnalysisTask(analysisTaskId, studyId, studyImage) {
   }
 
   // 添加到队列
-  await analysisTaskQueue.add(
-    async () => {
-      try {
-        await analysisService.processTask(analysisTaskId, preparedImage.imagePath, studyId);
-      } finally {
-        if (preparedImage.cleanup) {
-          await preparedImage.cleanup();
-        }
+  await analysisTaskQueue.add(async () => {
+    try {
+      await analysisService.processTask(analysisTaskId, preparedImage.imagePath, studyId);
+    } finally {
+      if (preparedImage.cleanup) {
+        await preparedImage.cleanup();
       }
-    },
-    `Task_${analysisTaskId}`,
-  );
+    }
+  }, `Task_${analysisTaskId}`);
 }
 
 module.exports = {

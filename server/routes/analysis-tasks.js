@@ -21,9 +21,7 @@ const {
   persistStudyImage,
   syncStudyImageToTucang,
 } = require('../services/studyImageStorage.service');
-const {
-  queueAnalysisTask,
-} = require('../services/simpleAnalysisQueue.service');
+const { queueAnalysisTask } = require('../services/simpleAnalysisQueue.service');
 
 const router = express.Router();
 
@@ -55,7 +53,10 @@ function normalizePriority(inputPriority) {
  * @returns {string}
  */
 function resolveFileFormat(originalFilename) {
-  const ext = path.extname(originalFilename || '').slice(1).toUpperCase();
+  const ext = path
+    .extname(originalFilename || '')
+    .slice(1)
+    .toUpperCase();
   if (!ext) return 'JPEG';
   return ext === 'JPG' ? 'JPEG' : ext;
 }
@@ -203,7 +204,7 @@ router.post('/', authenticate, async (req, res) => {
           where: { study_id: study.id, is_primary: true },
           order: [['created_at', 'DESC']],
         });
-    
+
         // 兜底：历史数据可能没有 is_primary=true 的记录
         if (!studyImage) {
           studyImage = await StudyImage.findOne({
@@ -211,12 +212,12 @@ router.post('/', authenticate, async (req, res) => {
             order: [['created_at', 'DESC']],
           });
         }
-    
+
         if (studyImage) {
           console.log(
             `📝 [POST /analysis-tasks] 将分析任务加入队列：TaskID=${task.id}, ImageID=${studyImage.id}`,
           );
-              
+
           // 添加到任务队列（而不是直接执行）
           await queueAnalysisTask(task.id, study.id, studyImage);
         } else {
@@ -384,21 +385,20 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
           status: 'PENDING',
         };
         items.push(item);
-        
+
         // 将分析任务加入队列（内部自动处理图像路径）
-        queueAnalysisTask(task.id, study.id, image)
-          .catch((error) => {
-            console.error(
-              `❌ [POST /analysis-tasks/batch] 加入队列失败：Task=${task.id}, Study=${study.id}`,
-              error,
-            );
-            void markAnalysisTaskFailed({
-              analysisTaskId: task.id,
-              studyId: study.id,
-              error,
-              fallbackMessage: '分析任务启动失败，请重试',
-            });
+        queueAnalysisTask(task.id, study.id, image).catch((error) => {
+          console.error(
+            `❌ [POST /analysis-tasks/batch] 加入队列失败：Task=${task.id}, Study=${study.id}`,
+            error,
+          );
+          void markAnalysisTaskFailed({
+            analysisTaskId: task.id,
+            studyId: study.id,
+            error,
+            fallbackMessage: '分析任务启动失败，请重试',
           });
+        });
       } catch (error) {
         if (transaction) {
           await transaction.rollback();
@@ -419,7 +419,9 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
     res.status(200).json({
       success: true,
       message:
-        failedCount > 0 ? `批量任务创建完成，成功 ${createdCount} 条，失败 ${failedCount} 条` : '批量任务创建成功',
+        failedCount > 0
+          ? `批量任务创建完成，成功 ${createdCount} 条，失败 ${failedCount} 条`
+          : '批量任务创建成功',
       data: {
         batchId,
         summary: {
