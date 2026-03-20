@@ -45,7 +45,10 @@
       "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" branch:*)",
       "Bash(git -C \"E:/HTML+CSS/CervixDetectAI/.tmp/wiki-sync\" add:*)",
       "Bash(git -C:*)",
-      "mcp__playwright__browser_run_code"
+      "mcp__playwright__browser_run_code",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(agent-reach doctor:*)",
+      "mcp__MiniMax__understand_image"
     ]
   },
   "outputStyle": "Structural Thinking"

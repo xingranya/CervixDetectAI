@@ -325,7 +325,7 @@ class QwenService {
 
     this.axiosInstance = axios.create({
       baseURL: this.apiUrl,
-      timeout: 60000,
+      timeout: parseInt(process.env.QWEN_API_TIMEOUT_MS || '') || 180000, // 默认 180 秒，可从环境变量调整
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -399,8 +399,12 @@ class QwenService {
       };
 
       // 发送请求
-      console.log(`🤖 调用通义千问API (${this.model})...`);
+      console.log(`🤖 调用通义千问 API (${this.model})...`);
+      console.log(`📊 图像来源：${isHttpUrl(imagePath) ? '远程 URL' : '本地文件'}`);
+      console.log(`🔬 检查方式：${modality}`);
+      console.log(`⏱️ 超时配置：${this.axiosInstance.defaults.timeout}ms`);
       const response = await this.axiosInstance.post('/chat/completions', requestBody);
+      console.log(`✅ API 调用成功，状态码：${response.status}`);
 
       // 解析响应
       if (!response.data || !response.data.choices || response.data.choices.length === 0) {
@@ -460,15 +464,27 @@ class QwenService {
     } catch (error) {
       const elapsedMs = Date.now() - startedAt;
       const stage = error.stage || (error.response ? 'api_request' : 'runtime');
-      console.error(
-        `❌ API调用失败 [stage=${stage}] [耗时=${elapsedMs}ms] (剩余重试次数: ${retryCount - 1}):`,
-        error.message,
-      );
+          
+      // 详细错误日志
+      console.error(`❌ API 调用失败:`);
+      console.error(`   [stage=${stage}]`);
+      console.error(`   [耗时=${elapsedMs}ms]`);
+      console.error(`   [剩余重试次数：${retryCount - 1}]`);
+      console.error(`   [错误消息：${error.message}]`);
+          
+      if (error.response) {
+        console.error(`   [状态码：${error.response.status}]`);
+        console.error(`   [响应数据:`, error.response.data, ']');
+      }
+          
+      if (error.code) {
+        console.error(`   [错误代码：${error.code}]`);
+      }
 
       // 重试逻辑
       if (retryCount > 1 && this.shouldRetry(error)) {
-        const delay = (4 - retryCount) * 1000; // 递增延迟：1s, 2s, 3s
-        console.log(`⏳ ${delay}ms后重试...`);
+        const delay = (4 - retryCount) * 3000; // 递增延迟：3s, 6s, 9s
+        console.log(`⏳ ${delay}ms 后重试...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         return this.analyzeImage(imagePath, modality, retryCount - 1);
       }

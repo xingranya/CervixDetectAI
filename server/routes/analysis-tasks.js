@@ -20,8 +20,10 @@ const emailService = require('../services/email.service');
 const {
   persistStudyImage,
   syncStudyImageToTucang,
-  prepareStudyImageForAnalysis,
 } = require('../services/studyImageStorage.service');
+const {
+  queueAnalysisTask,
+} = require('../services/simpleAnalysisQueue.service');
 
 const router = express.Router();
 
@@ -193,7 +195,7 @@ router.post('/', authenticate, async (req, res) => {
       data: { task: createdTask },
     });
 
-    // 异步触发分析流程
+    // 异步触发分析流程（使用任务队列）
     (async () => {
       try {
         // 获取病例的原始图像
@@ -201,7 +203,7 @@ router.post('/', authenticate, async (req, res) => {
           where: { study_id: study.id, is_primary: true },
           order: [['created_at', 'DESC']],
         });
-
+    
         // 兜底：历史数据可能没有 is_primary=true 的记录
         if (!studyImage) {
           studyImage = await StudyImage.findOne({
@@ -209,29 +211,17 @@ router.post('/', authenticate, async (req, res) => {
             order: [['created_at', 'DESC']],
           });
         }
-
+    
         if (studyImage) {
-          const preparedImage = await prepareStudyImageForAnalysis(studyImage);
-          if (!preparedImage.imagePath) {
-            await markAnalysisTaskFailed({
-              analysisTaskId: task.id,
-              studyId: study.id,
-              error: '图像路径解析失败，无法开始分析',
-            });
-            return;
-          }
-
           console.log(
-            `🚀 [POST /analysis-tasks] 触发后台分析: TaskID=${task.id}, Image=${preparedImage.imagePath}`,
+            `📝 [POST /analysis-tasks] 将分析任务加入队列：TaskID=${task.id}, ImageID=${studyImage.id}`,
           );
-          try {
-            await analysisService.processTask(task.id, preparedImage.imagePath, study.id);
-          } finally {
-            await safeCleanup(preparedImage.cleanup);
-          }
+              
+          // 添加到任务队列（而不是直接执行）
+          await queueAnalysisTask(task.id, study.id, studyImage);
         } else {
           console.error(
-            `❌ [POST /analysis-tasks] 无法触发分析: 未找到病例图像 (StudyID=${study.id})`,
+            `❌ [POST /analysis-tasks] 无法触发分析：未找到病例图像 (StudyID=${study.id})`,
           );
           await markAnalysisTaskFailed({
             analysisTaskId: task.id,
@@ -240,7 +230,7 @@ router.post('/', authenticate, async (req, res) => {
           });
         }
       } catch (err) {
-        console.error(`❌ [POST /analysis-tasks] 触发分析失败:`, err);
+        console.error(`❌ [POST /analysis-tasks] 加入队列失败:`, err);
         await markAnalysisTaskFailed({
           analysisTaskId: task.id,
           studyId: study.id,
@@ -394,28 +384,12 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
           status: 'PENDING',
         };
         items.push(item);
-
-        // 异步触发分析，不阻塞响应
-        const preparedImage = await prepareStudyImageForAnalysis(image);
-        if (!preparedImage.imagePath) {
-          await markAnalysisTaskFailed({
-            analysisTaskId: task.id,
-            studyId: study.id,
-            error: '图像路径解析失败，无法开始分析',
-          });
-          item.status = 'FAILED';
-          item.error = '图像路径解析失败，无法开始分析';
-          continue;
-        }
-
-        analysisService
-          .processTask(task.id, preparedImage.imagePath, study.id)
-          .finally(async () => {
-            await safeCleanup(preparedImage.cleanup);
-          })
+        
+        // 将分析任务加入队列（内部自动处理图像路径）
+        queueAnalysisTask(task.id, study.id, image)
           .catch((error) => {
             console.error(
-              `❌ [POST /analysis-tasks/batch] 异步分析失败: Task=${task.id}, Study=${study.id}`,
+              `❌ [POST /analysis-tasks/batch] 加入队列失败：Task=${task.id}, Study=${study.id}`,
               error,
             );
             void markAnalysisTaskFailed({
