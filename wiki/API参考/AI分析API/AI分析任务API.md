@@ -20,8 +20,11 @@
 ## 简介
 AI分析任务API提供了一套完整的分析任务管理功能，支持创建、批量创建、查询、更新和删除分析任务。该API专为宫颈癌AI检测系统设计，确保用户能够安全、高效地管理其医学影像分析任务。
 
+任务触发采用**异步队列机制**：`POST /` 与 `POST /batch` 创建任务后，将分析任务加入 `simpleAnalysisQueue` 任务队列（默认并发数 3），由队列统一调度执行，避免阻塞主线程。
+
 **Section sources**
 - [analysis-tasks.js](file://server/routes/analysis-tasks.js#L1-L405)
+- [simpleAnalysisQueue.service.js](file://server/services/simpleAnalysisQueue.service.js)
 
 ## 权限控制机制
 本系统实现了严格的权限控制机制，确保数据安全和隐私保护：
@@ -268,7 +271,7 @@ Database-->>Client : 返回创建的任务
 
 #### 行为说明
 - 每个文件独立创建 `Study`、`StudyImage`、`AnalysisTask`，单个失败不影响其它文件。
-- 成功项会异步触发分析流程，不阻塞接口响应。
+- 成功项通过 `queueAnalysisTask` 加入任务队列，由 `SimpleTaskQueue` 统一调度执行（不阻塞接口响应）。
 - 失败场景会清理对应上传文件，减少无效文件残留。
 
 **Section sources**

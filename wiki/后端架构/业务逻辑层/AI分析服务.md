@@ -9,21 +9,29 @@
 > - [index.js](file://server/index.js) - *应用入口文件*
 
 ## 更新摘要
-**主要变更**   
+**主要变更**
 - 新增 `generatePrompt` 功能，根据检查方式（如巴氏染色、TCT、HE染色等）动态生成优化的提示词
 - 增强对非细胞学图像的识别与处理能力，在提示词中明确要求判断图像类型
 - 更新 `analyzeImage` 方法以接收 `modality` 参数并调用 `generatePrompt`
 - 调整分析流程以支持多种检查方式的差异化分析指导
 - 更新服务层与控制器层交互逻辑，确保检查方式参数正确传递
 
+### 2026-03-20 任务队列化重构
+
+- **新增任务队列服务** `simpleAnalysisQueue.service.js`：轻量级内存队列，支持并发控制（默认 3），无需 Redis
+- **通义千问超时延长**：默认从 60s 调整为 **180s**，可通过 `QWEN_API_TIMEOUT_MS` 环境变量配置
+- **重试延迟优化**：递增延迟从 `1s/2s/3s` 调整为 **3s/6s/9s**
+- **日志增强**：请求阶段输出图像来源（远程 URL / 本地文件）、检查方式、超时配置；错误日志分阶段详细输出
+
 ## 目录
 1. [简介](#简介)
 2. [核心组件](#核心组件)
 3. [QwenService类设计与实现](#qwenservice类设计与实现)
-4. [AI分析流程详解](#ai分析流程详解)
-5. [错误处理与重试机制](#错误处理与重试机制)
-6. [服务层与控制器层交互](#服务层与控制器层交互)
-7. [系统架构与数据流](#系统架构与数据流)
+4. [任务队列服务](#任务队列服务)
+5. [AI分析流程详解](#ai分析流程详解)
+6. [错误处理与重试机制](#错误处理与重试机制)
+7. [服务层与控制器层交互](#服务层与控制器层交互)
+8. [系统架构与数据流](#系统架构与数据流)
 
 ## 简介
 本文档深入解析CervixDetectAI项目中AI分析服务的设计与实现。该服务基于通义千问视觉语言模型，为宫颈细胞学图像提供专业的病理分析。文档详细阐述了QwenService类的构造函数初始化过程、analyzeImage方法的完整执行流程、重试机制和错误处理策略，以及服务层与控制器层的交互方式。重点更新了新增的`generatePrompt`功能，该功能可根据不同的检查方式（如巴氏染色、TCT、HE染色等）生成针对性的优化提示词，并增强了对非细胞学图像的识别与处理能力。
@@ -32,6 +40,7 @@
 
 **Section sources**
 - [qwenService.js](file://server/services/qwenService.js)
+- [simpleAnalysisQueue.service.js](file://server/services/simpleAnalysisQueue.service.js)
 - [analyze.js](file://server/routes/analyze.js)
 
 ## QwenService类设计与实现
@@ -262,6 +271,79 @@ ${diagnosisOptions}
 
 **Section sources**
 - [qwenService.js](file://server/services/qwenService.js#L9-L196) - *新增generatePrompt函数*
+
+## 任务队列服务
+
+### SimpleTaskQueue 类设计
+`simpleAnalysisQueue.service.js` 提供了一个轻量级的内存任务队列，适用于小型部署或开发环境，无需 Redis 等外部依赖。
+
+```mermaid
+classDiagram
+class SimpleTaskQueue {
+	+number concurrency
+	+number running
+	+Array queue
+	+constructor(concurrency)
+	+add(taskFn, taskId) Promise
+	+_execute(taskFn, taskId) Promise
+	+_processQueue() void
+	+getStatus() Object
+}
+
+class analysisTaskQueue {
+	+SimpleTaskQueue instance
+	+queueAnalysisTask(analysisTaskId, studyId, studyImage) Promise
+}
+```
+
+**Section sources**
+- [simpleAnalysisQueue.service.js](file://server/services/simpleAnalysisQueue.service.js)
+
+### 队列配置
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :---: | :--- |
+| `MAX_CONCURRENT_ANALYSIS` | `3` | 分析任务最大并发数 |
+
+### queueAnalysisTask 执行流程
+
+```mermaid
+flowchart TD
+    Start[queueAnalysisTask] --> Prepare[prepareStudyImageForAnalysis]
+    Prepare --> CheckPath{imagePath 存在?}
+    CheckPath -->|否| Fail[markAnalysisTaskFailed]
+    CheckPath -->|是| Enqueue[加入分析任务队列]
+    Enqueue --> WaitSlot{队列空闲?}
+    WaitSlot -->|否| Queue[排队等待]
+    WaitSlot -->|是| Execute[执行分析任务]
+    Queue --> WaitSlot
+    Execute --> ProcessTask[analysisService.processTask]
+    ProcessTask --> Cleanup[执行清理 cleanup]
+    Cleanup --> End[任务完成]
+    Fail --> End
+```
+
+**Section sources**
+- [simpleAnalysisQueue.service.js](file://server/services/simpleAnalysisQueue.service.js#L88-L122)
+
+### 与路由层的交互
+
+`analysis-tasks.js` 的 `POST /` 和 `POST /batch` 接口统一调用 `queueAnalysisTask`：
+
+```javascript
+const { queueAnalysisTask } = require('../services/simpleAnalysisQueue.service.js');
+
+// 单任务接口
+await queueAnalysisTask(task.id, study.id, studyImage);
+
+// 批量任务接口（.catch 降级处理）
+queueAnalysisTask(task.id, study.id, image).catch((error) => {
+    void markAnalysisTaskFailed({ analysisTaskId: task.id, studyId: study.id, error, ... });
+});
+```
+
+**Section sources**
+- [analysis-tasks.js](file://server/routes/analysis-tasks.js)
 
 ## AI分析流程详解
 
