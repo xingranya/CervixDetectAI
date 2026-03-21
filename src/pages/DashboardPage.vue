@@ -893,6 +893,11 @@ onUnmounted(() => {
     transform: translateY(-2px);
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--q-primary);
+    outline-offset: 2px;
+  }
+
   /* 四个快捷操作各自专属悬浮渐变 */
   &:nth-child(1):hover {
     border-color: rgba(37, 99, 235, 0.38);
@@ -954,6 +959,11 @@ onUnmounted(() => {
   &:hover {
     background-color: var(--app-surface);
     box-shadow: var(--app-shadow-sm);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--q-primary);
+    outline-offset: 2px;
   }
 }
 

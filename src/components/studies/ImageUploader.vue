@@ -51,7 +51,7 @@
               <q-uploader-add-trigger />
             </q-btn>
 
-            <q-btn v-else icon="clear" @click="scope.removeQueuedFiles" round dense flat />
+            <q-btn v-else icon="clear" @click="scope.removeQueuedFiles" round dense flat aria-label="清除文件" />
           </div>
         </template>
       </q-uploader>

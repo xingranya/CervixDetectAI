@@ -127,7 +127,7 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <q-btn flat dense round icon="edit" color="primary" @click="openEditDialog(props.row)">
+              <q-btn flat dense round icon="edit" color="primary" @click="openEditDialog(props.row)" aria-label="编辑">
                 <q-tooltip>编辑</q-tooltip>
               </q-btn>
               <q-btn
@@ -193,7 +193,7 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{ isEditing ? '编辑随访计划' : '新建随访计划' }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <q-btn flat round dense icon="close" v-close-popup aria-label="关闭对话框" />
         </q-card-section>
 
         <q-card-section>

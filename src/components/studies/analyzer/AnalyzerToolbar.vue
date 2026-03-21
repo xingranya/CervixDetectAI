@@ -2,14 +2,14 @@
   <div class="analyzer-toolbar q-pa-sm row items-center q-gutter-sm bg-white border-bottom-light">
     <!-- Zoom Controls -->
     <q-btn-group flat class="shadow-1 rounded-borders bg-grey-1">
-      <q-btn icon="zoom_in" @click="$emit('zoomIn')" dense flat color="grey-8">
+      <q-btn icon="zoom_in" @click="$emit('zoomIn')" dense flat color="grey-8" aria-label="放大">
         <q-tooltip>放大 (2x/4x/8x)</q-tooltip>
       </q-btn>
-      <q-btn icon="zoom_out" @click="$emit('zoomOut')" dense flat color="grey-8">
+      <q-btn icon="zoom_out" @click="$emit('zoomOut')" dense flat color="grey-8" aria-label="缩小">
         <q-tooltip>缩小</q-tooltip>
       </q-btn>
       <q-separator vertical inset />
-      <q-btn icon="restart_alt" @click="$emit('resetView')" dense flat color="grey-8">
+      <q-btn icon="restart_alt" @click="$emit('resetView')" dense flat color="grey-8" aria-label="重置视图">
         <q-tooltip>重置视图</q-tooltip>
       </q-btn>
     </q-btn-group>
@@ -25,6 +25,7 @@
         @click="$emit('setTool', 'rect')"
         dense
         flat
+        aria-label="矩形框选工具"
       >
         <q-tooltip>矩形框选工具</q-tooltip>
       </q-btn>
@@ -35,10 +36,11 @@
         dense
         flat
         :loading="detecting"
+        aria-label="AI自动区域检测"
       >
         <q-tooltip>AI自动区域检测</q-tooltip>
       </q-btn>
-      <q-btn icon="delete_outline" @click="$emit('clearAnnotations')" dense flat color="negative">
+      <q-btn icon="delete_outline" @click="$emit('clearAnnotations')" dense flat color="negative" aria-label="清除所有标注">
         <q-tooltip>清除所有标注</q-tooltip>
       </q-btn>
     </q-btn-group>

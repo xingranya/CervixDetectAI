@@ -5,7 +5,7 @@
       <div class="container">
         <div class="row items-center">
           <div class="col-auto">
-            <q-btn flat round icon="arrow_back" color="white" @click="goBack" />
+            <q-btn flat round icon="arrow_back" color="white" @click="goBack" aria-label="返回上一页" />
           </div>
           <div class="col">
             <div class="text-h5 text-weight-medium">用户服务协议</div>

@@ -363,7 +363,7 @@
         <q-card-section class="row items-center q-pb-none q-pt-lg q-px-lg">
           <div class="text-h6 text-weight-bold">修改密码</div>
           <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
+          <q-btn icon="close" flat round dense v-close-popup aria-label="关闭对话框" />
         </q-card-section>
 
         <q-card-section class="q-pa-lg">

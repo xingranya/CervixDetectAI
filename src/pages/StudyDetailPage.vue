@@ -685,7 +685,7 @@
               <q-icon name="scanner" class="q-mr-sm text-primary" size="20px" />
               病变特征识别结果
             </div>
-            <q-btn flat round dense icon="download" color="grey-7" size="sm">
+            <q-btn flat round dense icon="download" color="grey-7" size="sm" aria-label="导出图表">
               <q-tooltip>导出图表</q-tooltip>
             </q-btn>
           </q-card-section>
@@ -837,7 +837,7 @@
     </div>
     <!-- AI 追问对话 FAB -->
     <q-page-sticky v-if="analysisResult" position="bottom-right" :offset="[24, 24]">
-      <q-btn fab icon="smart_toy" color="primary" @click="chatOpen = !chatOpen" class="chat-fab">
+      <q-btn fab icon="smart_toy" color="primary" @click="chatOpen = !chatOpen" class="chat-fab" aria-label="打开AI追问助手">
         <q-badge v-if="!chatOpen" color="positive" floating rounded label="AI" />
         <q-tooltip>AI 追问助手</q-tooltip>
       </q-btn>

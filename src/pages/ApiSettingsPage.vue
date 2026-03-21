@@ -1098,7 +1098,7 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-subtitle1 text-weight-bold">{{ activeCertificate?.name }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <q-btn flat round dense icon="close" v-close-popup aria-label="关闭对话框" />
         </q-card-section>
         <q-card-section>
           <q-img
@@ -2216,6 +2216,11 @@ const {
 .copyright-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 24px rgba(28, 78, 103, 0.12);
+}
+
+.copyright-card:focus-visible {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
 }
 
 .certificate-preview-image {

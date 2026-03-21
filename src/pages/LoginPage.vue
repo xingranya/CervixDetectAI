@@ -212,7 +212,7 @@
                 <q-card-section class="row items-center q-pb-none">
                   <div class="text-h6">安全验证</div>
                   <q-space />
-                  <q-btn icon="close" flat round dense v-close-popup />
+                  <q-btn icon="close" flat round dense v-close-popup aria-label="关闭对话框" />
                 </q-card-section>
                 <q-card-section class="text-center">
                   <div class="text-caption text-grey-6 q-mb-md">请完成图像验证后发送验证码</div>

@@ -322,7 +322,7 @@
                           {{ selectedPatient.phone }} · ID: {{ selectedPatient.id }}
                         </div>
                       </div>
-                      <q-btn flat round icon="close" size="sm" @click="selectedPatient = null" />
+                      <q-btn flat round icon="close" size="sm" @click="selectedPatient = null" aria-label="清除患者" />
                     </div>
                   </q-card-section>
                 </q-card>

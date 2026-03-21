@@ -171,7 +171,7 @@
                       按消息通道和接收内容控制站内、邮件与浏览器提醒策略。
                     </div>
                   </div>
-                  <q-btn flat round icon="restart_alt" color="grey-7" @click="resetPreferences">
+                  <q-btn flat round icon="restart_alt" color="grey-7" @click="resetPreferences" aria-label="恢复默认设置">
                     <q-tooltip>恢复默认设置</q-tooltip>
                   </q-btn>
                 </div>

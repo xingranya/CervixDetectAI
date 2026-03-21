@@ -351,7 +351,7 @@ onBeforeUnmount(() => {
             {{ activeCertificate?.name }}
           </div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <q-btn flat round dense icon="close" v-close-popup aria-label="关闭对话框" />
         </q-card-section>
         <q-card-section>
           <q-img
@@ -828,6 +828,11 @@ onBeforeUnmount(() => {
 .copyright-card--clickable:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.copyright-card--clickable:focus-visible {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
 }
 
 .copyright-head {
