@@ -446,30 +446,20 @@ const fetchDashboardStats = async () => {
 // 获取待处理任务
 const fetchPendingTasks = async () => {
   try {
-    console.log('【前端】开始获取历史任务...');
     const response = await dashboardAPI.getPendingTasks();
-    console.log('【前端】API响应:', response);
 
     if (response.success) {
       pendingTasks.value = response.data.tasks;
-      console.log('【前端】历史任务数量:', pendingTasks.value.length);
-      if (pendingTasks.value.length > 0) {
-        console.log('【前端】第一条任务:', pendingTasks.value[0]);
-      } else {
-        console.warn('【前端】历史任务列表为空');
-      }
     } else {
       pendingTasks.value = [];
-      console.error('【前端】API返回失败:', response);
       Notify.create({
         type: 'warning',
         message: response.message || response.error || '获取历史任务失败',
         position: 'top',
       });
     }
-  } catch (error) {
+  } catch {
     pendingTasks.value = [];
-    console.error('【前端】获取待处理任务失败:', error);
     Notify.create({
       type: 'negative',
       message: '获取历史任务失败，请检查网络连接',
@@ -493,12 +483,6 @@ const fetchSystemNotices = async () => {
 // Event handlers
 const handleTask = (task: Task) => {
   // 使用studyId跳转到病例详情页
-  console.log('点击任务:', {
-    taskId: task.id,
-    studyId: task.studyId,
-    studyUniqueId: task.studyUniqueId,
-    patientName: task.patientName,
-  });
   void router.push(`/app/studies/${task.studyId}`);
 };
 

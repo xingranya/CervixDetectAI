@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md app-gradient-page">
+  <q-page class="q-pa-md app-gradient-page studies-page">
     <div class="row items-center q-mb-md">
       <div class="col">
         <div class="text-h5">数据报表</div>
@@ -557,6 +557,52 @@ onMounted(async () => {
 .studies-actions-cell {
   .q-btn + .q-btn {
     margin-left: 4px;
+  }
+}
+</style>
+
+<style lang="scss">
+body.body--dark {
+  .studies-page {
+    .page-header {
+      border-bottom-color: var(--app-border-default);
+    }
+
+    .q-table {
+      background: var(--app-table-bg);
+      color: var(--app-text-primary);
+      border-color: var(--app-border-default);
+
+      th {
+        color: var(--app-table-header-color);
+      }
+
+      tbody tr:hover {
+        background: var(--app-table-hover-bg);
+      }
+    }
+
+    .q-input {
+      .q-field__control {
+        background: var(--app-elevated-bg);
+      }
+    }
+
+    .q-select {
+      .q-field__control {
+        background: var(--app-elevated-bg);
+      }
+    }
+
+    .dialog-header {
+      background: var(--app-elevated-bg);
+      border-bottom: 1px solid var(--app-border-default);
+      color: var(--app-text-primary);
+
+      .text-h6 {
+        color: var(--app-text-primary);
+      }
+    }
   }
 }
 </style>

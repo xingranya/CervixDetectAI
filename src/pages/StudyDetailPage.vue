@@ -1382,17 +1382,14 @@ const refreshStudyData = async (options?: { allowResumePolling?: boolean }) => {
   const allowResumePolling = options?.allowResumePolling ?? true;
   if (studyId) {
     try {
-      console.log('🔄 刷新病例数据...');
       // 强制从服务器重新加载
       const updatedStudy = await studyStore.loadStudyById(parseInt(studyId as string), true);
-      console.log('✅ 病例数据已刷新', updatedStudy);
 
       // 优先级：已有分析结果时，直接视为完成，避免被历史任务状态覆盖
       if (updatedStudy?.analysisResult && !currentTaskId.value) {
         completeAnalysisFromResult();
       } else if (allowResumePolling && updatedStudy?.status === 'processing' && updatedStudy.taskId) {
         // 检查是否有正在进行的任务，如果有则自动开始轮询
-        console.log('🔄 检测到正在进行的任务，恢复轮询:', updatedStudy.taskId);
         isAnalyzing.value = true;
         currentTaskId.value = updatedStudy.taskId;
         startPollingTaskStatus(updatedStudy.taskId);
@@ -1518,7 +1515,6 @@ const updateChart = () => {
 watch(
   () => analysisResult.value,
   (result) => {
-    console.log('📊 分析结果变化，更新图表');
     updateChart();
 
     // 只要有结果就结束“分析中”态，避免显示与数据不一致
@@ -1545,7 +1541,6 @@ watch(
   () => study.value,
   (newStudy) => {
     if (newStudy) {
-      console.log('📊 病例数据变化，更新UI');
       updateChart();
     }
   },
@@ -1553,41 +1548,27 @@ watch(
 );
 
 onMounted(async () => {
-  console.log('🚀 StudyDetailPage 开始加载...');
-
   // 加载病例数据
   const studyId = route.params.id;
-  console.log('🎯 病例ID:', studyId);
 
   if (studyId) {
     try {
       // 先强制刷新加载最新数据
-      console.log('🔄 开始加载病例数据...');
       await studyStore.loadStudyById(parseInt(studyId as string), true);
-
-      console.log('📊 病例状态:', study.value?.status);
-      console.log('📊 分析结果:', analysisResult.value);
-      console.log('📊 完整病例数据:', study.value);
 
       // 已有结果时优先结束分析态，避免旧任务状态造成误判
       if (analysisResult.value) {
         completeAnalysisFromResult();
       } else if (study.value?.status === 'processing') {
         // 检查是否有进行中的分析任务
-        console.log('🔍 检测到病例状态为 processing，查找分析任务...');
-
         try {
           // 从后端获取最新的分析任务列表
-          console.log('📡 调用 fetchTasks, study_id:', study.value.id);
-          const tasks = await analysisStore.fetchTasks({ study_id: study.value.id });
-          console.log('✅ 获取到任务列表:', tasks);
+          await analysisStore.fetchTasks({ study_id: study.value.id });
 
           // 优先查找进行中的任务
           const activeTask = analysisStore.getActiveTaskByStudyId(study.value.id.toString());
-          console.log('🔍 进行中的任务:', activeTask);
 
           if (activeTask) {
-            console.log('✅ 找到进行中的任务:', activeTask);
             currentTaskId.value = activeTask.id;
             isAnalyzing.value = true;
             progress.value = activeTask.progress;
@@ -1596,12 +1577,10 @@ onMounted(async () => {
           } else {
             // 没有进行中的任务，查找最新任务（包括刚刚创建的 PENDING 任务）
             const latestTask = analysisStore.getTaskByStudyId(study.value.id.toString());
-            console.log('🔍 最新任务:', latestTask);
 
             if (latestTask) {
               if (latestTask.status === 'PENDING' || latestTask.status === 'PROCESSING') {
                 // 找到 PENDING 或 PROCESSING 状态的任务，开始轮询（可能是刚从 UploadPage 跳转过来）
-                console.log('✅ 找到待处理/处理中的任务，开始轮询:', latestTask);
                 currentTaskId.value = latestTask.id;
                 isAnalyzing.value = true;
                 progress.value = latestTask.progress;
@@ -1610,7 +1589,6 @@ onMounted(async () => {
                 startPollingTaskStatus(latestTask.id);
               } else if (latestTask.status === 'FAILED') {
                 // 任务失败，显示失败信息
-                console.log('❌ 最新任务已失败:', latestTask);
                 lastFailedTask.value = {
                   id: latestTask.id,
                   ...(latestTask.error && { error: latestTask.error }),
@@ -1636,12 +1614,10 @@ onMounted(async () => {
                 });
               } else if (latestTask.status === 'SUCCESS') {
                 // 任务成功但病例状态未更新，刷新数据
-                console.log('✅ 任务成功但状态未同步，刷新数据...');
                 await refreshStudyData();
               }
             } else {
               // 没有任何任务，提示用户手动启动
-              console.log('⚠️ 未找到任何分析任务');
               $q.notify({
                 type: 'info',
                 message: '未找到分析任务，请点击"启动"按钮开始分析',
@@ -1650,20 +1626,16 @@ onMounted(async () => {
               });
             }
           }
-        } catch (fetchError) {
-          console.error('🐞 获取任务列表失败:', fetchError);
-
+        } catch {
           // 如果获取任务失败，尝试直接从本地查找
           const activeTask = analysisStore.getActiveTaskByStudyId(study.value.id.toString());
           if (activeTask) {
-            console.log('✅ 从本地找到进行中任务:', activeTask);
             currentTaskId.value = activeTask.id;
             isAnalyzing.value = true;
             progress.value = activeTask.progress;
             progressStatus.value = '分析中...';
             startPollingTaskStatus(activeTask.id);
           } else {
-            console.log('❌ 本地也没有找到进行中的任务');
             // 显示错误提示，让用户手动重试
             $q.notify({
               type: 'warning',
@@ -1675,18 +1647,10 @@ onMounted(async () => {
         }
       } else if (study.value?.status === 'completed' && !analysisResult.value) {
         // 如果状态是完成但没有结果，再次刷新
-        console.log('🔄 状态已完成但缺少结果，重新加载...');
         await studyStore.loadStudyById(parseInt(studyId as string), true);
-      } else {
-        console.log('📊 病例不是 processing 状态，无需轮询');
       }
     } catch (error) {
-      console.error('❌ 加载病例数据失败:', error);
-      console.error(
-        '   - 错误类型:',
-        error instanceof Error ? error.constructor.name : typeof error,
-      );
-      console.error('   - 错误消息:', error instanceof Error ? error.message : String(error));
+      console.error('加载病例数据失败:', error);
 
       $q.notify({
         type: 'negative',
@@ -1696,11 +1660,8 @@ onMounted(async () => {
     }
   }
 
-  console.log('🎯 初始化图表...');
   setTimeout(initChart, 100);
   window.addEventListener('resize', () => chartInstance?.resize());
-
-  console.log('✅ StudyDetailPage 加载完成');
 });
 
 onUnmounted(() => {

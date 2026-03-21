@@ -271,3 +271,7 @@ const handleSubmit = () => {
   emit('submit', formData.value);
 };
 </script>
+
+<style scoped lang="scss">
+// PatientForm 表单样式
+</style>

@@ -477,6 +477,7 @@ const previewObjectUrl = ref('');
 const isDragging = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref(0);
+const progressInterval = ref<ReturnType<typeof setInterval> | null>(null);
 const MAX_FILES = 10;
 
 // 检查方式选项
@@ -567,6 +568,10 @@ onBeforeUnmount(() => {
   if (previewObjectUrl.value) {
     URL.revokeObjectURL(previewObjectUrl.value);
     previewObjectUrl.value = '';
+  }
+  if (progressInterval.value) {
+    clearInterval(progressInterval.value);
+    progressInterval.value = null;
   }
 });
 
@@ -831,12 +836,12 @@ const uploadAndAnalyze = async () => {
 
   uploading.value = true;
   uploadProgress.value = 0;
-  let progressInterval: ReturnType<typeof setInterval> | null = null;
+  progressInterval.value = null;
   const isSingleUpload = selectedFiles.value.length === 1;
 
   try {
     // 模拟上传进度
-    progressInterval = setInterval(() => {
+    progressInterval.value = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 5;
       }
@@ -857,8 +862,8 @@ const uploadAndAnalyze = async () => {
         description: studyInfo.value.description,
       });
 
-      clearInterval(progressInterval);
-      progressInterval = null;
+      clearInterval(progressInterval.value);
+      progressInterval.value = null;
       uploadProgress.value = 100;
       uploading.value = false;
 
@@ -891,8 +896,8 @@ const uploadAndAnalyze = async () => {
       priority: 'normal',
     });
 
-    clearInterval(progressInterval);
-    progressInterval = null;
+    clearInterval(progressInterval.value);
+    progressInterval.value = null;
     uploadProgress.value = 100;
     uploading.value = false;
 
@@ -978,8 +983,8 @@ const uploadAndAnalyze = async () => {
       icon: 'error',
     });
   } finally {
-    if (progressInterval) {
-      clearInterval(progressInterval);
+    if (progressInterval.value) {
+      clearInterval(progressInterval.value);
     }
     uploading.value = false;
   }

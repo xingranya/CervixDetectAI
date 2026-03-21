@@ -1,5 +1,5 @@
 <template>
-  <q-btn-dropdown flat dense round icon="brightness_6">
+  <q-btn-dropdown flat dense round icon="brightness_6" aria-label="切换主题">
     <q-list dense style="min-width: 160px">
       <q-item
         v-for="option in themeOptions"
