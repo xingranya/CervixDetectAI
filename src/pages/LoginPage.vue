@@ -930,4 +930,14 @@ onBeforeUnmount(() => {
     line-height: 1.35;
   }
 }
+
+@media (max-width: 380px) {
+  .auth-login-tabs .q-tab__label {
+    display: none;
+  }
+
+  .auth-login-tabs .q-tab__content {
+    justify-content: center;
+  }
+}
 </style>
