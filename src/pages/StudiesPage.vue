@@ -125,11 +125,13 @@
           </template>
 
           <template #body-cell-actions="props">
-            <q-td :props="props">
+            <q-td :props="props" class="studies-actions-cell">
               <q-btn
                 flat
                 size="sm"
+                no-caps
                 icon="visibility"
+                label="查看"
                 color="primary"
                 @click="viewStudy(props.row.id)"
               >
@@ -138,7 +140,9 @@
               <q-btn
                 flat
                 size="sm"
+                no-caps
                 icon="picture_as_pdf"
+                label="报告"
                 color="secondary"
                 :disable="props.row.status !== 'completed'"
                 @click="downloadReport(props.row.id)"
@@ -150,7 +154,9 @@
               <q-btn
                 flat
                 size="sm"
+                no-caps
                 icon="delete"
+                label="删除"
                 color="negative"
                 @click="confirmDelete(props.row.id, props.row.patientName)"
               >
@@ -546,3 +552,11 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped lang="scss">
+.studies-actions-cell {
+  .q-btn + .q-btn {
+    margin-left: 4px;
+  }
+}
+</style>

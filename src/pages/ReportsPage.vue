@@ -1,36 +1,46 @@
 <template>
-  <q-page class="q-pa-md app-gradient-page">
-    <div class="row">
-      <div class="col-12">
-        <div class="text-h5 q-mb-md">报告中心</div>
-        <p>查看历史报告并管理下载记录</p>
+  <q-page class="reports-page app-gradient-page">
+    <!-- 页面标题 -->
+    <div class="page-header q-mb-md">
+      <div class="row items-center">
+        <div class="col">
+          <div class="text-h5 text-weight-bold q-mb-xs">
+            <q-icon name="description" class="q-mr-sm text-primary" />
+            报告中心
+          </div>
+          <div class="text-subtitle2 text-grey-7">查看历史报告并管理下载记录</div>
+        </div>
       </div>
     </div>
 
-    <q-card flat bordered>
-      <q-card-section>
-        <div class="text-h6">近期报告</div>
+    <q-card flat bordered class="modern-card">
+      <q-card-section class="card-header">
+        <div class="text-h6 text-weight-bold">
+          <q-icon name="history" class="q-mr-sm text-primary" />
+          近期报告
+        </div>
       </q-card-section>
       <q-separator />
-      <q-card-section>
+      <q-card-section class="q-pa-none">
         <q-table
           :rows="studyStore.completedStudies"
           :columns="reportColumns"
           row-key="id"
           :pagination="{ rowsPerPage: 10 }"
+          flat
         >
           <template v-slot:body-cell-studyDate="props">
             <q-td :props="props">
-              {{ new Date(props.row.studyDate).toLocaleDateString() }}
+              {{ new Date(props.row.studyDate).toLocaleDateString('zh-CN') }}
             </q-td>
           </template>
 
           <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn flat size="sm" icon="description" @click="viewReport(props.row.id)">
+            <q-td :props="props" class="report-actions-cell">
+              <q-btn flat size="sm" no-caps icon="description" label="查看" color="primary" @click="viewReport(props.row.id)">
                 <q-tooltip>查看报告</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" icon="file_download" @click="downloadReport(props.row.id)">
+              <q-btn flat size="sm" no-caps icon="file_download" label="下载" color="teal" @click="downloadReport(props.row.id)">
                 <q-tooltip>下载报告</q-tooltip>
               </q-btn>
             </q-td>
@@ -47,8 +57,6 @@ import { useRouter } from 'vue-router';
 import { useStudyStore } from 'stores/studyStore';
 import { useQuasar } from 'quasar';
 import { getStudyAnalysis } from 'src/services/apiService';
-
-console.log('【ReportsPage】 组件已初始化');
 
 const router = useRouter();
 const studyStore = useStudyStore();
@@ -144,13 +152,54 @@ const downloadReport = async (id: string) => {
 
 // 组件挂载时加载数据
 onMounted(async () => {
-  console.log('【ReportsPage】 组件已挂载，开始加载病例数据');
-
   try {
     await studyStore.fetchStudies();
-    console.log('【ReportsPage】 病例数据加载完成');
   } catch (error) {
-    console.error('【ReportsPage】 加载病例数据失败:', error);
+    console.error('报告中心加载病例数据失败:', error);
   }
 });
 </script>
+
+<style scoped lang="scss">
+.reports-page {
+  padding: 24px 32px;
+  min-height: calc(100vh - 64px);
+}
+
+.page-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--app-border-default);
+}
+
+// 操作按钮间距
+.report-actions-cell {
+  .q-btn + .q-btn {
+    margin-left: 4px;
+  }
+}
+</style>
+
+<!-- 暗色模式适配 -->
+<style lang="scss">
+body.body--dark {
+  .reports-page {
+    .page-header {
+      border-bottom-color: var(--app-border-default);
+    }
+
+    .q-table {
+      background: var(--app-table-bg);
+      color: var(--app-text-primary);
+      border-color: var(--app-border-default);
+
+      th {
+        color: var(--app-table-header-color);
+      }
+
+      tbody tr:hover {
+        background: var(--app-table-hover-bg);
+      }
+    }
+  }
+}
+</style>

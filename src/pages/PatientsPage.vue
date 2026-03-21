@@ -1,19 +1,31 @@
 <template>
-  <q-page class="q-pa-md app-gradient-page">
+  <q-page class="patients-page app-gradient-page">
     <!-- 页面标题 -->
-    <div class="row items-center q-mb-md">
-      <div class="col">
-        <div class="text-h5">患者管理</div>
-        <div class="text-subtitle2 text-grey-7">管理所有患者信息</div>
-      </div>
-      <div class="col-auto">
-        <q-btn color="primary" icon="person_add" label="新增患者" no-caps @click="openAddDialog" />
+    <div class="page-header q-mb-md">
+      <div class="row items-center">
+        <div class="col">
+          <div class="text-h5 text-weight-bold">
+            <q-icon name="people" class="q-mr-sm text-primary" />
+            患者管理
+          </div>
+          <div class="text-subtitle2 text-grey-7">管理所有患者信息</div>
+        </div>
+        <div class="col-auto">
+          <q-btn color="primary" icon="person_add" label="新增患者" no-caps @click="openAddDialog" />
+        </div>
       </div>
     </div>
 
     <!-- 搜索和筛选 -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section class="q-py-sm">
+    <q-card flat bordered class="modern-card q-mb-md">
+      <q-card-section class="card-header q-py-sm">
+        <div class="row items-center no-wrap">
+          <q-icon name="search" class="q-mr-sm text-primary" />
+          <span class="text-subtitle2 text-weight-medium">搜索筛选</span>
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section class="q-py-md">
         <div class="row q-gutter-md items-center">
           <div class="col-md-4 col-sm-6 col-xs-12">
             <q-input
@@ -37,7 +49,15 @@
     </q-card>
 
     <!-- 患者列表 -->
-    <q-card flat bordered>
+    <q-card flat bordered class="modern-card">
+      <q-card-section class="card-header q-pb-none">
+        <div class="row items-center no-wrap">
+          <q-icon name="list" class="q-mr-sm text-primary" />
+          <span class="text-subtitle2 text-weight-medium">患者列表</span>
+          <span class="text-caption text-grey-6 q-ml-sm">({{ patientStore.allPatients.length }} 条记录)</span>
+        </div>
+      </q-card-section>
+      <q-separator />
       <q-card-section class="q-pa-none">
         <q-table
           :rows="patientStore.allPatients"
@@ -46,6 +66,7 @@
           row-key="id"
           v-model:pagination="pagination"
           @request="onRequest"
+          flat
         >
           <!-- 性别列 -->
           <template v-slot:body-cell-gender="props">
@@ -78,44 +99,20 @@
 
           <!-- 操作列 -->
           <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn
-                flat
-                size="sm"
-                icon="visibility"
-                color="primary"
-                @click="viewPatient(props.row)"
-              >
+            <q-td :props="props" class="patient-actions-cell">
+              <q-btn flat size="sm" no-caps icon="visibility" label="查看" color="primary" @click="viewPatient(props.row)">
                 <q-tooltip>查看详情</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" icon="edit" color="secondary" @click="editPatient(props.row)">
+              <q-btn flat size="sm" no-caps icon="edit" label="编辑" color="secondary" @click="editPatient(props.row)">
                 <q-tooltip>编辑</q-tooltip>
               </q-btn>
-              <q-btn
-                flat
-                size="sm"
-                icon="folder_open"
-                color="teal"
-                @click="viewStudies(props.row.id)"
-              >
+              <q-btn flat size="sm" no-caps icon="folder_open" label="病例" color="teal" @click="viewStudies(props.row.id)">
                 <q-tooltip>查看病例</q-tooltip>
               </q-btn>
-              <q-btn
-                flat
-                size="sm"
-                icon="insights"
-                color="indigo"
-                @click="viewInsights(props.row.id)"
-              >
+              <q-btn flat size="sm" no-caps icon="insights" label="洞察" color="indigo" @click="viewInsights(props.row.id)">
                 <q-tooltip>患者洞察</q-tooltip>
               </q-btn>
-              <q-btn
-                flat
-                size="sm"
-                icon="delete"
-                color="negative"
-                @click="confirmDelete(props.row)"
-              >
+              <q-btn flat size="sm" no-caps icon="delete" label="删除" color="negative" @click="confirmDelete(props.row)">
                 <q-tooltip>删除</q-tooltip>
               </q-btn>
             </q-td>
@@ -136,7 +133,7 @@
     <!-- 新增/编辑患者对话框 -->
     <q-dialog v-model="showFormDialog" persistent>
       <q-card style="width: 700px; max-width: 90vw">
-        <q-card-section class="row items-center q-pb-none bg-primary text-white">
+        <q-card-section class="row items-center q-pb-none dialog-header">
           <div class="text-h6">{{ isEditing ? '编辑患者' : '新增患者' }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
@@ -156,7 +153,7 @@
     <!-- 查看患者详情对话框 -->
     <q-dialog v-model="showDetailDialog">
       <q-card style="min-width: 500px">
-        <q-card-section class="row items-center q-pb-none bg-primary text-white">
+        <q-card-section class="row items-center q-pb-none dialog-header">
           <div class="text-h6">患者详情</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
@@ -360,3 +357,64 @@ onMounted(() => {
   void onRequest({ pagination: pagination.value });
 });
 </script>
+
+<style scoped lang="scss">
+.patients-page {
+  padding: 24px 32px;
+  min-height: calc(100vh - 64px);
+}
+
+.page-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--app-border-default);
+}
+
+// 操作按钮间距统一
+.patient-actions-cell {
+  .q-btn + .q-btn {
+    margin-left: 4px;
+  }
+}
+</style>
+
+<!-- 暗色模式适配 -->
+<style lang="scss">
+body.body--dark {
+  .patients-page {
+    .page-header {
+      border-bottom-color: var(--app-border-default);
+    }
+
+    .q-table {
+      background: var(--app-table-bg);
+      color: var(--app-text-primary);
+      border-color: var(--app-border-default);
+
+      th {
+        color: var(--app-table-header-color);
+      }
+
+      tbody tr:hover {
+        background: var(--app-table-hover-bg);
+      }
+    }
+
+    .q-input {
+      .q-field__control {
+        background: var(--app-elevated-bg);
+      }
+    }
+
+    // 对话框标题栏暗色统一
+    .dialog-header {
+      background: var(--app-elevated-bg);
+      border-bottom: 1px solid var(--app-border-default);
+      color: var(--app-text-primary);
+
+      .text-h6 {
+        color: var(--app-text-primary);
+      }
+    }
+  }
+}
+</style>
