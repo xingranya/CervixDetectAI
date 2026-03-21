@@ -18,7 +18,7 @@
       <q-card-section>
         <div class="row items-center justify-between">
           <div class="col-auto">
-            <div class="text-h5 text-weight-medium q-mb-xs">欢迎回来，{{ userName }}</div>
+            <div class="text-h5 text-weight-medium q-mb-xs">{{ greeting }}{{ userName }}</div>
             <div class="text-body2">
               您有{{ pendingTasksCount }}项待处理任务，今日已完成{{
                 completedTodayCount
@@ -143,10 +143,10 @@
                     <span class="stat-title">今日分析总数</span>
                     <q-icon name="trending_up" color="positive" size="20px" />
                   </div>
-                  <div class="stat-value">100</div>
+                  <div class="stat-value app-count-up" data-target="128">128</div>
                   <div class="stat-trend positive">
                     <q-icon name="arrow_upward" size="14px" />
-                    较昨日 +20%
+                    较昨日 +18%
                   </div>
                 </div>
               </div>
@@ -156,8 +156,8 @@
                     <span class="stat-title">高风险病例</span>
                     <q-icon name="warning" color="negative" size="20px" />
                   </div>
-                  <div class="stat-value">15</div>
-                  <div class="stat-trend neutral">占比 15%</div>
+                  <div class="stat-value app-count-up" data-target="12">12</div>
+                  <div class="stat-trend neutral">占比 9.4%</div>
                 </div>
               </div>
               <div class="col-md-4 col-sm-6 col-xs-12">
@@ -167,12 +167,12 @@
                     <q-icon name="schedule" color="grey-6" size="20px" />
                   </div>
                   <div class="stat-value">
-                    1.8
+                    <span class="app-count-up" data-target="1.8" data-decimals="1">1.8</span>
                     <span class="stat-unit">分钟</span>
                   </div>
                   <div class="stat-trend positive">
                     <q-icon name="arrow_downward" size="14px" />
-                    较上周 -1.2分钟
+                    较上周 -0.5分钟
                   </div>
                 </div>
               </div>
@@ -224,8 +224,11 @@
           <q-separator />
           <q-card-section class="q-pa-md">
             <div class="notice-list">
-              <div v-for="notice in systemNotices" :key="notice.id" class="notice-item">
-                <div class="text-subtitle2 text-weight-medium q-mb-xs">{{ notice.title }}</div>
+              <div v-for="(notice, index) in systemNotices" :key="notice.id" class="notice-item">
+                <div class="notice-title-row">
+                  <div class="text-subtitle2 text-weight-medium q-mb-xs">{{ notice.title }}</div>
+                  <q-badge v-if="index === 0" color="negative" class="notice-new-badge">NEW</q-badge>
+                </div>
                 <div class="text-body2 q-mb-sm">{{ notice.content }}</div>
                 <div class="notice-meta">
                   <span class="text-caption text-grey-7">{{ notice.publisher }}</span>
@@ -241,14 +244,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/authStore';
 import { useStudyStore } from 'stores/studyStore';
 import { useThemeStore } from 'stores/themeStore';
 import { dashboardAPI } from 'src/services/api';
 import * as echarts from 'echarts';
-import type { EChartsOption } from 'echarts';
 import { Notify } from 'quasar';
 
 interface Task {
@@ -294,9 +296,54 @@ const chartContainer = ref<HTMLElement>();
 let chartInstance: any = null;
 const activeStatsPeriod = ref<'today' | 'week' | 'month'>('today');
 
+/** 数字滚动动画：从 0 滚动到目标值 */
+const useCountUp = (
+  element: HTMLElement,
+  endValue: number,
+  duration = 800,
+): void => {
+  const start = performance.now();
+  const decimals = parseInt(element.dataset.decimals || '0', 10);
+
+  const step = (timestamp: number) => {
+    const elapsed = timestamp - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease-out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = eased * endValue;
+    element.textContent = decimals > 0 ? current.toFixed(decimals) : String(Math.round(current));
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  };
+
+  requestAnimationFrame(step);
+};
+
+/** 挂载时对所有 .app-count-up 元素执行 count-up */
+const animateCountUps = (): void => {
+  document.querySelectorAll('.app-count-up').forEach((el) => {
+    const target = parseFloat((el as HTMLElement).dataset.target || '0');
+    if (target > 0) {
+      useCountUp(el as HTMLElement, target, 800);
+    }
+  });
+};
+
 // Computed properties
 const userName = computed(() => {
   return authStore.currentUser?.real_name || authStore.currentUser?.username || '用户';
+});
+
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  if (hour < 6) return '夜深了，';
+  if (hour < 9) return '早上好，';
+  if (hour < 12) return '上午好，';
+  if (hour < 14) return '中午好，';
+  if (hour < 18) return '下午好，';
+  if (hour < 22) return '晚上好，';
+  return '夜里好，';
 });
 
 const currentDate = computed(() => {
@@ -381,6 +428,8 @@ const fetchDashboardStats = async () => {
       statsData.value = response.data;
       // 更新图表数据
       updateChartData();
+      // 数字滚动动画
+      void nextTick(() => animateCountUps());
     }
   } catch (error) {
     console.error('获取统计数据失败:', error);
@@ -533,7 +582,8 @@ const updateChartData = () => {
 
   const isDark = themeStore.isDark;
 
-  const option: EChartsOption = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const option: any = {
     tooltip: {
       trigger: 'item',
       formatter: '{a} <br/>{b}: {c}例 ({d}%)',
@@ -567,6 +617,11 @@ const updateChartData = () => {
           color: isDark ? '#e2e8f0' : '#64748b',
         },
         emphasis: {
+          itemStyle: {
+            scale: 1.08,
+            shadowBlur: 20,
+            shadowColor: 'rgba(0,0,0,0.3)',
+          },
           label: {
             show: true,
             fontSize: 16,
@@ -660,6 +715,12 @@ onUnmounted(() => {
 
   .status-chip {
     font-weight: 500;
+    animation: status-breathe 2.4s ease-in-out infinite;
+  }
+
+  @keyframes status-breathe {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
   }
 }
 
@@ -806,6 +867,24 @@ onUnmounted(() => {
   margin-top: 16px;
 }
 
+// Count-Up 动画
+.app-count-up {
+  display: inline-block;
+  animation: stat-pop-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform-origin: center bottom;
+}
+
+@keyframes stat-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 // Quick Actions Grid
 .quick-actions-grid {
   display: grid;
@@ -822,15 +901,37 @@ onUnmounted(() => {
     transform var(--app-motion-duration-normal) var(--app-motion-ease-default),
     box-shadow var(--app-motion-duration-normal) var(--app-motion-ease-default),
     border-color var(--app-motion-duration-normal) var(--app-motion-ease-default),
-    background-color var(--app-motion-duration-normal) var(--app-motion-ease-default);
+    background var(--app-motion-duration-normal) var(--app-motion-ease-default);
   cursor: pointer;
   background-color: var(--app-elevated-bg);
 
   &:hover {
-    border-color: var(--q-primary);
-    background-color: var(--app-surface);
-    box-shadow: var(--app-shadow-md);
     transform: translateY(-2px);
+  }
+
+  /* 四个快捷操作各自专属悬浮渐变 */
+  &:nth-child(1):hover {
+    border-color: rgba(37, 99, 235, 0.38);
+    background: linear-gradient(135deg, rgba(227, 242, 253, 0.96), rgba(187, 222, 251, 0.92));
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+  }
+
+  &:nth-child(2):hover {
+    border-color: rgba(16, 185, 129, 0.38);
+    background: linear-gradient(135deg, rgba(232, 245, 233, 0.96), rgba(200, 230, 201, 0.92));
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+  }
+
+  &:nth-child(3):hover {
+    border-color: rgba(156, 39, 176, 0.38);
+    background: linear-gradient(135deg, rgba(243, 229, 245, 0.96), rgba(225, 190, 231, 0.92));
+    box-shadow: 0 8px 20px rgba(156, 39, 176, 0.15);
+  }
+
+  &:nth-child(4):hover {
+    border-color: rgba(245, 158, 11, 0.38);
+    background: linear-gradient(135deg, rgba(255, 243, 224, 0.96), rgba(255, 224, 178, 0.92));
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
   }
 }
 
@@ -839,6 +940,17 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.notice-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice-new-badge {
+  font-size: 0.6rem;
+  padding: 2px 6px;
 }
 
 .notice-item {
@@ -985,8 +1097,31 @@ body.body--dark {
     background-color: var(--app-elevated-bg);
 
     &:hover {
-      border-color: var(--q-primary);
-      background-color: var(--app-elevated-hover-bg);
+      transform: translateY(-2px);
+    }
+
+    &:nth-child(1):hover {
+      border-color: rgba(96, 165, 250, 0.42);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.82), rgba(30, 58, 96, 0.82));
+      box-shadow: 0 8px 20px rgba(30, 64, 175, 0.28);
+    }
+
+    &:nth-child(2):hover {
+      border-color: rgba(52, 211, 153, 0.42);
+      background: linear-gradient(135deg, rgba(20, 46, 26, 0.82), rgba(26, 51, 36, 0.82));
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.22);
+    }
+
+    &:nth-child(3):hover {
+      border-color: rgba(216, 180, 254, 0.42);
+      background: linear-gradient(135deg, rgba(31, 20, 41, 0.82), rgba(39, 26, 52, 0.82));
+      box-shadow: 0 8px 20px rgba(156, 39, 176, 0.22);
+    }
+
+    &:nth-child(4):hover {
+      border-color: rgba(251, 191, 36, 0.42);
+      background: linear-gradient(135deg, rgba(42, 31, 20, 0.82), rgba(52, 39, 26, 0.82));
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.22);
     }
   }
 
@@ -1005,6 +1140,11 @@ body.body--dark {
     .text-grey-7 {
       color: var(--app-text-grey-7) !important;
     }
+  }
+
+  .notice-new-badge {
+    background: rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
   }
 }
 </style>
