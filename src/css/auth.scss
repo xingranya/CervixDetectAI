@@ -18,8 +18,8 @@
 .auth-channel-enter-active,
 .auth-channel-leave-active {
   transition:
-    opacity var(--app-motion-duration-fast) var(--app-motion-ease-default),
-    transform var(--app-motion-duration-fast) var(--app-motion-ease-default);
+    opacity 250ms var(--app-motion-ease-default),
+    transform 250ms var(--app-motion-ease-default);
 }
 
 .auth-channel-leave-active {
@@ -420,6 +420,34 @@
   box-shadow:
     0 8px 18px rgba(37, 99, 235, 0.2),
     0 2px 6px rgba(29, 78, 216, 0.16);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-login-cta::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: none;
+}
+
+.auth-login-cta:not([disabled]):hover::after {
+  animation: auth-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes auth-shimmer {
+  0% { left: -100%; }
+  60%, 100% { left: 160%; }
 }
 
 .auth-login-cta:not([disabled]):hover {

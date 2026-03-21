@@ -383,6 +383,23 @@ onBeforeUnmount(() => {
   color: #0f172a; /* Slate 900 */
 }
 
+/* 极淡科技网格纹理 */
+.auth-brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #3b82f6 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-brand-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Header */
 .auth-brand-header {
   display: flex;
@@ -469,13 +486,13 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), rgba(37, 99, 235, 0.1));
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(56, 189, 248, 0.36);
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 700;
   color: #0284c7;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   opacity: 1;
 }
 
@@ -491,8 +508,8 @@ onBeforeUnmount(() => {
   line-break: strict;
   color: #0f172a;
   text-shadow:
-    0 8px 24px rgba(37, 99, 235, 0.18),
-    0 2px 6px rgba(15, 23, 42, 0.14);
+    0 4px 14px rgba(37, 99, 235, 0.12),
+    0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
 .hero-subtitle {
@@ -519,7 +536,7 @@ onBeforeUnmount(() => {
   backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
@@ -735,11 +752,16 @@ onBeforeUnmount(() => {
   padding: 12px;
   display: flex;
   gap: 12px;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .feature-card:hover {
   background: rgba(255, 255, 255, 0.82);
+  transform: scale(1.015);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
 }
 
 .feature-icon-box {
@@ -843,8 +865,8 @@ onBeforeUnmount(() => {
 .copyright-badge {
   font-size: 0.6rem;
   padding: 2px 6px;
-  background: rgba(99, 102, 241, 0.1);
-  color: #4f46e5;
+  background: rgba(56, 189, 248, 0.12);
+  color: #0284c7;
   border-radius: 4px;
 }
 
@@ -908,8 +930,8 @@ body.body--dark .hero-badge {
 body.body--dark .hero-title {
   color: #f8fafc;
   text-shadow:
-    0 10px 26px rgba(2, 132, 199, 0.32),
-    0 2px 8px rgba(15, 23, 42, 0.5);
+    0 6px 18px rgba(2, 132, 199, 0.24),
+    0 1px 4px rgba(15, 23, 42, 0.4);
 }
 
 body.body--dark .hero-subtitle {
@@ -921,6 +943,7 @@ body.body--dark .hud-dashboard {
   background: rgba(15, 23, 42, 0.4);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: none;
+  border-radius: 16px;
 }
 
 body.body--dark .hud-label {
@@ -998,7 +1021,7 @@ body.body--dark .auth-brand-footer-title {
 
 body.body--dark .copyright-card {
   background: rgba(30, 41, 59, 0.4);
-  border-color: rgba(99, 102, 241, 0.2);
+  border-color: rgba(56, 189, 248, 0.2);
 }
 
 body.body--dark .copyright-name {
@@ -1006,8 +1029,8 @@ body.body--dark .copyright-name {
 }
 
 body.body--dark .copyright-badge {
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
 }
 
 body.body--dark .copyright-meta-row {
