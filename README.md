@@ -182,22 +182,18 @@ flowchart LR
 ### 前端技术栈
 
 ```mermaid
-graph TD
+flowchart TB
     A[Quasar Framework] --> B[Vue 3]
     A --> C[TypeScript]
     A --> D[Vite]
-
     B --> E[Composition API]
     B --> F[Vue Router]
-
     C --> G[类型安全]
-
     D --> H[快速构建]
-
-    I[状态管理] --> J[Pinia]
-    K[UI 组件] --> L[Quasar Components]
-    M[HTTP 客户端] --> N[Axios]
-    O[图表库] --> P[ECharts]
+    I([状态管理]) --> J[Pinia]
+    K([UI 组件]) --> L[Quasar Components]
+    M([HTTP 客户端]) --> N[Axios]
+    O([图表库]) --> P[ECharts]
 ```
 
 | 技术                 |  版本  | 用途        |
@@ -335,35 +331,71 @@ CervixDetectAI/
 │   │   └── axios.ts                 # Axios 配置
 │   ├── 📁 components/               # 公共组件
 │   │   ├── 📁 common/               # 通用组件
-│   │   │   └── AgreementDialog.vue  # 用户协议对话框
+│   │   │   ├── AgreementDialog.vue  # 用户协议对话框
+│   │   │   ├── ThemeToggle.vue     # 主题切换
+│   │   │   └── AliCaptcha.vue      # 阿里云 AI 验证码
+│   │   ├── 📁 auth/                 # 认证组件
+│   │   │   ├── AuthBrandPanel.vue  # 认证品牌面板
+│   │   │   └── AuthSplitLayout.vue # 认证分栏布局
 │   │   ├── 📁 chat/                 # AI 聊天组件
-│   │   │   └── AIChatPanel.vue      # AI 聊天面板（病例详情页）
+│   │   │   └── AIChatPanel.vue     # AI 聊天面板（病例详情页）
+│   │   ├── 📁 layout/               # 布局组件
+│   │   │   ├── MainNavDrawer.vue   # 主导航抽屉
+│   │   │   ├── HeaderUserMenu.vue  # 顶栏用户菜单
+│   │   │   └── NotificationBell.vue # 通知铃铛
 │   │   ├── 📁 patients/             # 患者相关组件
+│   │   │   ├── PatientForm.vue     # 患者表单
+│   │   │   ├── PatientDetail.vue   # 患者详情
+│   │   │   └── PatientSelector.vue # 患者选择器
+│   │   ├── 📁 studies/              # 病例相关组件
+│   │   │   ├── ImageUploader.vue   # 影像上传
+│   │   │   ├── ImageAnalyzer.vue   # 影像标注
+│   │   │   ├── StudyForm.vue       # 病例表单
+│   │   │   └── analyzer/           # 分析工具
+│   │   │       ├── AnalyzerCanvas.vue
+│   │   │       └── AnalyzerToolbar.vue
+│   │   ├── 📁 settings/            # 设置相关组件
+│   │   │   ├── EmailSecurityCard.vue # 邮箱安全卡片
+│   │   │   └── DatabaseHealth.vue  # 数据库健康状态
 │   │   └── EssentialLink.vue        # 侧边栏链接
 │   ├── 📁 constants/                # 常量配置
-│   │   └── hospitals.ts             # 医院配置
+│   │   ├── hospitals.ts             # 医院配置
+│   │   ├── navigation.ts           # 导航配置
+│   │   ├── preferences.ts         # 用户偏好配置
+│   │   └── softwareCopyrights.ts   # 软件著作权配置
 │   ├── 📁 layouts/                  # 页面布局
 │   │   ├── MainLayout.vue           # 主应用布局
 │   │   └── PublicLayout.vue         # 公共页面布局
 │   ├── 📁 pages/                    # 页面组件
 │   │   ├── DashboardPage.vue        # 仪表盘
-│   │   ├── StudiesPage.vue          # 病例管理
+│   │   ├── StudiesPage.vue          # 病例中心
+│   │   ├── StudyDetailPage.vue      # 病例详情
 │   │   ├── UploadPage.vue           # 上传分析
 │   │   ├── PatientsPage.vue         # 患者管理
+│   │   ├── PatientInsightsPage.vue  # 患者洞察
+│   │   ├── FollowUpsPage.vue        # 随访管理
+│   │   ├── ReportsPage.vue          # 报告中心
 │   │   ├── LoginPage.vue            # 登录页
 │   │   ├── RegisterPage.vue         # 注册页
+│   │   ├── ApiSettingsPage.vue      # 套餐订阅
+│   │   ├── AiPreferencesPage.vue   # AI 偏好设置
+│   │   ├── ProfilePage.vue          # 个人资料
+│   │   ├── SettingsPage.vue         # 系统设置
 │   │   └── ...                      # 其他页面
 │   ├── 📁 router/                   # 路由配置
 │   │   └── index.ts                 # 路由定义
 │   ├── 📁 services/                 # API 服务
-│   │   ├── api.ts                   # HTTP 请求封装
-│   │   ├── authAPI.ts               # 认证接口
-│   │   ├── studyAPI.ts              # 病例接口
+│   │   ├── api.ts                   # Axios 封装
+│   │   ├── apiClient.ts             # API 客户端
+│   │   ├── apiService.ts            # API 服务
 │   │   ├── chatService.ts           # SSE 聊天流式服务
-│   │   └── ...                      # 其他接口
+│   │   ├── modelService.ts          # 模型服务
+│   │   └── patientService.ts        # 患者服务
 │   ├── 📁 stores/                   # Pinia 状态管理
 │   │   ├── authStore.ts             # 认证状态
 │   │   ├── studyStore.ts            # 病例数据
+│   │   ├── patientStore.ts          # 患者数据
+│   │   ├── themeStore.ts            # 主题状态
 │   │   └── ...                      # 其他 Store
 │   ├── 📁 utils/                    # 工具函数
 │   └── App.vue                      # 根组件
@@ -375,24 +407,44 @@ CervixDetectAI/
 │   │   ├── User.js                  # 用户模型
 │   │   ├── Patient.js               # 患者模型
 │   │   ├── Study.js                 # 病例模型
+│   │   ├── StudyImage.js            # 病例影像模型
 │   │   ├── AnalysisTask.js          # 分析任务模型
-│   │   ├── Report.js                # 报告模型
+│   │   ├── AnalysisResult.js        # 分析结果模型
+│   │   ├── MedicalReport.js         # 医疗报告模型
 │   │   ├── SmsCode.js               # 短信验证码模型
+│   │   ├── EmailCode.js             # 邮箱验证码模型
+│   │   ├── Notification.js         # 站内通知模型
+│   │   ├── FollowUp.js              # 随访计划模型
+│   │   ├── Order.js                 # 订单模型
+│   │   ├── UserAvatar.js            # 用户头像模型
 │   │   └── index.js                 # 模型关联
 │   ├── 📁 routes/                   # 路由控制器
 │   │   ├── auth.js                  # 认证接口
+│   │   ├── email-auth.js            # 邮箱认证接口
 │   │   ├── sms-auth.js              # 短信认证接口
 │   │   ├── studies.js               # 病例管理
 │   │   ├── patients.js              # 患者管理
-│   │   ├── analysis-tasks.js        # 分析任务
+│   │   ├── patient-insights.js      # 患者洞察
+│   │   ├── analysis-tasks.js        # 分析任务（异步队列）
+│   │   ├── analyze.js               # 影像上传分析
 │   │   ├── chat.js                  # AI 聊天接口（SSE）
 │   │   ├── reports.js               # 报告管理
+│   │   ├── followups.js             # 随访管理
+│   │   ├── notifications.js          # 通知中心
 │   │   ├── payment.js               # 支付接口
+│   │   ├── settings.js             # 系统设置
+│   │   ├── dashboard.js            # 仪表盘数据
 │   │   └── system.js                # 系统管理
 │   ├── 📁 services/                 # 业务逻辑
-│   │   ├── sms.service.js           # 短信服务
-│   │   ├── paymentService.js        # 支付服务
 │   │   ├── qwenService.js           # 通义千问分析/对话服务
+│   │   ├── simpleAnalysisQueue.service.js # 异步任务队列
+│   │   ├── followupScheduler.service.js # 随访定时调度
+│   │   ├── notificationService.js   # 站内通知服务
+│   │   ├── paymentService.js        # 支付服务
+│   │   ├── sms.service.js           # 短信服务
+│   │   ├── email.service.js         # 邮件服务
+│   │   ├── tucang.service.js       # 图仓存储服务
+│   │   ├── studyImageStorage.service.js # 影像存储服务
 │   │   └── databaseCleanup.service.js # 数据库清理服务
 │   ├── 📁 middleware/               # 中间件
 │   │   └── auth.js                  # JWT 认证中间件
@@ -481,6 +533,9 @@ node scripts/init-database.js
 - ✅ `sms_codes` - 短信验证码表
 - ✅ `email_codes` - 邮箱验证码表
 - ✅ `orders` - 订单表
+- ✅ `notifications` - 站内通知表
+- ✅ `follow_ups` - 随访计划表
+- ✅ `user_avatars` - 用户头像表
 
 并创建默认管理员账户：
 
@@ -514,7 +569,7 @@ cd CervixDetectAI
 bun install
 
 # 3. 启动开发服务器
-bun run dev
+quasar dev
 ```
 
 前端将运行在: **http://localhost:9000**
@@ -543,7 +598,7 @@ bun run dev
 
 ```bash
 # 前端构建
-bun run build
+quasar build
 
 # 构建产物位于 dist/spa 目录
 ```
@@ -812,27 +867,22 @@ TEMPLATE_ID_REGISTER_SUCCESS=42477
 
 | 指标         |    数量 |
 | :----------- | ------: |
-| **前端页面** |     15+ |
-| **前端组件** |     20+ |
+| **前端页面** |     24 |
+| **前端组件** |     30+ |
 | **后端接口** |     50+ |
-| **数据模型** |     10+ |
-| **代码行数** | 20,000+ |
+| **数据模型** |     14 |
+| **代码行数** | 143,759 |
 
 ### 功能覆盖
 
-```
-┌────────────────────────────────────────────┐
-│              功能完成度统计                  │
-├────────────────────────────────────────────┤
-│                                            │
-│  用户认证  ████████████████████  100%      │
-│  病例管理  ████████████████████  100%      │
-│  AI 分析  █████████████████░░░  90%       │
-│  报告系统  ████████████████████  100%      │
-│  订阅支付  ████████████████████  100%      │
-│  系统设置  ████████████████████  100%      │
-│                                            │
-└────────────────────────────────────────────┘
+```mermaid
+pie title 功能完成度统计
+    "用户认证 100%" : 100
+    "病例管理 100%" : 100
+    "AI 分析 90%" : 90
+    "报告系统 100%" : 100
+    "订阅支付 100%" : 100
+    "系统设置 100%" : 100
 ```
 
 
@@ -866,27 +916,13 @@ chore: 构建/工具变动
 
 ### 🔐 认证机制
 
-```
-┌─────────────────┐
-│   用户登录      │
-└────────┬────────┘
-         │
-         ↓
-┌─────────────────┐
-│  验证用户名密码  │
-└────────┬────────┘
-         │
-         ↓
-┌─────────────────┐
-│  生成双 Token    │
-│  accessToken    │ 1小时
-│  refreshToken   │ 7天
-└────────┬────────┘
-         │
-         ↓
-┌─────────────────┐
-│  返回给前端      │
-└─────────────────┘
+```mermaid
+flowchart TB
+    A["用户登录"] --> B["验证用户名密码"]
+    B --> C{"验证结果"}
+    C -->|"成功"| D["生成双 Token<br/>accessToken 1h · refreshToken 7d"]
+    C -->|"失败"| E["返回错误"]
+    D --> F["返回给前端"]
 ```
 
 - **accessToken** 存储在内存中，有效期 1 小时
