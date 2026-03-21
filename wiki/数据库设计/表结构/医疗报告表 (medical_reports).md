@@ -21,20 +21,11 @@
 ## 项目结构
 
 ```mermaid
-graph TB
-subgraph "前端"
-VueApp[Vue应用]
-Stores[状态管理]
-Pages[页面组件]
-end
-subgraph "后端"
-Models[数据模型]
-Routes[路由]
-Services[服务]
-end
-Models --> Routes
-Routes --> Services
-VueApp --> Routes
+flowchart TB
+VueApp[Vue应用] --> Routes[路由]
+Stores[状态管理] --> Routes
+Models[数据模型] --> Routes
+Routes --> Services[服务]
 ```
 
 **图表来源**
@@ -208,9 +199,11 @@ participant 数据库 as 数据库
 系统->>数据库 : 更新为"已批准"状态
 审核医生->>系统 : 执行电子签名
 系统->>系统 : 生成签名数据
-系统->>数据库 : 更新为"已签署"状态<br/>记录签名时间和数据
+系统->>数据库 : 更新为"已签署"状态
+系统->>数据库 : 记录签名时间和数据
 系统->>审核医生 : 返回已签署报告
-Note over 系统,数据库 : 电子签名具有法律效力<br/>不可篡改，可追溯
+Note over 系统,数据库 : 电子签名具有法律效力
+Note over 系统,数据库 : 不可篡改，可追溯
 ```
 
 **图表来源**
@@ -227,20 +220,15 @@ PDF报告的生成和存储遵循以下策略：
 
 ```mermaid
 flowchart TD
-A[创建或更新报告] --> B{状态为"已签署"?}
+A[创建或更新报告] --> B{状态为已签署?}
 B --> |是| C[生成PDF报告]
-C --> D[确定存储路径<br/>reports/YYYYMMDD/]
-D --> E[生成文件名<br/>报告ID.pdf]
+C --> D[确定存储路径]
+D --> E[生成文件名]
 E --> F[保存PDF文件]
-F --> G[更新数据库<br/>file_path字段]
+F --> G[更新数据库]
 G --> H[返回成功]
 B --> |否| I[不生成PDF]
 I --> H
-style C fill:#f9f,stroke:#333
-style D fill:#f9f,stroke:#333
-style E fill:#f9f,stroke:#333
-style F fill:#f9f,stroke:#333
-style G fill:#f9f,stroke:#333
 ```
 
 **图表来源**
@@ -256,7 +244,7 @@ style G fill:#f9f,stroke:#333
 系统各组件之间的依赖关系如下：
 
 ```mermaid
-graph TD
+flowchart TD
 A[MedicalReport] --> B[Study]
 A --> C[AnalysisResult]
 A --> D[Patient]

@@ -71,35 +71,33 @@ participant 患者控制器
 
 ```mermaid
 erDiagram
+USER ||--o{ PATIENT : "creates"
 PATIENT {
-bigint id PK
-string patient_id UK
-string name NN
-enum gender NN
-date birth_date
-string phone
-string id_card UK
-string address
-string emergency_contact
-string emergency_phone
-string emergency_relation
-string medical_card_no
-text medical_history
-enum sexual_history
-text allergies
-text allergy_history
-text family_history
-text notes
-bigint created_by FK
-timestamp created_at
-timestamp updated_at
+  int id PK
+  string patient_id UK
+  string name NN
+  string gender NN
+  date birth_date
+  string phone
+  string id_card
+  string address
+  string emergency_contact
+  string emergency_phone
+  string emergency_relation
+  string medical_card_no
+  text medical_history
+  text allergy_history
+  text family_history
+  text notes
+  int created_by FK
+  datetime created_at
+  datetime updated_at
 }
 USER {
-bigint id PK
-string username
-string real_name
+  int id PK
+  string username
+  string real_name
 }
-PATIENT ||--|| USER : created_by::id
 ```
 
 **Diagram sources**

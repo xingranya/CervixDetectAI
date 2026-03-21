@@ -28,25 +28,11 @@
 `users`表相关的代码主要分布在模型层、路由层、中间件和工具函数中，体现了清晰的分层架构。
 
 ```mermaid
-graph TB
-subgraph "Models"
-User[User.js]
-UserAvatar[UserAvatar.js]
-end
-subgraph "Routes"
-AuthRoute[auth.js]
-UsersRoute[users.js]
-end
-subgraph "Middleware"
-AuthMiddleware[auth.js]
-end
-subgraph "Utils"
-JWT[jwt.js]
-end
-User --> UserAvatar : "hasOne"
-AuthRoute --> User : "认证逻辑"
-UsersRoute --> User : "CRUD操作"
-AuthMiddleware --> JWT : "验证token"
+flowchart TB
+User[User.js] --> UserAvatar[UserAvatar.js] : "hasOne"
+AuthRoute[auth.js] --> User : "认证逻辑"
+UsersRoute[users.js] --> User : "CRUD操作"
+AuthMiddleware[auth.js] --> JWT[jwt.js] : "验证token"
 JWT --> User : "查找用户"
 ```
 
@@ -72,7 +58,7 @@ JWT --> User : "查找用户"
 系统采用基于Sequelize ORM的模型-视图-控制器（MVC）模式，`users`表作为核心数据实体，通过API路由暴露操作接口，由认证中间件保护，并利用JWT进行无状态会话管理。
 
 ```mermaid
-graph LR
+flowchart LR
 Client[客户端] --> |HTTP请求| Routes[API路由]
 Routes --> |调用| Controllers[控制器逻辑]
 Controllers --> |操作| Models[Sequelize模型]
@@ -185,7 +171,7 @@ USERS ||--o{ USER_AVATARS : "1对1"
 `User`模型与其他组件存在明确的依赖关系，形成了完整的用户管理生态。
 
 ```mermaid
-graph TD
+flowchart TD
 User[User.js] --> UserAvatar[UserAvatar.js]
 User --> JWT[jwt.js]
 AuthRoute[auth.js] --> User

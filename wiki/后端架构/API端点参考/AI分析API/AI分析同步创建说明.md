@@ -35,27 +35,15 @@
 - Wiki：提供后端架构与外部集成的详细说明文档。
 
 ```mermaid
-graph TB
-subgraph "前端(src)"
-UI["UploadPage.vue<br/>路由: /app/upload"]
-Store["analysisStore.ts<br/>状态与轮询"]
-API["apiService.ts<br/>Axios封装"]
-end
-subgraph "后端(server)"
-Index["index.js<br/>启动与静态资源"]
-Route["routes/analyze.js<br/>/api/analyze 路由"]
-Qwen["services/qwenService.js<br/>通义千问服务"]
-ModelAT["models/AnalysisTask.js"]
-ModelAR["models/AnalysisResult.js"]
-DB["config/sequelize.js<br/>数据库连接/同步"]
-end
-UI --> API
-API --> Route
-Route --> Qwen
-Route --> ModelAT
-Route --> ModelAR
-Route --> DB
-Index --> Route
+flowchart TB
+UI["UploadPage.vue"] --> Store["analysisStore.ts"]
+Store --> API["apiService.ts"]
+API --> Route["routes/analyze.js"]
+Route --> Qwen["services/qwenService.js"]
+Route --> ModelAT["models/AnalysisTask.js"]
+Route --> ModelAR["models/AnalysisResult.js"]
+Route --> DB["config/sequelize.js"]
+Index["index.js"] --> Route
 ```
 
 图表来源
@@ -102,25 +90,25 @@ AI分析同步创建涉及“前端上传 -> 后端接收与落库 -> 异步AI�
 
 ```mermaid
 sequenceDiagram
-participant U as "用户"
-participant V as "UploadPage.vue"
-participant S as "apiService.ts"
-participant R as "analyze.js 路由"
-participant DB as "数据库(AnalysisTask/AnalysisResult)"
-participant Q as "QwenService"
-participant ST as "analysisStore.ts"
+participant U as 用户
+participant V as UploadPage.vue
+participant S as apiService.ts
+participant R as analyze.js路由
+participant DB as 数据库
+participant Q as QwenService
+participant ST as analysisStore.ts
 U->>V : 选择图像并填写必填信息
 V->>S : 调用 uploadImage(formData)
 S->>R : POST /api/analyze
 R->>DB : 保存患者/病例/图像/任务
-R-->>S : 返回 {taskId, studyId, status=PENDING}
+R-->>S : 返回 taskId, studyId, status=PENDING
 R->>R : 异步 processAnalysisTask()
 R->>Q : analyzeImage(imagePath)
-Q-->>R : 返回诊断/置信度/推荐/报告
-R->>DB : 写入 AnalysisResult 并更新 AnalysisTask/Study 状态
+Q-->>R : 返回诊断结果/置信度/推荐
+R->>DB : 写入 AnalysisResult 并更新状态
 V->>S : 轮询 getTaskStatus(taskId)
-S->>R : GET /api/analyze/ : taskId
-R-->>S : 返回 {status, progress, result?}
+S->>R : GET /api/analyze/:taskId
+R-->>S : 返回 status, progress, result
 S-->>ST : 更新当前任务与列表
 ST-->>V : 展示进度与结果
 ```
@@ -251,7 +239,7 @@ USER ||--o{ ANALYSIS_TASK : "关联"
   - models依赖sequelize，sequelize.js提供连接与同步。
 
 ```mermaid
-graph LR
+flowchart LR
 A["UploadPage.vue"] --> B["apiService.ts"]
 B --> C["routes/analyze.js"]
 C --> D["services/qwenService.js"]

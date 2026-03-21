@@ -136,13 +136,19 @@ sequenceDiagram
 participant Client
 participant Auth
 participant Validation
-participant Database
+participant DB as Database
+participant Queue as simpleAnalysisQueue
+participant Qwen as qwenService
 Client->>Auth : POST /api/analysis-tasks
 Auth->>Auth : authenticate()
 Auth->>Validation : 验证权限
 Validation->>Validation : 检查study_id存在性
-Validation->>Database : 创建任务记录
-Database-->>Client : 返回创建的任务
+Validation->>DB : 创建任务记录 (PENDING)
+DB-->>Client : 返回 taskId (非阻塞)
+Note over Client: 前端开始轮询状态
+Queue->>Qwen : 队列执行 analyzeImage()
+Qwen-->>DB : 更新状态 SUCCESS/FAILED
+Note over Client : 轮询感知到终态
 ```
 
 **Diagram sources**

@@ -46,26 +46,13 @@
   - 报告生成服务.md：整体架构与流程说明。
 
 ```mermaid
-graph TB
-subgraph "前端"
-RP["ReportsPage.vue"]
-PG["pdfGenerator.ts"]
-PF["pdfFonts.ts"]
-API["api.ts"]
-end
-subgraph "后端"
-R["reports.js"]
-MR["MedicalReport.js"]
-IDX["index.js"]
-QW["qwenService.js"]
-end
-RP --> API
-API --> R
-R --> MR
-R --> QW
-RP --> PG
-PG --> PF
-IDX --> MR
+flowchart TB
+RP["ReportsPage.vue"] --> API["api.ts"]
+API --> R["reports.js"]
+R --> MR["MedicalReport.js"]
+R --> QW["qwenService.js"]
+RP --> PG["pdfGenerator.ts"]
+PG --> PF["pdfFonts.ts"]
 ```
 
 图表来源
@@ -115,35 +102,31 @@ PDF 报告生成涉及两条主线：
 
 ```mermaid
 sequenceDiagram
-participant U as "用户"
-participant UI as "ReportsPage.vue"
-participant API as "api.ts"
-participant R as "reports.js"
-participant M as "MedicalReport.js"
-participant Q as "qwenService.js"
-participant PDF as "pdfGenerator.ts"
-rect rgb(255,255,255)
+participant U as 用户
+participant UI as ReportsPage
+participant API as api
+participant R as reports
+participant M as MedicalReport
+participant Q as qwenService
+participant PDF as pdfGenerator
 Note over UI,PDF : 前端即时生成PDF
-U->>UI : 点击“下载报告”
+U->>UI : 点击下载报告
 UI->>API : 获取病例与分析数据
 API-->>UI : 返回 study + result
-UI->>PDF : generatePDFReport({study,result})
+UI->>PDF : generatePDFReport
 PDF-->>U : 下载本地PDF
-end
-rect rgb(255,255,255)
 Note over R,M : 后端生成并落库
-U->>UI : 点击“生成并下载”
-UI->>API : 调用 /reports/generate/ : studyId
-API->>R : POST /reports/generate/ : studyId
+U->>UI : 点击生成并下载
+UI->>API : 调用 /reports/generate/:studyId
+API->>R : POST /reports/generate/:studyId
 R->>Q : 获取最新分析结果
 Q-->>R : 返回结构化结果
 R->>M : 创建 MedicalReport 记录
 M-->>R : 返回报告
 R-->>UI : 返回报告
-UI->>API : 调用 /reports/ : id/download
-API->>R : GET /reports/ : id/download
+UI->>API : 调用 /reports/:id/download
+API->>R : GET /reports/:id/download
 R-->>UI : 返回PDF文件流
-end
 ```
 
 图表来源
@@ -285,7 +268,7 @@ Fallback --> End
   - qwenService.js 依赖 axios 与通义千问 API，受环境变量控制。
 
 ```mermaid
-graph LR
+flowchart LR
 RP["ReportsPage.vue"] --> API["api.ts"]
 RP --> PG["pdfGenerator.ts"]
 PG --> PF["pdfFonts.ts"]

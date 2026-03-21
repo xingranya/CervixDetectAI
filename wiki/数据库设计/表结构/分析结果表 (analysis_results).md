@@ -182,11 +182,11 @@ if (result.diagnosis.includes('浸润性癌') || result.diagnosis.includes('HSIL
 
 ```mermaid
 flowchart TD
-A[开始] --> B{诊断包含<br/>浸润性癌或HSIL?}
+A[开始] --> B{诊断包含浸润性癌或HSIL?}
 B --> |是| C[风险等级=critical]
-B --> |否| D{诊断包含<br/>LSIL或ASC-H?}
+B --> |否| D{诊断包含LSIL或ASC-H?}
 D --> |是| E[风险等级=high]
-D --> |否| F{诊断包含<br/>ASC-US?}
+D --> |否| F{诊断包含ASC-US?}
 F --> |是| G[风险等级=medium]
 F --> |否| H[风险等级=low]
 C --> I[结束]

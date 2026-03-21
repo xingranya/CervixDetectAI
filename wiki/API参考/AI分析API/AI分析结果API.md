@@ -26,21 +26,10 @@
 该项目采用前后端分离架构，后端基于Node.js/Express框架，前端使用Vue.js技术栈。后端服务位于`server/`目录下，包含配置、中间件、模型、路由、服务和工具等模块。AI分析相关的核心逻辑集中在`routes/analyze.js`中，视觉分析服务由`services/qwenService.js`提供。
 
 ```mermaid
-graph TB
-subgraph "前端"
-VueApp[Vue应用]
-UploadPage[上传页面]
-StudiesPage[病例页面]
-end
-subgraph "后端"
-Express[Express服务器]
-AnalyzeRoute[analyze.js]
-QwenService[qwenService.js]
-Models[数据模型]
-end
-UploadPage --> AnalyzeRoute
-AnalyzeRoute --> QwenService
-QwenService --> Models
+flowchart TB
+UploadPage[UploadPage] --> AnalyzeRoute[analyze.js]
+AnalyzeRoute --> QwenService[qwenService.js]
+QwenService --> Models[数据模型]
 AnalyzeRoute --> Models
 ```
 
@@ -230,7 +219,7 @@ enum risk_level
 系统各组件间存在明确的依赖关系。`analyze.js`路由依赖`qwenService.js`进行AI分析，同时依赖多个Sequelize模型进行数据持久化。`qwenService.js`依赖axios进行HTTP请求，依赖Node.js的fs模块进行文件操作。
 
 ```mermaid
-graph LR
+flowchart LR
 A[analyze.js] --> B[qwenService.js]
 A --> C[AnalysisTask]
 A --> D[AnalysisResult]

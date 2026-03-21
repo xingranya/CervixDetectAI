@@ -471,21 +471,12 @@ Router->>Router : 更新任务和病例状态
 展示了AI分析服务在整个系统中的位置和与其他组件的交互关系。
 
 ```mermaid
-graph TB
-subgraph "前端"
-UI[用户界面]
-Store[状态管理]
-end
-subgraph "后端"
-API[API服务器]
-Qwen[QwenService]
-DB[(数据库)]
-end
-UI --> Store
-Store --> API
-API --> Qwen
-Qwen --> |调用API| QwenAPI[通义千问API]
-Qwen --> DB
+flowchart TB
+UI[用户界面] --> Store[状态管理]
+Store --> API[API服务器]
+API --> Qwen[QwenService]
+Qwen --> QwenAPI[通义千问API]
+Qwen --> DB[(数据库)]
 API --> DB
 ```
 

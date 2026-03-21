@@ -26,26 +26,14 @@
 认证功能主要分布在服务器端的路由、中间件、工具和模型模块中。前端通过API调用与后端交互，认证逻辑集中于`server/routes/auth.js`和`server/routes/sms-auth.js`两个路由文件。
 
 ```mermaid
-graph TB
-subgraph "前端"
-UI[用户界面]
-API[API服务]
-end
-subgraph "后端"
-AuthRoutes[认证路由]
-SMSRoutes[短信认证路由]
-Middleware[认证中间件]
-Utils[工具模块]
-Models[数据模型]
-end
-UI --> API
-API --> AuthRoutes
-API --> SMSRoutes
-AuthRoutes --> Middleware
+flowchart TB
+UI[用户界面] --> AuthRoutes[认证路由]
+UI --> SMSRoutes[短信认证路由]
+AuthRoutes --> Middleware[认证中间件]
 SMSRoutes --> Middleware
-AuthRoutes --> Utils
+AuthRoutes --> Utils[工具模块]
 SMSRoutes --> Utils
-AuthRoutes --> Models
+AuthRoutes --> Models[数据模型]
 SMSRoutes --> Models
 ```
 
@@ -162,7 +150,7 @@ SaveRecord --> End([发送成功])
 认证系统各组件之间存在明确的依赖关系，确保功能解耦和代码复用。
 
 ```mermaid
-graph LR
+flowchart LR
 AuthRoutes --> Middleware
 SMSRoutes --> Middleware
 AuthRoutes --> JWTUtils

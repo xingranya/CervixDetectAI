@@ -12,9 +12,11 @@
 3. [QwenService初始化](#qwenservice初始化)
 4. [图像分析流程](#图像分析流程)
 5. [错误处理与重试机制](#错误处理与重试机制)
-6. [响应结果解析](#响应结果解析)
-7. [API调用示例](#api调用示例)
-8. [API密钥安全管理](#api密钥安全管理)
+6. [辅助方法](#辅助方法)
+7. [流式对话接口](#流式对话接口)
+8. [响应结果解析](#响应结果解析)
+9. [API调用示例](#api调用示例)
+10. [API密钥安全管理](#api密钥安全管理)
 
 ## 项目结构
 CervixDetectAI项目采用前后端分离架构，通义千问AI集成主要在服务端实现。项目结构清晰地分为`server`（后端服务）和`src`（前端应用）两个主要目录。
@@ -24,19 +26,10 @@ CervixDetectAI项目采用前后端分离架构，通义千问AI集成主要在�
 前端应用位于`src`目录下，使用Vue.js框架构建。当前前端仅在 `AiPreferencesPage.vue` 中提供模型版本、阈值、敏感性、通知策略和报告偏好等界面级设置，用于调整本地展示和操作习惯；通义千问 API 的连接信息仍完全由后端环境变量管理。这种分离的架构设计使得AI能力实现与界面偏好配置解耦，便于维护和扩展。
 
 ```mermaid
-graph TB
-subgraph "前端 (src)"
-A[AiPreferencesPage.vue]
-B[其他页面组件]
-end
-subgraph "后端 (server)"
-C[qwenService.js]
-D[analyze.js]
-E[.env]
-end
-A --> |维护模型与偏好界面状态| D
-D --> |调用服务| C
-C --> |访问环境变量| E
+flowchart TB
+A[AiPreferencesPage.vue] --> D[analyze.js]
+D --> C[qwenService.js]
+C --> E[.env]
 ```
 
 **Diagram sources**
@@ -52,64 +45,88 @@ C --> |访问环境变量| E
 - [AiPreferencesPage.vue](file://src/pages/AiPreferencesPage.vue)
 
 ## 核心组件
-通义千问AI集成的核心组件是`QwenService`类，位于`server/services/qwenService.js`文件中。该类封装了与通义千问API交互的所有逻辑，提供了一个简洁的接口供其他模块调用。
+通义千问AI集成的核心组件是`QwenService`单例服务，位于`server/services/qwenService.js`文件中。该服务封装了与通义千问API交互的所有逻辑，提供了一个简洁的接口供其他模块调用。
 
-`QwenService`类的主要职责包括：从环境变量加载API配置、将本地图像文件转换为API所需的Data URL格式、构造符合API要求的请求体、处理API调用的错误和重试、以及解析和标准化API响应结果。该服务通过Axios库发送HTTP请求，并实现了完整的错误处理和重试机制，确保在面对网络波动或API限流时仍能稳定运行。
+`QwenService`的主要职责包括：从环境变量加载API配置、自动判断图像来源类型（公网URL或本地路径）、调用`generatePrompt(modality)`函数根据检查方式生成专业化提示词、构造符合API要求的请求体、处理API调用的错误和重试、以及解析和标准化API响应结果。该服务通过Axios库发送HTTP请求，并实现了完整的错误处理和重试机制，确保在面对网络波动或API限流时仍能稳定运行。
+
+服务还提供`chatStream`方法支持多轮对话的流式输出（SSE），适用于需要深度思考和实时流式返回的交互场景。
 
 前端的 `AiPreferencesPage.vue` 仅承担模型版本、阈值、敏感性与通知/报告偏好的界面配置，不负责写入 `.env` 或管理 API Key。`QwenService` 读取的 `QWEN_API_KEY`、`QWEN_API_URL`、`QWEN_MODEL` 仍由服务端环境变量提供。
 
 **Section sources**
-- [qwenService.js](file://server/services/qwenService.js#L232-L489)
+- [qwenService.js](file://server/services/qwenService.js#L102-L313)
+- [qwenService.js](file://server/services/qwenService.js#L318-L600)
 - [AiPreferencesPage.vue](file://src/pages/AiPreferencesPage.vue#L55-L560)
 
 ## QwenService初始化
-`QwenService`类的初始化过程在构造函数中完成，主要负责从环境变量加载必要的API配置信息。构造函数首先从`process.env`对象中读取`QWEN_API_KEY`、`QWEN_API_URL`和`QWEN_MODEL`三个环境变量。
+`QwenService`采用单例模式导出，实例化过程在模块加载时完成。构造函数主要负责从环境变量加载必要的API配置信息。构造函数首先从`process.env`对象中读取`QWEN_API_KEY`、`QWEN_API_URL`和`QWEN_MODEL`三个环境变量。
 
 ```javascript
 constructor() {
   this.apiKey = process.env.QWEN_API_KEY;
   this.apiUrl = process.env.QWEN_API_URL;
   this.model = process.env.QWEN_MODEL || 'qwen-vl-max';
+
+  if (!this.apiKey) {
+    throw new Error('QWEN_API_KEY 环境变量未设置');
+  }
+
+  this.axiosInstance = axios.create({
+    baseURL: this.apiUrl,
+    timeout: parseInt(process.env.QWEN_API_TIMEOUT_MS || '') || 180000, // 默认 180 秒
+    headers: {
+      Authorization: `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
 }
+
+module.exports = new QwenService();
 ```
 
 如果`QWEN_API_KEY`环境变量未设置，构造函数会立即抛出一个错误，阻止服务的创建。这是为了确保在缺少必要认证信息的情况下，系统不会尝试调用API，从而避免潜在的安全风险和无效请求。
 
-初始化过程中，`QwenService`还会创建一个预配置的Axios实例，该实例设置了基础URL、请求超时时间和必要的请求头。其中，`Authorization`头使用`Bearer`方案携带API密钥，这是通义千问API认证的标准方式。
+初始化过程中，`QwenService`还会创建一个预配置的Axios实例，该实例设置了基础URL、请求超时时间和必要的请求头。其中，`Authorization`头使用`Bearer`方案携带API密钥，这是通义千问API认证的标准方式。超时时间默认180秒，可通过`QWEN_API_TIMEOUT_MS`环境变量调整。
 
 ```mermaid
 sequenceDiagram
 participant App as 应用程序
 participant QwenService as QwenService
 participant Env as 环境变量
-App->>QwenService : new QwenService()
+App->>QwenService : require('qwenService')
 QwenService->>Env : 读取 QWEN_API_KEY
 QwenService->>Env : 读取 QWEN_API_URL
 QwenService->>Env : 读取 QWEN_MODEL
+QwenService->>Env : 读取 QWEN_API_TIMEOUT_MS
 alt API密钥缺失
 QwenService->>App : 抛出错误 "QWEN_API_KEY 环境变量未设置"
 else 配置有效
-QwenService->>QwenService : 创建Axios实例
-QwenService->>App : 返回服务实例
+QwenService->>QwenService : 创建Axios实例（timeout=180000ms）
+QwenService->>App : 返回单例服务实例
 end
 ```
 
 **Diagram sources**
-- [qwenService.js](file://server/services/qwenService.js#L35-L52)
+- [qwenService.js](file://server/services/qwenService.js#L318-L336)
+- [qwenService.js](file://server/services/qwenService.js#L603)
 
 **Section sources**
 - [qwenService.js](file://server/services/qwenService.js#L35-L52)
 - [.env](file://server/.env#L1-L4)
 
 ## 图像分析流程
-`QwenService`的`analyzeImage`方法实现了完整的图像分析流程，该流程从接收本地图像路径开始，到返回结构化的分析结果结束。
+`QwenService`的`analyzeImage`方法实现了完整的图像分析流程，该流程从接收图像路径（本地路径或公网URL）开始，到返回结构化的分析结果结束。
 
-流程的第一步是将本地图像文件转换为Base64编码的Data URL。`imageToBase64`方法读取图像文件，将其内容转换为Base64字符串，并根据文件扩展名确定正确的MIME类型。最终生成的Data URL格式为`data:image/jpeg;base64,...`，这符合通义千问API对图像输入的要求。
+流程的第一步是判断图像来源类型：如果是公网URL（以`http://`或`https://`开头），则直接使用该URL；如果是本地路径，则调用`imageToBase64`方法将图像文件转换为Base64编码的Data URL。`imageToBase64`方法读取图像文件，将其内容转换为Base64字符串，并根据文件扩展名确定正确的MIME类型（支持jpeg、png、tiff格式）。最终生成的Data URL格式为`data:image/jpeg;base64,...`，这符合通义千问API对图像输入的要求。
 
 ```mermaid
 flowchart TD
-Start([开始分析]) --> Convert["将图像转换为Base64 Data URL"]
-Convert --> Build["构建API请求体"]
+Start([开始分析]) --> CheckUrl{"图像是远程URL?"}
+CheckUrl --> |是| UseUrl["直接使用URL"]
+CheckUrl --> |否| Convert["imageToBase64()"]
+Convert --> BuildUrl["生成 Data URL"]
+UseUrl --> Build["构建API请求体"]
+BuildUrl --> Build
 Build --> Send["发送API请求"]
 Send --> Parse["解析API响应"]
 Parse --> Validate["验证必需字段"]
@@ -118,14 +135,13 @@ Standardize --> Return["返回结果"]
 ```
 
 **Diagram sources**
-- [qwenService.js](file://server/services/qwenService.js#L60-L74)
-- [qwenService.js](file://server/services/qwenService.js#L85-L177)
+- [qwenService.js](file://server/services/qwenService.js#L343-L360)
+- [qwenService.js](file://server/services/qwenService.js#L369-L401)
 
 **Section sources**
-- [qwenService.js](file://server/services/qwenService.js#L60-L74)
-- [qwenService.js](file://server/services/qwenService.js#L85-L177)
+- [qwenService.js](file://server/services/qwenService.js#L369-L401)
 
-构建请求体时，`analyzeImage`方法会创建一个包含系统提示词（`SYSTEM_PROMPT`）和图像输入的消息数组。系统提示词是一个详细的JSON对象，定义了AI作为宫颈细胞学病理专家的角色、背景、技能和工作流程。请求体还设置了`temperature`、`max_tokens`等推理参数，以控制AI生成结果的创造性和长度。
+构建请求体时，`analyzeImage`方法会调用`generatePrompt(modality)`函数，根据检查方式生成专业化的系统提示词。检查方式支持巴氏染色（Pap Smear）、液基细胞学（TCT/LCT）、活检切片（HE染色）、HPV分型、p16/Ki67双染、阴道镜等多种类型，每种类型有对应的识别要点和诊断分类选项。请求体还设置了`temperature`、`max_tokens`、`top_p`等推理参数，以控制AI生成结果的质量和多样性。
 
 ## 错误处理与重试机制
 `QwenService`实现了健壮的错误处理和重试机制，以应对网络不稳定和API服务波动等常见问题。`analyzeImage`方法使用try-catch块捕获所有异常，并通过`shouldRetry`方法判断是否应该进行重试。
@@ -150,7 +166,7 @@ shouldRetry(error) {
 }
 ```
 
-当决定重试时，`analyzeImage`方法会使用递增延迟策略，重试间隔分别为1秒、2秒和3秒。这种策略可以避免在服务恢复时立即发送大量请求，给API服务留出恢复时间。
+当决定重试时，`analyzeImage`方法会使用递增延迟策略，重试间隔分别为3秒、6秒和9秒。这种策略可以避免在服务恢复时立即发送大量请求，给API服务留出恢复时间。
 
 ```mermaid
 flowchart TD
@@ -169,6 +185,103 @@ B --> |否| F[格式化并抛出错误]
 - [qwenService.js](file://server/services/qwenService.js#L179-L191)
 - [qwenService.js](file://server/services/qwenService.js#L199-L216)
 
+## 辅助方法
+`QwenService`提供了两个辅助方法用于错误处理：`shouldRetry`和`formatError`。
+
+### shouldRetry方法
+`shouldRetry`方法根据错误类型判断是否应该进行重试：
+
+```javascript
+shouldRetry(error) {
+  // 网络错误或超时应该重试
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    return true;
+  }
+  // API限流应该重试
+  if (error.response && error.response.status === 429) {
+    return true;
+  }
+  // 服务器错误应该重试
+  if (error.response && error.response.status >= 500) {
+    return true;
+  }
+  return false;
+}
+```
+
+### formatError方法
+`formatError`方法将错误格式化为用户友好的错误消息，根据HTTP状态码返回对应的中文提示：
+
+```javascript
+formatError(error) {
+  if (error.response) {
+    const status = error.response.status;
+    const message = error.response.data?.error?.message || error.response.data?.message || '未知错误';
+    switch (status) {
+      case 400: return new Error(`请求参数错误: ${message}`);
+      case 401: return new Error('API密钥无效或已过期');
+      case 403: return new Error('无权限访问该API');
+      case 429: return new Error('API请求频率超限，请稍后重试');
+      case 500:
+      case 502:
+      case 503: return new Error('通义千问服务暂时不可用');
+      default: return new Error(`API错误 (${status}): ${message}`);
+    }
+  } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    return new Error('API请求超时，请检查网络连接');
+  } else {
+    return new Error(`调用通义千问API失败: ${error.message}`);
+  }
+}
+```
+
+**Section sources**
+- [qwenService.js](file://server/services/qwenService.js#L499-L556)
+
+## 流式对话接口
+`QwenService`还提供了`chatStream`方法，用于支持多轮对话的流式输出（SSE，Server-Sent Events）。该方法适用于需要深度思考和实时流式返回的交互场景，如病例讨论、诊断追问等。
+
+```javascript
+async chatStream(messages, options = {}) {
+  const model = options.model || process.env.QWEN_CHAT_MODEL || 'qwen-plus';
+  const enableThinking = options.enableThinking !== false;
+
+  const requestBody = {
+    model,
+    messages: [...messages],
+    stream: true,
+    max_tokens: enableThinking ? 16000 : 2000,
+    enable_thinking: enableThinking,
+  };
+
+  if (!enableThinking) {
+    requestBody.temperature = 0.7;
+    requestBody.top_p = 0.9;
+  }
+
+  // 返回可读流
+  const response = await axios({
+    method: 'post',
+    url: `${this.apiUrl}/chat/completions`,
+    data: requestBody,
+    headers: {
+      Authorization: `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
+    responseType: 'stream',
+    timeout: 120000,
+  });
+
+  return response.data;
+}
+```
+
+`chatStream`方法接受消息数组和选项参数，返回一个Node.js可读流。前端可以通过`fetch + ReadableStream`消费该SSE接口，实现深度思考与正式回答的流式分段展示。选项参数包括`model`（模型名称，默认使用`QWEN_CHAT_MODEL`环境变量）和`enableThinking`（是否启用深度思考，默认true）。
+
+**Section sources**
+- [qwenService.js](file://server/services/qwenService.js#L558-L600)
+
 ## 响应结果解析
 API响应结果的解析是`analyzeImage`方法的关键部分，它将AI返回的原始文本转换为结构化的JSON对象。解析过程首先检查响应格式，确保包含必要的`choices`字段。
 
@@ -185,33 +298,60 @@ if (cleanContent.endsWith('```')) {
 }
 ```
 
-清理后的文本被解析为JSON对象，并进行字段验证和标准化。`analyzeImage`方法会检查`diagnosis`、`confidence`等必需字段是否存在，并为缺失的字段提供默认值。最终返回的结果对象包含标准化的诊断信息、置信度、可疑区域、生物标志物评估、临床建议和详细报告。
+清理后的文本被解析为JSON对象，并进行字段验证和标准化。`analyzeImage`方法会检查`diagnosis`、`confidence`、`recommendations`、`detailedReport`等必需字段是否存在，并为缺失的字段提供默认值。最终返回的结果对象包含以下标准化字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `diagnosis` | string | 诊断分类 |
+| `confidence` | number | 诊断置信度（0-1之间的小数） |
+| `qualityAssessment` | object | 图像质量评估（score、clarity、adequacy、details） |
+| `riskAssessment` | object | 风险评估（level、score、rationale） |
+| `suspiciousAreas` | array | 可疑区域描述数组（含位置坐标和特征） |
+| `biomarkers` | object | 生物标志物评估（HPV、p16、Ki67状态） |
+| `recommendations` | array | 临床建议数组 |
+| `detailedReport` | string | 详细的病理分析报告 |
+| `rawResponse` | string | 原始API响应（用于调试） |
 
 **Section sources**
-- [qwenService.js](file://server/services/qwenService.js#L127-L177)
+- [qwenService.js](file://server/services/qwenService.js#L431-L465)
 
 ## API调用示例
 以下是一个使用`QwenService`的实际调用示例。在`server/routes/analyze.js`文件中，当接收到图像上传请求时，会创建一个分析任务并调用`qwenService.analyzeImage`方法。
 
 ```javascript
 // 在analyze.js中调用QwenService
-const result = await qwenService.analyzeImage(task.studyInfo.imagePath);
+const result = await qwenService.analyzeImage(task.studyInfo.imagePath, modality, retryCount);
 ```
 
-`analyzeImage`方法接受两个参数：图像文件路径和可选的重试次数（默认为3次）。方法返回一个Promise，解析后得到一个包含分析结果的对象。该对象包含以下字段：
-- `diagnosis`: 诊断分类
-- `confidence`: 诊断置信度（0-1之间的小数）
-- `suspiciousAreas`: 可疑区域描述数组
-- `biomarkers`: 生物标志物评估对象
-- `recommendations`: 临床建议数组
-- `detailedReport`: 详细的病理分析报告
-- `rawResponse`: 原始API响应（用于调试）
+`analyzeImage`方法接受三个参数：图像文件路径（本地路径或公网URL）、检查方式类型（默认为"巴氏染色涂片（Pap Smearch）"）和可选的重试次数（默认为3次）。方法返回一个Promise，解析后得到一个包含分析结果的对象。该对象包含`diagnosis`、`confidence`、`qualityAssessment`、`riskAssessment`、`suspiciousAreas`、`biomarkers`、`recommendations`、`detailedReport`、`rawResponse`等字段。
+
+API请求体结构如下：
+
+```javascript
+{
+  model: 'qwen-vl-max',
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: systemPrompt },
+        { type: 'image_url', image_url: { url: imageDataUrl } }
+      ]
+    }
+  ],
+  temperature: 0.1,
+  max_tokens: 2000,
+  top_p: 0.8
+}
+```
+
+API调用使用`/chat/completions`端点。
 
 前端通过 API 接口与后端交互，但不会直接改写服务端环境变量。用户在 `AiPreferencesPage.vue` 中调整的是界面级 AI 偏好，`QwenService` 使用的模型接入配置仍来自后端部署环境。
 
 **Section sources**
 - [analyze.js](file://server/routes/analyze.js#L264-L265)
-- [qwenService.js](file://server/services/qwenService.js#L85-L177)
+- [qwenService.js](file://server/services/qwenService.js#L369-L401)
 
 ## API密钥安全管理
 API密钥的安全管理是`QwenService`设计中的重要考虑。系统严格禁止在代码中硬编码API密钥，而是通过环境变量`QWEN_API_KEY`来配置。这种方式确保了密钥不会被意外提交到版本控制系统中。
@@ -219,7 +359,7 @@ API密钥的安全管理是`QwenService`设计中的重要考虑。系统严格�
 前端页面不会提供 API 密钥录入入口，密钥存储和使用都在服务端完成。这种设计模式遵循了安全最佳实践：敏感信息不暴露给客户端，仅在服务端安全存储和使用。
 
 ```mermaid
-graph LR
+flowchart LR
 User[用户] --> |触发分析请求| Frontend[前端界面]
 Frontend --> |请求分析接口| Backend[后端服务]
 Backend --> |从环境读取| QwenService[QwenService]

@@ -56,8 +56,9 @@
 
 ```mermaid
 flowchart LR
-    A["🏥 基层医疗机构<br/>(乡镇卫生院等)"] --"上传影像"--> B["☁️ 云端 AI 平台<br/>(智能分析引擎)"]
+    A["🏥 基层医疗机构"] --"上传影像"--> B["☁️ 云端 AI 平台"]
     B -->|"返回诊断报告"| A
+    A -->|"乡镇卫生院等"| A
 ```
 
 ---
@@ -255,15 +256,14 @@ graph TD
 
 ```mermaid
 flowchart TB
-    subgraph FE["前端应用"]
-        PL["PublicLayout<br/>(公共页面)"]
-        ML["MainLayout<br/>(主界面)"]
-        VR["Vue Router<br/>(路由管理)"]
-        P["Pages (页面)<br/>登录 · 注册 · 仪表盘 · 上传 · ..."]
-        C["Components (组件)"]
-        S["Stores (Pinia)<br/>authStore · studyStore · ..."]
-        SV["Services (API)<br/>Axios + Interceptors"]
-    end
+    PL["PublicLayout (公共页面)"]
+    ML["MainLayout (主界面)"]
+    VR["Vue Router (路由管理)"]
+    P["Pages (页面)"]
+    C["Components (组件)"]
+    S["Stores (Pinia)"]
+    SV["Services (API)"]
+    BE["后端 API"]
 
     PL --> VR
     ML --> VR
@@ -271,51 +271,18 @@ flowchart TB
     P --> C
     C --> S
     S --> SV
-
-    SV --> BE["后端 API"]
+    SV --> BE
 ```
 
 ### 数据模型关系
 
 ```mermaid
 erDiagram
-    User ||--o{ Patient : "1:N"
-    Patient ||--o{ Study : "1:N"
-    Study ||--o| AnalysisTask : "1:1"
-    AnalysisTask ||--o| AnalysisResult : "1:1"
-    AnalysisResult ||--o| MedicalReport : "1:1"
-
-    User {
-        int id PK
-        string email
-        string hospital_id
-        string employee_id
-    }
-    Patient {
-        int id PK
-        int user_id FK
-        string name
-    }
-    Study {
-        int id PK
-        int patient_id FK
-        int user_id FK
-    }
-    AnalysisTask {
-        int id PK
-        int study_id FK
-        string status
-    }
-    AnalysisResult {
-        int id PK
-        int task_id FK
-        json result
-    }
-    MedicalReport {
-        int id PK
-        int result_id FK
-        string pdf_url
-    }
+    User ||--o{ Patient : "creates"
+    Patient ||--o{ Study : "has"
+    Study ||--o| AnalysisTask : "triggers"
+    AnalysisTask ||--o| AnalysisResult : "produces"
+    AnalysisResult ||--o| MedicalReport : "generates"
 ```
 
 ---
@@ -920,9 +887,10 @@ chore: 构建/工具变动
 flowchart TB
     A["用户登录"] --> B["验证用户名密码"]
     B --> C{"验证结果"}
-    C -->|"成功"| D["生成双 Token<br/>accessToken 1h · refreshToken 7d"]
+    C -->|"成功"| D["生成双 Token"]
     C -->|"失败"| E["返回错误"]
     D --> F["返回给前端"]
+    D --> G["accessToken 1h · refreshToken 7d"]
 ```
 
 - **accessToken** 存储在内存中，有效期 1 小时

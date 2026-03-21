@@ -34,19 +34,14 @@
 系统采用前后端分离架构，后端基于Node.js + Express + Sequelize实现，前端使用Vue 3 + Quasar构建。服务端路由、模型、中间件分层清晰，便于维护与扩展。
 
 ```mermaid
-graph TB
-subgraph "Server"
-routes[路由目录] --> models[模型目录]
+flowchart TB
+pages[页面组件] --> stores[状态管理]
+stores --> api[API服务]
+api --> routes[路由目录]
+routes --> models[模型目录]
 routes --> middleware[中间件]
 models --> sequelize[Sequelize ORM]
 middleware --> jwt[JWT认证]
-end
-subgraph "Client"
-pages[页面组件] --> stores[状态管理]
-stores --> api[API服务]
-api --> server[后端API]
-end
-Client < --> Server
 ```
 
 **Diagram sources**  
@@ -69,7 +64,7 @@ Client < --> Server
 系统采用典型的MVC模式，Express路由接收HTTP请求，调用模型方法处理业务逻辑，通过Sequelize与数据库交互。JWT用于用户身份认证，权限判断基于用户角色（普通用户/管理员）动态控制数据访问范围。
 
 ```mermaid
-graph LR
+flowchart LR
 A[客户端] --> B[Express路由]
 B --> C[认证中间件]
 C --> D{权限校验}
@@ -264,10 +259,10 @@ string studyId FK
 string status
 json result
 }
-STUDY ||--|{ PATIENT : "belongs to"
-STUDY ||--|{ USER : "created by"
-STUDY ||--o{ STUDY_IMAGE : "has many"
-STUDY ||--o{ ANALYSIS_TASK : "has many"
+PATIENT ||--o{ STUDY : "has"
+USER ||--o{ STUDY : "creates"
+STUDY ||--o{ STUDY_IMAGE : "has"
+STUDY ||--o{ ANALYSIS_TASK : "has"
 ```
 
 **Diagram sources**  
