@@ -96,4 +96,5 @@ export const STORAGE_KEYS = {
   USER_PREFERENCES: 'user_preferences',
   SUBSCRIPTION_STATUS: 'subscription_status',
   DEMO_SUBSCRIPTION_STATE: 'demo_subscription_state',
+  PENDING_PAYMENT_STATE: 'pending_payment_state',
 } as const;

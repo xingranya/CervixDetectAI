@@ -994,13 +994,11 @@
                 class="q-mt-lg payment-qrcode-card"
               >
                 <q-card-section class="text-center">
-                  <div class="text-subtitle2 text-weight-medium">微信扫码支付</div>
-                  <div class="text-caption text-grey-7 q-mt-xs">
-                    请使用微信扫一扫完成支付，支付成功后系统将自动跳转结果页。
-                  </div>
+                  <div class="text-subtitle2 text-weight-medium">{{ paymentQrCodeTitle }}</div>
+                  <div class="text-caption text-grey-7 q-mt-xs">{{ paymentQrCodeHint }}</div>
                   <q-img
                     :src="paymentQrCodeDataUrl"
-                    alt="微信支付二维码"
+                    :alt="paymentQrCodeTitle"
                     fit="contain"
                     class="payment-qrcode-image q-mx-auto q-mt-md"
                   />
@@ -1227,6 +1225,8 @@ const {
   paymentPrimaryActionLabel,
   paymentProcessing,
   paymentQrCodeDataUrl,
+  paymentQrCodeHint,
+  paymentQrCodeTitle,
   paymentStep,
   paymentStepThreeIcon,
   paymentStepThreeIconColor,

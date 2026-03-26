@@ -19,7 +19,7 @@ import {
   SORTED_SOFTWARE_COPYRIGHTS,
   type SoftwareCopyrightItem,
 } from 'src/constants/softwareCopyrights';
-import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
+import { getItem, removeItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 type DemoSubscriptionSource = 'demo' | 'backend' | 'default';
 type PaymentDisplayState = 'idle' | 'redirect' | 'scheme' | 'qrcode' | 'success' | 'failed';
@@ -68,8 +68,16 @@ interface HeroStatCardItem {
   description: string;
 }
 
+interface PendingPaymentState {
+  payment: PaymentGatewayData;
+  paymentMethod: 'alipay' | 'wxpay' | 'bank';
+  paymentInfo: DemoPaymentInfo;
+  createdAt: number;
+}
+
 const PAYMENT_POLL_INTERVAL_MS = 2500;
 const MAX_PAYMENT_POLL_COUNT = 40;
+const PENDING_PAYMENT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 function detectClientDevice() {
   const ua = window.navigator.userAgent.toLowerCase();
@@ -214,6 +222,28 @@ export function useSubscriptionPlans() {
   const currentPaymentMethodLabel = computed(
     () => paymentMethods.find((method) => method.value === selectedPaymentMethod.value)?.label || '',
   );
+
+  const paymentQrCodeTitle = computed(() => {
+    switch (selectedPaymentMethod.value) {
+      case 'alipay':
+        return '支付宝扫码支付';
+      case 'wxpay':
+        return '微信扫码支付';
+      default:
+        return '扫码支付';
+    }
+  });
+
+  const paymentQrCodeHint = computed(() => {
+    switch (selectedPaymentMethod.value) {
+      case 'alipay':
+        return '请使用支付宝扫一扫完成支付，支付成功后系统将自动跳转结果页。';
+      case 'wxpay':
+        return '请使用微信扫一扫完成支付，支付成功后系统将自动跳转结果页。';
+      default:
+        return '请使用对应支付应用扫码完成支付，支付成功后系统将自动跳转结果页。';
+    }
+  });
 
   const paymentStepThreeIcon = computed(() => {
     switch (paymentDisplayState.value) {
@@ -473,6 +503,44 @@ export function useSubscriptionPlans() {
     return isDemoSubscriptionStatus(savedState) ? savedState : null;
   };
 
+  const readPendingPaymentState = (): PendingPaymentState | null => {
+    const savedState = getItem<PendingPaymentState>(
+      STORAGE_KEYS.PENDING_PAYMENT_STATE,
+      null,
+      'session',
+    );
+
+    if (!savedState || typeof savedState !== 'object') {
+      return null;
+    }
+
+    if (Date.now() - Number(savedState.createdAt || 0) > PENDING_PAYMENT_MAX_AGE_MS) {
+      removeItem(STORAGE_KEYS.PENDING_PAYMENT_STATE, 'session');
+      return null;
+    }
+
+    return savedState;
+  };
+
+  const persistPendingPaymentState = (payment: PaymentGatewayData) => {
+    if (!currentPaymentOffer.value) return;
+
+    setItem(
+      STORAGE_KEYS.PENDING_PAYMENT_STATE,
+      {
+        payment,
+        paymentMethod: selectedPaymentMethod.value,
+        paymentInfo: paymentInfo.value,
+        createdAt: Date.now(),
+      } satisfies PendingPaymentState,
+      'session',
+    );
+  };
+
+  const clearPendingPaymentState = () => {
+    removeItem(STORAGE_KEYS.PENDING_PAYMENT_STATE, 'session');
+  };
+
   const createBackendFallbackStatus = (user: {
     subscription_type?: string;
     subscription_expires_at?: string;
@@ -518,6 +586,7 @@ export function useSubscriptionPlans() {
 
   const resetPaymentGatewayState = () => {
     clearPaymentPolling();
+    clearPendingPaymentState();
     paymentDisplayState.value = 'idle';
     paymentGatewayData.value = null;
     paymentGatewayMessage.value = '';
@@ -632,6 +701,7 @@ export function useSubscriptionPlans() {
 
   const handlePaymentSuccess = async (order: PaymentCheckData) => {
     clearPaymentPolling();
+    clearPendingPaymentState();
     paymentProcessing.value = false;
     paymentChecking.value = false;
 
@@ -693,8 +763,25 @@ export function useSubscriptionPlans() {
     await queryPaymentStatus(false);
   };
 
+  const refreshPaymentStatusSilently = async () => {
+    if (!paymentGatewayData.value) return;
+    await queryPaymentStatus(true);
+  };
+
+  const handleFocusRefresh = () => {
+    if (!paymentGatewayData.value || paymentDisplayState.value === 'success') return;
+    void refreshPaymentStatusSilently();
+  };
+
+  const handleVisibilityRefresh = () => {
+    if (document.visibilityState === 'visible') {
+      handleFocusRefresh();
+    }
+  };
+
   const startPaymentPolling = () => {
     clearPaymentPolling();
+    void refreshPaymentStatusSilently();
     paymentPollTimer = window.setInterval(() => {
       paymentPollCount.value += 1;
       if (paymentPollCount.value > MAX_PAYMENT_POLL_COUNT) {
@@ -720,13 +807,19 @@ export function useSubscriptionPlans() {
 
   const handleRemotePayment = async (payment: PaymentGatewayData) => {
     paymentGatewayData.value = payment;
+    persistPendingPaymentState(payment);
     paymentStep.value = 3;
     paymentGatewayError.value = '';
 
     switch (payment.displayMode) {
       case 'qrcode':
         paymentDisplayState.value = 'qrcode';
-        paymentGatewayMessage.value = '请使用微信扫描下方二维码完成支付，支付成功后系统会自动刷新状态。';
+        paymentGatewayMessage.value =
+          selectedPaymentMethod.value === 'alipay'
+            ? '请使用支付宝扫一扫完成支付，支付成功后系统会自动刷新状态。'
+            : selectedPaymentMethod.value === 'wxpay'
+              ? '请使用微信扫一扫完成支付，支付成功后系统会自动刷新状态。'
+              : '请使用对应支付应用扫码完成支付，支付成功后系统会自动刷新状态。';
         await prepareQrCode(payment.qrcode || '');
         startPaymentPolling();
         break;
@@ -739,6 +832,7 @@ export function useSubscriptionPlans() {
       case 'redirect':
         paymentDisplayState.value = 'redirect';
         paymentGatewayMessage.value = '正在前往支付页面，如页面未自动跳转，可点击下方按钮继续支付。';
+        startPaymentPolling();
         openPaymentGateway();
         break;
       default:
@@ -840,10 +934,53 @@ export function useSubscriptionPlans() {
     } else {
       void loadUserSubscription();
     }
+
+    const pendingPaymentState = readPendingPaymentState();
+    if (pendingPaymentState) {
+      selectedPaymentMethod.value = pendingPaymentState.paymentMethod;
+      paymentInfo.value = pendingPaymentState.paymentInfo;
+      paymentGatewayData.value = pendingPaymentState.payment;
+      paymentStep.value = 3;
+      showPaymentDialog.value = true;
+
+      switch (pendingPaymentState.payment.displayMode) {
+        case 'qrcode':
+          paymentDisplayState.value = 'qrcode';
+          paymentGatewayMessage.value =
+            pendingPaymentState.paymentMethod === 'alipay'
+              ? '请使用支付宝扫一扫完成支付，支付成功后系统会自动刷新状态。'
+              : pendingPaymentState.paymentMethod === 'wxpay'
+                ? '请使用微信扫一扫完成支付，支付成功后系统会自动刷新状态。'
+                : '请使用对应支付应用扫码完成支付，支付成功后系统会自动刷新状态。';
+          if (pendingPaymentState.payment.qrcode) {
+            void prepareQrCode(pendingPaymentState.payment.qrcode);
+          }
+          startPaymentPolling();
+          break;
+        case 'scheme':
+          paymentDisplayState.value = 'scheme';
+          paymentGatewayMessage.value = '正在等待支付结果，返回页面后会自动继续确认。';
+          startPaymentPolling();
+          break;
+        case 'redirect':
+          paymentDisplayState.value = 'redirect';
+          paymentGatewayMessage.value = '正在等待支付结果，返回页面后会自动继续确认。';
+          startPaymentPolling();
+          break;
+        default:
+          paymentDisplayState.value = 'idle';
+          break;
+      }
+    }
+
+    window.addEventListener('focus', handleFocusRefresh);
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
   });
 
   onUnmounted(() => {
     clearPaymentPolling();
+    window.removeEventListener('focus', handleFocusRefresh);
+    document.removeEventListener('visibilitychange', handleVisibilityRefresh);
   });
 
   return {
@@ -883,7 +1020,9 @@ export function useSubscriptionPlans() {
     paymentMethods,
     paymentPrimaryActionLabel,
     paymentProcessing,
+    paymentQrCodeHint,
     paymentQrCodeDataUrl,
+    paymentQrCodeTitle,
     paymentStep,
     paymentStepThreeIcon,
     paymentStepThreeIconColor,

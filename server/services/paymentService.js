@@ -114,6 +114,11 @@ function createPaymentError(message, status = 400) {
   return error;
 }
 
+function isWhitelistError(error) {
+  const message = String(error?.message || '');
+  return message.includes('白名单') || message.includes('域名不在白名单');
+}
+
 class PaymentService {
   constructor() {
     this.pid = process.env.EPAY_PID;
@@ -271,11 +276,10 @@ class PaymentService {
 
     this.ensureConfigured();
 
-    const payload = {
+    const basePayload = {
       pid: this.pid,
       type: paymentMethod,
       out_trade_no: outTradeNo,
-      notify_url: urls.notifyUrl,
       return_url: urls.returnUrl,
       name: plan.name,
       money: plan.price.toFixed(2),
@@ -284,13 +288,35 @@ class PaymentService {
       device: detectClientDevice(context.device, context.userAgent),
     };
 
-    const signedPayload = {
-      ...payload,
-      sign: this.generateSign(payload),
-      sign_type: 'MD5',
-    };
+    let gatewayResult;
+    let usedNotifyUrl = urls.notifyUrl;
 
-    const gatewayResult = await this.createGatewayOrder(signedPayload);
+    try {
+      const payload = {
+        ...basePayload,
+        notify_url: urls.notifyUrl,
+      };
+
+      gatewayResult = await this.createGatewayOrder({
+        ...payload,
+        sign: this.generateSign(payload),
+        sign_type: 'MD5',
+      });
+    } catch (error) {
+      if (!urls.notifyUrl || !isWhitelistError(error)) {
+        throw error;
+      }
+
+      console.warn('[EPay] notify_url 白名单校验失败，降级为仅 return_url 模式:', error.message);
+      usedNotifyUrl = '';
+
+      gatewayResult = await this.createGatewayOrder({
+        ...basePayload,
+        sign: this.generateSign(basePayload),
+        sign_type: 'MD5',
+      });
+    }
+
     const payment = {
       outTradeNo,
       tradeNo: gatewayResult.tradeNo,
@@ -299,6 +325,7 @@ class PaymentService {
       urlscheme: gatewayResult.urlscheme,
       displayMode: this.getDisplayMode(gatewayResult),
       resultUrl: `${urls.frontendResultUrl}?out_trade_no=${encodeURIComponent(outTradeNo)}`,
+      notifyMode: usedNotifyUrl ? 'async' : 'manual',
     };
 
     if (!payment.payurl && !payment.qrcode && !payment.urlscheme) {
