@@ -941,44 +941,78 @@
             </div>
           </q-step>
 
-          <q-step :name="3" title="支付完成" icon="verified">
+          <q-step :name="3" title="完成支付" icon="verified">
             <div class="q-pa-xl text-center payment-step-content">
-              <q-icon name="task_alt" color="positive" size="72px" />
-              <div class="text-h5 text-weight-bold q-mt-md">支付已完成</div>
+              <q-icon
+                :name="paymentStepThreeIcon"
+                :color="paymentStepThreeIconColor"
+                size="72px"
+              />
+              <div class="text-h5 text-weight-bold q-mt-md">{{ paymentStepThreeTitle }}</div>
               <div class="text-body2 text-grey-7 q-mt-sm">
-                {{ subscriptionStatus.planName }} 已开通，可按当前套餐权益使用相关服务。
+                {{ paymentStepThreeSubtitle }}
               </div>
+
               <q-card flat bordered class="q-mt-lg demo-success-card">
                 <q-card-section>
-                  <div class="text-subtitle2 text-weight-medium">开通结果</div>
+                  <div class="text-subtitle2 text-weight-medium">订单信息</div>
                   <div class="row q-col-gutter-sm q-mt-sm">
                     <div class="col-12 col-sm-6">
                       <div class="demo-success-item">
                         <span class="text-grey-6">套餐名称</span>
-                        <span class="text-weight-medium">{{ subscriptionStatus.planName }}</span>
+                        <span class="text-weight-medium">{{ paymentInfo.planName }}</span>
                       </div>
                     </div>
                     <div class="col-12 col-sm-6">
                       <div class="demo-success-item">
-                        <span class="text-grey-6">到期时间</span>
-                        <span class="text-weight-medium">{{ subscriptionStatus.expireDate }}</span>
+                        <span class="text-grey-6">支付方式</span>
+                        <span class="text-weight-medium">{{ currentPaymentMethodLabel }}</span>
                       </div>
                     </div>
                     <div class="col-12 col-sm-6">
                       <div class="demo-success-item">
-                        <span class="text-grey-6">{{ subscriptionStatus.quotaLabel }}</span>
-                        <span class="text-weight-medium">{{ subscriptionStatus.remainingCount }}</span>
+                        <span class="text-grey-6">订单金额</span>
+                        <span class="text-weight-medium">¥{{ formatCurrency(paymentInfo.amount) }}</span>
                       </div>
                     </div>
                     <div class="col-12 col-sm-6">
                       <div class="demo-success-item">
-                        <span class="text-grey-6">状态标识</span>
-                        <span class="text-weight-medium">{{ subscriptionStatus.badge }}</span>
+                        <span class="text-grey-6">商户订单号</span>
+                        <span class="text-weight-medium">
+                          {{ paymentGatewayData?.outTradeNo || '支付发起后生成' }}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </q-card-section>
               </q-card>
+
+              <q-card
+                v-if="paymentQrCodeDataUrl"
+                flat
+                bordered
+                class="q-mt-lg payment-qrcode-card"
+              >
+                <q-card-section class="text-center">
+                  <div class="text-subtitle2 text-weight-medium">微信扫码支付</div>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    请使用微信扫一扫完成支付，支付成功后系统将自动跳转结果页。
+                  </div>
+                  <q-img
+                    :src="paymentQrCodeDataUrl"
+                    alt="微信支付二维码"
+                    fit="contain"
+                    class="payment-qrcode-image q-mx-auto q-mt-md"
+                  />
+                </q-card-section>
+              </q-card>
+
+              <div
+                v-if="paymentGatewayError"
+                class="text-caption text-negative q-mt-md payment-step-error"
+              >
+                {{ paymentGatewayError }}
+              </div>
             </div>
           </q-step>
 
@@ -1033,7 +1067,37 @@
                   </template>
                 </q-btn>
                 <q-btn
-                  v-else
+                  v-else-if="paymentStep === 3 && paymentDisplayState !== 'success'"
+                  flat
+                  color="grey-8"
+                  label="手动刷新状态"
+                  icon="sync"
+                  no-caps
+                  @click="refreshPaymentStatus"
+                  :loading="paymentChecking"
+                  :disable="paymentProcessing"
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  v-if="paymentStep === 3 && paymentPrimaryActionLabel"
+                  unelevated
+                  color="primary"
+                  :label="paymentPrimaryActionLabel"
+                  icon-right="arrow_forward"
+                  no-caps
+                  @click="openPaymentGateway"
+                />
+                <q-btn
+                  v-else-if="paymentStep === 3 && paymentQrCodeDataUrl"
+                  unelevated
+                  color="primary"
+                  label="复制支付链接"
+                  icon="content_copy"
+                  no-caps
+                  @click="copyPaymentLink"
+                />
+                <q-btn
+                  v-else-if="paymentStep === 3 && paymentDisplayState === 'success'"
                   unelevated
                   color="primary"
                   label="完成并返回页面"
@@ -1135,7 +1199,9 @@ const {
   currentHeroBullets,
   currentHeroGroup,
   currentHeroOffer,
+  currentPaymentMethodLabel,
   currentPaymentOffer,
+  copyPaymentLink,
   demoPlanGroups,
   finishDemoPayment,
   formatCurrency,
@@ -1150,14 +1216,26 @@ const {
   heroStatCards,
   openCertificatePreview,
   openPaymentDialog,
+  openPaymentGateway,
   paymentAgreementTab,
+  paymentChecking,
+  paymentDisplayState,
+  paymentGatewayData,
+  paymentGatewayError,
   paymentInfo,
   paymentMethods,
+  paymentPrimaryActionLabel,
   paymentProcessing,
+  paymentQrCodeDataUrl,
   paymentStep,
+  paymentStepThreeIcon,
+  paymentStepThreeIconColor,
+  paymentStepThreeSubtitle,
+  paymentStepThreeTitle,
   planComparisonRows,
   previewVisible,
   processPayment,
+  refreshPaymentStatus,
   resetCertificatePreview,
   selectedOfferByTier,
   selectedPaymentMethod,
@@ -1233,6 +1311,26 @@ const {
       transparent 20px
     );
   pointer-events: none;
+}
+
+.payment-qrcode-card {
+  border-radius: 24px;
+  border: 1px solid rgba(22, 71, 104, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 252, 0.98));
+}
+
+.payment-qrcode-image {
+  width: min(280px, 70vw);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 18px 42px rgba(17, 50, 77, 0.1);
+}
+
+.payment-step-error {
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
 }
 
 .subscription-demo-hero {

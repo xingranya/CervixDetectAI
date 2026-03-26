@@ -38,7 +38,7 @@ const { authenticate } = require('../middleware/auth');
  *                 description: 支付方式 (alipay/wxpay)
  *     responses:
  *       200:
- *         description: 订单创建成功，返回支付链接
+ *         description: 订单创建成功，返回支付载荷
  */
 router.post('/create', authenticate, async (req, res, next) => {
   try {
@@ -57,7 +57,19 @@ router.post('/create', authenticate, async (req, res, next) => {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const baseUrl = `${protocol}://${host}`;
 
-    const result = await paymentService.createOrder(userId, planType, paymentMethod, baseUrl);
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const clientIp = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : String(forwardedFor || req.ip || req.socket?.remoteAddress || '')
+          .split(',')[0]
+          .trim();
+
+    const result = await paymentService.createOrder(userId, planType, paymentMethod, {
+      baseUrl,
+      clientIp,
+      device: req.body.device,
+      userAgent: req.headers['user-agent'],
+    });
 
     res.json({
       success: true,
@@ -246,6 +258,16 @@ router.post('/notify', async (req, res) => {
  *     tags: [Payment]
  */
 router.get('/return', async (req, res) => {
+  const frontendResultUrl = process.env.FRONTEND_RESULT_URL;
+  if (frontendResultUrl) {
+    const { out_trade_no } = req.query;
+    const separator = frontendResultUrl.includes('?') ? '&' : '?';
+    res.redirect(
+      `${frontendResultUrl}${separator}out_trade_no=${encodeURIComponent(out_trade_no || '')}`,
+    );
+    return;
+  }
+
   // 动态获取当前域名，支持多域名部署
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
   const host = req.headers['x-forwarded-host'] || req.headers.host;

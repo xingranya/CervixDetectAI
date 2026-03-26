@@ -45,6 +45,46 @@ export interface AuthData {
   };
 }
 
+export interface PaymentGatewayData {
+  outTradeNo: string;
+  tradeNo?: string | null;
+  payurl?: string | null;
+  qrcode?: string | null;
+  urlscheme?: string | null;
+  displayMode: 'redirect' | 'qrcode' | 'scheme' | 'result' | 'unknown';
+  resultUrl?: string;
+}
+
+export interface PaymentOrderData {
+  id: number;
+  user_id: number;
+  out_trade_no: string;
+  trade_no?: string | null;
+  type: string;
+  name: string;
+  money: number | string;
+  plan_type: string;
+  credits: number;
+  status: 'pending' | 'paid' | 'failed' | 'expired';
+  pay_time?: string | null;
+}
+
+export interface PaymentCreateData {
+  order: PaymentOrderData;
+  payUrl?: string;
+  payment: PaymentGatewayData;
+}
+
+export interface PaymentCheckData {
+  out_trade_no: string;
+  status: 'pending' | 'paid' | 'failed' | 'expired';
+  name: string;
+  money: number | string;
+  plan_type: string;
+  credits: number;
+  pay_time?: string | null;
+}
+
 export const authAPI = {
   async login(email: string, password: string): Promise<ApiResponse<AuthData>> {
     const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/login', {
@@ -1114,14 +1154,23 @@ export const notificationAPI = {
 // ============================================================
 
 export const paymentAPI = {
-  createOrder: (planType: string, paymentMethod: string) =>
-    apiClient.post('/payment/create', { planType, paymentMethod }),
+  createOrder: (
+    planType: string,
+    paymentMethod: string,
+    payload?: { device?: string },
+  ) =>
+    apiClient.post<ApiResponse<PaymentCreateData>>('/payment/create', {
+      planType,
+      paymentMethod,
+      ...payload,
+    }),
 
-  getOrderStatus: (outTradeNo: string) => apiClient.get(`/payment/status/${outTradeNo}`),
+  getOrderStatus: (outTradeNo: string) =>
+    apiClient.get<ApiResponse<PaymentCheckData>>(`/payment/status/${outTradeNo}`),
 
   // 公开接口，不需要认证（使用独立请求避免携带 token）
   checkOrderStatus: (outTradeNo: string) =>
-    apiClient.get(`${API_BASE_URL}/payment/check/${outTradeNo}`),
+    apiClient.get<ApiResponse<PaymentCheckData>>(`${API_BASE_URL}/payment/check/${outTradeNo}`),
 
   getOrders: (params?: { page?: number; limit?: number }) =>
     apiClient.get('/payment/orders', { params }),

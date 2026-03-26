@@ -447,6 +447,29 @@ components:
           type: string
           format: date-time
           nullable: true
+    PaymentGatewayData:
+      type: object
+      properties:
+        outTradeNo:
+          type: string
+        tradeNo:
+          type: string
+          nullable: true
+        payurl:
+          type: string
+          nullable: true
+        qrcode:
+          type: string
+          nullable: true
+        urlscheme:
+          type: string
+          nullable: true
+        displayMode:
+          type: string
+          enum: [redirect, qrcode, scheme, result, unknown]
+        resultUrl:
+          type: string
+          nullable: true
     DashboardStats:
       type: object
       properties:
@@ -903,6 +926,9 @@ components:
                   $ref: '#/components/schemas/Order'
                 payUrl:
                   type: string
+                  nullable: true
+                payment:
+                  $ref: '#/components/schemas/PaymentGatewayData'
     PaymentCheckResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'

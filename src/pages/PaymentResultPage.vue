@@ -101,11 +101,41 @@ const formatDate = (val: string) => {
   return d.toLocaleString('zh-CN');
 };
 
+const planBenefitTextMap: Record<string, string> = {
+  monthly: '月度订阅会员（30天）',
+  yearly: '年度订阅会员（365天）',
+  'basic-trial-once': '基础套餐试用权益（1次）',
+  'basic-formal-once': '基础套餐正式权益（1次）',
+  'basic-monthly-auto': '基础套餐连续包月（30天）',
+  'basic-monthly': '基础套餐一月版（30天）',
+  'basic-half-year': '基础套餐半年版（180天）',
+  'basic-yearly': '基础套餐一年版（365天）',
+  'premium-monthly-auto': '顶级套餐连续包月（30天）',
+  'premium-monthly': '顶级套餐一月版（30天）',
+  'premium-half-year': '顶级套餐半年版（180天）',
+  'premium-yearly': '顶级套餐一年版（365天）',
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getBenefitText = (order: any) => {
   if (!order) return '';
-  if (order.plan_type === 'monthly') return '月度订阅会员 (30天)';
-  if (order.plan_type === 'yearly') return '年度订阅会员 (365天)';
+
+  if (typeof order.plan_type === 'string' && planBenefitTextMap[order.plan_type]) {
+    return planBenefitTextMap[order.plan_type];
+  }
+
+  if (typeof order.plan_type === 'string' && order.plan_type.includes('year')) {
+    return `${order.name}（365天）`;
+  }
+
+  if (typeof order.plan_type === 'string' && order.plan_type.includes('half')) {
+    return `${order.name}（180天）`;
+  }
+
+  if (typeof order.plan_type === 'string' && order.plan_type.includes('month')) {
+    return `${order.name}（30天）`;
+  }
+
   return `${order.credits}次 AI分析点数`;
 };
 

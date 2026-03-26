@@ -596,7 +596,7 @@ ALIYUN_CAPTCHA_SCENEID_VERIFY=1dynwu1h
 # 易支付配置
 EPAY_PID=your_epay_pid_here
 EPAY_KEY=your_epay_key_here
-EPAY_API_URL=https://pay.mymzf.com/xpay/epay/
+EPAY_API_URL=https://mpay.qzz.io/xpay/epay/
 EPAY_NOTIFY_URL=https://api.example.com/api/payment/notify
 EPAY_RETURN_URL=https://api.example.com/api/payment/return
 FRONTEND_RESULT_URL=https://app.example.com/#/payment/result
@@ -812,7 +812,8 @@ TEMPLATE_ID_REGISTER_SUCCESS=42477
 
 | 方法 | 路径            | 说明         |
 | :--- | :-------------- | :----------- |
-| POST | `/create-order` | 创建支付订单 |
+| POST | `/create`       | 创建支付订单 |
+| GET  | `/check/:out_trade_no` | 公开查询订单状态 |
 | POST | `/notify`       | 支付回调     |
 | GET  | `/return`       | 支付返回跳转 |
 | GET  | `/orders`       | 获取订单列表 |

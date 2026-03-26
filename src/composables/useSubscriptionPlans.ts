@@ -1,6 +1,13 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { date, useQuasar } from 'quasar';
-import { userAPI } from 'src/services/api';
+import { useRouter } from 'vue-router';
+import QRCode from 'qrcode';
+import {
+  paymentAPI,
+  userAPI,
+  type PaymentCheckData,
+  type PaymentGatewayData,
+} from 'src/services/api';
 import {
   demoHeroHighlights,
   demoPlanComparisonRows,
@@ -15,6 +22,7 @@ import {
 import { getItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 
 type DemoSubscriptionSource = 'demo' | 'backend' | 'default';
+type PaymentDisplayState = 'idle' | 'redirect' | 'scheme' | 'qrcode' | 'success' | 'failed';
 
 interface DemoSubscriptionStatus {
   type: 'trial' | 'active' | 'expired';
@@ -60,11 +68,29 @@ interface HeroStatCardItem {
   description: string;
 }
 
+const PAYMENT_POLL_INTERVAL_MS = 2500;
+const MAX_PAYMENT_POLL_COUNT = 40;
+
+function detectClientDevice() {
+  const ua = window.navigator.userAgent.toLowerCase();
+  if (
+    ua.includes('micromessenger') ||
+    ua.includes('android') ||
+    ua.includes('iphone') ||
+    ua.includes('ipad') ||
+    ua.includes('mobile')
+  ) {
+    return 'mobile';
+  }
+  return 'pc';
+}
+
 /**
- * 统一管理订阅页的套餐、支付流程与演示权益状态。
+ * 统一管理订阅页的套餐、支付流程与权益状态。
  */
 export function useSubscriptionPlans() {
   const $q = useQuasar();
+  const router = useRouter();
 
   const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
   const heroHighlights: HeroHighlightItem[] = [
@@ -112,6 +138,7 @@ export function useSubscriptionPlans() {
   const showPaymentDialog = ref(false);
   const showUpgradeDialog = ref(false);
   const paymentProcessing = ref(false);
+  const paymentChecking = ref(false);
   const stepper = ref<{ next: () => void; previous: () => void } | null>(null);
   const paymentStep = ref(1);
   const selectedPaymentMethod = ref<'alipay' | 'wxpay' | 'bank'>('alipay');
@@ -120,6 +147,14 @@ export function useSubscriptionPlans() {
   const paymentAgreementTab = ref<'agreement' | 'privacy'>('agreement');
   const hasDemoOverride = ref(false);
   const currentPaymentOffer = ref<DemoOffer | null>(null);
+  const paymentDisplayState = ref<PaymentDisplayState>('idle');
+  const paymentGatewayData = ref<PaymentGatewayData | null>(null);
+  const paymentGatewayMessage = ref('');
+  const paymentGatewayError = ref('');
+  const paymentQrCodeDataUrl = ref('');
+  const paymentPollCount = ref(0);
+
+  let paymentPollTimer: number | null = null;
 
   const createDefaultSubscriptionStatus = (): DemoSubscriptionStatus => ({
     type: 'trial',
@@ -175,6 +210,83 @@ export function useSubscriptionPlans() {
       color: 'orange',
     },
   ] as const;
+
+  const currentPaymentMethodLabel = computed(
+    () => paymentMethods.find((method) => method.value === selectedPaymentMethod.value)?.label || '',
+  );
+
+  const paymentStepThreeIcon = computed(() => {
+    switch (paymentDisplayState.value) {
+      case 'qrcode':
+        return 'qr_code_2';
+      case 'scheme':
+        return 'phone_iphone';
+      case 'redirect':
+        return 'open_in_new';
+      case 'failed':
+        return 'warning';
+      case 'success':
+        return 'task_alt';
+      default:
+        return 'payment';
+    }
+  });
+
+  const paymentStepThreeIconColor = computed(() => {
+    switch (paymentDisplayState.value) {
+      case 'failed':
+        return 'negative';
+      case 'qrcode':
+        return 'positive';
+      case 'success':
+        return 'positive';
+      default:
+        return 'primary';
+    }
+  });
+
+  const paymentStepThreeTitle = computed(() => {
+    switch (paymentDisplayState.value) {
+      case 'qrcode':
+        return '请完成扫码支付';
+      case 'scheme':
+        return '正在唤起支付';
+      case 'redirect':
+        return '正在前往支付页面';
+      case 'success':
+        return '支付已完成';
+      case 'failed':
+        return '支付发起失败';
+      default:
+        return '等待支付确认';
+    }
+  });
+
+  const paymentStepThreeSubtitle = computed(() => {
+    if (paymentGatewayError.value) {
+      return paymentGatewayError.value;
+    }
+    if (paymentGatewayMessage.value) {
+      return paymentGatewayMessage.value;
+    }
+    return '支付完成后系统会自动刷新订单状态。';
+  });
+
+  const paymentActionUrl = computed(() => {
+    if (!paymentGatewayData.value) return '';
+    return paymentGatewayData.value.payurl || paymentGatewayData.value.urlscheme || '';
+  });
+
+  const paymentPrimaryActionLabel = computed(() => {
+    switch (paymentDisplayState.value) {
+      case 'redirect':
+        return '立即打开支付页面';
+      case 'scheme':
+        return '重新唤起支付';
+      default:
+        return '';
+    }
+  });
 
   const getTierOffers = (tier: DemoPlanTier): DemoOffer[] => {
     const group = demoSubscriptionCatalog[tier];
@@ -396,6 +508,24 @@ export function useSubscriptionPlans() {
     };
   };
 
+  const clearPaymentPolling = () => {
+    if (paymentPollTimer) {
+      window.clearInterval(paymentPollTimer);
+      paymentPollTimer = null;
+    }
+    paymentPollCount.value = 0;
+  };
+
+  const resetPaymentGatewayState = () => {
+    clearPaymentPolling();
+    paymentDisplayState.value = 'idle';
+    paymentGatewayData.value = null;
+    paymentGatewayMessage.value = '';
+    paymentGatewayError.value = '';
+    paymentQrCodeDataUrl.value = '';
+    paymentChecking.value = false;
+  };
+
   const openCertificatePreview = (certificate: SoftwareCopyrightItem): void => {
     if (!certificate.imageUrl) {
       $q.notify({
@@ -422,6 +552,7 @@ export function useSubscriptionPlans() {
   };
 
   const openPaymentDialog = (offer: DemoOffer): void => {
+    resetPaymentGatewayState();
     activeTier.value = offer.tier;
     currentPaymentOffer.value = offer;
     paymentInfo.value = buildPaymentInfo(offer);
@@ -437,6 +568,7 @@ export function useSubscriptionPlans() {
   };
 
   const resetPaymentFlow = (): void => {
+    resetPaymentGatewayState();
     showPaymentDialog.value = false;
     paymentStep.value = 1;
     paymentProcessing.value = false;
@@ -454,6 +586,190 @@ export function useSubscriptionPlans() {
     resetPaymentFlow();
   };
 
+  const openPaymentGateway = () => {
+    const actionUrl = paymentActionUrl.value;
+    if (!actionUrl) {
+      paymentGatewayError.value = '当前未获取到可用的支付地址，请稍后重试。';
+      return;
+    }
+
+    window.location.assign(actionUrl);
+  };
+
+  const copyPaymentLink = async () => {
+    const content =
+      paymentGatewayData.value?.qrcode ||
+      paymentGatewayData.value?.payurl ||
+      paymentGatewayData.value?.urlscheme ||
+      '';
+
+    if (!content) {
+      $q.notify({
+        type: 'warning',
+        message: '当前没有可复制的支付地址',
+        position: 'top',
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(content);
+      $q.notify({
+        type: 'positive',
+        message: '支付链接已复制',
+        caption: '可发送到微信或其他设备继续支付',
+        position: 'top',
+      });
+    } catch (error) {
+      console.error('复制支付链接失败:', error);
+      $q.notify({
+        type: 'negative',
+        message: '复制支付链接失败，请稍后重试',
+        position: 'top',
+      });
+    }
+  };
+
+  const handlePaymentSuccess = async (order: PaymentCheckData) => {
+    clearPaymentPolling();
+    paymentProcessing.value = false;
+    paymentChecking.value = false;
+
+    try {
+      await loadUserSubscription();
+    } catch (error) {
+      console.error('刷新订阅状态失败:', error);
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: `${order.name} 支付成功`,
+      caption: '套餐权益已更新',
+      position: 'top',
+      icon: 'task_alt',
+    });
+
+    resetPaymentFlow();
+    void router.push({
+      name: 'payment-result',
+      query: { out_trade_no: order.out_trade_no },
+    });
+  };
+
+  const queryPaymentStatus = async (silent = false) => {
+    const outTradeNo = paymentGatewayData.value?.outTradeNo;
+    if (!outTradeNo) return;
+
+    if (!silent) {
+      paymentChecking.value = true;
+    }
+
+    try {
+      const response = await paymentAPI.checkOrderStatus(outTradeNo);
+      const result = response.data;
+      const order = result.data;
+
+      if (result.success && order?.status === 'paid') {
+        await handlePaymentSuccess(order);
+        return;
+      }
+
+      if (!silent) {
+        paymentGatewayError.value = order?.status === 'paid' ? '' : '订单尚未完成支付，请稍后再试。';
+      }
+    } catch (error) {
+      console.error('查询支付状态失败:', error);
+      if (!silent) {
+        paymentGatewayError.value = '暂时无法确认支付结果，请稍后刷新。';
+      }
+    } finally {
+      if (!silent) {
+        paymentChecking.value = false;
+      }
+    }
+  };
+
+  const refreshPaymentStatus = async () => {
+    await queryPaymentStatus(false);
+  };
+
+  const startPaymentPolling = () => {
+    clearPaymentPolling();
+    paymentPollTimer = window.setInterval(() => {
+      paymentPollCount.value += 1;
+      if (paymentPollCount.value > MAX_PAYMENT_POLL_COUNT) {
+        clearPaymentPolling();
+        paymentGatewayError.value = '等待支付确认超时，请在完成支付后点击手动刷新。';
+        return;
+      }
+
+      void queryPaymentStatus(true);
+    }, PAYMENT_POLL_INTERVAL_MS);
+  };
+
+  const prepareQrCode = async (content: string) => {
+    paymentQrCodeDataUrl.value = await QRCode.toDataURL(content, {
+      width: 280,
+      margin: 1,
+      color: {
+        dark: '#144768',
+        light: '#ffffff',
+      },
+    });
+  };
+
+  const handleRemotePayment = async (payment: PaymentGatewayData) => {
+    paymentGatewayData.value = payment;
+    paymentStep.value = 3;
+    paymentGatewayError.value = '';
+
+    switch (payment.displayMode) {
+      case 'qrcode':
+        paymentDisplayState.value = 'qrcode';
+        paymentGatewayMessage.value = '请使用微信扫描下方二维码完成支付，支付成功后系统会自动刷新状态。';
+        await prepareQrCode(payment.qrcode || '');
+        startPaymentPolling();
+        break;
+      case 'scheme':
+        paymentDisplayState.value = 'scheme';
+        paymentGatewayMessage.value = '正在尝试唤起支付应用，如未自动打开，可点击下方按钮重试。';
+        startPaymentPolling();
+        openPaymentGateway();
+        break;
+      case 'redirect':
+        paymentDisplayState.value = 'redirect';
+        paymentGatewayMessage.value = '正在前往支付页面，如页面未自动跳转，可点击下方按钮继续支付。';
+        openPaymentGateway();
+        break;
+      default:
+        paymentDisplayState.value = 'failed';
+        paymentGatewayError.value = '支付网关未返回可用的支付方式，请稍后重试。';
+        break;
+    }
+  };
+
+  const processDemoBankPayment = async (offer: DemoOffer) => {
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 900);
+    });
+
+    const nextStatus = buildDemoStatusFromOffer(offer);
+    subscriptionStatus.value = nextStatus;
+    hasDemoOverride.value = true;
+    setItem(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE, nextStatus);
+    paymentStep.value = 3;
+    paymentDisplayState.value = 'success';
+    paymentGatewayMessage.value = '当前为演示模式，已直接模拟支付成功，可关闭窗口继续查看套餐权益。';
+
+    $q.notify({
+      type: 'positive',
+      message: `${nextStatus.planName} 支付完成`,
+      caption: '套餐权益已更新',
+      position: 'top',
+      icon: 'task_alt',
+    });
+  };
+
   const processPayment = async (): Promise<void> => {
     if (!currentPaymentOffer.value) {
       $q.notify({
@@ -465,25 +781,35 @@ export function useSubscriptionPlans() {
     }
 
     paymentProcessing.value = true;
+    paymentGatewayError.value = '';
 
     try {
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, 900);
-      });
+      if (selectedPaymentMethod.value === 'bank') {
+        await processDemoBankPayment(currentPaymentOffer.value);
+        return;
+      }
 
-      const nextStatus = buildDemoStatusFromOffer(currentPaymentOffer.value);
-      subscriptionStatus.value = nextStatus;
-      hasDemoOverride.value = true;
-      setItem(STORAGE_KEYS.DEMO_SUBSCRIPTION_STATE, nextStatus);
+      const response = await paymentAPI.createOrder(
+        currentPaymentOffer.value.code,
+        selectedPaymentMethod.value,
+        {
+          device: detectClientDevice(),
+        },
+      );
+
+      const payload = response.data.data;
+      if (!payload?.payment) {
+        throw new Error('下单成功，但未获取到支付指引');
+      }
+
+      await handleRemotePayment(payload.payment);
+    } catch (error) {
+      console.error('创建支付订单失败:', error);
+      paymentDisplayState.value = 'failed';
       paymentStep.value = 3;
-
-      $q.notify({
-        type: 'positive',
-        message: `${nextStatus.planName} 支付完成`,
-        caption: '套餐权益已更新',
-        position: 'top',
-        icon: 'task_alt',
-      });
+      paymentGatewayMessage.value = '';
+      paymentGatewayError.value =
+        error instanceof Error ? error.message : '支付创建失败，请稍后重试。';
     } finally {
       paymentProcessing.value = false;
     }
@@ -516,14 +842,20 @@ export function useSubscriptionPlans() {
     }
   });
 
+  onUnmounted(() => {
+    clearPaymentPolling();
+  });
+
   return {
     activeCertificate,
     activeTier,
     agreePaymentTerms,
     cancelPayment,
+    copyPaymentLink,
     currentHeroBullets,
     currentHeroGroup,
     currentHeroOffer,
+    currentPaymentMethodLabel,
     currentPaymentOffer,
     demoPlanGroups,
     finishDemoPayment,
@@ -539,14 +871,28 @@ export function useSubscriptionPlans() {
     heroStatCards,
     openCertificatePreview,
     openPaymentDialog,
+    openPaymentGateway,
+    paymentActionUrl,
     paymentAgreementTab,
+    paymentChecking,
+    paymentDisplayState,
+    paymentGatewayData,
+    paymentGatewayError,
+    paymentGatewayMessage,
     paymentInfo,
     paymentMethods,
+    paymentPrimaryActionLabel,
     paymentProcessing,
+    paymentQrCodeDataUrl,
     paymentStep,
+    paymentStepThreeIcon,
+    paymentStepThreeIconColor,
+    paymentStepThreeSubtitle,
+    paymentStepThreeTitle,
     planComparisonRows,
     previewVisible,
     processPayment,
+    refreshPaymentStatus,
     resetCertificatePreview,
     resetPaymentFlow,
     selectedOfferByTier,
