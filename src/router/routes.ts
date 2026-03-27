@@ -19,6 +19,11 @@ const routes: RouteRecordRaw[] = [
         name: 'PrivacyPolicy',
         component: () => import('pages/PrivacyPolicyPage.vue'),
       },
+      {
+        path: 'patient-mini-program/:screen?',
+        name: 'patient-mini-program',
+        component: () => import('pages/PatientMiniProgramPreviewPage.vue'),
+      },
       // 支付结果页 - 公开路由，不需要认证
       {
         path: 'payment/result',
@@ -107,3 +112,5 @@ const routes: RouteRecordRaw[] = [
 ];
 
 export default routes;
+
+

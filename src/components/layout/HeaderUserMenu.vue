@@ -33,6 +33,16 @@
         </q-item-section>
       </q-item>
 
+      <q-item clickable v-ripple @click="goToPatientMiniProgramPreview">
+        <q-item-section avatar>
+          <q-icon name="phone_iphone" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label>患者端微信小程序</q-item-label>
+          <q-item-label caption>直接预览演示</q-item-label>
+        </q-item-section>
+      </q-item>
+
       <q-separator />
 
       <q-item clickable v-ripple @click="logout">
@@ -77,6 +87,10 @@ const goToSettings = () => {
   void router.push('/app/settings');
 };
 
+const goToPatientMiniProgramPreview = () => {
+  void router.push({ name: 'patient-mini-program', params: { screen: 'home' } });
+};
+
 const logout = async () => {
   await authStore.logout();
   void router.push('/login');
@@ -88,3 +102,4 @@ const logout = async () => {
   min-width: 200px;
 }
 </style>
+
