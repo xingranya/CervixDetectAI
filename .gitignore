@@ -8,7 +8,7 @@ src-capacitor
 .quasar
 /dist
 /quasar.config.*.temporary.compiled*
-
+/.codex
 # Cordova related directories and files
 /src-cordova/node_modules
 /src-cordova/platforms
