@@ -5,6 +5,21 @@
 @use './utilities';
 @use './auth';
 
+@mixin app-backdrop-blur($selector, $saturate, $blur) {
+  @supports (backdrop-filter: blur(0)) {
+    #{$selector} {
+      backdrop-filter: saturate(#{$saturate}) blur(#{$blur});
+    }
+  }
+
+  @supports (-webkit-backdrop-filter: blur(0)) {
+    #{$selector} {
+      backdrop-filter: saturate(#{$saturate}) blur(#{$blur});
+      -webkit-backdrop-filter: saturate(#{$saturate}) blur(#{$blur});
+    }
+  }
+}
+
 // =============================================================
 // Quasar 组件视觉基线（浅色/深色通用）
 // 目标：统一圆角、边框、阴影与交互过渡，减少页面级硬编码
@@ -31,20 +46,24 @@
   border: 1px solid var(--app-glass-border);
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-lg);
-  backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
-  -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   overflow: hidden;
 }
+
+@include app-backdrop-blur('.q-menu', 'var(--app-glass-saturate)', 'var(--app-glass-blur-md)');
 
 .q-dialog__inner > .q-card {
   background: var(--app-dialog-bg);
   border: 1px solid var(--app-dialog-border);
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-lg);
-  backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
-  -webkit-backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
   color: var(--app-dialog-text);
 }
+
+@include app-backdrop-blur(
+  '.q-dialog__inner > .q-card',
+  'var(--app-dialog-saturate)',
+  'var(--app-dialog-blur)'
+);
 
 .q-dialog__backdrop {
   background: rgba(15, 23, 42, 0.2) !important;
@@ -179,8 +198,6 @@ body.body--dark {
   .q-menu {
     background: var(--app-glass-bg);
     border-color: var(--app-glass-border);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   }
 
   // q-tab-panels 面板背景
@@ -280,8 +297,6 @@ body.body--dark {
     background: var(--app-dialog-bg);
     border-color: var(--app-dialog-border);
     color: var(--app-dialog-text);
-    backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
-    -webkit-backdrop-filter: saturate(var(--app-dialog-saturate)) blur(var(--app-dialog-blur));
   }
 
   .q-dialog__backdrop {
