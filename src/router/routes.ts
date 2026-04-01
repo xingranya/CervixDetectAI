@@ -91,6 +91,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/AiPreferencesPage.vue'),
       },
       {
+        path: 'orders',
+        name: 'orders',
+        component: () => import('pages/OrderManagementPage.vue'),
+      },
+      {
         path: 'settings',
         name: 'settings',
         component: () => import('pages/SettingsPage.vue'),

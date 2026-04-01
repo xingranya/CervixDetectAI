@@ -55,6 +55,12 @@ export const MAIN_NAVIGATION_SECTIONS: NavigationSection[] = [
         route: '/app/models',
       },
       {
+        title: '订单管理',
+        caption: '账单与续约',
+        icon: 'receipt_long',
+        route: '/app/orders',
+      },
+      {
         title: 'AI与偏好设置',
         caption: '引擎与服务',
         icon: 'tune',
