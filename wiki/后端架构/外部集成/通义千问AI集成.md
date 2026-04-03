@@ -53,6 +53,69 @@ C --> E[.env]
 
 前端的 `AiPreferencesPage.vue` 仅承担模型版本、阈值、敏感性与通知/报告偏好的界面配置，不负责写入 `.env` 或管理 API Key。`QwenService` 读取的 `QWEN_API_KEY`、`QWEN_API_URL`、`QWEN_MODEL` 仍由服务端环境变量提供。
 
+### AI 分析服务完整架构图
+
+```mermaid
+graph TB
+    subgraph 前端层["前端交互层"]
+        UP["UploadPage.vue<br/>图像上传"]
+        SD["StudyDetailPage.vue<br/>结果展示"]
+        AS["analysisStore<br/>状态管理"]
+    end
+    
+    subgraph 后端接入层["后端API接入层"]
+        AN["analyze.js<br/>图像上传路由"]
+        AT["analysis-tasks.js<br/>任务管理路由"]
+    end
+    
+    subgraph 业务逻辑层["业务逻辑层"]
+        ASV["analysisService.js<br/>分析服务"]
+        QSV["qwenService.js<br/>千问服务"]
+        QUE["simpleAnalysisQueue.service.js<br/>任务队列"]
+    end
+    
+    subgraph 数据层["数据持久化层"]
+        DB["MySQL数据库"]
+        FS["本地文件系统<br/>uploads/"]
+        TC["图仓存储服务"]
+    end
+    
+    subgraph 外部服务["外部服务"]
+        QW["阿里云通义千问API"]
+        NT["NotificationService<br/>通知服务"]
+        EM["EmailService<br/>邮件服务"]
+    end
+    
+    UP -->|FormData上传| AN
+    SD -->|轮询状态| AT
+    AS -->|状态同步| AS
+    AN -->|保存图像| FS
+    AN -->|创建任务| AT
+    AN -->|写入DB| DB
+    AT -->|加入队列| QUE
+    QUE -->|取出任务| ASV
+    ASV -->|调用AI| QSV
+    QSV -->|API请求| QW
+    QW -->|诊断结果| QSV
+    QSV -->|返回结果| ASV
+    ASV -->|保存结果| DB
+    ASV -->|发送通知| NT
+    ASV -->|发送邮件| EM
+    ASV -->|同步图像| TC
+```
+
+### 检查方式与诊断分类
+
+系统支持多种宫颈细胞学检查方式的图像分析：
+
+| 检查方式 | 诊断分类（TBS/病理系统） | 关键生物标志物 |
+|---------|------------------------|--------------|
+| 巴氏染色涂片（Pap Smear） | NILM/ASC-US/ASC-H/LSIL/HSIL/SCC/AGC | HPV状态推测 |
+| 液基细胞学（TCT/LCT） | NILM/ASC-US/ASC-H/LSIL/HSIL/SCC/AGC | HPV状态推测 |
+| 宫颈活检切片（HE染色） | 正常/CIN 1/2/3/原位癌/浸润癌/腺癌 | p16/Ki67 |
+| p16/Ki67双染图像 | 阴性/阳性/可疑 | p16/Ki67双阳性 |
+| 阴道镜检查图像 | 正常/低度病变/高度病变/可疑浸润癌 | 醋酸白/碘染色 |
+
 **Section sources**
 - [qwenService.js](file://server/services/qwenService.js#L102-L313)
 - [qwenService.js](file://server/services/qwenService.js#L318-L600)

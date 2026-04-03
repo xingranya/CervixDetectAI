@@ -34,6 +34,52 @@
 
 ---
 
+## 系统架构概览
+
+```mermaid
+flowchart TB
+    subgraph 前端层["🌐 前端层 (Quasar/Vue 3)"]
+        A1["📱 移动端 (Capacitor)"]
+        A2["💻 Web 端 (Vite)"]
+        A3["📊 状态管理 (Pinia)"]
+    end
+    
+    subgraph 网关层["🔌 API 网关"]
+        B["Nginx 反向代理"]
+    end
+    
+    subgraph 后端层["⚙️ 后端层 (Node.js)"]
+        C1["认证服务 (JWT)"]
+        C2["分析服务 (通义千问)"]
+        C3["文件服务 (Multer)"]
+        C4["通知服务 (腾讯云 SES)"]
+        C5["随访调度 (node-cron)"]
+        C6["支付服务 (智腾码)"]
+    end
+    
+    subgraph 数据层["💾 数据层"]
+        D1["MySQL (Sequelize ORM)"]
+        D2["图仓存储 (第三方 CDN)"]
+    end
+    
+    A1 --> B
+    A2 --> B
+    A3 --> B
+    B --> C1
+    B --> C2
+    B --> C3
+    B --> C4
+    B --> C5
+    B --> C6
+    C1 --> D1
+    C2 --> D1
+    C3 --> D2
+    
+    style 前端层 fill:#e8f5e9
+    style 后端层 fill:#fff3e0
+    style 数据层 fill:#e3f2fd
+```
+
 ## 核心专题地图
 
 - [[项目目录结构|项目目录结构]]
@@ -42,6 +88,8 @@
 - [[API参考|API参考]]
 - [[数据库设计|数据库设计]]
 - [[安全考虑|安全考虑]]
+- [[患者与病例管理]]
+- [[订阅与支付系统]]
 
 ---
 
