@@ -1,0 +1,27 @@
+  {
+      "version": "2.0.0",
+      "tasks": [
+          {
+              "label": "Convert MD to Word with Mermaid",
+              "type": "shell",
+              "command": "pandoc",
+              "args": [
+                  "${relativeFile}",
+                  "-o",
+                  "${relativeFileDirname}/${fileBasenameNoExtension}.docx",
+                  "--filter",
+                  "/Users/xingranya/.npm-global/lib/node_modules/mermaid-filter/index.js"
+              ],
+              "group": {
+                  "kind": "build",
+                  "isDefault": true
+              },
+              "presentation": {
+                  "reveal": "always",
+                  "panel": "shared",
+                  "clear": true
+              },
+              "problemMatcher": []
+          }
+      ]
+  }
