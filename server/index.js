@@ -3,6 +3,7 @@ require('./config/loadEnv');
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 
@@ -23,7 +24,12 @@ const chatRouter = require('./routes/chat');
 const followupsRouter = require('./routes/followups');
 const notificationsRouter = require('./routes/notifications');
 const patientInsightsRouter = require('./routes/patient-insights');
-const { testConnection, syncDatabase } = require('./config/sequelize');
+const auditRouter = require('./routes/audit');
+const importRouter = require('./routes/import');
+const { authLimiter, codeLimiter, apiLimiter } = require('./middleware/rateLimiter');
+const requestLogger = require('./middleware/requestLogger');
+const { handleRouteError } = require('./utils/errorHandler');
+const { testConnection, syncDatabase, sequelize } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
 const {
   ensureFollowUpInfrastructure,
@@ -87,15 +93,21 @@ app.use(
     },
   }),
 );
+app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+app.use(requestLogger);
 
 app.use('/reports', express.static(reportsDir));
 app.use('/uploads', express.static(uploadDir));
 
-app.use('/api/auth', authRouter);
-app.use('/api/auth/sms', smsAuthRouter);
-app.use('/api/auth/email', emailAuthRouter);
+// 通用API限流（所有 /api 路由）
+app.use('/api', apiLimiter);
+
+app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/auth/sms', codeLimiter, smsAuthRouter);
+app.use('/api/auth/email', codeLimiter, emailAuthRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/patients', patientsRouter);
 app.use('/api/studies', studiesRouter);
@@ -110,6 +122,8 @@ app.use('/api/chat', chatRouter);
 app.use('/api/followups', followupsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/patient-insights', patientInsightsRouter);
+app.use('/api/audit', auditRouter);
+app.use('/api/import', importRouter);
 
 // 使用环境变量配置前端构建路径，便于服务器部署
 const distPath = process.env.FRONTEND_DIST_PATH
@@ -150,19 +164,36 @@ app.get('/', (req, res) => {
 });
 
 // 健康检查
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  const status = { timestamp: new Date().toISOString() };
+
+  try {
+    // 数据库连接检查
+    await sequelize.authenticate();
+    status.database = 'connected';
+  } catch (error) {
+    status.database = 'disconnected';
+    status.databaseError = error.message;
+  }
+
+  // 分析队列状态
+  try {
+    const { analysisTaskQueue } = require('./services/simpleAnalysisQueue.service');
+    status.analysisQueue = analysisTaskQueue.getStatus();
+  } catch {
+    status.analysisQueue = 'unavailable';
+  }
+
+  const isHealthy = status.database === 'connected';
+  status.status = isHealthy ? 'ok' : 'degraded';
+
+  res.status(isHealthy ? 200 : 503).json(status);
 });
 
-// 错误处理中间件
+// 全局错误处理中间件
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || '服务器内部错误',
-    ...(process.env.NODE_ENV === 'development' && { error: err.stack }),
-  });
+  handleRouteError(res, err, { service: 'Global', endpoint: req.originalUrl });
 });
 
 // 404处理

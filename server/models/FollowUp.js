@@ -126,6 +126,10 @@ const FollowUp = sequelize.define(
       {
         fields: ['created_at'],
       },
+      {
+        name: 'idx_followup_patient_status_date',
+        fields: ['patient_id', 'status', 'planned_date'],
+      },
     ],
   },
 );

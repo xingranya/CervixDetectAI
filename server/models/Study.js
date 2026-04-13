@@ -84,6 +84,29 @@ const Study = sequelize.define(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    // 审核状态字段
+    review_status: {
+      type: DataTypes.ENUM('pending', 'reviewed', 'rejected'),
+      allowNull: false,
+      defaultValue: 'pending',
+      comment: '审核状态：pending-待审核, reviewed-已审核, rejected-已驳回',
+    },
+    reviewed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '审核时间',
+    },
+    reviewed_by: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL',
+      comment: '审核人ID',
+    },
   },
   {
     tableName: 'studies',
@@ -103,6 +126,9 @@ const Study = sequelize.define(
       },
       {
         fields: ['status', 'created_at'],
+      },
+      {
+        fields: ['review_status'],
       },
     ],
   },

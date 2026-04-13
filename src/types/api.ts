@@ -11,7 +11,7 @@ export interface ApiResponse<T = unknown> {
 // Auth API Types
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string; // 向后兼容，新版后端不再返回
   user: User;
 }
 

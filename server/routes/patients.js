@@ -3,6 +3,8 @@ const express = require('express');
 const { Op } = require('sequelize');
 const { Patient, User } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { handleRouteError } = require('../utils/errorHandler');
+const { logAudit } = require('../middleware/auditLogger');
 
 const router = express.Router();
 
@@ -74,13 +76,18 @@ router.post('/', authenticate, async (req, res) => {
       message: '患者创建成功',
       data: { patient },
     });
-  } catch (error) {
-    console.error('创建患者错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '创建患者失败',
-      error: error.message,
+
+    // 记录创建患者审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'CREATE_PATIENT',
+      resourceType: 'patient',
+      resourceId: patient.id,
+      details: { name: patient.name },
+      req,
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'POST /' });
   }
 });
 
@@ -141,12 +148,7 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取患者列表错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取患者列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'GET /' });
   }
 });
 
@@ -186,12 +188,7 @@ router.get('/:id', authenticate, async (req, res) => {
       data: { patient },
     });
   } catch (error) {
-    console.error('获取患者详情错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取患者详情失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'GET /:id' });
   }
 });
 
@@ -281,13 +278,18 @@ router.put('/:id', authenticate, async (req, res) => {
       message: '更新成功',
       data: { patient: updatedPatient },
     });
-  } catch (error) {
-    console.error('更新患者信息错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新患者信息失败',
-      error: error.message,
+
+    // 记录更新患者审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'UPDATE_PATIENT',
+      resourceType: 'patient',
+      resourceId: patient.id,
+      details: { updatedFields: Object.keys(updateData) },
+      req,
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'PUT /:id' });
   }
 });
 
@@ -317,17 +319,22 @@ router.delete('/:id', authenticate, async (req, res) => {
     // 软删除
     await patient.destroy();
 
+    // 记录删除患者审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'DELETE_PATIENT',
+      resourceType: 'patient',
+      resourceId: patient.id,
+      details: { name: patient.name },
+      req,
+    });
+
     res.json({
       success: true,
       message: '患者已删除',
     });
   } catch (error) {
-    console.error('删除患者错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '删除患者失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'DELETE /:id' });
   }
 });
 
@@ -365,12 +372,7 @@ router.get('/:id/studies', authenticate, async (req, res) => {
       data: { studies },
     });
   } catch (error) {
-    console.error('获取患者病例错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取患者病例失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Patients', endpoint: 'GET /:id/studies' });
   }
 });
 

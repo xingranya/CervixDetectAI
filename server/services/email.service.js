@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const tencentcloud = require('tencentcloud-sdk-nodejs');
 const crypto = require('crypto');
+const { validateEmail } = require('../utils/validators');
 const SESClient = tencentcloud.ses.v20201002.Client;
 
 // 配置客户端
@@ -66,8 +67,7 @@ class TencentEmailService {
    * @returns {boolean} 是否有效
    */
   validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return validateEmail(email);
   }
 
   /**

@@ -4,6 +4,8 @@ export type LatestTaskStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
 
 export type StudyDisplayStatus = 'pending' | 'completed' | 'processing' | 'failed' | 'uploaded';
 
+export type ReviewStatus = 'pending' | 'reviewed' | 'rejected';
+
 export interface Study {
   id: number;
   study_id: string;
@@ -28,6 +30,9 @@ export interface Study {
   riskLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
   confidence?: number | undefined;
   latestTaskStatus?: LatestTaskStatus | undefined;
+  reviewStatus?: ReviewStatus | undefined;
+  reviewedAt?: string | undefined;
+  reviewedBy?: number | undefined;
 }
 
 export interface StudiesPaginationState {

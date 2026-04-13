@@ -4,6 +4,7 @@ const router = express.Router();
 const paymentService = require('../services/paymentService');
 const { Order } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { handleRouteError } = require('../utils/errorHandler');
 
 /**
  * @swagger
@@ -228,7 +229,7 @@ router.get('/notify', async (req, res) => {
     const result = await paymentService.handleNotify(req.query);
     res.send(result);
   } catch (error) {
-    console.error('支付回调处理失败:', error);
+    console.error('[Payment] GET /notify 支付回调处理失败:', error);
     res.send('fail');
   }
 });
@@ -245,7 +246,7 @@ router.post('/notify', async (req, res) => {
     const result = await paymentService.handleNotify(req.body);
     res.send(result);
   } catch (error) {
-    console.error('支付回调处理失败:', error);
+    console.error('[Payment] POST /notify 支付回调处理失败:', error);
     res.send('fail');
   }
 });

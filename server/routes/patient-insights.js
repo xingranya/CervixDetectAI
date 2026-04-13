@@ -7,7 +7,11 @@ const {
   getPatientCompare,
   getPatientTimeline,
   getPatientRiskProfile,
+  predictDiseaseProgression,
+  crossPeriodComparison,
+  analyzeRiskFactors,
 } = require('../services/patientInsights.service');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -17,15 +21,6 @@ function parsePositiveInt(value) {
     return null;
   }
   return num;
-}
-
-function handleError(res, error, fallbackMessage) {
-  const status = error.status || 500;
-  res.status(status).json({
-    success: false,
-    message: error.message || fallbackMessage,
-    ...(process.env.NODE_ENV === 'development' && { error: error.stack }),
-  });
 }
 
 /**
@@ -48,7 +43,7 @@ router.get('/:patientId/overview', authenticate, async (req, res) => {
       data: overview,
     });
   } catch (error) {
-    return handleError(res, error, '获取患者总览失败');
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/overview' });
   }
 });
 
@@ -77,7 +72,7 @@ router.get('/:patientId/history', authenticate, async (req, res) => {
       data: history,
     });
   } catch (error) {
-    return handleError(res, error, '获取患者历史趋势失败');
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/history' });
   }
 });
 
@@ -111,7 +106,7 @@ router.get('/:patientId/compare', authenticate, async (req, res) => {
       data: compare,
     });
   } catch (error) {
-    return handleError(res, error, '获取患者检查对比失败');
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/compare' });
   }
 });
 
@@ -141,7 +136,7 @@ router.get('/:patientId/timeline', authenticate, async (req, res) => {
       data: timeline,
     });
   } catch (error) {
-    return handleError(res, error, '获取患者时间线失败');
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/timeline' });
   }
 });
 
@@ -165,7 +160,72 @@ router.get('/:patientId/risk-profile', authenticate, async (req, res) => {
       data: riskProfile,
     });
   } catch (error) {
-    return handleError(res, error, '获取患者风险画像失败');
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/risk-profile' });
+  }
+});
+
+/**
+ * GET /api/patient-insights/:patientId/disease-alert
+ * 疾病进展预警
+ */
+router.get('/:patientId/disease-alert', authenticate, async (req, res) => {
+  try {
+    const patientId = parsePositiveInt(req.params.patientId);
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'patientId 参数无效',
+      });
+    }
+
+    const result = await predictDiseaseProgression(patientId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/disease-alert' });
+  }
+});
+
+/**
+ * GET /api/patient-insights/:patientId/comparison
+ * 多时段对比分析
+ */
+router.get('/:patientId/comparison', authenticate, async (req, res) => {
+  try {
+    const patientId = parsePositiveInt(req.params.patientId);
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'patientId 参数无效',
+      });
+    }
+
+    const periodA = { start: req.query.periodA_start, end: req.query.periodA_end };
+    const periodB = { start: req.query.periodB_start, end: req.query.periodB_end };
+    const result = await crossPeriodComparison(patientId, periodA, periodB);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/comparison' });
+  }
+});
+
+/**
+ * GET /api/patient-insights/:patientId/risk-factors
+ * 个性化风险因素分析
+ */
+router.get('/:patientId/risk-factors', authenticate, async (req, res) => {
+  try {
+    const patientId = parsePositiveInt(req.params.patientId);
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'patientId 参数无效',
+      });
+    }
+
+    const result = await analyzeRiskFactors(patientId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/risk-factors' });
   }
 });
 

@@ -5,6 +5,8 @@ const { generateAccessToken, generateRefreshToken, verifyToken } = require('../u
 const emailService = require('../services/email.service');
 const { authenticate } = require('../middleware/auth');
 const { Op } = require('sequelize');
+const { handleRouteError } = require('../utils/errorHandler');
+const { logAudit } = require('../middleware/auditLogger');
 
 const router = express.Router();
 
@@ -131,7 +133,16 @@ router.post('/register', async (req, res) => {
         });
     }
 
-    // 返回用户信息和tokens
+    // 通过 HttpOnly Cookie 设置 refreshToken
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
+      path: '/api/auth',
+    });
+
+    // 返回用户信息和 accessToken（refreshToken 不再通过响应体返回）
     res.status(201).json({
       success: true,
       message: '注册成功',
@@ -149,16 +160,10 @@ router.post('/register', async (req, res) => {
           status: user.status,
         },
         accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
-    console.error('注册错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '注册失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Auth', endpoint: 'POST /register' });
   }
 });
 
@@ -218,6 +223,25 @@ router.post('/login', async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
+    // 通过 HttpOnly Cookie 设置 refreshToken
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
+      path: '/api/auth',
+    });
+
+    // 记录登录审计日志
+    await logAudit({
+      userId: user.id,
+      action: 'LOGIN',
+      resourceType: 'user',
+      resourceId: user.id,
+      details: { method: email ? 'email' : 'employee_id' },
+      req,
+    });
+
     res.json({
       success: true,
       message: '登录成功',
@@ -236,16 +260,10 @@ router.post('/login', async (req, res) => {
           last_login_at: user.last_login_at,
         },
         accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
-    console.error('登录错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '登录失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Auth', endpoint: 'POST /login' });
   }
 });
 
@@ -255,10 +273,11 @@ router.post('/login', async (req, res) => {
  */
 router.post('/refresh', async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // 从 HttpOnly Cookie 读取 refreshToken
+    const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: '未提供刷新令牌',
       });
@@ -301,12 +320,7 @@ router.post('/refresh', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('刷新令牌错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '刷新令牌失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Auth', endpoint: 'POST /refresh' });
   }
 });
 
@@ -316,18 +330,29 @@ router.post('/refresh', async (req, res) => {
  */
 router.post('/logout', authenticate, async (req, res) => {
   try {
-    // 这里可以添加登出日志记录
+    // 记录登出审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'LOGOUT',
+      resourceType: 'user',
+      resourceId: req.user.id,
+      req,
+    });
+
+    // 清除 refreshToken Cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth',
+    });
+
     res.json({
       success: true,
       message: '登出成功',
     });
   } catch (error) {
-    console.error('登出错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '登出失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Auth', endpoint: 'POST /logout' });
   }
 });
 
@@ -355,12 +380,7 @@ router.get('/me', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取用户信息错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取用户信息失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Auth', endpoint: 'GET /me' });
   }
 });
 

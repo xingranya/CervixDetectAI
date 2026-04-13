@@ -962,10 +962,483 @@ async function getPatientOverview(patientId) {
   };
 }
 
+/**
+ * 疾病进展预警 — 基于历史分析结果预测疾病进展趋势
+ * @param {number} patientId
+ * @returns {Promise<{alertLevel, alerts, trend, history, prediction}>}
+ */
+async function predictDiseaseProgression(patientId) {
+  await ensurePatientExists(patientId);
+
+  // 获取患者所有分析结果（按时间正序）
+  const results = await AnalysisResult.findAll({
+    attributes: ['id', 'study_id', 'diagnosis', 'confidence', 'risk_level', 'created_at'],
+    include: [
+      {
+        model: Study,
+        as: 'study',
+        required: true,
+        attributes: ['id', 'study_id', 'study_date'],
+        where: { patient_id: patientId },
+      },
+    ],
+    order: [
+      [{ model: Study, as: 'study' }, 'study_date', 'ASC'],
+      ['created_at', 'ASC'],
+    ],
+    limit: 500,
+  });
+
+  const historyItems = results.map((item) => {
+    const raw = item.toJSON();
+    return {
+      date: raw.study?.study_date || raw.created_at,
+      diagnosis: raw.diagnosis || '',
+      riskLevel: normalizeRiskLevel(raw.risk_level),
+      confidence: toConfidenceNumber(raw.confidence),
+    };
+  });
+
+  // 不足2条数据，无法分析
+  if (historyItems.length < 2) {
+    return {
+      alertLevel: 'none',
+      alerts: [],
+      trend: 'stable',
+      history: historyItems,
+      prediction: '当前数据量不足，无法进行趋势预测。建议完成更多检查后再查看。',
+    };
+  }
+
+  const alerts = [];
+  const riskWeights = historyItems.map((h) => RISK_LEVEL_WEIGHT[h.riskLevel] || 1);
+  const len = riskWeights.length;
+
+  // 判断连续变化
+  let consecutiveUp = 0;
+  let consecutiveDown = 0;
+  for (let i = 1; i < len; i++) {
+    if (riskWeights[i] > riskWeights[i - 1]) {
+      consecutiveUp += 1;
+      consecutiveDown = 0;
+    } else if (riskWeights[i] < riskWeights[i - 1]) {
+      consecutiveDown += 1;
+      consecutiveUp = 0;
+    } else {
+      consecutiveUp = 0;
+      consecutiveDown = 0;
+    }
+  }
+
+  let alertLevel = 'none';
+  let trend = 'stable';
+
+  const latestRisk = historyItems[len - 1].riskLevel;
+
+  // 最近一次为 critical
+  if (latestRisk === 'critical') {
+    alertLevel = 'critical';
+    alerts.push({
+      type: 'critical_detected',
+      message: '最近一次检查结果为极高风险，需立即关注。',
+      data: { riskLevel: latestRisk },
+    });
+  }
+
+  // 连续2次风险等级上升
+  if (consecutiveUp >= 2) {
+    trend = 'worsening';
+    if (alertLevel !== 'critical') alertLevel = 'warning';
+    alerts.push({
+      type: 'risk_escalation',
+      message: `风险等级连续 ${consecutiveUp} 次上升，疾病可能正在进展。`,
+      data: { consecutiveUp },
+    });
+  } else if (consecutiveDown >= 2) {
+    trend = 'improving';
+  } else {
+    // 检查整体波动
+    const uniqueWeights = new Set(riskWeights.slice(-5));
+    if (uniqueWeights.size >= 3) {
+      trend = 'fluctuating';
+    }
+  }
+
+  // 置信度持续下降检查（最近3次）
+  if (len >= 3) {
+    const recentConfs = historyItems.slice(-3).map((h) => h.confidence);
+    const drop1 = recentConfs[0] - recentConfs[1];
+    const drop2 = recentConfs[1] - recentConfs[2];
+    if (drop1 > 0.1 && drop2 > 0.1) {
+      if (alertLevel === 'none') alertLevel = 'watch';
+      alerts.push({
+        type: 'confidence_drop',
+        message: '近期检测置信度持续下降，建议核实图像质量或更换检测策略。',
+        data: { recentConfidences: recentConfs },
+      });
+    }
+  }
+
+  // 检查是否有逾期随访
+  const overdueFollowups = await FollowUp.count({
+    where: { patient_id: patientId, status: 'overdue' },
+  });
+  if (overdueFollowups > 0) {
+    if (alertLevel === 'none') alertLevel = 'watch';
+    alerts.push({
+      type: 'overdue_followup',
+      message: `存在 ${overdueFollowups} 条逾期随访，可能延误病情监控。`,
+      data: { overdueCount: overdueFollowups },
+    });
+  }
+
+  // 生成预测建议
+  const predictions = [];
+  if (trend === 'worsening') {
+    predictions.push('风险持续升高，建议尽快安排进一步病理检查或转诊。');
+  } else if (trend === 'improving') {
+    predictions.push('近期风险呈下降趋势，建议继续保持当前筛查频率。');
+  } else if (trend === 'fluctuating') {
+    predictions.push('风险水平波动较大，建议缩短复查间隔并结合临床评估。');
+  } else {
+    predictions.push('风险水平整体平稳，建议维持常规随访计划。');
+  }
+
+  if (latestRisk === 'high' || latestRisk === 'critical') {
+    predictions.push('当前处于高风险状态，建议优先安排专科会诊。');
+  }
+
+  return {
+    alertLevel,
+    alerts,
+    trend,
+    history: historyItems,
+    prediction: predictions.join(' '),
+  };
+}
+
+/**
+ * 多时段对比 — 两个时间段的检查结果对比
+ * @param {number} patientId
+ * @param {{start: string, end: string}} periodA
+ * @param {{start: string, end: string}} periodB
+ */
+async function crossPeriodComparison(patientId, periodA, periodB) {
+  await ensurePatientExists(patientId);
+
+  if (!periodA?.start || !periodA?.end || !periodB?.start || !periodB?.end) {
+    throw createHttpError(400, '两个时段的起止时间均为必填参数');
+  }
+
+  // 按时间范围查询分析结果
+  async function fetchPeriodResults(period) {
+    const from = parseDateBoundary(period.start, 'start');
+    const to = parseDateBoundary(period.end, 'end');
+    if (!from || !to) {
+      throw createHttpError(400, '时间格式不合法');
+    }
+
+    return AnalysisResult.findAll({
+      attributes: ['id', 'study_id', 'diagnosis', 'confidence', 'risk_level', 'created_at'],
+      include: [
+        {
+          model: Study,
+          as: 'study',
+          required: true,
+          attributes: ['id', 'study_id', 'study_date', 'study_type'],
+          where: {
+            patient_id: patientId,
+            study_date: { [Op.gte]: from, [Op.lte]: to },
+          },
+        },
+      ],
+      order: [['created_at', 'ASC']],
+    });
+  }
+
+  const [rawA, rawB] = await Promise.all([
+    fetchPeriodResults(periodA),
+    fetchPeriodResults(periodB),
+  ]);
+
+  // 统计单个时段的指标
+  function summarizePeriod(rawResults) {
+    const items = rawResults.map((item) => {
+      const raw = item.toJSON();
+      return {
+        date: raw.study?.study_date || raw.created_at,
+        diagnosis: raw.diagnosis || '',
+        riskLevel: normalizeRiskLevel(raw.risk_level),
+        confidence: toConfidenceNumber(raw.confidence),
+        studyType: raw.study?.study_type || '',
+      };
+    });
+
+    const avgConfidence =
+      items.length > 0
+        ? Number((items.reduce((s, i) => s + i.confidence, 0) / items.length).toFixed(4))
+        : 0;
+
+    // 出现次数最多的风险等级
+    const riskCounts = { low: 0, medium: 0, high: 0, critical: 0 };
+    items.forEach((i) => { riskCounts[i.riskLevel] += 1; });
+    const dominantRisk = Object.entries(riskCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'low';
+
+    return { results: items, avgConfidence, dominantRisk, count: items.length };
+  }
+
+  const summaryA = summarizePeriod(rawA);
+  const summaryB = summarizePeriod(rawB);
+
+  // 对比变化
+  const aWeight = RISK_LEVEL_WEIGHT[summaryA.dominantRisk] || 1;
+  const bWeight = RISK_LEVEL_WEIGHT[summaryB.dominantRisk] || 1;
+  let riskChange = 'stable';
+  if (bWeight < aWeight) riskChange = 'improved';
+  else if (bWeight > aWeight) riskChange = 'worsened';
+
+  const confidenceChange = Number((summaryB.avgConfidence - summaryA.avgConfidence).toFixed(4));
+
+  // 诊断变化
+  const diagSetA = new Set(summaryA.results.map((r) => r.diagnosis).filter(Boolean));
+  const diagSetB = new Set(summaryB.results.map((r) => r.diagnosis).filter(Boolean));
+  const diagnosisChanges = [...diagSetB].filter((d) => !diagSetA.has(d));
+
+  return {
+    periodA: summaryA,
+    periodB: summaryB,
+    changes: {
+      riskChange,
+      confidenceChange,
+      diagnosisChanges,
+    },
+  };
+}
+
+/**
+ * 个性化风险因素分析 — 基于患者特征的加权评分
+ * @param {number} patientId
+ */
+async function analyzeRiskFactors(patientId) {
+  const patient = await Patient.findByPk(patientId, {
+    attributes: [
+      'id', 'patient_id', 'name', 'gender', 'birth_date',
+      'sexual_history', 'family_history', 'medical_history',
+    ],
+  });
+  if (!patient) {
+    throw createHttpError(404, '患者不存在');
+  }
+
+  const patientRaw = patient.toJSON();
+
+  // 获取最近一次分析结果
+  const latestResult = await AnalysisResult.findOne({
+    attributes: ['id', 'diagnosis', 'confidence', 'risk_level', 'biomarkers', 'created_at'],
+    include: [
+      {
+        model: Study,
+        as: 'study',
+        required: true,
+        attributes: ['id'],
+        where: { patient_id: patientId },
+      },
+    ],
+    order: [['created_at', 'DESC']],
+  });
+
+  // 获取历史高风险次数
+  const highRiskCount = await AnalysisResult.count({
+    where: { risk_level: { [Op.in]: ['high', 'critical'] } },
+    include: [
+      {
+        model: Study,
+        as: 'study',
+        required: true,
+        attributes: [],
+        where: { patient_id: patientId },
+      },
+    ],
+  });
+
+  // 随访合规检查
+  const [totalFollowups, overdueFollowups] = await Promise.all([
+    FollowUp.count({ where: { patient_id: patientId } }),
+    FollowUp.count({ where: { patient_id: patientId, status: 'overdue' } }),
+  ]);
+
+  const factors = [];
+
+  // —— 1. 年龄因素（权重 15）——
+  let ageScore = 30;
+  let ageLevel = 'medium';
+  let ageDesc = '年龄信息缺失，按中风险估算';
+  if (patientRaw.birth_date) {
+    const age = Math.floor(
+      (Date.now() - new Date(patientRaw.birth_date).getTime()) / (365.25 * 86400000),
+    );
+    if (age < 25) {
+      ageScore = 15; ageLevel = 'low'; ageDesc = `${age}岁，低龄段，宫颈病变风险相对较低`;
+    } else if (age <= 45) {
+      ageScore = 45; ageLevel = 'medium'; ageDesc = `${age}岁，处于宫颈癌高发年龄段`;
+    } else {
+      ageScore = 70; ageLevel = 'high'; ageDesc = `${age}岁，高龄段需持续关注`;
+    }
+  }
+  factors.push({
+    name: '年龄因素', category: '人口学', score: ageScore,
+    weight: 15, description: ageDesc, level: ageLevel,
+  });
+
+  // —— 2. 性行为史（权重 20）——
+  const sexHistory = patientRaw.sexual_history || 'none';
+  const highRiskSexual = ['irregular', 'multiple_partners', 'early_sexual_activity'];
+  let sexScore = 10;
+  let sexLevel = 'low';
+  let sexDesc = '无特殊性行为史记录';
+  if (highRiskSexual.includes(sexHistory)) {
+    sexScore = 75; sexLevel = 'high';
+    const labelMap = {
+      irregular: '不规律性行为',
+      multiple_partners: '多伴侣',
+      early_sexual_activity: '过早性行为',
+    };
+    sexDesc = `存在${labelMap[sexHistory] || '高风险'}性行为史，HPV感染风险较高`;
+  } else if (sexHistory === 'regular') {
+    sexScore = 25; sexLevel = 'low'; sexDesc = '规律性行为史，风险相对可控';
+  } else if (sexHistory === 'other') {
+    sexScore = 40; sexLevel = 'medium'; sexDesc = '其他性行为情况，建议进一步评估';
+  }
+  factors.push({
+    name: '性行为史', category: '行为', score: sexScore,
+    weight: 20, description: sexDesc, level: sexLevel,
+  });
+
+  // —— 3. 家族史（权重 15）——
+  let familyScore = 10;
+  let familyLevel = 'low';
+  let familyDesc = '无相关家族病史记录';
+  if (patientRaw.family_history && patientRaw.family_history.trim().length > 0) {
+    familyScore = 65; familyLevel = 'high';
+    familyDesc = '存在家族病史记录，遗传风险需关注';
+  }
+  factors.push({
+    name: '家族病史', category: '遗传', score: familyScore,
+    weight: 15, description: familyDesc, level: familyLevel,
+  });
+
+  // —— 4. 既往诊断（权重 25）——
+  let pastScore = 10;
+  let pastLevel = 'low';
+  let pastDesc = '历史检查均为低风险';
+  if (highRiskCount > 0) {
+    pastScore = clamp(30 + highRiskCount * 15, 30, 90);
+    pastLevel = pastScore >= 70 ? 'critical' : 'high';
+    pastDesc = `既往 ${highRiskCount} 次高风险检查结果，需持续随访`;
+  }
+  // 叠加最新结果
+  if (latestResult) {
+    const latestRisk = normalizeRiskLevel(latestResult.risk_level);
+    if (latestRisk === 'critical') {
+      pastScore = clamp(pastScore + 20, 0, 100);
+      pastLevel = 'critical';
+    } else if (latestRisk === 'high') {
+      pastScore = clamp(pastScore + 10, 0, 100);
+    }
+  }
+  factors.push({
+    name: '既往诊断', category: '临床', score: pastScore,
+    weight: 25, description: pastDesc, level: pastLevel,
+  });
+
+  // —— 5. 随访合规（权重 15）——
+  let complianceScore = 10;
+  let complianceLevel = 'low';
+  let complianceDesc = '随访记录良好';
+  if (totalFollowups === 0) {
+    complianceScore = 30; complianceLevel = 'medium';
+    complianceDesc = '暂无随访记录，建议建立随访计划';
+  } else if (overdueFollowups > 0) {
+    const overdueRatio = overdueFollowups / totalFollowups;
+    complianceScore = clamp(Math.round(overdueRatio * 100), 30, 90);
+    complianceLevel = complianceScore >= 60 ? 'high' : 'medium';
+    complianceDesc = `${overdueFollowups}/${totalFollowups} 条随访逾期（${(overdueRatio * 100).toFixed(0)}%）`;
+  }
+  factors.push({
+    name: '随访合规', category: '管理', score: complianceScore,
+    weight: 15, description: complianceDesc, level: complianceLevel,
+  });
+
+  // —— 6. HPV 生物标志物（权重 10）——
+  let hpvScore = 20;
+  let hpvLevel = 'low';
+  let hpvDesc = '未检测到 HPV 相关标志物数据';
+  if (latestResult) {
+    const biomarkers = latestResult.toJSON().biomarkers;
+    if (biomarkers && typeof biomarkers === 'object') {
+      const hpvValue = biomarkers.HPV || biomarkers.hpv || biomarkers.hpv_status || '';
+      if (/positive|阳性|高危/i.test(String(hpvValue))) {
+        hpvScore = 80; hpvLevel = 'critical';
+        hpvDesc = 'HPV 阳性/高危型，宫颈病变风险显著增高';
+      } else if (/negative|阴性/i.test(String(hpvValue))) {
+        hpvScore = 5; hpvLevel = 'low';
+        hpvDesc = 'HPV 阴性，当前感染风险较低';
+      }
+    }
+  }
+  factors.push({
+    name: 'HPV 状态', category: '生物标志物', score: hpvScore,
+    weight: 10, description: hpvDesc, level: hpvLevel,
+  });
+
+  // 加权计算综合评分
+  const totalWeight = factors.reduce((s, f) => s + f.weight, 0);
+  const overallScore = clamp(
+    Math.round(factors.reduce((s, f) => s + f.score * (f.weight / totalWeight), 0)),
+    0,
+    100,
+  );
+
+  // 个性化建议
+  const recommendations = [];
+  const overallLevel = resolveRiskLevelByScore(overallScore);
+
+  if (overallLevel === 'critical' || overallLevel === 'high') {
+    recommendations.push('综合风险较高，建议尽快安排阴道镜检查或组织活检。');
+  } else if (overallLevel === 'medium') {
+    recommendations.push('综合风险中等，建议每6个月进行一次筛查。');
+  } else {
+    recommendations.push('综合风险较低，建议保持每年常规筛查。');
+  }
+
+  factors.forEach((f) => {
+    if (f.level === 'high' || f.level === 'critical') {
+      if (f.name === '性行为史') {
+        recommendations.push('建议加强 HPV 疫苗接种宣教和定期 HPV 检测。');
+      } else if (f.name === '家族病史') {
+        recommendations.push('有家族病史，建议适当提高筛查频率。');
+      } else if (f.name === '随访合规') {
+        recommendations.push('存在逾期随访，请尽快完成待处理的随访计划。');
+      } else if (f.name === 'HPV 状态') {
+        recommendations.push('HPV 阳性需定期复查，建议结合 TCT 联合筛查。');
+      }
+    }
+  });
+
+  return {
+    overallScore,
+    factors,
+    recommendations,
+  };
+}
+
 module.exports = {
   getPatientOverview,
   getPatientHistory,
   getPatientCompare,
   getPatientTimeline,
   getPatientRiskProfile,
+  predictDiseaseProgression,
+  crossPeriodComparison,
+  analyzeRiskFactors,
 };

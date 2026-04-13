@@ -13,6 +13,8 @@ const {
   sequelize,
 } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { handleRouteError } = require('../utils/errorHandler');
+const { logAudit } = require('../middleware/auditLogger');
 const {
   persistStudyImage,
   syncStudyImageToTucang,
@@ -114,13 +116,18 @@ router.post('/', authenticate, async (req, res) => {
       message: '病例创建成功',
       data: { study: createdStudy },
     });
-  } catch (error) {
-    console.error('创建病例错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '创建病例失败',
-      error: error.message,
+
+    // 记录创建病例审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'CREATE_STUDY',
+      resourceType: 'study',
+      resourceId: study.id,
+      details: { patient_id, study_type },
+      req,
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'POST /' });
   }
 });
 
@@ -216,6 +223,16 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
       message: `成功上传 ${responseImages.length} 个影像文件`,
       data: { images: responseImages },
     });
+
+    // 记录上传影像审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'UPLOAD_IMAGE',
+      resourceType: 'study',
+      resourceId: study.id,
+      details: { count: responseImages.length },
+      req,
+    });
   } catch (error) {
     console.error('上传影像错误:', error);
     if (transaction) {
@@ -229,11 +246,7 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
       }
     }
 
-    res.status(500).json({
-      success: false,
-      message: '上传影像失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'POST /:id/images' });
   }
 });
 
@@ -316,12 +329,7 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ [GET /api/studies] 获取病例列表错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取病例列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'GET /' });
   }
 });
 
@@ -383,12 +391,7 @@ router.get('/:id', authenticate, async (req, res) => {
       data: { study: normalizedStudy },
     });
   } catch (error) {
-    console.error('获取病例详情错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取病例详情失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'GET /:id' });
   }
 });
 
@@ -458,12 +461,128 @@ router.put('/:id', authenticate, async (req, res) => {
       data: { study: updatedStudy },
     });
   } catch (error) {
-    console.error('更新病例错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新病例失败',
-      error: error.message,
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'PUT /:id' });
+  }
+});
+
+/**
+ * PUT /api/studies/batch-review
+ * 批量标记审核状态
+ * 请求体：{ study_ids: number[], review_status: 'reviewed' | 'rejected' }
+ */
+router.put('/batch-review', authenticate, async (req, res) => {
+  try {
+    const { study_ids, review_status = 'reviewed' } = req.body;
+
+    // 参数校验
+    if (!Array.isArray(study_ids) || study_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'study_ids 必须为非空数组',
+      });
+    }
+
+    // 数量限制（最多50条）
+    if (study_ids.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: '批量操作数量不能超过50条',
+      });
+    }
+
+    const validStatuses = ['reviewed', 'rejected'];
+    if (!validStatuses.includes(review_status)) {
+      return res.status(400).json({
+        success: false,
+        message: `无效的审核状态：${review_status}，可选：${validStatuses.join(', ')}`,
+      });
+    }
+
+    const items = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const studyId of study_ids) {
+      try {
+        const study = await Study.findByPk(studyId);
+
+        if (!study) {
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: '病例不存在',
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 权限校验：非管理员只能操作自己的病例或匿名病例
+        if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: '无权操作该病例',
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 更新审核状态
+        await study.update({
+          review_status,
+          reviewed_at: new Date(),
+          reviewed_by: req.user.id,
+        });
+
+        items.push({
+          study_id: studyId,
+          status: 'SUCCESS',
+          review_status,
+        });
+        successCount += 1;
+      } catch (err) {
+        items.push({
+          study_id: studyId,
+          status: 'FAILED',
+          error: err.message || '更新失败',
+        });
+        failCount += 1;
+      }
+    }
+
+    // 记录批量审核审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'BATCH_REVIEW_STUDIES',
+      resourceType: 'study',
+      resourceId: null,
+      details: {
+        total: study_ids.length,
+        success: successCount,
+        failed: failCount,
+        review_status,
+        study_ids,
+      },
+      req,
     });
+
+    res.status(200).json({
+      success: true,
+      message:
+        failCount > 0
+          ? `批量审核完成，成功 ${successCount} 条，失败 ${failCount} 条`
+          : '批量审核成功',
+      data: {
+        summary: {
+          total: study_ids.length,
+          success: successCount,
+          failed: failCount,
+        },
+        items,
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'PUT /batch-review' });
   }
 });
 
@@ -498,12 +617,7 @@ router.delete('/:id', authenticate, async (req, res) => {
       message: '病例已删除',
     });
   } catch (error) {
-    console.error('删除病例错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '删除病例失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'DELETE /:id' });
   }
 });
 
@@ -568,12 +682,7 @@ router.delete('/:id/images/:imageId', authenticate, async (req, res) => {
       message: '影像已删除',
     });
   } catch (error) {
-    console.error('删除影像错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '删除影像失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Studies', endpoint: 'DELETE /:id/images/:imageId' });
   }
 });
 

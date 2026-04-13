@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('../config/sequelize');
 
 const MedicalReport = sequelize.define(
@@ -146,24 +146,36 @@ const MedicalReport = sequelize.define(
   }
 );
 
-// Hook：创建报告前自动生成report_id
-MedicalReport.beforeCreate(async (report) => {
-  if (!report.report_id) {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    
-    // 查询当天已有的报告数
-    const count = await MedicalReport.count({
-      where: {
-        report_id: {
-          [sequelize.Sequelize.Op.like]: `R${dateStr}%`,
-        },
-      },
-    });
-    
-    const sequence = (count + 1).toString().padStart(6, '0');
-    report.report_id = `R${dateStr}${sequence}`;
+async function ensureReportId(report) {
+  if (report.report_id) {
+    return;
   }
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const prefix = `R${dateStr}`;
+
+  // 查询当天已有的报告数，用日期前缀生成可读报告编号
+  const count = await MedicalReport.count({
+    where: {
+      report_id: {
+        [Op.like]: `${prefix}%`,
+      },
+    },
+  });
+
+  const sequence = String(count + 1).padStart(6, '0');
+  report.report_id = `${prefix}${sequence}`;
+}
+
+// Hook：校验前自动生成 report_id，避免 allowNull 校验先于 beforeCreate 触发
+MedicalReport.beforeValidate(async (report) => {
+  await ensureReportId(report);
+});
+
+// Hook：创建前再次兜底，兼容显式跳过校验等调用场景
+MedicalReport.beforeCreate(async (report) => {
+  await ensureReportId(report);
 });
 
 module.exports = MedicalReport;

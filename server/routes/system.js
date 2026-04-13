@@ -4,6 +4,10 @@ const router = express.Router();
 const dbMonitorService = require('../services/dbMonitorService');
 const databaseCleanupService = require('../services/databaseCleanup.service');
 const os = require('os');
+const { handleRouteError } = require('../utils/errorHandler');
+const { authenticate } = require('../middleware/auth');
+const { AuditLog, sequelize } = require('../models');
+const { Op } = require('sequelize');
 
 /**
  * @swagger
@@ -54,11 +58,8 @@ router.get('/db-metrics', (req, res) => {
       success: true,
       data: systemMetrics,
     });
-  } catch {
-    res.status(500).json({
-      success: false,
-      message: '获取性能指标失败',
-    });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'System', endpoint: 'GET /db-metrics' });
   }
 });
 
@@ -106,11 +107,7 @@ router.post('/database/cleanup', async (req, res) => {
       data: { summary, report },
     });
   } catch (error) {
-    console.error('[System] 数据库清理失败:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || '数据库清理失败',
-    });
+    handleRouteError(res, error, { service: 'System', endpoint: 'POST /database/cleanup' });
   }
 });
 
@@ -147,11 +144,111 @@ router.get('/database/size', async (req, res) => {
       data: tableSizes,
     });
   } catch (error) {
-    console.error('[System] 获取表大小失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取表大小失败',
+    handleRouteError(res, error, { service: 'System', endpoint: 'GET /database/size' });
+  }
+});
+
+/**
+ * GET /api/system/monitor
+ * 实时监控数据
+ */
+router.get('/monitor', authenticate, async (req, res) => {
+  try {
+    // CPU 使用率
+    const cpuUsage = os.loadavg(); // [1min, 5min, 15min]
+    const cpuCount = os.cpus().length;
+
+    // 内存使用
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const processMemory = process.memoryUsage();
+
+    // 数据库连接池状态
+    const pool = sequelize.connectionManager.pool;
+    const dbPool = {
+      size: pool?.size || 0,
+      available: pool?.available || 0,
+      pending: pool?.pending || 0,
+    };
+
+    // 分析队列状态
+    let analysisQueue = { running: 0, waiting: 0, concurrency: 3 };
+    try {
+      const { analysisTaskQueue } = require('../services/simpleAnalysisQueue.service');
+      analysisQueue = analysisTaskQueue.getStatus();
+    } catch {
+      // 队列服务不可用时使用默认值
+    }
+
+    // 进程运行时间
+    const uptime = process.uptime();
+
+    res.json({
+      success: true,
+      data: {
+        cpu: { loadAvg: cpuUsage, count: cpuCount },
+        memory: {
+          total: totalMem,
+          free: freeMem,
+          used: totalMem - freeMem,
+          usagePercent: ((totalMem - freeMem) / totalMem * 100).toFixed(1),
+          process: {
+            rss: processMemory.rss,
+            heapTotal: processMemory.heapTotal,
+            heapUsed: processMemory.heapUsed,
+          },
+        },
+        database: dbPool,
+        analysisQueue,
+        uptime: Math.floor(uptime),
+        timestamp: new Date().toISOString(),
+      },
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'System', endpoint: 'GET /monitor' });
+  }
+});
+
+/**
+ * GET /api/system/monitor/history
+ * 历史监控数据（基于审计日志统计）
+ */
+router.get('/monitor/history', authenticate, async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    // 按小时统计操作数
+    const hourlyStats = await AuditLog.findAll({
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m-%d %H:00'), 'hour'],
+        [sequelize.fn('COUNT', '*'), 'count'],
+      ],
+      where: { created_at: { [Op.gte]: since } },
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m-%d %H:00')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m-%d %H:00'), 'ASC']],
+      raw: true,
+    });
+
+    // 按操作类型统计
+    const actionStats = await AuditLog.findAll({
+      attributes: ['action', [sequelize.fn('COUNT', '*'), 'count']],
+      where: { created_at: { [Op.gte]: since } },
+      group: ['action'],
+      order: [[sequelize.fn('COUNT', '*'), 'DESC']],
+      raw: true,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        hourlyStats,
+        actionStats,
+        period: { hours, since },
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'System', endpoint: 'GET /monitor/history' });
   }
 });
 

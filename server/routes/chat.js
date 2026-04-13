@@ -3,6 +3,7 @@ const express = require('express');
 const { optionalAuth } = require('../middleware/auth');
 const qwenService = require('../services/qwenService');
 const { Study, AnalysisTask, AnalysisResult, Patient } = require('../models');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -240,10 +241,7 @@ router.post('/', optionalAuth, async (req, res) => {
     console.error(`   ❌ Chat API 异常: ${error.message}`);
 
     if (!res.headersSent) {
-      return res.status(500).json({
-        success: false,
-        message: '对话服务暂不可用，请稍后重试',
-      });
+      return handleRouteError(res, error, { service: 'Chat', endpoint: 'POST /' });
     }
 
     res.write(`data: ${JSON.stringify({ type: 'error', content: '对话服务异常' })}\n\n`);

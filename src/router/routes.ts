@@ -105,6 +105,11 @@ const routes: RouteRecordRaw[] = [
         name: 'profile',
         component: () => import('pages/ProfilePage.vue'),
       },
+      {
+        path: 'system-monitor',
+        name: 'system-monitor',
+        component: () => import('pages/SystemMonitorPage.vue'),
+      },
     ],
   },
 

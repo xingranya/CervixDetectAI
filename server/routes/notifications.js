@@ -3,6 +3,7 @@ const express = require('express');
 const { Notification } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const { ensureFollowUpInfrastructure } = require('../services/followupScheduler.service');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -80,12 +81,7 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取通知列表失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取通知列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Notifications', endpoint: 'GET /' });
   }
 });
 
@@ -112,12 +108,7 @@ router.get('/unread-count', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取未读通知数量失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取未读通知数量失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Notifications', endpoint: 'GET /unread-count' });
   }
 });
 
@@ -150,12 +141,7 @@ router.patch('/:id/read', authenticate, async (req, res) => {
       data: { notification },
     });
   } catch (error) {
-    console.error('标记通知已读失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '标记通知已读失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Notifications', endpoint: 'PATCH /:id/read' });
   }
 });
 
@@ -186,12 +172,7 @@ router.patch('/read-all', authenticate, async (req, res) => {
       data: { updatedCount },
     });
   } catch (error) {
-    console.error('全部标记已读失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '全部标记已读失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Notifications', endpoint: 'PATCH /read-all' });
   }
 });
 

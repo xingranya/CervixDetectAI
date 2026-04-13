@@ -92,6 +92,10 @@ const AnalysisTask = sequelize.define(
       {
         fields: ['status', 'created_at'],
       },
+      {
+        name: 'idx_analysis_task_study_status',
+        fields: ['study_id', 'status'],
+      },
     ],
   },
 );

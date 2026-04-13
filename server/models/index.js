@@ -15,6 +15,8 @@ const EmailCode = require('./EmailCode');
 const Order = require('./Order');
 const FollowUp = require('./FollowUp');
 const Notification = require('./Notification');
+const ReportShareLink = require('./ReportShareLink');
+const AuditLog = require('./AuditLog');
 
 // 定义模型关系
 
@@ -72,6 +74,10 @@ MedicalReport.belongsTo(AnalysisResult, {
 MedicalReport.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 MedicalReport.belongsTo(User, { foreignKey: 'generated_by', as: 'generator' });
 MedicalReport.belongsTo(User, { foreignKey: 'signed_by', as: 'signer' });
+MedicalReport.hasMany(ReportShareLink, { foreignKey: 'report_id', as: 'shareLinks' });
+ReportShareLink.belongsTo(MedicalReport, { foreignKey: 'report_id', as: 'report' });
+User.hasMany(ReportShareLink, { foreignKey: 'created_by', as: 'createdShareLinks' });
+ReportShareLink.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
 // Order 关系
 Order.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -84,6 +90,10 @@ FollowUp.belongsTo(User, { foreignKey: 'assigned_doctor_id', as: 'assigned_docto
 
 // Notification 关系
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// AuditLog 关系
+User.hasMany(AuditLog, { foreignKey: 'user_id', as: 'auditLogs' });
+AuditLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 // 导出所有模型和sequelize实例
 module.exports = {
@@ -101,4 +111,6 @@ module.exports = {
   Order,
   FollowUp,
   Notification,
+  ReportShareLink,
+  AuditLog,
 };

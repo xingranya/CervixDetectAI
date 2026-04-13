@@ -9,15 +9,12 @@ const { User } = require('../models');
 const SmsCode = require('../models/SmsCode');
 const smsService = require('../services/sms.service');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
+const { CODE_EXPIRE_MINUTES, SEND_INTERVAL_SECONDS, MAX_DAILY_SEND_COUNT } = require('../constants/verification');
+const { validatePhone, validateEmail } = require('../utils/validators');
+const { checkSendInterval, checkDailyLimit } = require('../utils/rateLimiter');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
-
-// 验证码有效期（分钟）
-const CODE_EXPIRE_MINUTES = 5;
-// 同一手机号发送间隔（秒）
-const SEND_INTERVAL_SECONDS = 60;
-// 每日同一手机号最大发送次数
-const MAX_DAILY_SEND_COUNT = 10;
 
 /**
  * POST /api/auth/sms/send-code
@@ -35,7 +32,7 @@ router.post('/send-code', async (req, res) => {
       });
     }
 
-    if (!smsService.validatePhoneNumber(phone)) {
+    if (!validatePhone(phone)) {
       return res.status(400).json({
         success: false,
         message: '手机号格式不正确',
@@ -51,40 +48,17 @@ router.post('/send-code', async (req, res) => {
     }
 
     // 检查发送频率限制
-    const recentCode = await SmsCode.findOne({
-      where: {
-        phone,
-        created_at: {
-          [Op.gte]: new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000),
-        },
-      },
-      order: [['created_at', 'DESC']],
-    });
-
-    if (recentCode) {
-      const waitSeconds = Math.ceil(
-        (SEND_INTERVAL_SECONDS * 1000 - (Date.now() - new Date(recentCode.created_at).getTime())) /
-          1000,
-      );
+    const intervalResult = await checkSendInterval(SmsCode, 'phone', phone, SEND_INTERVAL_SECONDS);
+    if (!intervalResult.allowed) {
       return res.status(429).json({
         success: false,
-        message: `发送过于频繁，请${waitSeconds}秒后再试`,
+        message: `发送过于频繁，请${intervalResult.remainingSeconds}秒后再试`,
       });
     }
 
     // 检查每日发送次数限制
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayCount = await SmsCode.count({
-      where: {
-        phone,
-        created_at: {
-          [Op.gte]: todayStart,
-        },
-      },
-    });
-
-    if (todayCount >= MAX_DAILY_SEND_COUNT) {
+    const dailyResult = await checkDailyLimit(SmsCode, 'phone', phone, MAX_DAILY_SEND_COUNT);
+    if (!dailyResult.allowed) {
       return res.status(429).json({
         success: false,
         message: '今日发送次数已达上限，请明天再试',
@@ -154,12 +128,7 @@ router.post('/send-code', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ [短信验证码] 发送失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '发送验证码失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'SmsAuth', endpoint: 'POST /send-code' });
   }
 });
 
@@ -180,7 +149,7 @@ router.post('/login', async (req, res) => {
     }
 
     // 验证手机号格式
-    if (!smsService.validatePhoneNumber(phone)) {
+    if (!validatePhone(phone)) {
       return res.status(400).json({
         success: false,
         message: '手机号格式不正确',
@@ -241,6 +210,15 @@ router.post('/login', async (req, res) => {
 
     console.log(`✅ [短信登录] 用户登录成功 - 手机号: ${phone}, 用户ID: ${user.id}`);
 
+    // 通过 HttpOnly Cookie 设置 refreshToken
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
+      path: '/api/auth',
+    });
+
     res.json({
       success: true,
       message: '登录成功',
@@ -257,16 +235,10 @@ router.post('/login', async (req, res) => {
           last_login_at: user.last_login_at,
         },
         accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
-    console.error('❌ [短信登录] 登录失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '登录失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'SmsAuth', endpoint: 'POST /login' });
   }
 });
 
@@ -287,7 +259,7 @@ router.post('/register', async (req, res) => {
     }
 
     // 验证手机号格式
-    if (!smsService.validatePhoneNumber(phone)) {
+    if (!validatePhone(phone)) {
       return res.status(400).json({
         success: false,
         message: '手机号格式不正确',
@@ -305,8 +277,7 @@ router.post('/register', async (req, res) => {
 
     // 检查邮箱是否已存在（如果提供了邮箱）
     if (email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!validateEmail(email)) {
         return res.status(400).json({
           success: false,
           message: '邮箱格式不正确',
@@ -377,6 +348,15 @@ router.post('/register', async (req, res) => {
 
     console.log(`✅ [短信注册] 用户注册成功 - 手机号: ${phone}, 用户ID: ${user.id}`);
 
+    // 通过 HttpOnly Cookie 设置 refreshToken
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
+      path: '/api/auth',
+    });
+
     res.status(201).json({
       success: true,
       message: '注册成功',
@@ -392,16 +372,10 @@ router.post('/register', async (req, res) => {
           status: user.status,
         },
         accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
-    console.error('❌ [短信注册] 注册失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '注册失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'SmsAuth', endpoint: 'POST /register' });
   }
 });
 
@@ -422,7 +396,7 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // 验证手机号格式
-    if (!smsService.validatePhoneNumber(phone)) {
+    if (!validatePhone(phone)) {
       return res.status(400).json({
         success: false,
         message: '手机号格式不正确',
@@ -481,12 +455,7 @@ router.post('/reset-password', async (req, res) => {
       message: '密码重置成功',
     });
   } catch (error) {
-    console.error('❌ [重置密码] 重置失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '重置密码失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'SmsAuth', endpoint: 'POST /reset-password' });
   }
 });
 

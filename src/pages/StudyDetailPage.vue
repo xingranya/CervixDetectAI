@@ -171,6 +171,48 @@
               </q-card>
             </q-expansion-item>
           </q-card-section>
+
+          <!-- 生成报告操作栏 -->
+          <q-card-section class="bg-white border-top-light">
+            <div class="row items-center justify-between">
+              <div class="text-subtitle2 text-grey-7 flex items-center">
+                <q-icon name="file_download" class="q-mr-xs text-primary" />
+                导出报告
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn
+                  unelevated
+                  size="sm"
+                  color="red"
+                  icon="picture_as_pdf"
+                  label="PDF"
+                  @click="generateReport('pdf')"
+                  :loading="generatingFormat === 'pdf'"
+                  :disable="!!generatingFormat"
+                />
+                <q-btn
+                  unelevated
+                  size="sm"
+                  color="blue"
+                  icon="article"
+                  label="Word"
+                  @click="generateReport('word')"
+                  :loading="generatingFormat === 'word'"
+                  :disable="!!generatingFormat"
+                />
+                <q-btn
+                  unelevated
+                  size="sm"
+                  color="green"
+                  icon="table_chart"
+                  label="Excel"
+                  @click="generateReport('excel')"
+                  :loading="generatingFormat === 'excel'"
+                  :disable="!!generatingFormat"
+                />
+              </div>
+            </div>
+          </q-card-section>
         </q-card>
       </div>
     </div>
@@ -891,6 +933,10 @@ import { type SuspiciousArea } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
+import { reportAPI } from 'src/services/api';
+
+/** 报告生成格式 */
+type ReportFormat = 'pdf' | 'word' | 'excel';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -917,6 +963,7 @@ const advancedOptions = ref({
 const fileInput = ref<HTMLInputElement | null>(null);
 const isUploading = ref(false);
 const chatOpen = ref(false);
+const generatingFormat = ref<ReportFormat | null>(null);
 
 interface LogEntry {
   time: string;
@@ -1088,6 +1135,41 @@ const toggleFullscreen = () => {
 
 const handleAiZoom = (scale: number) => {
   aiZoomLevel.value = scale;
+};
+
+// 生成报告
+const generateReport = async (format: ReportFormat) => {
+  if (!study.value?.id) {
+    $q.notify({ type: 'warning', message: '病例数据未加载，无法生成报告', position: 'top' });
+    return;
+  }
+  generatingFormat.value = format;
+  try {
+    const { data } = await reportAPI.generate({ study_id: study.value.id, format });
+    const resp = data as { success: boolean; message?: string; data?: { report?: { id: number } } };
+    if (resp.success) {
+      $q.notify({ type: 'positive', message: `${format.toUpperCase()} 报告生成成功！`, position: 'top', icon: 'check_circle' });
+      // 自动下载
+      const reportId = resp.data?.report?.id;
+      if (reportId) {
+        const dlResp = await reportAPI.download(reportId);
+        const blob = new Blob([dlResp.data as BlobPart]);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${study.value.id}.${format === 'pdf' ? 'pdf' : format === 'word' ? 'docx' : 'xlsx'}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    } else {
+      $q.notify({ type: 'negative', message: resp.message || '生成失败', position: 'top' });
+    }
+  } catch (error: unknown) {
+    const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '生成报告失败';
+    $q.notify({ type: 'negative', message: msg, position: 'top' });
+  } finally {
+    generatingFormat.value = null;
+  }
 };
 
 const startAnalysis = async () => {

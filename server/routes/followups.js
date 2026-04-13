@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const { FollowUp, Patient, Study, User, AnalysisResult } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const {
   createFollowUpNotification,
   ensureFollowUpInfrastructure,
 } = require('../services/followupScheduler.service');
+const { handleRouteError } = require('../utils/errorHandler');
+const { logAudit } = require('../middleware/auditLogger');
+const { recommendTemplate, getTemplateById } = require('../services/followupTemplate.service');
+const { checkCompliance } = require('../services/followupCompliance.service');
 
 const router = express.Router();
 
@@ -79,6 +83,203 @@ function validateStatus(status) {
 }
 
 /**
+ * GET /api/followups/templates/recommend
+ * 根据病例分析结果推荐随访模板
+ */
+router.get('/templates/recommend', authenticate, async (req, res) => {
+  try {
+    const { study_id } = req.query;
+    if (!study_id) {
+      return res.status(400).json({ success: false, message: 'study_id 为必填参数' });
+    }
+
+    // 获取最新分析结果
+    const analysisResult = await AnalysisResult.findOne({
+      where: { study_id: Number(study_id) },
+      order: [['created_at', 'DESC']],
+      attributes: ['diagnosis', 'risk_level'],
+    });
+
+    const diagnosisText = analysisResult?.diagnosis || '';
+    const riskLevel = analysisResult?.risk_level || 'medium';
+
+    const result = recommendTemplate(diagnosisText, riskLevel);
+    res.json({
+      success: true,
+      data: {
+        recommended: result.recommended,
+        alternatives: result.alternatives,
+        source: { diagnosis: diagnosisText, risk_level: riskLevel },
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'GET /templates/recommend' });
+  }
+});
+
+/**
+ * GET /api/followups/compliance/:patientId
+ * 获取患者随访合规性评分
+ */
+router.get('/compliance/:patientId', authenticate, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const patient = await Patient.findByPk(patientId);
+    if (!patient) {
+      return res.status(404).json({ success: false, message: '患者不存在' });
+    }
+
+    const result = await checkCompliance(Number(patientId));
+    res.json({ success: true, data: result });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'GET /compliance/:patientId' });
+  }
+});
+
+/**
+ * GET /api/followups/statistics
+ * 随访完成率统计报表
+ */
+router.get('/statistics', authenticate, async (req, res) => {
+  try {
+    await ensureFollowUpInfrastructure();
+
+    // 概览统计
+    const statusCounts = await FollowUp.findAll({
+      attributes: ['status', [fn('COUNT', col('id')), 'count']],
+      group: ['status'],
+      raw: true,
+    });
+
+    const overview = { total: 0, completed: 0, overdue: 0, cancelled: 0, pending: 0 };
+    for (const row of statusCounts) {
+      const count = Number(row.count);
+      overview[row.status] = count;
+      overview.total += count;
+    }
+
+    // 完成率
+    const completionDenominator = overview.completed + overview.overdue;
+    const completionRate = completionDenominator > 0
+      ? Math.round((overview.completed / completionDenominator) * 100)
+      : 0;
+
+    // 平均完成天数（从创建到完成）
+    const avgResult = await FollowUp.findOne({
+      attributes: [
+        [fn('AVG',
+          literal('DATEDIFF(completed_at, created_at)'),
+        ), 'avg_days'],
+      ],
+      where: { status: 'completed', completed_at: { [Op.ne]: null } },
+      raw: true,
+    });
+    const avgCompletionDays = avgResult?.avg_days ? Math.round(Number(avgResult.avg_days)) : 0;
+
+    // 近12个月按月统计
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const monthStart = twelveMonthsAgo.toISOString().slice(0, 10);
+
+    const monthlyRaw = await FollowUp.findAll({
+      attributes: [
+        [fn('DATE_FORMAT', col('planned_date'), '%Y-%m'), 'month'],
+        'status',
+        [fn('COUNT', col('id')), 'count'],
+      ],
+      where: { planned_date: { [Op.gte]: monthStart } },
+      group: [literal("DATE_FORMAT(planned_date, '%Y-%m')"), 'status'],
+      raw: true,
+    });
+
+    // 按月聚合
+    const monthMap = {};
+    for (const row of monthlyRaw) {
+      if (!monthMap[row.month]) {
+        monthMap[row.month] = { month: row.month, completed: 0, overdue: 0, total: 0 };
+      }
+      const count = Number(row.count);
+      monthMap[row.month].total += count;
+      if (row.status === 'completed') monthMap[row.month].completed += count;
+      if (row.status === 'overdue') monthMap[row.month].overdue += count;
+    }
+    const byMonth = Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month));
+
+    // 按风险等级统计
+    const riskRaw = await FollowUp.findAll({
+      attributes: [
+        'risk_level_snapshot',
+        'status',
+        [fn('COUNT', col('id')), 'count'],
+      ],
+      where: { risk_level_snapshot: { [Op.ne]: null } },
+      group: ['risk_level_snapshot', 'status'],
+      raw: true,
+    });
+
+    const riskMap = {};
+    for (const row of riskRaw) {
+      const risk = row.risk_level_snapshot;
+      if (!riskMap[risk]) {
+        riskMap[risk] = { risk, total: 0, completed: 0, overdue: 0 };
+      }
+      const count = Number(row.count);
+      riskMap[risk].total += count;
+      if (row.status === 'completed') riskMap[risk].completed += count;
+      if (row.status === 'overdue') riskMap[risk].overdue += count;
+    }
+    const byRisk = Object.values(riskMap);
+
+    // 按医生统计
+    const doctorRaw = await FollowUp.findAll({
+      attributes: [
+        'assigned_doctor_id',
+        'status',
+        [fn('COUNT', col('FollowUp.id')), 'count'],
+      ],
+      include: [
+        { model: User, as: 'assigned_doctor', attributes: ['id', 'username', 'real_name'] },
+      ],
+      where: { assigned_doctor_id: { [Op.ne]: null } },
+      group: ['assigned_doctor_id', 'status'],
+      raw: true,
+      nest: true,
+    });
+
+    const doctorMap = {};
+    for (const row of doctorRaw) {
+      const docId = row.assigned_doctor_id;
+      if (!doctorMap[docId]) {
+        doctorMap[docId] = {
+          doctorId: docId,
+          doctorName: row.assigned_doctor?.real_name || row.assigned_doctor?.username || `医生#${docId}`,
+          total: 0,
+          completed: 0,
+        };
+      }
+      const count = Number(row.count);
+      doctorMap[docId].total += count;
+      if (row.status === 'completed') doctorMap[docId].completed += count;
+    }
+    const byDoctor = Object.values(doctorMap);
+
+    res.json({
+      success: true,
+      data: {
+        overview,
+        completionRate,
+        avgCompletionDays,
+        byMonth,
+        byRisk,
+        byDoctor,
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'GET /statistics' });
+  }
+});
+
+/**
  * POST /api/followups
  * 创建随访计划
  */
@@ -94,6 +295,7 @@ router.post('/', authenticate, async (req, res) => {
       reason,
       notes,
       doctor_marked_high_attention,
+      template_id,
     } = req.body;
 
     if (!patient_id) {
@@ -149,19 +351,30 @@ router.post('/', authenticate, async (req, res) => {
     const normalizedPlannedDate = normalizeDateOnly(planned_date) || autoPlannedDate;
     const aiFlaggedHighAttention = ['high', 'critical'].includes(normalizedRiskLevel);
 
+    // 如果提供了模板ID，用模板数据自动填充
+    let templateData = null;
+    if (template_id) {
+      templateData = getTemplateById(template_id);
+    }
+
+    const finalReason = reason || (templateData ? templateData.description : undefined);
+    const finalNotes = notes || (templateData ? `检查清单：${templateData.checklist.join('、')}` : undefined);
+    const finalIntervalMonths = templateData ? templateData.interval_months : recommendedIntervalMonths;
+    const finalPlannedDate = normalizedPlannedDate || (templateData ? addMonthsFromToday(templateData.interval_months) : normalizedPlannedDate);
+
     const followUp = await FollowUp.create({
       patient_id: Number(patient_id),
       study_id: study_id ? Number(study_id) : null,
       created_by: req.user.id,
       assigned_doctor_id: assigned_doctor_id ? Number(assigned_doctor_id) : null,
-      planned_date: normalizedPlannedDate,
-      recommended_interval_months: recommendedIntervalMonths,
+      planned_date: finalPlannedDate,
+      recommended_interval_months: finalIntervalMonths,
       risk_level_snapshot: normalizedRiskLevel,
       ai_flagged_high_attention: aiFlaggedHighAttention,
       doctor_marked_high_attention: !!doctor_marked_high_attention,
-      status: normalizedPlannedDate < toDateOnlyString(new Date()) ? 'overdue' : 'pending',
-      reason,
-      notes,
+      status: finalPlannedDate < toDateOnlyString(new Date()) ? 'overdue' : 'pending',
+      reason: finalReason,
+      notes: finalNotes,
     });
 
     const created = await FollowUp.findByPk(followUp.id, {
@@ -178,13 +391,18 @@ router.post('/', authenticate, async (req, res) => {
       message: '随访计划创建成功',
       data: { followup: mapFollowUpItem(created) },
     });
-  } catch (error) {
-    console.error('创建随访计划失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '创建随访计划失败',
-      error: error.message,
+
+    // 记录创建随访审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'CREATE_FOLLOWUP',
+      resourceType: 'followup',
+      resourceId: followUp.id,
+      details: { patient_id: Number(patient_id), planned_date: finalPlannedDate },
+      req,
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'POST /' });
   }
 });
 
@@ -294,12 +512,7 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取随访列表失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取随访列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'GET /' });
   }
 });
 
@@ -332,12 +545,7 @@ router.get('/:id', authenticate, async (req, res) => {
       data: { followup: mapFollowUpItem(followUp) },
     });
   } catch (error) {
-    console.error('获取随访详情失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取随访详情失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'GET /:id' });
   }
 });
 
@@ -450,12 +658,7 @@ router.put('/:id', authenticate, async (req, res) => {
       data: { followup: mapFollowUpItem(updated) },
     });
   } catch (error) {
-    console.error('更新随访计划失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新随访计划失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'PUT /:id' });
   }
 });
 
@@ -495,18 +698,22 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
       completed_at: new Date(),
     });
 
+    // 记录完成随访审计日志
+    await logAudit({
+      userId: req.user.id,
+      action: 'COMPLETE_FOLLOWUP',
+      resourceType: 'followup',
+      resourceId: followUp.id,
+      req,
+    });
+
     res.json({
       success: true,
       message: '已标记为完成',
       data: { followup: mapFollowUpItem(followUp) },
     });
   } catch (error) {
-    console.error('完成随访失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '完成随访失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'PATCH /:id/complete' });
   }
 });
 
@@ -552,12 +759,7 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
       data: { followup: mapFollowUpItem(followUp) },
     });
   } catch (error) {
-    console.error('取消随访失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '取消随访失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'PATCH /:id/cancel' });
   }
 });
 
@@ -595,12 +797,7 @@ router.patch('/:id/high-attention', authenticate, async (req, res) => {
       data: { followup: mapFollowUpItem(followUp) },
     });
   } catch (error) {
-    console.error('更新重点关注状态失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新重点关注状态失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'PATCH /:id/high-attention' });
   }
 });
 
@@ -660,12 +857,7 @@ router.post('/:id/remind', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('手动发送提醒失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '手动发送提醒失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'FollowUps', endpoint: 'POST /:id/remind' });
   }
 });
 

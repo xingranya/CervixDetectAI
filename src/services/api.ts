@@ -23,10 +23,10 @@ interface ApiResponse<T = unknown> {
 // Auth API
 // ============================================================
 
-/** 认证成功后返回的数据 */
+/** 认证成功后返回的数据（refreshToken 通过 HttpOnly Cookie 传递，不再出现在响应体中） */
 export interface AuthData {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string; // 向后兼容，新版后端不再返回
   user: {
     id: number;
     username: string;
@@ -87,10 +87,11 @@ export interface PaymentCheckData {
 
 export const authAPI = {
   async login(email: string, password: string): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/login', {
-      email,
-      password,
-    });
+    const { data } = await apiClient.post<ApiResponse<AuthData>>(
+      '/auth/login',
+      { email, password },
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -99,11 +100,11 @@ export const authAPI = {
     employeeId: string,
     password: string,
   ): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/login', {
-      hospital_id: hospitalId,
-      employee_id: employeeId,
-      password,
-    });
+    const { data } = await apiClient.post<ApiResponse<AuthData>>(
+      '/auth/login',
+      { hospital_id: hospitalId, employee_id: employeeId, password },
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -116,12 +117,17 @@ export const authAPI = {
     real_name?: string;
     phone?: string;
   }): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/register', userData);
+    const { data } = await apiClient.post<ApiResponse<AuthData>>(
+      '/auth/register',
+      userData,
+      { withCredentials: true },
+    );
     return data;
   },
 
   async logout(): Promise<ApiResponse<null>> {
-    const { data } = await apiClient.post<ApiResponse<null>>('/auth/logout');
+    // 登出时携带 Cookie 以便后端清除 refreshToken
+    const { data } = await apiClient.post<ApiResponse<null>>('/auth/logout', {}, { withCredentials: true });
     return data;
   },
 
@@ -130,12 +136,13 @@ export const authAPI = {
     return data;
   },
 
-  async refreshToken(
-    refreshToken: string,
-  ): Promise<ApiResponse<{ accessToken: string; refreshToken: string }>> {
-    const { data } = await apiClient.post<
-      ApiResponse<{ accessToken: string; refreshToken: string }>
-    >('/auth/refresh', { refreshToken });
+  async refreshToken(): Promise<ApiResponse<{ accessToken: string }>> {
+    // refreshToken 通过 HttpOnly Cookie 自动携带，不需要手动传递
+    const { data } = await apiClient.post<ApiResponse<{ accessToken: string }>>(
+      '/auth/refresh',
+      {},
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -152,10 +159,11 @@ export const authAPI = {
   },
 
   async smsLogin(phone: string, code: string): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/sms/login', {
-      phone,
-      code,
-    });
+    const { data } = await apiClient.post<ApiResponse<AuthData>>(
+      '/auth/sms/login',
+      { phone, code },
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -164,11 +172,11 @@ export const authAPI = {
     code: string,
     userData?: { username?: string; real_name?: string; email?: string },
   ): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/sms/register', {
-      phone,
-      code,
-      ...userData,
-    });
+    const { data } = await apiClient.post<ApiResponse<AuthData>>(
+      '/auth/sms/register',
+      { phone, code, ...userData },
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -357,6 +365,10 @@ export interface StudyRaw {
   analysis_tasks?: StudyAnalysisTaskRaw[];
   downloaded?: boolean;
   downloaded_at?: string | undefined;
+  // 审核相关字段
+  review_status?: 'pending' | 'reviewed' | 'rejected';
+  reviewed_at?: string | undefined;
+  reviewed_by?: number | undefined;
 }
 
 /** 病例列表响应 */
@@ -576,58 +588,42 @@ export const analysisTaskAPI = {
 // Report API
 // ============================================================
 
-/** 创建/更新报告请求参数 */
-interface ReportMutationData {
-  study_id?: number;
-  analysis_result_id?: number;
-  report_type?: string;
-  content?: string;
-  status?: string;
+/** 报告生成格式 */
+export type ReportFormat = 'pdf' | 'word' | 'excel';
+
+/** 报告生成请求参数 */
+export interface ReportGenerateData {
+  study_id: number;
+  format?: ReportFormat;
+  template_id?: string;
+}
+
+/** 分享链接请求参数 */
+export interface ReportShareData {
+  expires_hours?: number;
+  max_access_count?: number;
 }
 
 export const reportAPI = {
-  async createReport(reportData: ReportMutationData): Promise<ApiResponse<unknown>> {
-    const { data } = await apiClient.post<ApiResponse<unknown>>('/reports', reportData);
-    return data;
-  },
+  /** 生成报告 */
+  generate: (data: ReportGenerateData) =>
+    apiClient.post<ApiResponse<unknown>>('/reports/generate', data),
 
-  async generateReport(studyId: number): Promise<ApiResponse<unknown>> {
-    const { data } = await apiClient.post<ApiResponse<unknown>>(`/reports/generate/${studyId}`);
-    return data;
-  },
+  /** 报告列表 */
+  list: (params?: Record<string, unknown>) =>
+    apiClient.get<ApiResponse<unknown>>('/reports', { params }),
 
-  async getReports(params?: {
-    page?: number;
-    limit?: number;
-    study_id?: number;
-    report_type?: string;
-    status?: string;
-  }): Promise<ApiResponse<unknown>> {
-    const { data } = await apiClient.get<ApiResponse<unknown>>('/reports', { params });
-    return data;
-  },
+  /** 报告详情 */
+  detail: (id: number) =>
+    apiClient.get<ApiResponse<unknown>>(`/reports/${id}`),
 
-  async getReport(id: number): Promise<ApiResponse<unknown>> {
-    const { data } = await apiClient.get<ApiResponse<unknown>>(`/reports/${id}`);
-    return data;
-  },
+  /** 下载报告 */
+  download: (id: number) =>
+    apiClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
 
-  async updateReport(id: number, reportData: ReportMutationData): Promise<ApiResponse<unknown>> {
-    const { data } = await apiClient.put<ApiResponse<unknown>>(`/reports/${id}`, reportData);
-    return data;
-  },
-
-  async downloadReport(id: number): Promise<Blob> {
-    const response = await apiClient.get(`/reports/${id}/download`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
-  },
-
-  async deleteReport(id: number): Promise<ApiResponse<null>> {
-    const { data } = await apiClient.delete<ApiResponse<null>>(`/reports/${id}`);
-    return data;
-  },
+  /** 创建分享链接 */
+  share: (id: number, data?: ReportShareData) =>
+    apiClient.post<ApiResponse<unknown>>(`/reports/${id}/share`, data),
 };
 
 // ============================================================
@@ -701,6 +697,34 @@ export const dashboardAPI = {
 export type FollowUpStatus = 'pending' | 'overdue' | 'completed' | 'cancelled';
 export type FollowUpRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
+/** 随访模板 */
+export interface FollowUpTemplate {
+  id: string;
+  name: string;
+  risk: string;
+  diagnosisKeywords: string[];
+  interval_months: number;
+  checklist: string[];
+  description: string;
+  reminders: number[];
+}
+
+/** 随访统计报表 */
+export interface FollowUpStatistics {
+  overview: {
+    total: number;
+    completed: number;
+    overdue: number;
+    cancelled: number;
+    pending: number;
+  };
+  completionRate: number;
+  avgCompletionDays: number;
+  byMonth: Array<{ month: string; completed: number; overdue: number; total: number }>;
+  byRisk: Array<{ risk: string; total: number; completed: number; overdue: number }>;
+  byDoctor: Array<{ doctorId: number; doctorName: string; total: number; completed: number }>;
+}
+
 export interface FollowUpDoctorSummary {
   id: number;
   username?: string;
@@ -765,6 +789,7 @@ export interface CreateFollowUpPayload {
   reason?: string;
   notes?: string;
   doctor_marked_high_attention?: boolean;
+  template_id?: string;
 }
 
 export interface UpdateFollowUpPayload {
@@ -851,6 +876,45 @@ export const followUpAPI = {
     const { data } = await apiClient.post<ApiResponse<{ notification: NotificationItem }>>(
       `/followups/${id}/remind`,
     );
+    return data;
+  },
+
+  /** 根据病例分析结果推荐随访模板 */
+  async recommendTemplate(studyId: number): Promise<ApiResponse<{
+    recommended: FollowUpTemplate;
+    alternatives: FollowUpTemplate[];
+    source: { diagnosis: string; risk_level: string };
+  }>> {
+    const { data } = await apiClient.get(`/followups/templates/recommend`, {
+      params: { study_id: studyId },
+    });
+    return data;
+  },
+
+  /** 获取患者随访合规性评分 */
+  async getCompliance(patientId: number): Promise<ApiResponse<{
+    score: number;
+    total: number;
+    completed: number;
+    overdue: number;
+    pending: number;
+    details: Array<{
+      id: number;
+      follow_up_id: string;
+      planned_date: string;
+      status: string;
+      risk_level_snapshot: string;
+      completed_at: string | null;
+      compliance: string;
+    }>;
+  }>> {
+    const { data } = await apiClient.get(`/followups/compliance/${patientId}`);
+    return data;
+  },
+
+  /** 获取随访统计报表 */
+  async getStatistics(): Promise<ApiResponse<FollowUpStatistics>> {
+    const { data } = await apiClient.get('/followups/statistics');
     return data;
   },
 };
@@ -1018,6 +1082,71 @@ export interface PatientInsightRiskProfileData {
   };
 }
 
+/** 疾病进展预警数据 */
+export type DiseaseAlertLevel = 'none' | 'watch' | 'warning' | 'critical';
+export type DiseaseTrend = 'stable' | 'improving' | 'worsening' | 'fluctuating';
+
+export interface DiseaseAlertItem {
+  type: string;
+  message: string;
+  data: Record<string, unknown>;
+}
+
+export interface DiseaseAlertHistoryItem {
+  date: string;
+  diagnosis: string;
+  riskLevel: PatientInsightRiskLevel;
+  confidence: number;
+}
+
+export interface PatientInsightDiseaseAlertData {
+  alertLevel: DiseaseAlertLevel;
+  alerts: DiseaseAlertItem[];
+  trend: DiseaseTrend;
+  history: DiseaseAlertHistoryItem[];
+  prediction: string;
+}
+
+/** 多时段对比数据 */
+export interface PeriodSummary {
+  results: Array<{
+    date: string;
+    diagnosis: string;
+    riskLevel: PatientInsightRiskLevel;
+    confidence: number;
+    studyType: string;
+  }>;
+  avgConfidence: number;
+  dominantRisk: PatientInsightRiskLevel;
+  count: number;
+}
+
+export interface PatientInsightComparisonData {
+  periodA: PeriodSummary;
+  periodB: PeriodSummary;
+  changes: {
+    riskChange: 'improved' | 'worsened' | 'stable';
+    confidenceChange: number;
+    diagnosisChanges: string[];
+  };
+}
+
+/** 个性化风险因素分析数据 */
+export interface RiskFactorItem {
+  name: string;
+  category: string;
+  score: number;
+  weight: number;
+  description: string;
+  level: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface PatientInsightRiskFactorsData {
+  overallScore: number;
+  factors: RiskFactorItem[];
+  recommendations: string[];
+}
+
 export const patientInsightsAPI = {
   async getOverview(patientId: number): Promise<ApiResponse<PatientInsightOverviewData>> {
     const { data } = await apiClient.get<ApiResponse<PatientInsightOverviewData>>(
@@ -1077,6 +1206,39 @@ export const patientInsightsAPI = {
   async getRiskProfile(patientId: number): Promise<ApiResponse<PatientInsightRiskProfileData>> {
     const { data } = await apiClient.get<ApiResponse<PatientInsightRiskProfileData>>(
       `/patient-insights/${patientId}/risk-profile`,
+    );
+    return data;
+  },
+
+  /** 疾病进展预警 */
+  async getDiseaseAlert(patientId: number): Promise<ApiResponse<PatientInsightDiseaseAlertData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightDiseaseAlertData>>(
+      `/patient-insights/${patientId}/disease-alert`,
+    );
+    return data;
+  },
+
+  /** 多时段对比分析 */
+  async getComparison(
+    patientId: number,
+    params: {
+      periodA_start: string;
+      periodA_end: string;
+      periodB_start: string;
+      periodB_end: string;
+    },
+  ): Promise<ApiResponse<PatientInsightComparisonData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightComparisonData>>(
+      `/patient-insights/${patientId}/comparison`,
+      { params },
+    );
+    return data;
+  },
+
+  /** 个性化风险因素分析 */
+  async getRiskFactors(patientId: number): Promise<ApiResponse<PatientInsightRiskFactorsData>> {
+    const { data } = await apiClient.get<ApiResponse<PatientInsightRiskFactorsData>>(
+      `/patient-insights/${patientId}/risk-factors`,
     );
     return data;
   },
@@ -1174,6 +1336,272 @@ export const paymentAPI = {
 
   getOrders: (params?: { page?: number; limit?: number }) =>
     apiClient.get('/payment/orders', { params }),
+};
+
+// ============================================================
+// Batch Operations API
+// ============================================================
+
+/** 批量操作结果项 */
+export interface BatchOperationItem {
+  study_id: number;
+  status: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
+  error?: string;
+  task_id?: number;
+  file_name?: string;
+  review_status?: string;
+  existing_task_id?: number;
+}
+
+/** 批量操作响应 */
+export interface BatchOperationResponse {
+  batchId?: string;
+  summary: {
+    total: number;
+    success: number;
+    failed: number;
+  };
+  items: BatchOperationItem[];
+}
+
+/** 批量分析请求参数 */
+export interface BatchAnalyzePayload {
+  study_ids: number[];
+  priority?: 'normal' | 'urgent' | 'emergency';
+}
+
+/** 批量导出请求参数 */
+export interface BatchExportPayload {
+  study_ids: number[];
+  format?: 'pdf' | 'word' | 'excel';
+}
+
+/** 批量审核请求参数 */
+export interface BatchReviewPayload {
+  study_ids: number[];
+  review_status?: 'reviewed' | 'rejected';
+}
+
+export const batchAPI = {
+  /** 批量创建分析任务 */
+  async batchAnalyze(payload: BatchAnalyzePayload): Promise<ApiResponse<BatchOperationResponse>> {
+    const { data } = await apiClient.post<ApiResponse<BatchOperationResponse>>(
+      '/analysis-tasks/batch-analyze',
+      payload,
+    );
+    return data;
+  },
+
+  /** 批量导出报告（返回 ZIP 文件流） */
+  async batchExport(payload: BatchExportPayload): Promise<Blob> {
+    const response = await apiClient.post('/reports/batch-export', payload, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+
+  /** 批量标记审核状态 */
+  async batchReview(payload: BatchReviewPayload): Promise<ApiResponse<BatchOperationResponse>> {
+    const { data } = await apiClient.put<ApiResponse<BatchOperationResponse>>(
+      '/studies/batch-review',
+      payload,
+    );
+    return data;
+  },
+};
+
+// ============================================================
+// Import API
+// ============================================================
+
+/** 导入预览行数据 */
+export interface ImportPreviewRow {
+  _rowIndex: number;
+  name: string;
+  gender: string;
+  birth_date: string;
+  phone: string;
+  id_card: string;
+  medical_card_no: string;
+  address: string;
+  emergency_contact: string;
+  emergency_phone: string;
+  notes: string;
+  _errors?: string[];
+  _duplicate?: boolean;
+  _duplicateReason?: string;
+  _existingPatient?: {
+    id: number;
+    patient_id: string;
+    name: string;
+    id_card?: string;
+    birth_date?: string;
+  } | null;
+}
+
+/** 导入预览响应 */
+export interface ImportPreviewData {
+  previewId: string;
+  total: number;
+  valid: number;
+  invalid: number;
+  duplicate: number;
+  rows: ImportPreviewRow[];
+}
+
+/** 导入确认响应 */
+export interface ImportConfirmData {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export const importAPI = {
+  /** 上传文件并获取预览数据 */
+  async previewPatients(file: File): Promise<ApiResponse<ImportPreviewData>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<ApiResponse<ImportPreviewData>>(
+      '/import/patients/preview',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return data;
+  },
+
+  /** 确认导入选中的数据 */
+  async confirmImport(payload: {
+    previewId: string;
+    selectedIndices?: number[];
+  }): Promise<ApiResponse<ImportConfirmData>> {
+    const { data } = await apiClient.post<ApiResponse<ImportConfirmData>>(
+      '/import/patients/confirm',
+      payload,
+    );
+    return data;
+  },
+
+  /** 下载导入模板 */
+  async downloadTemplate(): Promise<Blob> {
+    const response = await apiClient.get('/import/patients/template', {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+};
+
+// ============================================================
+// System Monitor API
+// ============================================================
+
+/** 系统监控数据 */
+export interface SystemMonitorData {
+  cpu?: {
+    loadAvg: number[];
+    count: number;
+  };
+  memory?: {
+    total: number;
+    free: number;
+    used: number;
+    usagePercent: string;
+    process: {
+      rss: number;
+      heapTotal: number;
+      heapUsed: number;
+    };
+  };
+  database?: {
+    size: number;
+    available: number;
+    pending: number;
+  };
+  analysisQueue?: {
+    running: number;
+    waiting: number;
+    concurrency: number;
+  };
+  uptime?: number;
+  timestamp?: string;
+}
+
+/** 按小时统计项 */
+export interface HourlyStatItem {
+  hour: string;
+  count: number;
+}
+
+/** 操作类型统计项 */
+export interface ActionStatItem {
+  action: string;
+  count: number;
+}
+
+/** 历史统计数据 */
+export interface MonitorHistoryData {
+  hourlyStats: HourlyStatItem[];
+  actionStats: ActionStatItem[];
+}
+
+/** 审计日志项 */
+export interface AuditLogItem {
+  id: number;
+  user_id?: number;
+  action: string;
+  resource_type?: string;
+  resource_id?: string;
+  ip_address?: string;
+  details?: Record<string, unknown>;
+  created_at: string;
+  user?: {
+    id: number;
+    username?: string;
+    real_name?: string;
+  };
+}
+
+/** 审计日志列表数据 */
+export interface AuditLogListData {
+  logs: AuditLogItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const systemAPI = {
+  /** 获取实时系统监控数据 */
+  monitor: () =>
+    apiClient.get<ApiResponse<SystemMonitorData>>('/system/monitor'),
+
+  /** 获取历史统计数据 */
+  monitorHistory: (hours: number) =>
+    apiClient.get<ApiResponse<MonitorHistoryData>>('/system/monitor/history', {
+      params: { hours },
+    }),
+
+  /** 查询审计日志 */
+  auditLogs: (params?: {
+    page?: number;
+    limit?: number;
+    action?: string;
+    keyword?: string;
+    date_from?: string;
+    date_to?: string;
+  }) => apiClient.get<ApiResponse<AuditLogListData>>('/audit/logs', { params }),
+
+  /** 导出审计日志 CSV */
+  auditExport: (params?: {
+    action?: string;
+    date_from?: string;
+    date_to?: string;
+  }) =>
+    apiClient.get('/audit/logs/export', {
+      params,
+      responseType: 'blob',
+    }),
 };
 
 export default apiClient;

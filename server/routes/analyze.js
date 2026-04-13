@@ -16,6 +16,8 @@ const {
   sequelize,
 } = require('../models');
 const { optionalAuth } = require('../middleware/auth');
+const { handleRouteError } = require('../utils/errorHandler');
+const { logAudit } = require('../middleware/auditLogger');
 const {
   serializeStudyImageForResponse,
   persistStudyImage,
@@ -233,6 +235,16 @@ router.post('/', optionalAuth, upload.single('image'), async (req, res, next) =>
         },
       });
 
+      // 记录创建分析审计日志
+      await logAudit({
+        userId: userId,
+        action: 'CREATE_ANALYSIS',
+        resourceType: 'study',
+        resourceId: study.id,
+        details: { taskId, studyId },
+        req,
+      });
+
       // 异步执行分析 (传入数据库ID)
       (async () => {
         const preparedImage = await prepareStudyImageForAnalysis(createdImage);
@@ -355,11 +367,7 @@ router.get('/:taskId', async (req, res) => {
       data: response,
     });
   } catch (error) {
-    console.error('查询任务状态失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误',
-    });
+    handleRouteError(res, error, { service: 'Analyze', endpoint: 'GET /:taskId' });
   }
 });
 
@@ -451,11 +459,7 @@ router.get('/study/:studyId', async (req, res) => {
       data: response,
     });
   } catch (error) {
-    console.error('查询病例分析失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '查询失败',
-    });
+    handleRouteError(res, error, { service: 'Analyze', endpoint: 'GET /study/:studyId' });
   }
 });
 

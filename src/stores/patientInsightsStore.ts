@@ -6,6 +6,9 @@ import {
   type PatientInsightCompareData,
   type PatientInsightTimelineData,
   type PatientInsightRiskProfileData,
+  type PatientInsightDiseaseAlertData,
+  type PatientInsightComparisonData,
+  type PatientInsightRiskFactorsData,
 } from 'src/services/api';
 
 interface PatientInsightsLoadingState {
@@ -14,6 +17,9 @@ interface PatientInsightsLoadingState {
   compare: boolean;
   timeline: boolean;
   riskProfile: boolean;
+  diseaseAlert: boolean;
+  comparison: boolean;
+  riskFactors: boolean;
 }
 
 interface PatientInsightsRequestTokens {
@@ -22,6 +28,9 @@ interface PatientInsightsRequestTokens {
   compare: number;
   timeline: number;
   riskProfile: number;
+  diseaseAlert: number;
+  comparison: number;
+  riskFactors: number;
 }
 
 interface PatientInsightsState {
@@ -31,6 +40,9 @@ interface PatientInsightsState {
   compareResult: PatientInsightCompareData | null;
   timeline: PatientInsightTimelineData | null;
   riskProfile: PatientInsightRiskProfileData | null;
+  diseaseAlert: PatientInsightDiseaseAlertData | null;
+  comparisonResult: PatientInsightComparisonData | null;
+  riskFactorsData: PatientInsightRiskFactorsData | null;
   loading: PatientInsightsLoadingState;
   requestSerial: number;
   requestTokens: PatientInsightsRequestTokens;
@@ -56,12 +68,18 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
     compareResult: null,
     timeline: null,
     riskProfile: null,
+    diseaseAlert: null,
+    comparisonResult: null,
+    riskFactorsData: null,
     loading: {
       overview: false,
       history: false,
       compare: false,
       timeline: false,
       riskProfile: false,
+      diseaseAlert: false,
+      comparison: false,
+      riskFactors: false,
     },
     requestSerial: 0,
     requestTokens: {
@@ -70,6 +88,9 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
       compare: 0,
       timeline: 0,
       riskProfile: 0,
+      diseaseAlert: 0,
+      comparison: 0,
+      riskFactors: 0,
     },
     error: null,
     historyFilters: {
@@ -91,7 +112,10 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
       state.loading.history ||
       state.loading.compare ||
       state.loading.timeline ||
-      state.loading.riskProfile,
+      state.loading.riskProfile ||
+      state.loading.diseaseAlert ||
+      state.loading.comparison ||
+      state.loading.riskFactors,
 
     studyOptions: (state) => {
       if (!state.history?.series?.length) {
@@ -126,6 +150,9 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
       this.compareResult = null;
       this.timeline = null;
       this.riskProfile = null;
+      this.diseaseAlert = null;
+      this.comparisonResult = null;
+      this.riskFactorsData = null;
       this.error = null;
       this.loading = {
         overview: false,
@@ -133,6 +160,9 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
         compare: false,
         timeline: false,
         riskProfile: false,
+        diseaseAlert: false,
+        comparison: false,
+        riskFactors: false,
       };
       this.requestTokens = {
         overview: 0,
@@ -140,6 +170,9 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
         compare: 0,
         timeline: 0,
         riskProfile: 0,
+        diseaseAlert: 0,
+        comparison: 0,
+        riskFactors: 0,
       };
       this.historyFilters = {
         limit: 120,
@@ -358,6 +391,89 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
 
       if (results.every((item) => item.status === 'rejected')) {
         throw new Error('患者洞察数据全部加载失败');
+      }
+    },
+
+    async fetchDiseaseAlert(patientId: number) {
+      this.ensurePatient(patientId);
+      const token = this.nextRequestToken('diseaseAlert');
+      this.loading.diseaseAlert = true;
+      this.error = null;
+      try {
+        const response = await patientInsightsAPI.getDiseaseAlert(patientId);
+        if (!this.isActiveRequest('diseaseAlert', token, patientId)) {
+          return this.diseaseAlert;
+        }
+        this.diseaseAlert = response.data;
+        return response.data;
+      } catch (error) {
+        if (!this.isActiveRequest('diseaseAlert', token, patientId)) {
+          return this.diseaseAlert;
+        }
+        this.error = error instanceof Error ? error.message : '获取疾病预警数据失败';
+        throw error;
+      } finally {
+        if (this.isActiveRequest('diseaseAlert', token, patientId)) {
+          this.loading.diseaseAlert = false;
+        }
+      }
+    },
+
+    async fetchComparison(
+      patientId: number,
+      params: {
+        periodA_start: string;
+        periodA_end: string;
+        periodB_start: string;
+        periodB_end: string;
+      },
+    ) {
+      this.ensurePatient(patientId);
+      const token = this.nextRequestToken('comparison');
+      this.loading.comparison = true;
+      this.error = null;
+      try {
+        const response = await patientInsightsAPI.getComparison(patientId, params);
+        if (!this.isActiveRequest('comparison', token, patientId)) {
+          return this.comparisonResult;
+        }
+        this.comparisonResult = response.data;
+        return response.data;
+      } catch (error) {
+        if (!this.isActiveRequest('comparison', token, patientId)) {
+          return this.comparisonResult;
+        }
+        this.error = error instanceof Error ? error.message : '获取对比分析数据失败';
+        throw error;
+      } finally {
+        if (this.isActiveRequest('comparison', token, patientId)) {
+          this.loading.comparison = false;
+        }
+      }
+    },
+
+    async fetchRiskFactors(patientId: number) {
+      this.ensurePatient(patientId);
+      const token = this.nextRequestToken('riskFactors');
+      this.loading.riskFactors = true;
+      this.error = null;
+      try {
+        const response = await patientInsightsAPI.getRiskFactors(patientId);
+        if (!this.isActiveRequest('riskFactors', token, patientId)) {
+          return this.riskFactorsData;
+        }
+        this.riskFactorsData = response.data;
+        return response.data;
+      } catch (error) {
+        if (!this.isActiveRequest('riskFactors', token, patientId)) {
+          return this.riskFactorsData;
+        }
+        this.error = error instanceof Error ? error.message : '获取风险因素分析数据失败';
+        throw error;
+      } finally {
+        if (this.isActiveRequest('riskFactors', token, patientId)) {
+          this.loading.riskFactors = false;
+        }
       }
     },
   },

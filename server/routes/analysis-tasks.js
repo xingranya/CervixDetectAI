@@ -22,6 +22,7 @@ const {
   syncStudyImageToTucang,
 } = require('../services/studyImageStorage.service');
 const { queueAnalysisTask } = require('../services/simpleAnalysisQueue.service');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -241,17 +242,161 @@ router.post('/', authenticate, async (req, res) => {
       }
     })();
   } catch (error) {
-    console.error('创建分析任务错误:', error);
-    // 参赛 core：不写入本地文件日志，避免同步 IO 阻塞
-    if (error && error.stack) {
-      console.error('创建分析任务错误堆栈:', error.stack);
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'POST /' });
+  }
+});
+
+/**
+ * POST /api/analysis-tasks/batch-analyze
+ * 批量创建分析任务（对已有病例进行批量分析）
+ * 请求体：{ study_ids: number[], priority?: 'normal' | 'urgent' | 'emergency' }
+ */
+router.post('/batch-analyze', authenticate, async (req, res) => {
+  try {
+    const { study_ids, priority = 'normal' } = req.body;
+
+    // 参数校验
+    if (!Array.isArray(study_ids) || study_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'study_ids 必须为非空数组',
+      });
     }
 
-    res.status(500).json({
-      success: false,
-      message: '创建分析任务失败',
-      error: error.message,
+    // 数量限制（最多50条）
+    if (study_ids.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: '批量操作数量不能超过50条',
+      });
+    }
+
+    const finalPriority = normalizePriority(priority);
+    const batchId = `batch_analyze_${uuidv4()}`;
+    const items = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const studyId of study_ids) {
+      try {
+        // 验证病例是否存在
+        const study = await Study.findByPk(studyId);
+        if (!study) {
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: '病例不存在',
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 权限校验：非管理员只能操作自己的病例或匿名病例
+        if (req.user.role !== 'admin' && study.user_id !== null && study.user_id !== req.user.id) {
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: '无权操作该病例',
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 检查病例是否已有进行中的任务
+        const existingTask = await AnalysisTask.findOne({
+          where: { study_id: studyId, status: ['PENDING', 'PROCESSING'] },
+        });
+        if (existingTask) {
+          items.push({
+            study_id: studyId,
+            status: 'SKIPPED',
+            error: '已有进行中的分析任务',
+            existing_task_id: existingTask.id,
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 获取病例图像
+        let studyImage = await StudyImage.findOne({
+          where: { study_id: study.id, is_primary: true },
+          order: [['created_at', 'DESC']],
+        });
+        if (!studyImage) {
+          studyImage = await StudyImage.findOne({
+            where: { study_id: study.id },
+            order: [['created_at', 'DESC']],
+          });
+        }
+
+        if (!studyImage) {
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: '病例无可用图像',
+          });
+          failCount += 1;
+          continue;
+        }
+
+        // 创建分析任务
+        const taskId = `task_${uuidv4()}`;
+        const task = await AnalysisTask.create({
+          task_id: taskId,
+          study_id: study.id,
+          user_id: req.user.id,
+          status: 'PENDING',
+          progress: 0,
+        });
+
+        // 更新病例状态为处理中
+        await study.update({ status: 'processing' });
+
+        // 加入分析队列
+        queueAnalysisTask(task.id, study.id, studyImage).catch((err) => {
+          console.error(`批量分析任务入队失败: Task=${task.id}`, err);
+          void markAnalysisTaskFailed({
+            analysisTaskId: task.id,
+            studyId: study.id,
+            error: err,
+            fallbackMessage: '分析任务启动失败',
+          });
+        });
+
+        items.push({
+          study_id: studyId,
+          task_id: task.id,
+          status: 'PENDING',
+        });
+        successCount += 1;
+      } catch (err) {
+        items.push({
+          study_id: studyId,
+          status: 'FAILED',
+          error: err.message || '创建任务失败',
+        });
+        failCount += 1;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message:
+        failCount > 0
+          ? `批量分析任务创建完成，成功 ${successCount} 条，失败/跳过 ${failCount} 条`
+          : '批量分析任务创建成功',
+      data: {
+        batchId,
+        summary: {
+          total: study_ids.length,
+          success: successCount,
+          failed: failCount,
+        },
+        items,
+      },
     });
+  } catch (error) {
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'POST /batch-analyze' });
   }
 });
 
@@ -433,12 +578,7 @@ router.post('/batch', authenticate, batchUploadImages.array('images', 10), async
       },
     });
   } catch (error) {
-    console.error('批量创建分析任务错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '批量创建分析任务失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'POST /batch' });
   }
 });
 
@@ -498,12 +638,7 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取分析任务列表错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取分析任务列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'GET /' });
   }
 });
 
@@ -551,12 +686,7 @@ router.get('/:id', authenticate, async (req, res) => {
       data: { task },
     });
   } catch (error) {
-    console.error('获取分析任务详情错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取分析任务详情失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'GET /:id' });
   }
 });
 
@@ -625,12 +755,7 @@ router.put('/:id/status', authenticate, async (req, res) => {
       data: { task: updatedTask },
     });
   } catch (error) {
-    console.error('更新任务状态错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新任务状态失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'PUT /:id/status' });
   }
 });
 
@@ -816,12 +941,7 @@ router.post('/:id/result', authenticate, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('保存分析结果错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '保存分析结果失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'POST /:id/result' });
   }
 });
 
@@ -856,12 +976,7 @@ router.delete('/:id', authenticate, async (req, res) => {
       message: '任务已删除',
     });
   } catch (error) {
-    console.error('删除任务错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '删除任务失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'AnalysisTasks', endpoint: 'DELETE /:id' });
   }
 });
 

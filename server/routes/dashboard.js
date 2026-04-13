@@ -3,6 +3,7 @@ const express = require('express');
 const { Op } = require('sequelize');
 const { Study, AnalysisTask, AnalysisResult, Patient } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -215,12 +216,7 @@ router.get('/stats', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取工作台统计错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取工作台统计失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Dashboard', endpoint: 'GET /stats' });
   }
 });
 
@@ -369,15 +365,7 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('【历史任务】获取历史任务错误:', error);
-    console.error('【历史任务】错误详情:', error.message);
-    console.error('【历史任务】错误堆栈:', error.stack);
-
-    res.status(500).json({
-      success: false,
-      message: '获取历史任务失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Dashboard', endpoint: 'GET /pending-tasks' });
   }
 });
 
@@ -420,12 +408,7 @@ router.get('/notices', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取系统公告错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取系统公告失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Dashboard', endpoint: 'GET /notices' });
   }
 });
 

@@ -4,6 +4,7 @@
  * 封装阿里云短信API调用
  */
 
+const crypto = require('crypto');
 const Dypnsapi20170525 = require('@alicloud/dypnsapi20170525');
 const OpenApi = require('@alicloud/openapi-client');
 
@@ -37,7 +38,10 @@ class AliyunSmsService {
    * @returns {string}
    */
   generateCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    const randomBytes = crypto.randomBytes(3);
+    const randomValue = randomBytes.readUIntBE(0, 3);
+    const code = 100000 + (randomValue % 900000);
+    return code.toString();
   }
 
   /**

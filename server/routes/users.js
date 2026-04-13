@@ -7,11 +7,12 @@ const { User, UserAvatar, EmailCode } = require('../models');
 const emailService = require('../services/email.service');
 const { uploadBufferToTucang } = require('../services/tucang.service');
 const { authenticate, authorize } = require('../middleware/auth');
+const { CODE_EXPIRE_MINUTES, SEND_INTERVAL_SECONDS, MAX_DAILY_SEND_COUNT } = require('../constants/verification');
+const { validateEmail } = require('../utils/validators');
+const { checkSendInterval, checkDailyLimit } = require('../utils/rateLimiter');
+const { handleRouteError } = require('../utils/errorHandler');
 
 const router = express.Router();
-const CODE_EXPIRE_MINUTES = 5;
-const SEND_INTERVAL_SECONDS = 60;
-const MAX_DAILY_SEND_COUNT = 10;
 
 const uploadAvatar = multer({
   storage: multer.memoryStorage(),
@@ -50,12 +51,7 @@ router.get('/me', authenticate, async (req, res) => {
       data: { user },
     });
   } catch (error) {
-    console.error('获取用户信息错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取用户信息失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'GET /me' });
   }
 });
 
@@ -83,8 +79,7 @@ router.put('/me', authenticate, async (req, res) => {
       const currentEmail = (req.user.email || '').trim().toLowerCase();
 
       if (normalizedEmail) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(normalizedEmail)) {
+        if (!validateEmail(normalizedEmail)) {
           return res.status(400).json({
             success: false,
             message: '邮箱格式不正确',
@@ -113,18 +108,7 @@ router.put('/me', authenticate, async (req, res) => {
       data: { user: updatedUser },
     });
   } catch (error) {
-    console.error('更新用户信息错误:', error);
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(409).json({
-        success: false,
-        message: '邮箱已被使用，请更换后重试',
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: '更新用户信息失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'PUT /me' });
   }
 });
 
@@ -145,7 +129,7 @@ router.post('/me/email/send-code', authenticate, async (req, res) => {
       });
     }
 
-    if (!emailService.validateEmail(normalizedEmail)) {
+    if (!validateEmail(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         message: '新邮箱格式不正确',
@@ -173,42 +157,23 @@ router.post('/me/email/send-code', authenticate, async (req, res) => {
       });
     }
 
-    const oneMinuteAgo = new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000);
-    const recentCode = await EmailCode.findOne({
-      where: {
-        email: normalizedEmail,
-        type: 'change_email',
-        created_at: {
-          [Op.gte]: oneMinuteAgo,
-        },
-      },
-    });
-
-    if (recentCode) {
-      const remainingSeconds = Math.ceil(
-        (recentCode.created_at.getTime() + SEND_INTERVAL_SECONDS * 1000 - Date.now()) / 1000,
-      );
+    // 频率限制：检查发送间隔
+    const intervalResult = await checkSendInterval(
+      EmailCode, 'email', normalizedEmail, SEND_INTERVAL_SECONDS, { type: 'change_email' },
+    );
+    if (!intervalResult.allowed) {
       return res.status(429).json({
         success: false,
-        message: `发送过于频繁，请${remainingSeconds}秒后再试`,
-        error: String(remainingSeconds),
+        message: `发送过于频繁，请${intervalResult.remainingSeconds}秒后再试`,
+        error: String(intervalResult.remainingSeconds),
       });
     }
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayCount = await EmailCode.count({
-      where: {
-        email: normalizedEmail,
-        type: 'change_email',
-        created_at: {
-          [Op.gte]: todayStart,
-        },
-      },
-    });
-
-    if (todayCount >= MAX_DAILY_SEND_COUNT) {
+    // 频率限制：检查每日发送上限
+    const dailyResult = await checkDailyLimit(
+      EmailCode, 'email', normalizedEmail, MAX_DAILY_SEND_COUNT, { type: 'change_email' },
+    );
+    if (!dailyResult.allowed) {
       return res.status(429).json({
         success: false,
         message: `今日发送次数已达上限（${MAX_DAILY_SEND_COUNT}次）`,
@@ -248,12 +213,7 @@ router.post('/me/email/send-code', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('发送更换邮箱验证码错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '发送验证码失败，请稍后重试',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'POST /me/email/send-code' });
   }
 });
 
@@ -274,7 +234,7 @@ router.post('/me/email/confirm', authenticate, async (req, res) => {
       });
     }
 
-    if (!emailService.validateEmail(normalizedEmail)) {
+    if (!validateEmail(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         message: '新邮箱格式不正确',
@@ -316,12 +276,7 @@ router.post('/me/email/confirm', authenticate, async (req, res) => {
       data: { user: updatedUser },
     });
   } catch (error) {
-    console.error('确认更换邮箱错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '更换邮箱失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'POST /me/email/confirm' });
   }
 });
 
@@ -369,12 +324,7 @@ router.put('/me/password', authenticate, async (req, res) => {
       message: '密码修改成功',
     });
   } catch (error) {
-    console.error('修改密码错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '修改密码失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'PUT /me/password' });
   }
 });
 
@@ -424,12 +374,7 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
       data: { avatar },
     });
   } catch (error) {
-    console.error('上传头像错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '上传头像失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'POST /me/avatar' });
   }
 });
 
@@ -474,12 +419,7 @@ router.get('/', authenticate, authorize('admin'), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('获取用户列表错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取用户列表失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'GET /' });
   }
 });
 
@@ -512,12 +452,7 @@ router.get('/:id', authenticate, authorize('admin'), async (req, res) => {
       data: { user },
     });
   } catch (error) {
-    console.error('获取用户信息错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取用户信息失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'GET /:id' });
   }
 });
 
@@ -556,12 +491,7 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
       data: { user: updatedUser },
     });
   } catch (error) {
-    console.error('更新用户信息错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '更新用户信息失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'PUT /:id' });
   }
 });
 
@@ -596,12 +526,7 @@ router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
       message: '用户已删除',
     });
   } catch (error) {
-    console.error('删除用户错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '删除用户失败',
-      error: error.message,
-    });
+    handleRouteError(res, error, { service: 'Users', endpoint: 'DELETE /:id' });
   }
 });
 

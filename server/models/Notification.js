@@ -55,6 +55,7 @@ const Notification = sequelize.define(
     tableName: 'notifications',
     indexes: [
       {
+        name: 'idx_notification_user_read_date',
         fields: ['user_id', 'is_read', 'created_at'],
       },
       {

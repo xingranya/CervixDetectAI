@@ -10,6 +10,52 @@
       </div>
     </div>
 
+    <!-- 统计卡片区域 -->
+    <div class="row q-col-gutter-md q-mb-md">
+      <div class="col-md-3 col-sm-6 col-xs-12">
+        <q-card flat bordered>
+          <q-card-section class="text-center">
+            <div class="text-h4 text-primary">{{ statistics?.completionRate ?? '-' }}<span class="text-subtitle1">%</span></div>
+            <div class="text-caption text-grey-7">完成率</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-md-3 col-sm-6 col-xs-12">
+        <q-card flat bordered>
+          <q-card-section class="text-center">
+            <div class="text-h4 text-deep-orange">{{ statistics?.overview?.overdue ?? 0 }}</div>
+            <div class="text-caption text-grey-7">逾期随访</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-md-3 col-sm-6 col-xs-12">
+        <q-card flat bordered>
+          <q-card-section class="text-center">
+            <div class="text-h4 text-positive">{{ statistics?.overview?.completed ?? 0 }}</div>
+            <div class="text-caption text-grey-7">已完成</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-md-3 col-sm-6 col-xs-12">
+        <q-card flat bordered>
+          <q-card-section class="text-center">
+            <div class="text-h4 text-grey-8">{{ statistics?.avgCompletionDays ?? 0 }}<span class="text-subtitle1">天</span></div>
+            <div class="text-caption text-grey-7">平均完成周期</div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+
+    <!-- 标签页切换 -->
+    <q-tabs v-model="activeTab" class="q-mb-md text-primary" active-color="primary" indicator-color="primary" dense align="left">
+      <q-tab name="list" label="随访列表" icon="list" />
+      <q-tab name="stats" label="统计报表" icon="bar_chart" />
+    </q-tabs>
+
+    <q-tab-panels v-model="activeTab" animated>
+      <!-- 列表面板 -->
+      <q-tab-panel name="list" class="q-pa-none">
+
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="q-py-sm">
         <div class="row q-col-gutter-md items-center">
@@ -188,6 +234,52 @@
       </q-card-section>
     </q-card>
 
+      </q-tab-panel>
+
+      <!-- 统计报表面板 -->
+      <q-tab-panel name="stats" class="q-pa-none">
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section>
+            <div class="text-subtitle1 text-weight-medium q-mb-md">近12个月随访趋势</div>
+            <div ref="trendChartRef" style="height: 350px; width: 100%"></div>
+          </q-card-section>
+        </q-card>
+        <div class="row q-col-gutter-md">
+          <div class="col-md-6 col-xs-12">
+            <q-card flat bordered>
+              <q-card-section>
+                <div class="text-subtitle1 text-weight-medium q-mb-md">风险等级分布</div>
+                <div ref="riskChartRef" style="height: 300px; width: 100%"></div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-md-6 col-xs-12">
+            <q-card flat bordered>
+              <q-card-section>
+                <div class="text-subtitle1 text-weight-medium q-mb-md">医生工作量</div>
+                <q-list separator>
+                  <q-item v-for="doc in (statistics?.byDoctor || [])" :key="doc.doctorId">
+                    <q-item-section>
+                      <q-item-label>{{ doc.doctorName }}</q-item-label>
+                      <q-item-label caption>总计 {{ doc.total }} 个随访，完成 {{ doc.completed }} 个</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-badge :color="doc.total > 0 && doc.completed / doc.total >= 0.8 ? 'positive' : 'warning'">
+                        {{ doc.total > 0 ? Math.round(doc.completed / doc.total * 100) : 0 }}%
+                      </q-badge>
+                    </q-item-section>
+                  </q-item>
+                  <q-item v-if="!statistics?.byDoctor?.length">
+                    <q-item-section class="text-grey-6 text-center">暂无数据</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </q-tab-panel>
+    </q-tab-panels>
+
     <q-dialog v-model="showDialog" persistent>
       <q-card style="width: 760px; max-width: 95vw">
         <q-card-section class="row items-center q-pb-none">
@@ -230,6 +322,56 @@
                       </div>
                     </q-card-section>
                   </q-card>
+                </div>
+              </div>
+            </div>
+
+            <!-- 智能模板推荐 -->
+            <div v-if="!isEditing && recommendedTemplate" class="col-12">
+              <q-separator class="q-my-sm" />
+              <div class="text-subtitle2 text-weight-medium">
+                <q-icon name="auto_awesome" color="amber" class="q-mr-xs" />
+                智能推荐模板
+                <q-chip dense size="sm" color="primary" text-color="white">{{ recommendSource }}</q-chip>
+              </div>
+              <q-card flat bordered class="q-mt-sm">
+                <q-card-section class="q-py-sm">
+                  <div class="row items-center">
+                    <div class="col">
+                      <div class="text-body2 text-weight-medium">{{ recommendedTemplate.name }}</div>
+                      <div class="text-caption text-grey-7">{{ recommendedTemplate.description }}</div>
+                      <div class="text-caption text-grey-6 q-mt-xs">
+                        复查周期：{{ recommendedTemplate.interval_months }}个月 | 
+                        检查项：{{ recommendedTemplate.checklist.join('、') }}
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <q-btn
+                        size="sm"
+                        color="primary"
+                        icon="check"
+                        label="应用模板"
+                        @click="applyRecommendedTemplate"
+                      />
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+              <!-- 备选模板 -->
+              <div v-if="alternativeTemplates.length" class="q-mt-sm">
+                <div class="text-caption text-grey-7">备选方案：</div>
+                <div class="row q-gutter-sm q-mt-xs">
+                  <q-chip
+                    v-for="alt in alternativeTemplates.slice(0, 3)"
+                    :key="alt.id"
+                    clickable
+                    dense
+                    outline
+                    color="grey-7"
+                    @click="applyTemplate(alt)"
+                  >
+                    {{ alt.name }}
+                  </q-chip>
                 </div>
               </div>
             </div>
@@ -307,13 +449,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useQuasar, type QTableProps } from 'quasar';
 import { useRoute } from 'vue-router';
+import * as echarts from 'echarts';
+import { useThemeStore } from 'stores/themeStore';
 import {
   followUpAPI,
   type FollowUpItem,
   type FollowUpStatus,
+  type FollowUpStatistics,
+  type FollowUpTemplate,
   type CreateFollowUpPayload,
   type UpdateFollowUpPayload,
 } from 'src/services/api';
@@ -351,11 +497,27 @@ interface FollowUpForm {
 
 const $q = useQuasar();
 const route = useRoute();
+const themeStore = useThemeStore();
 
 const loading = ref(false);
 const saving = ref(false);
 const rows = ref<FollowUpItem[]>([]);
 const emailReminderEnabled = ref(false);
+const activeTab = ref('list');
+
+// 统计数据
+const statistics = ref<FollowUpStatistics | null>(null);
+
+// 智能模板推荐
+const recommendedTemplate = ref<FollowUpTemplate | null>(null);
+const alternativeTemplates = ref<FollowUpTemplate[]>([]);
+const recommendSource = ref('');
+
+// ECharts 引用
+const trendChartRef = ref<HTMLElement | null>(null);
+const riskChartRef = ref<HTMLElement | null>(null);
+let trendChartInstance: echarts.ECharts | null = null;
+let riskChartInstance: echarts.ECharts | null = null;
 
 const followUpPresets: FollowUpPreset[] = [
   {
@@ -810,10 +972,170 @@ watch(
   },
 );
 
+/** 加载统计数据 */
+const loadStatistics = async () => {
+  try {
+    const response = await followUpAPI.getStatistics();
+    statistics.value = response.data;
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+  }
+};
+
+/** 获取智能模板推荐 */
+const fetchRecommendation = async (studyId: number) => {
+  try {
+    const response = await followUpAPI.recommendTemplate(studyId);
+    recommendedTemplate.value = response.data.recommended;
+    alternativeTemplates.value = response.data.alternatives;
+    const src = response.data.source;
+    recommendSource.value = src.diagnosis
+      ? `${src.diagnosis} / ${getRiskText(src.risk_level)}`
+      : getRiskText(src.risk_level);
+  } catch (error) {
+    console.error('获取模板推荐失败:', error);
+    recommendedTemplate.value = null;
+    alternativeTemplates.value = [];
+  }
+};
+
+/** 应用推荐模板到表单 */
+const applyRecommendedTemplate = () => {
+  if (!recommendedTemplate.value) return;
+  applyTemplate(recommendedTemplate.value);
+};
+
+/** 应用指定模板到表单 */
+const applyTemplate = (tpl: FollowUpTemplate) => {
+  form.value.planned_date = getPresetDate(tpl.interval_months);
+  form.value.reason = tpl.description;
+  form.value.notes = `检查清单：${tpl.checklist.join('、')}`;
+  form.value.doctor_marked_high_attention = ['high', 'critical'].includes(tpl.risk);
+  $q.notify({ type: 'info', message: `已应用模板：${tpl.name}`, position: 'top' });
+};
+
+/** 渲染趋势图表 */
+const renderTrendChart = () => {
+  if (!trendChartRef.value || !statistics.value?.byMonth?.length) return;
+
+  if (!trendChartInstance) {
+    trendChartInstance = echarts.init(trendChartRef.value);
+  }
+
+  const isDark = themeStore.isDark;
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? '#334155' : '#e2e8f0';
+  const months = statistics.value.byMonth.map((m) => m.month);
+
+  trendChartInstance.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: {
+      data: ['已完成', '已逾期', '总计'],
+      top: 8,
+      textStyle: { color: textColor },
+    },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '20%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: months,
+      axisLabel: { color: textColor },
+      axisLine: { lineStyle: { color: gridColor } },
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: gridColor, type: 'dashed' } },
+      axisLabel: { color: textColor },
+    },
+    series: [
+      {
+        name: '已完成',
+        type: 'bar',
+        stack: 'total',
+        data: statistics.value.byMonth.map((m) => m.completed),
+        itemStyle: { color: '#10b981' },
+      },
+      {
+        name: '已逾期',
+        type: 'bar',
+        stack: 'total',
+        data: statistics.value.byMonth.map((m) => m.overdue),
+        itemStyle: { color: '#f97316' },
+      },
+      {
+        name: '总计',
+        type: 'line',
+        smooth: true,
+        data: statistics.value.byMonth.map((m) => m.total),
+        itemStyle: { color: '#2563eb' },
+        lineStyle: { width: 2 },
+      },
+    ],
+  });
+};
+
+/** 渲染风险分布图表 */
+const renderRiskChart = () => {
+  if (!riskChartRef.value || !statistics.value?.byRisk?.length) return;
+
+  if (!riskChartInstance) {
+    riskChartInstance = echarts.init(riskChartRef.value);
+  }
+
+  const isDark = themeStore.isDark;
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const riskColorMap: Record<string, string> = {
+    critical: '#ef4444',
+    high: '#f97316',
+    medium: '#eab308',
+    low: '#10b981',
+  };
+
+  const chartData = statistics.value.byRisk.map((r) => ({
+    name: getRiskText(r.risk),
+    value: r.total,
+    itemStyle: { color: riskColorMap[r.risk] || '#94a3b8' },
+  }));
+
+  riskChartInstance.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}个 ({d}%)' },
+    legend: {
+      bottom: 0,
+      icon: 'circle',
+      textStyle: { color: textColor },
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '45%'],
+        label: { formatter: '{b}\n{d}%', color: textColor },
+        itemStyle: {
+          borderColor: isDark ? '#1e293b' : '#fff',
+          borderWidth: 2,
+          borderRadius: 6,
+        },
+        data: chartData,
+      },
+    ],
+  });
+};
+
+/** 统一渲染图表 */
+const renderCharts = () => {
+  renderTrendChart();
+  renderRiskChart();
+};
+
+const handleChartResize = () => {
+  trendChartInstance?.resize();
+  riskChartInstance?.resize();
+};
+
 onMounted(async () => {
   applyRouteFilters();
   await fetchPatients();
-  await loadData();
+  await Promise.all([loadData(), loadStatistics()]);
+  window.addEventListener('resize', handleChartResize);
 });
 
 watch(
@@ -826,4 +1148,42 @@ watch(
     void loadData();
   },
 );
+
+// 切换到统计标签页时初始化图表
+watch(activeTab, (val) => {
+  if (val === 'stats') {
+    void loadStatistics().then(() => {
+      void nextTick(() => renderCharts());
+    });
+  }
+});
+
+// 监听关联病例变化，自动获取模板推荐
+watch(
+  () => form.value.study_id,
+  (studyId) => {
+    if (studyId && !isEditing.value) {
+      void fetchRecommendation(studyId);
+    } else {
+      recommendedTemplate.value = null;
+      alternativeTemplates.value = [];
+    }
+  },
+);
+
+// 监听暗色模式变化，重新渲染图表
+watch(
+  () => themeStore.isDark,
+  () => {
+    if (activeTab.value === 'stats') {
+      void nextTick(() => renderCharts());
+    }
+  },
+);
+
+onUnmounted(() => {
+  trendChartInstance?.dispose();
+  riskChartInstance?.dispose();
+  window.removeEventListener('resize', handleChartResize);
+});
 </script>

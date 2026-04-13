@@ -2,8 +2,10 @@
 const cron = require('node-cron');
 const { Op } = require('sequelize');
 const { FollowUp, Notification, Patient } = require('../models');
+const { batchComplianceScan } = require('./followupCompliance.service');
 
 let scheduledTask = null;
+let complianceTask = null;
 let ensureInfrastructurePromise = null;
 
 function formatDateOnly(date) {
@@ -184,6 +186,27 @@ function startFollowUpScheduler() {
   );
 
   console.log(`[FollowUpScheduler] 已启动，Cron=${cronExpression}, 时区=${timezone}`);
+
+  // 合规性扫描定时任务（每天凌晨2点执行）
+  if (!complianceTask) {
+    const complianceCron = process.env.FOLLOWUP_COMPLIANCE_CRON || '0 2 * * *';
+    complianceTask = cron.schedule(
+      complianceCron,
+      async () => {
+        try {
+          const scanResult = await batchComplianceScan();
+          console.log(
+            `[FollowUpScheduler] 合规扫描完成: 扫描 ${scanResult.scanned}, 标记超期 ${scanResult.markedOverdue}, 通知 ${scanResult.notified}`,
+          );
+        } catch (error) {
+          console.error('[FollowUpScheduler] 合规扫描失败:', error.message);
+        }
+      },
+      { timezone },
+    );
+    console.log(`[FollowUpScheduler] 合规扫描已启动，Cron=${complianceCron}, 时区=${timezone}`);
+  }
+
   return scheduledTask;
 }
 
@@ -192,4 +215,5 @@ module.exports = {
   ensureFollowUpInfrastructure,
   runFollowUpReminderJob,
   startFollowUpScheduler,
+  batchComplianceScan,
 };

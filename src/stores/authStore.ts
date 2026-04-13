@@ -23,7 +23,6 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as User | null,
     token: null as string | null,
-    refreshToken: null as string | null,
     isAuthenticated: false,
     isAuthenticating: false,
     // 标记是否已从本地存储初始化过（用于路由守卫避免刷新误判）
@@ -39,16 +38,17 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     /**
      * 内部辅助：保存认证数据到 store 和 localStorage
+     * refreshToken 由 HttpOnly Cookie 管理，前端不再存储
      */
-    _saveAuthData(data: { accessToken: string; refreshToken: string; user: User }) {
+    _saveAuthData(data: { accessToken: string; user: User }) {
       this.token = data.accessToken;
-      this.refreshToken = data.refreshToken;
       this.user = data.user;
       this.isAuthenticated = true;
       this.hasInitialized = true;
       setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
-      setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
       setItem(STORAGE_KEYS.USER_INFO, data.user);
+      // 清除可能残留的旧 refreshToken（升级兼容）
+      removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     },
 
     /**
@@ -143,48 +143,45 @@ export const useAuthStore = defineStore('auth', {
 
     /**
      * 从本地存储初始化认证状态
+     * refreshToken 由 HttpOnly Cookie 管理，无需从 localStorage 读取
      */
     initializeAuth(): void {
       const token = getItem<string>(STORAGE_KEYS.ACCESS_TOKEN);
-      const refreshToken = getItem<string>(STORAGE_KEYS.REFRESH_TOKEN);
       const user = getItem<User>(STORAGE_KEYS.USER_INFO);
 
       if (token && user && typeof user === 'object') {
         this.token = token;
-        this.refreshToken = refreshToken;
         this.user = user;
         this.isAuthenticated = true;
       } else {
         this.token = null;
-        this.refreshToken = null;
         this.user = null;
         this.isAuthenticated = false;
       }
 
+      // 清除可能残留的旧 refreshToken（升级兼容）
+      removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       this.hasInitialized = true;
     },
 
-    // Method to set user data from existing token (e.g., on app initialization)
-    setAuthData(token: string, refreshToken: string, user: User) {
+    // 外部设置认证数据（如 App 初始化时）
+    setAuthData(token: string, user: User) {
       this.token = token;
-      this.refreshToken = refreshToken;
       this.user = user;
       this.isAuthenticated = true;
       this.hasInitialized = true;
 
       setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-      setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       setItem(STORAGE_KEYS.USER_INFO, user);
     },
 
     clearAuthData() {
       this.user = null;
       this.token = null;
-      this.refreshToken = null;
       this.isAuthenticated = false;
 
       removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-      removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      removeItem(STORAGE_KEYS.REFRESH_TOKEN); // 清除可能残留的旧数据
       removeItem(STORAGE_KEYS.USER_INFO);
     },
   },

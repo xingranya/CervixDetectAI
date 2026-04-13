@@ -5,8 +5,67 @@
         <div class="text-h5">数据报表</div>
         <div class="text-subtitle2 text-grey-7">管理所有病例与报告</div>
       </div>
-      <div class="col-auto">
-        <q-btn color="primary" icon="upload" label="新病例" no-caps to="/app/upload" />
+      <div class="col-auto row q-gutter-sm">
+        <!-- 批量操作按钮（选中时显示） -->
+        <template v-if="selectedStudies.length > 0">
+          <q-chip color="primary" text-color="white" size="md">
+            已选 {{ selectedStudies.length }} 项
+          </q-chip>
+          <q-btn
+            flat
+            no-caps
+            color="primary"
+            icon="play_arrow"
+            label="批量分析"
+            :loading="batchAnalyzing"
+            @click="handleBatchAnalyze"
+          >
+            <q-tooltip>为选中的病例创建分析任务</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            no-caps
+            color="secondary"
+            icon="download"
+            label="批量导出"
+            :loading="batchExporting"
+          >
+            <q-menu>
+              <q-list style="min-width: 120px">
+                <q-item v-close-popup clickable @click="handleBatchExport('pdf')">
+                  <q-item-section>导出为 PDF</q-item-section>
+                </q-item>
+                <q-item v-close-popup clickable @click="handleBatchExport('word')">
+                  <q-item-section>导出为 Word</q-item-section>
+                </q-item>
+                <q-item v-close-popup clickable @click="handleBatchExport('excel')">
+                  <q-item-section>导出为 Excel</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+            <q-tooltip>批量导出选中病例的报告</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            no-caps
+            color="positive"
+            icon="check_circle"
+            label="批量标记已审核"
+            :loading="batchReviewing"
+            @click="handleBatchReview"
+          >
+            <q-tooltip>标记选中病例为已审核</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            no-caps
+            color="grey"
+            icon="close"
+            label="取消选择"
+            @click="selectedStudies = []"
+          />
+        </template>
+        <q-btn v-else color="primary" icon="upload" label="新病例" no-caps to="/app/upload" />
       </div>
     </div>
 
@@ -73,11 +132,19 @@
       <q-card-section class="q-pa-none">
         <q-table
           v-model:pagination="pagination"
+          v-model:selected="selectedStudies"
           :rows="filteredStudies"
           :columns="studyColumns"
           :loading="studyStore.loading"
           row-key="id"
+          selection="multiple"
         >
+          <template #header-selection="scope">
+            <q-checkbox v-model="scope.selected" />
+          </template>
+          <template #body-selection="scope">
+            <q-checkbox v-model="scope.selected" />
+          </template>
           <template #body-cell-studyDate="props">
             <q-td :props="props">
               {{ formatDate(props.row.studyDate) }}
@@ -121,6 +188,19 @@
           <template #body-cell-confidence="props">
             <q-td :props="props">
               {{ formatConfidence(props.row.confidence) }}
+            </q-td>
+          </template>
+
+          <template #body-cell-reviewStatus="props">
+            <q-td :props="props">
+              <q-chip
+                :color="getReviewStatusColor(props.row.reviewStatus)"
+                text-color="white"
+                size="sm"
+                dense
+              >
+                {{ getReviewStatusLabel(props.row.reviewStatus) }}
+              </q-chip>
             </q-td>
           </template>
 
@@ -184,6 +264,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { type QTableProps, useQuasar } from 'quasar';
 import { downloadStudyReport } from 'src/composables/useStudyReportDownload';
 import { useStudyStore } from 'stores/studyStore';
+import { batchAPI, type BatchOperationItem } from 'src/services/api';
 import {
   buildStudiesQuery,
   DEFAULT_STUDIES_QUERY_STATE,
@@ -252,8 +333,15 @@ const studyColumns: QTableProps['columns'] = [
   },
   { name: 'riskLevel', label: '风险等级', field: 'riskLevel', align: 'center' },
   { name: 'confidence', label: '置信度', field: 'confidence', align: 'center' },
+  { name: 'reviewStatus', label: '审核状态', field: 'reviewStatus', align: 'center' },
   { name: 'actions', label: '操作', field: 'actions', align: 'center' },
 ];
+
+// 批量操作状态
+const selectedStudies = ref<{ id: number }[]>([]);
+const batchAnalyzing = ref(false);
+const batchExporting = ref(false);
+const batchReviewing = ref(false);
 
 const activeTab = computed<StudiesQueryState['status']>({
   get: () => queryState.value.status,
@@ -495,6 +583,154 @@ const getRiskLevelLabel = (riskLevel: string | undefined): string => {
   if (riskLevel === 'medium') return '中';
   if (riskLevel === 'low') return '低';
   return '未评估';
+};
+
+const getReviewStatusColor = (reviewStatus: string | undefined): string => {
+  if (reviewStatus === 'reviewed') return 'positive';
+  if (reviewStatus === 'rejected') return 'warning';
+  return 'grey-4';
+};
+
+const getReviewStatusLabel = (reviewStatus: string | undefined): string => {
+  if (reviewStatus === 'reviewed') return '已审核';
+  if (reviewStatus === 'rejected') return '已驳回';
+  return '待审核';
+};
+
+// 批量操作处理函数
+const handleBatchAnalyze = () => {
+  const studyIds = selectedStudies.value.map((s) => s.id);
+  if (studyIds.length === 0) return;
+
+  $q.dialog({
+    title: '确认批量分析',
+    message: `确定要为选中的 ${studyIds.length} 个病例创建分析任务吗？`,
+    cancel: { label: '取消', color: 'grey', flat: true },
+    ok: { label: '确认分析', color: 'primary' },
+    persistent: true,
+  }).onOk(() => {
+    void (async () => {
+      try {
+        batchAnalyzing.value = true;
+        const result = await batchAPI.batchAnalyze({ study_ids: studyIds });
+        const { summary, items } = result.data;
+
+        // 显示操作结果
+        const failedItems = items.filter((item: BatchOperationItem) => item.status !== 'PENDING');
+        if (failedItems.length > 0) {
+          const failedDetails = failedItems
+            .map((item: BatchOperationItem) => `病例 ${item.study_id}: ${item.error || item.status}`)
+            .join('\n');
+          $q.notify({
+            type: 'warning',
+            message: `批量分析完成：成功 ${summary.success} 条，失败/跳过 ${summary.failed} 条`,
+            caption: failedDetails,
+            position: 'top',
+            timeout: 5000,
+          });
+        } else {
+          $q.notify({
+            type: 'positive',
+            message: `成功为 ${summary.success} 个病例创建分析任务`,
+            position: 'top',
+            icon: 'check_circle',
+          });
+        }
+
+        selectedStudies.value = [];
+        await studyStore.fetchStudies();
+      } catch (error) {
+        console.error('批量分析失败:', error);
+        $q.notify({ type: 'negative', message: '批量分析失败，请稍后重试', position: 'top' });
+      } finally {
+        batchAnalyzing.value = false;
+      }
+    })();
+  });
+};
+
+const handleBatchExport = async (format: 'pdf' | 'word' | 'excel') => {
+  const studyIds = selectedStudies.value.map((s) => s.id);
+  if (studyIds.length === 0) return;
+
+  try {
+    batchExporting.value = true;
+    $q.loading.show({ message: '正在生成报告压缩包...', spinnerColor: 'primary' });
+
+    const blob = await batchAPI.batchExport({ study_ids: studyIds, format });
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reports_batch_${Date.now()}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    $q.notify({
+      type: 'positive',
+      message: `成功导出 ${studyIds.length} 份报告`,
+      position: 'top',
+      icon: 'download_done',
+    });
+
+    selectedStudies.value = [];
+  } catch (error) {
+    console.error('批量导出失败:', error);
+    $q.notify({ type: 'negative', message: '批量导出失败，请稍后重试', position: 'top' });
+  } finally {
+    batchExporting.value = false;
+    $q.loading.hide();
+  }
+};
+
+const handleBatchReview = () => {
+  const studyIds = selectedStudies.value.map((s) => s.id);
+  if (studyIds.length === 0) return;
+
+  $q.dialog({
+    title: '确认批量标记',
+    message: `确定要将选中的 ${studyIds.length} 个病例标记为已审核吗？`,
+    cancel: { label: '取消', color: 'grey', flat: true },
+    ok: { label: '确认标记', color: 'positive' },
+    persistent: true,
+  }).onOk(() => {
+    void (async () => {
+      try {
+        batchReviewing.value = true;
+        const result = await batchAPI.batchReview({ study_ids: studyIds, review_status: 'reviewed' });
+        const { summary, items } = result.data;
+
+        // 显示操作结果
+        const failedItems = items.filter((item: BatchOperationItem) => item.status !== 'SUCCESS');
+        if (failedItems.length > 0) {
+          $q.notify({
+            type: 'warning',
+            message: `批量标记完成：成功 ${summary.success} 条，失败 ${summary.failed} 条`,
+            position: 'top',
+            timeout: 3000,
+          });
+        } else {
+          $q.notify({
+            type: 'positive',
+            message: `成功标记 ${summary.success} 个病例为已审核`,
+            position: 'top',
+            icon: 'check_circle',
+          });
+        }
+
+        selectedStudies.value = [];
+        await studyStore.fetchStudies();
+      } catch (error) {
+        console.error('批量审核失败:', error);
+        $q.notify({ type: 'negative', message: '批量审核失败，请稍后重试', position: 'top' });
+      } finally {
+        batchReviewing.value = false;
+      }
+    })();
+  });
 };
 
 const viewStudy = (id: number) => {

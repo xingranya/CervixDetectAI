@@ -117,6 +117,10 @@ const Patient = sequelize.define(
       {
         fields: ['created_by'],
       },
+      {
+        name: 'idx_patient_created_by_date',
+        fields: ['created_by', 'created_at'],
+      },
     ],
   },
 );

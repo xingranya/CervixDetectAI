@@ -10,7 +10,8 @@
           </div>
           <div class="text-subtitle2 text-grey-7">管理所有患者信息</div>
         </div>
-        <div class="col-auto">
+        <div class="col-auto q-gutter-sm">
+          <q-btn outline color="primary" icon="upload_file" label="导入患者" no-caps @click="showImportDialog = true" />
           <q-btn color="primary" icon="person_add" label="新增患者" no-caps @click="openAddDialog" />
         </div>
       </div>
@@ -150,6 +151,9 @@
       </q-card>
     </q-dialog>
 
+    <!-- 批量导入患者对话框 -->
+    <PatientImportDialog v-model="showImportDialog" @imported="handleImportCompleted" />
+
     <!-- 查看患者详情对话框 -->
     <q-dialog v-model="showDetailDialog">
       <q-card style="min-width: 500px">
@@ -179,6 +183,7 @@ import {
 } from 'src/services/patientService';
 import PatientForm from 'components/patients/PatientForm.vue';
 import PatientDetail from 'components/patients/PatientDetail.vue';
+import PatientImportDialog from 'components/patients/PatientImportDialog.vue';
 
 const router = useRouter();
 const $q = useQuasar();
@@ -212,6 +217,7 @@ const columns = [
 ];
 
 // 对话框状态
+const showImportDialog = ref(false);
 const showFormDialog = ref(false);
 const showDetailDialog = ref(false);
 const isEditing = ref(false);
@@ -350,6 +356,11 @@ const confirmDelete = (patient: Patient) => {
       }
     })();
   });
+};
+
+// 导入完成后刷新列表
+const handleImportCompleted = () => {
+  void onRequest({ pagination: pagination.value });
 };
 
 // 组件挂载时加载数据
