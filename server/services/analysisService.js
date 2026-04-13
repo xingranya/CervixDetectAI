@@ -137,7 +137,7 @@ async function processTask(analysisTaskId, imagePath, studyId) {
     // 启动进度模拟器（在AI分析期间逐步更新进度）
     let currentProgress = 30;
     progressInterval = setInterval(async () => {
-      if (currentProgress < 85) {
+      if (currentProgress < 90) {
         currentProgress += 5;
         await AnalysisTask.update(
           { progress: currentProgress },

@@ -400,18 +400,31 @@
         </q-card>
 
         <!-- AI分析进度卡片（分析中时显示） - 置顶固定显示 -->
-        <transition name="slide-down">
+        <transition name="progress-card">
           <div v-if="isAnalyzing" class="analysis-progress-overlay">
-            <q-card class="analysis-progress-card">
+            <q-card class="analysis-progress-card" :class="{ 'is-complete': isAnalyzingComplete }">
               <q-card-section class="q-pa-lg">
                 <!-- 标题区域 -->
                 <div class="row items-center q-mb-md">
-                  <div class="analysis-icon-container q-mr-md">
-                    <q-spinner-orbit color="white" size="28px" />
+                  <div
+                    class="analysis-icon-container q-mr-md"
+                    :class="{ 'complete-icon': isAnalyzingComplete }"
+                  >
+                    <transition name="icon-swap" mode="out-in">
+                      <q-spinner-orbit v-if="!isAnalyzingComplete" color="white" size="28px" key="spin" />
+                      <q-icon v-else name="check_circle" color="white" size="28px" key="check" />
+                    </transition>
                   </div>
                   <div class="col">
-                    <div class="text-h6 text-white text-weight-bold">AI 智能分析中</div>
-                    <div class="text-caption text-light-blue-2">{{ progressStatus }}</div>
+                    <div class="text-h6 text-white text-weight-bold">
+                      {{ isAnalyzingComplete ? '分析完成！' : 'AI 智能分析中' }}
+                    </div>
+                    <div
+                      class="text-caption"
+                      :class="isAnalyzingComplete ? 'text-green-2' : 'text-light-blue-2'"
+                    >
+                      {{ progressStatus }}
+                    </div>
                   </div>
                   <div class="text-right">
                     <div class="progress-percentage">
@@ -872,6 +885,7 @@ const selectedPatient = ref(null);
 const imageType = ref('细胞学涂片 (Cytology)');
 const zoomLevel = ref(1);
 const isAnalyzing = ref(false);
+const isAnalyzingComplete = ref(false);
 const progress = ref(0);
 const progressStatus = ref('等待开始');
 const selectedModel = ref('宫颈病变分割模型 v3.2 (高精度)');
@@ -910,8 +924,8 @@ let lastProgressPhase = '';
 const aiZoomLevel = ref(1);
 const POLLING_INTERVAL_MS = 2000;
 const MAX_POLLING_FAILURES = 3;
-const STALLED_PROGRESS_MIN = 80;
-const MAX_STALLED_PROGRESS_POLLS = 12;
+const STALLED_PROGRESS_MIN = 90;
+const MAX_STALLED_PROGRESS_POLLS = 90;
 
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
@@ -1072,6 +1086,7 @@ const startAnalysis = async () => {
   // 清除失败状态
   lastFailedTask.value = null;
   isAnalyzing.value = true;
+  isAnalyzingComplete.value = false;
   progress.value = 0;
   progressStatus.value = '等待开始...';
   logs.value = [];
@@ -1292,9 +1307,17 @@ const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
 
       await animateToComplete();
 
-      // 短暂延迟后关闭进度条
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // 切换为完成态（绿色卡片 + 对勾图标）
+      isAnalyzingComplete.value = true;
+
+      // 展示完成态 1.2s 后触发离场动画
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       isAnalyzing.value = false;
+
+      // 等离场动画播完后重置完成态
+      setTimeout(() => {
+        isAnalyzingComplete.value = false;
+      }, 600);
 
       // 重新加载病例数据以获取最新的分析结果
       await refreshStudyData();
@@ -1853,7 +1876,25 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #1565c0 0%, #0d47a1 50%, #01579b 100%) !important;
   box-shadow: var(--app-shadow-lg);
   pointer-events: auto;
-  animation: slideDown 0.4s ease-out;
+  transition: background 0.4s ease;
+}
+
+/* 完成态：切换为绿色渐变 */
+.analysis-progress-card.is-complete {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 50%, #388e3c 100%) !important;
+  animation: successCardPulse 0.45s ease-out;
+}
+
+/* 完成入场脉冲效果 */
+@keyframes successCardPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+/* 完成态进度条颜色 */
+.is-complete .progress-bar-fill {
+  background: linear-gradient(90deg, #66bb6a, #a5d6a7, #c8e6c9);
 }
 
 @keyframes slideDown {
@@ -1867,12 +1908,40 @@ onUnmounted(() => {
   }
 }
 
-.slide-down-enter-active {
-  animation: slideDown 0.4s ease-out;
+/* 进度卡片入场动画 */
+.progress-card-enter-active {
+  animation: progressCardEnter 0.4s ease-out;
 }
 
-.slide-down-leave-active {
-  animation: slideDown 0.3s ease-in reverse;
+/* 进度卡片离场动画：往上收起 + 淡出 + 微缩放 */
+.progress-card-leave-active {
+  animation: progressCardLeave 0.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes progressCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes progressCardLeave {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.01);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.93);
+  }
 }
 
 .analysis-icon-container {
@@ -1885,6 +1954,38 @@ onUnmounted(() => {
   justify-content: center;
   backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
   -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(var(--app-glass-blur-md));
+  transition: background 0.3s ease;
+}
+
+/* 图标切换动画 */
+.icon-swap-enter-active {
+  animation: iconIn 0.3s ease-out;
+}
+
+.icon-swap-leave-active {
+  animation: iconOut 0.15s ease-in;
+}
+
+@keyframes iconIn {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes iconOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.4);
+  }
 }
 
 .progress-percentage {
