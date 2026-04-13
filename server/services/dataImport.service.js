@@ -181,9 +181,7 @@ function validateRows(rows) {
  */
 async function checkDuplicates(rows) {
   // 1. 收集需要查询的身份证号
-  const idCards = rows
-    .filter((r) => r.id_card)
-    .map((r) => r.id_card);
+  const idCards = rows.filter((r) => r.id_card).map((r) => r.id_card);
 
   // 2. 收集 name + birth_date 组合
   const nameDatePairs = rows
@@ -214,9 +212,7 @@ async function checkDuplicates(rows) {
 
   // 快速索引
   const idCardMap = new Map(existingByIdCard.map((p) => [p.id_card, p]));
-  const nameDateMap = new Map(
-    existingByNameDate.map((p) => [`${p.name}|${p.birth_date}`, p]),
-  );
+  const nameDateMap = new Map(existingByNameDate.map((p) => [`${p.name}|${p.birth_date}`, p]));
 
   // 4. 文件内部去重索引
   const internalIdCardSeen = new Map(); // id_card -> rowIndex
@@ -388,7 +384,7 @@ async function generateTemplate() {
   // 设置列宽
   const columnWidths = [
     { width: 10 }, // 姓名
-    { width: 8 },  // 性别
+    { width: 8 }, // 性别
     { width: 14 }, // 出生日期
     { width: 14 }, // 手机号
     { width: 22 }, // 身份证号

@@ -2,7 +2,14 @@
   <q-page class="q-pa-md app-gradient-page patient-insights-page">
     <div class="row items-center q-col-gutter-md q-mb-md">
       <div class="col-auto">
-        <q-btn flat round icon="arrow_back" color="grey-8" @click="goBack" aria-label="返回患者列表">
+        <q-btn
+          flat
+          round
+          icon="arrow_back"
+          color="grey-8"
+          @click="goBack"
+          aria-label="返回患者列表"
+        >
           <q-tooltip>返回患者列表</q-tooltip>
         </q-btn>
       </div>
@@ -47,723 +54,829 @@
 
       <!-- ====== 综合概览 Tab ====== -->
       <q-tab-panels v-model="activeTab" animated keep-alive>
-      <q-tab-panel name="overview" class="q-pa-none">
-      <div class="row q-col-gutter-md q-mb-md">
-        <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
-          <q-card flat bordered class="summary-card insight-card">
-            <q-card-section>
-              <div class="text-caption text-grey-7">病例总数</div>
-              <div class="text-h5 text-weight-bold">{{ overview?.summary.total_studies ?? 0 }}</div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
-          <q-card flat bordered class="summary-card insight-card">
-            <q-card-section>
-              <div class="text-caption text-grey-7">分析次数</div>
-              <div class="text-h5 text-weight-bold">{{ overview?.summary.total_analyses ?? 0 }}</div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
-          <q-card flat bordered class="summary-card insight-card">
-            <q-card-section>
-              <div class="text-caption text-grey-7">高风险次数</div>
-              <div class="text-h5 text-weight-bold text-negative">
-                {{ overview?.summary.high_risk_analyses ?? 0 }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12">
-          <q-card flat bordered class="summary-card insight-card">
-            <q-card-section>
-              <div class="text-caption text-grey-7">待执行随访</div>
-              <div class="text-h5 text-weight-bold">{{ overview?.summary.pending_followups ?? 0 }}</div>
-              <div class="text-caption text-negative">
-                逾期 {{ overview?.summary.overdue_followups ?? 0 }} 条
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-12 col-xs-12">
-          <q-card flat bordered class="summary-card insight-card">
-            <q-card-section>
-              <div class="text-caption text-grey-7">当前风险等级</div>
-              <div class="row items-center q-gutter-sm q-mt-xs">
-                <q-chip
-                  :color="getRiskColor(overview?.risk_profile.level)"
-                  text-color="white"
-                  dense
-                  class="text-weight-bold"
-                >
-                  {{ getRiskLabel(overview?.risk_profile.level) }}
-                </q-chip>
-                <span class="text-body2 text-grey-8">
-                  评分 {{ riskProfile?.score ?? overview?.risk_profile.score ?? 0 }}
-                </span>
-              </div>
-              <div class="text-caption q-mt-xs" :class="getTrendTextClass(overview?.risk_profile.trend)">
-                趋势：{{ getTrendLabel(overview?.risk_profile.trend) }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-      </div>
+        <q-tab-panel name="overview" class="q-pa-none">
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+              <q-card flat bordered class="summary-card insight-card">
+                <q-card-section>
+                  <div class="text-caption text-grey-7">病例总数</div>
+                  <div class="text-h5 text-weight-bold">
+                    {{ overview?.summary.total_studies ?? 0 }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+              <q-card flat bordered class="summary-card insight-card">
+                <q-card-section>
+                  <div class="text-caption text-grey-7">分析次数</div>
+                  <div class="text-h5 text-weight-bold">
+                    {{ overview?.summary.total_analyses ?? 0 }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+              <q-card flat bordered class="summary-card insight-card">
+                <q-card-section>
+                  <div class="text-caption text-grey-7">高风险次数</div>
+                  <div class="text-h5 text-weight-bold text-negative">
+                    {{ overview?.summary.high_risk_analyses ?? 0 }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12">
+              <q-card flat bordered class="summary-card insight-card">
+                <q-card-section>
+                  <div class="text-caption text-grey-7">待执行随访</div>
+                  <div class="text-h5 text-weight-bold">
+                    {{ overview?.summary.pending_followups ?? 0 }}
+                  </div>
+                  <div class="text-caption text-negative">
+                    逾期 {{ overview?.summary.overdue_followups ?? 0 }} 条
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 col-xs-12">
+              <q-card flat bordered class="summary-card insight-card">
+                <q-card-section>
+                  <div class="text-caption text-grey-7">当前风险等级</div>
+                  <div class="row items-center q-gutter-sm q-mt-xs">
+                    <q-chip
+                      :color="getRiskColor(overview?.risk_profile.level)"
+                      text-color="white"
+                      dense
+                      class="text-weight-bold"
+                    >
+                      {{ getRiskLabel(overview?.risk_profile.level) }}
+                    </q-chip>
+                    <span class="text-body2 text-grey-8">
+                      评分 {{ riskProfile?.score ?? overview?.risk_profile.score ?? 0 }}
+                    </span>
+                  </div>
+                  <div
+                    class="text-caption q-mt-xs"
+                    :class="getTrendTextClass(overview?.risk_profile.trend)"
+                  >
+                    趋势：{{ getTrendLabel(overview?.risk_profile.trend) }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
 
-      <div class="row q-col-gutter-md q-mb-md">
-        <div class="col-lg-5 col-12">
-          <q-card flat bordered class="insight-card">
-            <q-card-section class="row items-center">
-              <div class="text-subtitle1 text-weight-medium">F9 患者风险画像</div>
-              <q-space />
-              <q-btn
-                flat
-                dense
-                icon="restart_alt"
-                color="primary"
-                :loading="loading.riskProfile"
-                @click="refreshRiskProfile"
-                aria-label="刷新风险画像"
-              >
-                <q-tooltip>刷新风险画像</q-tooltip>
-              </q-btn>
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-lg-5 col-12">
+              <q-card flat bordered class="insight-card">
+                <q-card-section class="row items-center">
+                  <div class="text-subtitle1 text-weight-medium">F9 患者风险画像</div>
+                  <q-space />
+                  <q-btn
+                    flat
+                    dense
+                    icon="restart_alt"
+                    color="primary"
+                    :loading="loading.riskProfile"
+                    @click="refreshRiskProfile"
+                    aria-label="刷新风险画像"
+                  >
+                    <q-tooltip>刷新风险画像</q-tooltip>
+                  </q-btn>
+                </q-card-section>
+                <q-separator />
+                <q-card-section>
+                  <div class="row items-center q-col-gutter-md">
+                    <div class="col-auto">
+                      <div class="risk-gauge-shell">
+                        <q-circular-progress
+                          rounded
+                          show-value
+                          :value="riskProfile?.score || 0"
+                          size="122px"
+                          :thickness="0.24"
+                          :color="getRiskColor(riskProfile?.level)"
+                          track-color="grey-3"
+                          class="text-weight-bold risk-gauge"
+                        >
+                          {{ riskProfile?.score || 0 }}
+                        </q-circular-progress>
+                      </div>
+                    </div>
+                    <div class="col">
+                      <div class="text-body1 text-weight-bold">
+                        等级：{{ getRiskLabel(riskProfile?.level) }}
+                      </div>
+                      <div
+                        class="text-body2 q-mt-xs"
+                        :class="getTrendTextClass(riskProfile?.trend)"
+                      >
+                        趋势：{{ getTrendLabel(riskProfile?.trend) }}
+                      </div>
+                      <div class="text-caption text-grey-7 q-mt-sm">
+                        高风险占比：{{ formatPercent(riskProfile?.metrics.high_risk_ratio) }}
+                      </div>
+                      <div class="text-caption text-grey-7">
+                        最近分析：{{ formatDateTime(riskProfile?.metrics.latest_analysis_at) }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="q-mt-md">
+                    <div class="text-body2 text-weight-medium q-mb-sm">建议</div>
+                    <q-list dense bordered separator>
+                      <q-item
+                        v-for="(item, idx) in riskProfile?.suggestions || []"
+                        :key="`suggest-${idx}`"
+                      >
+                        <q-item-section avatar>
+                          <q-icon name="check_circle" color="primary" />
+                        </q-item-section>
+                        <q-item-section>{{ item }}</q-item-section>
+                      </q-item>
+                      <q-item v-if="!riskProfile?.suggestions?.length">
+                        <q-item-section class="text-grey-7">暂无建议</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+
+            <div class="col-lg-7 col-12">
+              <q-card flat bordered class="insight-card">
+                <q-card-section>
+                  <div class="text-subtitle1 text-weight-medium q-mb-sm">评分因子明细</div>
+                  <q-table
+                    flat
+                    dense
+                    :rows="riskProfile?.factors || []"
+                    :columns="riskFactorColumns"
+                    row-key="key"
+                    :pagination="{ rowsPerPage: 5 }"
+                  >
+                    <template v-slot:body-cell-value="props">
+                      <q-td :props="props">
+                        <q-chip
+                          v-if="props.row.key === 'latest_risk'"
+                          dense
+                          :color="getRiskColor(String(props.row.value))"
+                          text-color="white"
+                        >
+                          {{ getRiskLabel(String(props.row.value)) }}
+                        </q-chip>
+                        <span v-else>{{ props.row.value }}</span>
+                      </q-td>
+                    </template>
+                    <template v-slot:body-cell-description="props">
+                      <q-td :props="props" class="text-caption text-grey-8">
+                        {{ props.row.description }}
+                      </q-td>
+                    </template>
+                  </q-table>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
+
+          <q-card flat bordered class="q-mb-md insight-card">
+            <q-card-section class="row items-center q-col-gutter-sm">
+              <div class="col">
+                <div class="text-subtitle1 text-weight-medium">F2 检测历史趋势</div>
+              </div>
+              <div class="col-md-2 col-sm-4 col-xs-12">
+                <q-input v-model="historyDateFrom" dense outlined type="date" label="开始日期" />
+              </div>
+              <div class="col-md-2 col-sm-4 col-xs-12">
+                <q-input v-model="historyDateTo" dense outlined type="date" label="结束日期" />
+              </div>
+              <div class="col-auto">
+                <q-btn
+                  color="primary"
+                  label="筛选"
+                  :loading="loading.history"
+                  @click="applyHistoryFilters"
+                />
+              </div>
+              <div class="col-auto">
+                <q-btn flat color="grey-7" label="重置" @click="resetHistoryFilters" />
+              </div>
             </q-card-section>
             <q-separator />
             <q-card-section>
-              <div class="row items-center q-col-gutter-md">
-                <div class="col-auto">
-                  <div class="risk-gauge-shell">
-                    <q-circular-progress
-                      rounded
-                      show-value
-                      :value="riskProfile?.score || 0"
-                      size="122px"
-                      :thickness="0.24"
-                      :color="getRiskColor(riskProfile?.level)"
-                      track-color="grey-3"
-                      class="text-weight-bold risk-gauge"
-                    >
-                      {{ riskProfile?.score || 0 }}
-                    </q-circular-progress>
-                  </div>
+              <div ref="historyChartRef" class="history-chart"></div>
+              <div class="row q-col-gutter-md q-mt-md">
+                <div class="col-md-4 col-sm-6 col-xs-12">
+                  <q-banner rounded class="bg-blue-1 text-blue-9">
+                    检测总数：{{ history?.stats.total_detections ?? 0 }}
+                  </q-banner>
                 </div>
-                <div class="col">
-                  <div class="text-body1 text-weight-bold">
-                    等级：{{ getRiskLabel(riskProfile?.level) }}
-                  </div>
-                  <div class="text-body2 q-mt-xs" :class="getTrendTextClass(riskProfile?.trend)">
-                    趋势：{{ getTrendLabel(riskProfile?.trend) }}
-                  </div>
-                  <div class="text-caption text-grey-7 q-mt-sm">
-                    高风险占比：{{ formatPercent(riskProfile?.metrics.high_risk_ratio) }}
-                  </div>
-                  <div class="text-caption text-grey-7">
-                    最近分析：{{ formatDateTime(riskProfile?.metrics.latest_analysis_at) }}
-                  </div>
+                <div class="col-md-4 col-sm-6 col-xs-12">
+                  <q-banner rounded class="bg-green-1 text-green-9">
+                    平均置信度：{{ formatPercent(history?.stats.average_confidence) }}
+                  </q-banner>
                 </div>
-              </div>
-              <div class="q-mt-md">
-                <div class="text-body2 text-weight-medium q-mb-sm">建议</div>
-                <q-list dense bordered separator>
-                  <q-item v-for="(item, idx) in riskProfile?.suggestions || []" :key="`suggest-${idx}`">
-                    <q-item-section avatar>
-                      <q-icon name="check_circle" color="primary" />
-                    </q-item-section>
-                    <q-item-section>{{ item }}</q-item-section>
-                  </q-item>
-                  <q-item v-if="!riskProfile?.suggestions?.length">
-                    <q-item-section class="text-grey-7">暂无建议</q-item-section>
-                  </q-item>
-                </q-list>
+                <div class="col-md-4 col-sm-12 col-xs-12">
+                  <q-banner rounded :class="getTrendBannerClass(history?.stats.trend)">
+                    趋势：{{ getTrendLabel(history?.stats.trend) }}
+                  </q-banner>
+                </div>
               </div>
             </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-lg-7 col-12">
-          <q-card flat bordered class="insight-card">
+            <q-separator />
             <q-card-section>
-              <div class="text-subtitle1 text-weight-medium q-mb-sm">评分因子明细</div>
               <q-table
                 flat
-                dense
-                :rows="riskProfile?.factors || []"
-                :columns="riskFactorColumns"
-                row-key="key"
-                :pagination="{ rowsPerPage: 5 }"
+                :rows="history?.series || []"
+                :columns="historyColumns"
+                row-key="analysis_result_id"
+                :pagination="{ rowsPerPage: 8 }"
               >
-                <template v-slot:body-cell-value="props">
+                <template v-slot:body-cell-study_unique_id="props">
                   <q-td :props="props">
-                    <q-chip
-                      v-if="props.row.key === 'latest_risk'"
-                      dense
-                      :color="getRiskColor(String(props.row.value))"
-                      text-color="white"
-                    >
-                      {{ getRiskLabel(String(props.row.value)) }}
-                    </q-chip>
-                    <span v-else>{{ props.row.value }}</span>
+                    {{ getStudyDisplayLabel(props.row.study_id) }}
                   </q-td>
                 </template>
-                <template v-slot:body-cell-description="props">
-                  <q-td :props="props" class="text-caption text-grey-8">
-                    {{ props.row.description }}
+                <template v-slot:body-cell-risk_level="props">
+                  <q-td :props="props">
+                    <q-chip dense :color="getRiskColor(props.row.risk_level)" text-color="white">
+                      {{ getRiskLabel(props.row.risk_level) }}
+                    </q-chip>
                   </q-td>
+                </template>
+                <template v-slot:body-cell-confidence="props">
+                  <q-td :props="props">{{ formatPercent(props.row.confidence) }}</q-td>
+                </template>
+                <template v-slot:body-cell-analysis_at="props">
+                  <q-td :props="props">{{ formatDateTime(props.row.analysis_at) }}</q-td>
                 </template>
               </q-table>
             </q-card-section>
           </q-card>
-        </div>
-      </div>
 
-      <q-card flat bordered class="q-mb-md insight-card">
-        <q-card-section class="row items-center q-col-gutter-sm">
-          <div class="col">
-            <div class="text-subtitle1 text-weight-medium">F2 检测历史趋势</div>
-          </div>
-          <div class="col-md-2 col-sm-4 col-xs-12">
-            <q-input v-model="historyDateFrom" dense outlined type="date" label="开始日期" />
-          </div>
-          <div class="col-md-2 col-sm-4 col-xs-12">
-            <q-input v-model="historyDateTo" dense outlined type="date" label="结束日期" />
-          </div>
-          <div class="col-auto">
-            <q-btn color="primary" label="筛选" :loading="loading.history" @click="applyHistoryFilters" />
-          </div>
-          <div class="col-auto">
-            <q-btn flat color="grey-7" label="重置" @click="resetHistoryFilters" />
-          </div>
-        </q-card-section>
-        <q-separator />
-        <q-card-section>
-          <div ref="historyChartRef" class="history-chart"></div>
-          <div class="row q-col-gutter-md q-mt-md">
-            <div class="col-md-4 col-sm-6 col-xs-12">
-              <q-banner rounded class="bg-blue-1 text-blue-9">
-                检测总数：{{ history?.stats.total_detections ?? 0 }}
-              </q-banner>
-            </div>
-            <div class="col-md-4 col-sm-6 col-xs-12">
-              <q-banner rounded class="bg-green-1 text-green-9">
-                平均置信度：{{ formatPercent(history?.stats.average_confidence) }}
-              </q-banner>
-            </div>
-            <div class="col-md-4 col-sm-12 col-xs-12">
-              <q-banner rounded :class="getTrendBannerClass(history?.stats.trend)">
-                趋势：{{ getTrendLabel(history?.stats.trend) }}
-              </q-banner>
-            </div>
-          </div>
-        </q-card-section>
-        <q-separator />
-        <q-card-section>
-          <q-table
-            flat
-            :rows="history?.series || []"
-            :columns="historyColumns"
-            row-key="analysis_result_id"
-            :pagination="{ rowsPerPage: 8 }"
-          >
-            <template v-slot:body-cell-study_unique_id="props">
-              <q-td :props="props">
-                {{ getStudyDisplayLabel(props.row.study_id) }}
-              </q-td>
-            </template>
-            <template v-slot:body-cell-risk_level="props">
-              <q-td :props="props">
-                <q-chip dense :color="getRiskColor(props.row.risk_level)" text-color="white">
-                  {{ getRiskLabel(props.row.risk_level) }}
-                </q-chip>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-confidence="props">
-              <q-td :props="props">{{ formatPercent(props.row.confidence) }}</q-td>
-            </template>
-            <template v-slot:body-cell-analysis_at="props">
-              <q-td :props="props">{{ formatDateTime(props.row.analysis_at) }}</q-td>
-            </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
-
-      <q-card flat bordered class="q-mb-md insight-card">
-        <q-card-section class="row items-center q-col-gutter-sm">
-          <div class="col">
-            <div class="text-subtitle1 text-weight-medium">检查结果对比</div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-select
-              v-model="leftStudyId"
-              dense
-              outlined
-              emit-value
-              map-options
-              :options="compareStudyOptions"
-              label="对比项 A"
-            />
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-select
-              v-model="rightStudyId"
-              dense
-              outlined
-              emit-value
-              map-options
-              :options="compareStudyOptions"
-              label="对比项 B"
-            />
-          </div>
-          <div class="col-auto">
-            <q-btn
-              color="primary"
-              label="开始对比"
-              :loading="loading.compare"
-              :disable="!canCompare"
-              @click="runCompare"
-            />
-          </div>
-        </q-card-section>
-        <q-separator />
-        <q-card-section v-if="compareResult">
-          <div class="row q-col-gutter-md">
-            <div class="col-md-6 col-12">
-              <q-card flat bordered class="compare-card">
-                <q-card-section class="text-subtitle2 text-weight-medium">
-                  A：{{ getStudyDisplayLabel(compareResult.left.study_id) }}
-                </q-card-section>
-                <q-separator />
-                <q-card-section>
-                  <div>检查日期：{{ formatDate(compareResult.left.study_date) }}</div>
-                  <div>诊断结论：{{ compareResult.left.diagnosis || '-' }}</div>
-                  <div>
-                    风险等级：
-                    <q-chip dense :color="getRiskColor(compareResult.left.risk_level)" text-color="white">
-                      {{ getRiskLabel(compareResult.left.risk_level) }}
-                    </q-chip>
-                  </div>
-                  <div>置信度：{{ formatPercent(compareResult.left.confidence) }}</div>
-                </q-card-section>
-              </q-card>
-            </div>
-            <div class="col-md-6 col-12">
-              <q-card flat bordered class="compare-card">
-                <q-card-section class="text-subtitle2 text-weight-medium">
-                  B：{{ getStudyDisplayLabel(compareResult.right.study_id) }}
-                </q-card-section>
-                <q-separator />
-                <q-card-section>
-                  <div>检查日期：{{ formatDate(compareResult.right.study_date) }}</div>
-                  <div>诊断结论：{{ compareResult.right.diagnosis || '-' }}</div>
-                  <div>
-                    风险等级：
-                    <q-chip dense :color="getRiskColor(compareResult.right.risk_level)" text-color="white">
-                      {{ getRiskLabel(compareResult.right.risk_level) }}
-                    </q-chip>
-                  </div>
-                  <div>置信度：{{ formatPercent(compareResult.right.confidence) }}</div>
-                </q-card-section>
-              </q-card>
-            </div>
-          </div>
-          <div class="q-mt-md">
-            <q-banner rounded class="bg-grey-2 text-grey-9">
-              <div class="text-body2">
-                风险变化：
-                <strong>{{ compareResult.diff.risk_delta > 0 ? '+' : '' }}{{ compareResult.diff.risk_delta }}</strong>
-                ，置信度变化：
-                <strong>
-                  {{ compareResult.diff.confidence_delta > 0 ? '+' : '' }}{{
-                    (compareResult.diff.confidence_delta * 100).toFixed(2)
-                  }}%
-                </strong>
+          <q-card flat bordered class="q-mb-md insight-card">
+            <q-card-section class="row items-center q-col-gutter-sm">
+              <div class="col">
+                <div class="text-subtitle1 text-weight-medium">检查结果对比</div>
               </div>
-              <div class="text-caption q-mt-xs">
-                结论变化：{{ compareResult.diff.diagnosis_changed ? '是' : '否' }}
-              </div>
-              <div class="q-mt-sm">
-                <q-chip
-                  v-for="(item, idx) in compareResult.diff.summary"
-                  :key="`compare-summary-${idx}`"
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <q-select
+                  v-model="leftStudyId"
                   dense
-                  color="primary"
-                  text-color="white"
-                  class="q-mr-xs q-mb-xs"
-                >
-                  {{ item }}
-                </q-chip>
-              </div>
-            </q-banner>
-          </div>
-        </q-card-section>
-        <q-card-section v-else class="text-grey-7">选择两次检查后可查看变化差异。</q-card-section>
-      </q-card>
-
-      <q-card flat bordered class="insight-card">
-        <q-card-section class="row items-center q-col-gutter-sm">
-          <div class="col">
-            <div class="text-subtitle1 text-weight-medium">F8 患者时间线</div>
-          </div>
-          <div class="col-auto">
-            <q-btn-toggle
-              v-model="timelineViewMode"
-              unelevated
-              toggle-color="primary"
-              color="grey-3"
-              text-color="grey-8"
-              :options="timelineModeOptions"
-            />
-          </div>
-          <div class="col-md-2 col-sm-4 col-xs-12">
-            <q-select
-              v-model="timelineLimit"
-              dense
-              outlined
-              emit-value
-              map-options
-              :options="timelineLimitOptions"
-              label="每页条数"
-              @update:model-value="changeTimelineLimit"
-            />
-          </div>
-          <div class="col-md-2 col-sm-4 col-xs-12">
-            <q-input v-model="timelineDateFrom" dense outlined type="date" label="开始日期" />
-          </div>
-          <div class="col-md-2 col-sm-4 col-xs-12">
-            <q-input v-model="timelineDateTo" dense outlined type="date" label="结束日期" />
-          </div>
-          <div class="col-auto">
-            <q-btn color="primary" label="筛选" :loading="loading.timeline" @click="applyTimelineFilters" />
-          </div>
-          <div class="col-auto">
-            <q-btn flat color="grey-7" label="重置" @click="resetTimelineFilters" />
-          </div>
-        </q-card-section>
-        <q-separator />
-        <q-card-section>
-          <div class="timeline-toolbar row items-center justify-between q-mb-sm">
-            <div class="text-caption text-grey-7">
-              当前页显示 {{ filteredTimelineItems.length }} 条
-            </div>
-          </div>
-
-          <div class="timeline-scroll">
-            <q-timeline color="primary" layout="comfortable">
-              <q-timeline-entry
-                v-for="item in filteredTimelineItems"
-                :key="item.event_id"
-                :title="getCompactTimelineTitle(item)"
-                :subtitle="formatDateTime(item.event_time)"
-                :icon="getEventIcon(item.event_type)"
-                :color="getTimelineEventColor(item)"
-              >
-                <div class="text-body2 timeline-desc">
-                  {{ getCompactTimelineDescription(item) }}
-                </div>
-                <div class="q-mt-xs">
-                  <q-chip v-if="item.risk_level" dense :color="getRiskColor(item.risk_level)" text-color="white">
-                    {{ getRiskLabel(item.risk_level) }}
-                  </q-chip>
-                  <q-chip v-if="item.status" dense color="grey-6" text-color="white">
-                    {{ getStatusLabel(item.status) }}
-                  </q-chip>
-                </div>
-              </q-timeline-entry>
-              <div v-if="!filteredTimelineItems.length" class="text-grey-7">暂无时间线事件</div>
-            </q-timeline>
-          </div>
-
-          <div class="row justify-end q-mt-md">
-            <q-pagination
-              v-if="timeline?.pagination.pages && timeline.pagination.pages > 1"
-              :model-value="timeline.pagination.page"
-              :max="timeline.pagination.pages"
-              :max-pages="8"
-              direction-links
-              boundary-links
-              color="primary"
-              @update:model-value="changeTimelinePage"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
-      </q-tab-panel>
-
-      <!-- ====== 疾病预警 Tab ====== -->
-      <q-tab-panel name="diseaseAlert" class="q-pa-none">
-        <q-card flat bordered class="q-mb-md insight-card">
-          <q-card-section class="row items-center">
-            <div class="text-subtitle1 text-weight-medium">疾病进展预警</div>
-            <q-space />
-            <q-btn
-              flat dense icon="refresh" color="primary"
-              :loading="loading.diseaseAlert"
-              @click="refreshDiseaseAlert"
-              aria-label="刷新预警"
-            >
-              <q-tooltip>刷新疾病预警</q-tooltip>
-            </q-btn>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <!-- 预警级别展示 -->
-            <div class="row items-center q-gutter-md q-mb-lg">
-              <div class="col-auto">
-                <q-icon
-                  :name="getAlertIcon(diseaseAlert?.alertLevel)"
-                  :color="getAlertColor(diseaseAlert?.alertLevel)"
-                  size="56px"
+                  outlined
+                  emit-value
+                  map-options
+                  :options="compareStudyOptions"
+                  label="对比项 A"
                 />
               </div>
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <q-select
+                  v-model="rightStudyId"
+                  dense
+                  outlined
+                  emit-value
+                  map-options
+                  :options="compareStudyOptions"
+                  label="对比项 B"
+                />
+              </div>
+              <div class="col-auto">
+                <q-btn
+                  color="primary"
+                  label="开始对比"
+                  :loading="loading.compare"
+                  :disable="!canCompare"
+                  @click="runCompare"
+                />
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section v-if="compareResult">
+              <div class="row q-col-gutter-md">
+                <div class="col-md-6 col-12">
+                  <q-card flat bordered class="compare-card">
+                    <q-card-section class="text-subtitle2 text-weight-medium">
+                      A：{{ getStudyDisplayLabel(compareResult.left.study_id) }}
+                    </q-card-section>
+                    <q-separator />
+                    <q-card-section>
+                      <div>检查日期：{{ formatDate(compareResult.left.study_date) }}</div>
+                      <div>诊断结论：{{ compareResult.left.diagnosis || '-' }}</div>
+                      <div>
+                        风险等级：
+                        <q-chip
+                          dense
+                          :color="getRiskColor(compareResult.left.risk_level)"
+                          text-color="white"
+                        >
+                          {{ getRiskLabel(compareResult.left.risk_level) }}
+                        </q-chip>
+                      </div>
+                      <div>置信度：{{ formatPercent(compareResult.left.confidence) }}</div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+                <div class="col-md-6 col-12">
+                  <q-card flat bordered class="compare-card">
+                    <q-card-section class="text-subtitle2 text-weight-medium">
+                      B：{{ getStudyDisplayLabel(compareResult.right.study_id) }}
+                    </q-card-section>
+                    <q-separator />
+                    <q-card-section>
+                      <div>检查日期：{{ formatDate(compareResult.right.study_date) }}</div>
+                      <div>诊断结论：{{ compareResult.right.diagnosis || '-' }}</div>
+                      <div>
+                        风险等级：
+                        <q-chip
+                          dense
+                          :color="getRiskColor(compareResult.right.risk_level)"
+                          text-color="white"
+                        >
+                          {{ getRiskLabel(compareResult.right.risk_level) }}
+                        </q-chip>
+                      </div>
+                      <div>置信度：{{ formatPercent(compareResult.right.confidence) }}</div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+              </div>
+              <div class="q-mt-md">
+                <q-banner rounded class="bg-grey-2 text-grey-9">
+                  <div class="text-body2">
+                    风险变化：
+                    <strong
+                      >{{ compareResult.diff.risk_delta > 0 ? '+' : ''
+                      }}{{ compareResult.diff.risk_delta }}</strong
+                    >
+                    ，置信度变化：
+                    <strong>
+                      {{ compareResult.diff.confidence_delta > 0 ? '+' : ''
+                      }}{{ (compareResult.diff.confidence_delta * 100).toFixed(2) }}%
+                    </strong>
+                  </div>
+                  <div class="text-caption q-mt-xs">
+                    结论变化：{{ compareResult.diff.diagnosis_changed ? '是' : '否' }}
+                  </div>
+                  <div class="q-mt-sm">
+                    <q-chip
+                      v-for="(item, idx) in compareResult.diff.summary"
+                      :key="`compare-summary-${idx}`"
+                      dense
+                      color="primary"
+                      text-color="white"
+                      class="q-mr-xs q-mb-xs"
+                    >
+                      {{ item }}
+                    </q-chip>
+                  </div>
+                </q-banner>
+              </div>
+            </q-card-section>
+            <q-card-section v-else class="text-grey-7"
+              >选择两次检查后可查看变化差异。</q-card-section
+            >
+          </q-card>
+
+          <q-card flat bordered class="insight-card">
+            <q-card-section class="row items-center q-col-gutter-sm">
               <div class="col">
-                <div class="text-h6 text-weight-bold" :class="`text-${getAlertColor(diseaseAlert?.alertLevel)}`">
-                  {{ getAlertLabel(diseaseAlert?.alertLevel) }}
-                </div>
-                <div class="text-body2 text-grey-7">
-                  趋势：{{ getDiseaseTrendLabel(diseaseAlert?.trend) }}
+                <div class="text-subtitle1 text-weight-medium">F8 患者时间线</div>
+              </div>
+              <div class="col-auto">
+                <q-btn-toggle
+                  v-model="timelineViewMode"
+                  unelevated
+                  toggle-color="primary"
+                  color="grey-3"
+                  text-color="grey-8"
+                  :options="timelineModeOptions"
+                />
+              </div>
+              <div class="col-md-2 col-sm-4 col-xs-12">
+                <q-select
+                  v-model="timelineLimit"
+                  dense
+                  outlined
+                  emit-value
+                  map-options
+                  :options="timelineLimitOptions"
+                  label="每页条数"
+                  @update:model-value="changeTimelineLimit"
+                />
+              </div>
+              <div class="col-md-2 col-sm-4 col-xs-12">
+                <q-input v-model="timelineDateFrom" dense outlined type="date" label="开始日期" />
+              </div>
+              <div class="col-md-2 col-sm-4 col-xs-12">
+                <q-input v-model="timelineDateTo" dense outlined type="date" label="结束日期" />
+              </div>
+              <div class="col-auto">
+                <q-btn
+                  color="primary"
+                  label="筛选"
+                  :loading="loading.timeline"
+                  @click="applyTimelineFilters"
+                />
+              </div>
+              <div class="col-auto">
+                <q-btn flat color="grey-7" label="重置" @click="resetTimelineFilters" />
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              <div class="timeline-toolbar row items-center justify-between q-mb-sm">
+                <div class="text-caption text-grey-7">
+                  当前页显示 {{ filteredTimelineItems.length }} 条
                 </div>
               </div>
-            </div>
 
-            <!-- 历史趋势图 -->
-            <div ref="diseaseChartRef" class="history-chart q-mb-md"></div>
+              <div class="timeline-scroll">
+                <q-timeline color="primary" layout="comfortable">
+                  <q-timeline-entry
+                    v-for="item in filteredTimelineItems"
+                    :key="item.event_id"
+                    :title="getCompactTimelineTitle(item)"
+                    :subtitle="formatDateTime(item.event_time)"
+                    :icon="getEventIcon(item.event_type)"
+                    :color="getTimelineEventColor(item)"
+                  >
+                    <div class="text-body2 timeline-desc">
+                      {{ getCompactTimelineDescription(item) }}
+                    </div>
+                    <div class="q-mt-xs">
+                      <q-chip
+                        v-if="item.risk_level"
+                        dense
+                        :color="getRiskColor(item.risk_level)"
+                        text-color="white"
+                      >
+                        {{ getRiskLabel(item.risk_level) }}
+                      </q-chip>
+                      <q-chip v-if="item.status" dense color="grey-6" text-color="white">
+                        {{ getStatusLabel(item.status) }}
+                      </q-chip>
+                    </div>
+                  </q-timeline-entry>
+                  <div v-if="!filteredTimelineItems.length" class="text-grey-7">暂无时间线事件</div>
+                </q-timeline>
+              </div>
 
-            <!-- 预警事件时间轴 -->
-            <div v-if="diseaseAlert?.alerts?.length" class="q-mb-md">
-              <div class="text-body2 text-weight-medium q-mb-sm">预警事件</div>
-              <q-timeline color="orange" layout="comfortable">
-                <q-timeline-entry
-                  v-for="(alert, idx) in diseaseAlert.alerts"
-                  :key="`alert-${idx}`"
-                  :title="getAlertTypeLabel(alert.type)"
-                  :icon="getAlertTypeIcon(alert.type)"
-                  :color="getAlertTypeColor(alert.type)"
-                >
-                  <div class="text-body2">{{ alert.message }}</div>
-                </q-timeline-entry>
-              </q-timeline>
-            </div>
-            <q-banner v-else rounded class="bg-green-1 text-green-9 q-mb-md">
-              当前无预警事件，患者状态良好。
-            </q-banner>
+              <div class="row justify-end q-mt-md">
+                <q-pagination
+                  v-if="timeline?.pagination.pages && timeline.pagination.pages > 1"
+                  :model-value="timeline.pagination.page"
+                  :max="timeline.pagination.pages"
+                  :max-pages="8"
+                  direction-links
+                  boundary-links
+                  color="primary"
+                  @update:model-value="changeTimelinePage"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-tab-panel>
 
-            <!-- 预测建议 -->
-            <q-card flat bordered class="insight-card" v-if="diseaseAlert?.prediction">
-              <q-card-section>
-                <div class="text-body2 text-weight-medium q-mb-xs">
-                  <q-icon name="lightbulb" color="amber" class="q-mr-xs" />预测建议
+        <!-- ====== 疾病预警 Tab ====== -->
+        <q-tab-panel name="diseaseAlert" class="q-pa-none">
+          <q-card flat bordered class="q-mb-md insight-card">
+            <q-card-section class="row items-center">
+              <div class="text-subtitle1 text-weight-medium">疾病进展预警</div>
+              <q-space />
+              <q-btn
+                flat
+                dense
+                icon="refresh"
+                color="primary"
+                :loading="loading.diseaseAlert"
+                @click="refreshDiseaseAlert"
+                aria-label="刷新预警"
+              >
+                <q-tooltip>刷新疾病预警</q-tooltip>
+              </q-btn>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              <!-- 预警级别展示 -->
+              <div class="row items-center q-gutter-md q-mb-lg">
+                <div class="col-auto">
+                  <q-icon
+                    :name="getAlertIcon(diseaseAlert?.alertLevel)"
+                    :color="getAlertColor(diseaseAlert?.alertLevel)"
+                    size="56px"
+                  />
                 </div>
-                <div class="text-body2 text-grey-8">{{ diseaseAlert.prediction }}</div>
-              </q-card-section>
-            </q-card>
-          </q-card-section>
-        </q-card>
-      </q-tab-panel>
-
-      <!-- ====== 对比分析 Tab ====== -->
-      <q-tab-panel name="comparison" class="q-pa-none">
-        <q-card flat bordered class="q-mb-md insight-card">
-          <q-card-section class="row items-center q-col-gutter-sm">
-            <div class="col">
-              <div class="text-subtitle1 text-weight-medium">多时段对比分析</div>
-            </div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <div class="row q-col-gutter-md q-mb-md">
-              <div class="col-md-6 col-12">
-                <div class="text-body2 text-weight-medium q-mb-sm">时段 A</div>
-                <div class="row q-col-gutter-sm">
-                  <div class="col-6">
-                    <q-input v-model="periodAStart" dense outlined type="date" label="开始日期" />
+                <div class="col">
+                  <div
+                    class="text-h6 text-weight-bold"
+                    :class="`text-${getAlertColor(diseaseAlert?.alertLevel)}`"
+                  >
+                    {{ getAlertLabel(diseaseAlert?.alertLevel) }}
                   </div>
-                  <div class="col-6">
-                    <q-input v-model="periodAEnd" dense outlined type="date" label="结束日期" />
+                  <div class="text-body2 text-grey-7">
+                    趋势：{{ getDiseaseTrendLabel(diseaseAlert?.trend) }}
                   </div>
                 </div>
               </div>
-              <div class="col-md-6 col-12">
-                <div class="text-body2 text-weight-medium q-mb-sm">时段 B</div>
-                <div class="row q-col-gutter-sm">
-                  <div class="col-6">
-                    <q-input v-model="periodBStart" dense outlined type="date" label="开始日期" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model="periodBEnd" dense outlined type="date" label="结束日期" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <q-btn
-              color="primary" label="开始对比"
-              :loading="loading.comparison"
-              :disable="!canRunComparison"
-              @click="runComparison"
-              class="q-mb-md"
-            />
 
-            <!-- 对比结果 -->
-            <template v-if="comparisonResult">
+              <!-- 历史趋势图 -->
+              <div ref="diseaseChartRef" class="history-chart q-mb-md"></div>
+
+              <!-- 预警事件时间轴 -->
+              <div v-if="diseaseAlert?.alerts?.length" class="q-mb-md">
+                <div class="text-body2 text-weight-medium q-mb-sm">预警事件</div>
+                <q-timeline color="orange" layout="comfortable">
+                  <q-timeline-entry
+                    v-for="(alert, idx) in diseaseAlert.alerts"
+                    :key="`alert-${idx}`"
+                    :title="getAlertTypeLabel(alert.type)"
+                    :icon="getAlertTypeIcon(alert.type)"
+                    :color="getAlertTypeColor(alert.type)"
+                  >
+                    <div class="text-body2">{{ alert.message }}</div>
+                  </q-timeline-entry>
+                </q-timeline>
+              </div>
+              <q-banner v-else rounded class="bg-green-1 text-green-9 q-mb-md">
+                当前无预警事件，患者状态良好。
+              </q-banner>
+
+              <!-- 预测建议 -->
+              <q-card flat bordered class="insight-card" v-if="diseaseAlert?.prediction">
+                <q-card-section>
+                  <div class="text-body2 text-weight-medium q-mb-xs">
+                    <q-icon name="lightbulb" color="amber" class="q-mr-xs" />预测建议
+                  </div>
+                  <div class="text-body2 text-grey-8">{{ diseaseAlert.prediction }}</div>
+                </q-card-section>
+              </q-card>
+            </q-card-section>
+          </q-card>
+        </q-tab-panel>
+
+        <!-- ====== 对比分析 Tab ====== -->
+        <q-tab-panel name="comparison" class="q-pa-none">
+          <q-card flat bordered class="q-mb-md insight-card">
+            <q-card-section class="row items-center q-col-gutter-sm">
+              <div class="col">
+                <div class="text-subtitle1 text-weight-medium">多时段对比分析</div>
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
               <div class="row q-col-gutter-md q-mb-md">
                 <div class="col-md-6 col-12">
-                  <q-card flat bordered class="compare-card">
-                    <q-card-section class="text-subtitle2 text-weight-medium">时段 A</q-card-section>
-                    <q-separator />
-                    <q-card-section>
-                      <div>检查次数：{{ comparisonResult.periodA.count }}</div>
-                      <div>平均置信度：{{ formatPercent(comparisonResult.periodA.avgConfidence) }}</div>
-                      <div>
-                        主要风险：
-                        <q-chip dense :color="getRiskColor(comparisonResult.periodA.dominantRisk)" text-color="white">
-                          {{ getRiskLabel(comparisonResult.periodA.dominantRisk) }}
-                        </q-chip>
-                      </div>
-                    </q-card-section>
-                  </q-card>
+                  <div class="text-body2 text-weight-medium q-mb-sm">时段 A</div>
+                  <div class="row q-col-gutter-sm">
+                    <div class="col-6">
+                      <q-input v-model="periodAStart" dense outlined type="date" label="开始日期" />
+                    </div>
+                    <div class="col-6">
+                      <q-input v-model="periodAEnd" dense outlined type="date" label="结束日期" />
+                    </div>
+                  </div>
                 </div>
                 <div class="col-md-6 col-12">
-                  <q-card flat bordered class="compare-card">
-                    <q-card-section class="text-subtitle2 text-weight-medium">时段 B</q-card-section>
-                    <q-separator />
-                    <q-card-section>
-                      <div>检查次数：{{ comparisonResult.periodB.count }}</div>
-                      <div>平均置信度：{{ formatPercent(comparisonResult.periodB.avgConfidence) }}</div>
-                      <div>
-                        主要风险：
-                        <q-chip dense :color="getRiskColor(comparisonResult.periodB.dominantRisk)" text-color="white">
-                          {{ getRiskLabel(comparisonResult.periodB.dominantRisk) }}
-                        </q-chip>
-                      </div>
-                    </q-card-section>
-                  </q-card>
-                </div>
-              </div>
-
-              <!-- 变化指标 -->
-              <q-banner rounded class="bg-grey-2 text-grey-9">
-                <div class="text-body2">
-                  风险变化：
-                  <q-chip
-                    dense
-                    :color="comparisonResult.changes.riskChange === 'improved' ? 'positive' : comparisonResult.changes.riskChange === 'worsened' ? 'negative' : 'grey-6'"
-                    text-color="white"
-                  >
-                    {{ comparisonResult.changes.riskChange === 'improved' ? '↓ 改善' : comparisonResult.changes.riskChange === 'worsened' ? '↑ 恶化' : '- 稳定' }}
-                  </q-chip>
-                </div>
-                <div class="text-body2 q-mt-sm">
-                  置信度变化：
-                  <strong :class="comparisonResult.changes.confidenceChange > 0 ? 'text-positive' : comparisonResult.changes.confidenceChange < 0 ? 'text-negative' : 'text-grey-8'">
-                    {{ comparisonResult.changes.confidenceChange > 0 ? '+' : '' }}{{ (comparisonResult.changes.confidenceChange * 100).toFixed(2) }}%
-                  </strong>
-                </div>
-                <div v-if="comparisonResult.changes.diagnosisChanges.length" class="text-body2 q-mt-sm">
-                  新增诊断：
-                  <q-chip
-                    v-for="(d, idx) in comparisonResult.changes.diagnosisChanges"
-                    :key="`diag-change-${idx}`"
-                    dense color="orange" text-color="white" class="q-mr-xs"
-                  >{{ d }}</q-chip>
-                </div>
-              </q-banner>
-            </template>
-            <div v-else class="text-grey-7">请选择两个时段后点击“开始对比”查看差异。</div>
-          </q-card-section>
-        </q-card>
-      </q-tab-panel>
-
-      <!-- ====== 风险因素 Tab ====== -->
-      <q-tab-panel name="riskFactors" class="q-pa-none">
-        <q-card flat bordered class="q-mb-md insight-card">
-          <q-card-section class="row items-center">
-            <div class="text-subtitle1 text-weight-medium">个性化风险因素分析</div>
-            <q-space />
-            <q-btn
-              flat dense icon="refresh" color="primary"
-              :loading="loading.riskFactors"
-              @click="refreshRiskFactors"
-              aria-label="刷新风险因素"
-            >
-              <q-tooltip>刷新风险因素分析</q-tooltip>
-            </q-btn>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <div class="row q-col-gutter-lg">
-              <!-- 雷达图 + 综合评分 -->
-              <div class="col-lg-5 col-12">
-                <div class="text-center q-mb-md">
-                  <div class="text-caption text-grey-7">综合风险评分</div>
-                  <div
-                    class="text-h3 text-weight-bold q-my-sm"
-                    :class="`text-${getRiskScoreColor(riskFactorsData?.overallScore)}`"
-                  >
-                    {{ riskFactorsData?.overallScore ?? '-' }}
+                  <div class="text-body2 text-weight-medium q-mb-sm">时段 B</div>
+                  <div class="row q-col-gutter-sm">
+                    <div class="col-6">
+                      <q-input v-model="periodBStart" dense outlined type="date" label="开始日期" />
+                    </div>
+                    <div class="col-6">
+                      <q-input v-model="periodBEnd" dense outlined type="date" label="结束日期" />
+                    </div>
                   </div>
-                  <q-chip
-                    dense
-                    :color="getRiskScoreColor(riskFactorsData?.overallScore)"
-                    text-color="white"
-                  >
-                    {{ getRiskScoreLabel(riskFactorsData?.overallScore) }}
-                  </q-chip>
                 </div>
-                <div ref="radarChartRef" class="radar-chart"></div>
               </div>
+              <q-btn
+                color="primary"
+                label="开始对比"
+                :loading="loading.comparison"
+                :disable="!canRunComparison"
+                @click="runComparison"
+                class="q-mb-md"
+              />
 
-              <!-- 风险因子列表 -->
-              <div class="col-lg-7 col-12">
-                <div class="text-body2 text-weight-medium q-mb-sm">风险因子明细</div>
-                <q-list bordered separator class="rounded-borders">
-                  <q-item v-for="factor in riskFactorsData?.factors || []" :key="factor.name">
-                    <q-item-section avatar>
-                      <q-circular-progress
-                        :value="factor.score"
-                        size="42px"
-                        :thickness="0.22"
-                        :color="getRiskColor(factor.level)"
-                        track-color="grey-3"
-                        show-value
-                        class="text-caption text-weight-bold"
+              <!-- 对比结果 -->
+              <template v-if="comparisonResult">
+                <div class="row q-col-gutter-md q-mb-md">
+                  <div class="col-md-6 col-12">
+                    <q-card flat bordered class="compare-card">
+                      <q-card-section class="text-subtitle2 text-weight-medium"
+                        >时段 A</q-card-section
                       >
-                        {{ factor.score }}
-                      </q-circular-progress>
-                    </q-item-section>
-                    <q-item-section>
-                      <q-item-label>
-                        {{ factor.name }}
-                        <q-chip dense flat :color="getRiskColor(factor.level)" text-color="white" class="q-ml-xs" style="font-size: 10px">
-                          {{ getRiskLabel(factor.level) }}
-                        </q-chip>
-                      </q-item-label>
-                      <q-item-label caption>{{ factor.description }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                      <q-item-label caption>权重 {{ factor.weight }}%</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                  <q-item v-if="!riskFactorsData?.factors?.length">
-                    <q-item-section class="text-grey-7">暂无风险因素数据</q-item-section>
-                  </q-item>
-                </q-list>
+                      <q-separator />
+                      <q-card-section>
+                        <div>检查次数：{{ comparisonResult.periodA.count }}</div>
+                        <div>
+                          平均置信度：{{ formatPercent(comparisonResult.periodA.avgConfidence) }}
+                        </div>
+                        <div>
+                          主要风险：
+                          <q-chip
+                            dense
+                            :color="getRiskColor(comparisonResult.periodA.dominantRisk)"
+                            text-color="white"
+                          >
+                            {{ getRiskLabel(comparisonResult.periodA.dominantRisk) }}
+                          </q-chip>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                  <div class="col-md-6 col-12">
+                    <q-card flat bordered class="compare-card">
+                      <q-card-section class="text-subtitle2 text-weight-medium"
+                        >时段 B</q-card-section
+                      >
+                      <q-separator />
+                      <q-card-section>
+                        <div>检查次数：{{ comparisonResult.periodB.count }}</div>
+                        <div>
+                          平均置信度：{{ formatPercent(comparisonResult.periodB.avgConfidence) }}
+                        </div>
+                        <div>
+                          主要风险：
+                          <q-chip
+                            dense
+                            :color="getRiskColor(comparisonResult.periodB.dominantRisk)"
+                            text-color="white"
+                          >
+                            {{ getRiskLabel(comparisonResult.periodB.dominantRisk) }}
+                          </q-chip>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                </div>
 
-                <!-- 个性化建议 -->
-                <div class="q-mt-md" v-if="riskFactorsData?.recommendations?.length">
-                  <div class="text-body2 text-weight-medium q-mb-sm">个性化建议</div>
-                  <q-list dense bordered separator>
-                    <q-item v-for="(rec, idx) in riskFactorsData.recommendations" :key="`rec-${idx}`">
+                <!-- 变化指标 -->
+                <q-banner rounded class="bg-grey-2 text-grey-9">
+                  <div class="text-body2">
+                    风险变化：
+                    <q-chip
+                      dense
+                      :color="
+                        comparisonResult.changes.riskChange === 'improved'
+                          ? 'positive'
+                          : comparisonResult.changes.riskChange === 'worsened'
+                            ? 'negative'
+                            : 'grey-6'
+                      "
+                      text-color="white"
+                    >
+                      {{
+                        comparisonResult.changes.riskChange === 'improved'
+                          ? '↓ 改善'
+                          : comparisonResult.changes.riskChange === 'worsened'
+                            ? '↑ 恶化'
+                            : '- 稳定'
+                      }}
+                    </q-chip>
+                  </div>
+                  <div class="text-body2 q-mt-sm">
+                    置信度变化：
+                    <strong
+                      :class="
+                        comparisonResult.changes.confidenceChange > 0
+                          ? 'text-positive'
+                          : comparisonResult.changes.confidenceChange < 0
+                            ? 'text-negative'
+                            : 'text-grey-8'
+                      "
+                    >
+                      {{ comparisonResult.changes.confidenceChange > 0 ? '+' : ''
+                      }}{{ (comparisonResult.changes.confidenceChange * 100).toFixed(2) }}%
+                    </strong>
+                  </div>
+                  <div
+                    v-if="comparisonResult.changes.diagnosisChanges.length"
+                    class="text-body2 q-mt-sm"
+                  >
+                    新增诊断：
+                    <q-chip
+                      v-for="(d, idx) in comparisonResult.changes.diagnosisChanges"
+                      :key="`diag-change-${idx}`"
+                      dense
+                      color="orange"
+                      text-color="white"
+                      class="q-mr-xs"
+                      >{{ d }}</q-chip
+                    >
+                  </div>
+                </q-banner>
+              </template>
+              <div v-else class="text-grey-7">请选择两个时段后点击“开始对比”查看差异。</div>
+            </q-card-section>
+          </q-card>
+        </q-tab-panel>
+
+        <!-- ====== 风险因素 Tab ====== -->
+        <q-tab-panel name="riskFactors" class="q-pa-none">
+          <q-card flat bordered class="q-mb-md insight-card">
+            <q-card-section class="row items-center">
+              <div class="text-subtitle1 text-weight-medium">个性化风险因素分析</div>
+              <q-space />
+              <q-btn
+                flat
+                dense
+                icon="refresh"
+                color="primary"
+                :loading="loading.riskFactors"
+                @click="refreshRiskFactors"
+                aria-label="刷新风险因素"
+              >
+                <q-tooltip>刷新风险因素分析</q-tooltip>
+              </q-btn>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              <div class="row q-col-gutter-lg">
+                <!-- 雷达图 + 综合评分 -->
+                <div class="col-lg-5 col-12">
+                  <div class="text-center q-mb-md">
+                    <div class="text-caption text-grey-7">综合风险评分</div>
+                    <div
+                      class="text-h3 text-weight-bold q-my-sm"
+                      :class="`text-${getRiskScoreColor(riskFactorsData?.overallScore)}`"
+                    >
+                      {{ riskFactorsData?.overallScore ?? '-' }}
+                    </div>
+                    <q-chip
+                      dense
+                      :color="getRiskScoreColor(riskFactorsData?.overallScore)"
+                      text-color="white"
+                    >
+                      {{ getRiskScoreLabel(riskFactorsData?.overallScore) }}
+                    </q-chip>
+                  </div>
+                  <div ref="radarChartRef" class="radar-chart"></div>
+                </div>
+
+                <!-- 风险因子列表 -->
+                <div class="col-lg-7 col-12">
+                  <div class="text-body2 text-weight-medium q-mb-sm">风险因子明细</div>
+                  <q-list bordered separator class="rounded-borders">
+                    <q-item v-for="factor in riskFactorsData?.factors || []" :key="factor.name">
                       <q-item-section avatar>
-                        <q-icon name="tips_and_updates" color="amber-8" />
+                        <q-circular-progress
+                          :value="factor.score"
+                          size="42px"
+                          :thickness="0.22"
+                          :color="getRiskColor(factor.level)"
+                          track-color="grey-3"
+                          show-value
+                          class="text-caption text-weight-bold"
+                        >
+                          {{ factor.score }}
+                        </q-circular-progress>
                       </q-item-section>
-                      <q-item-section>{{ rec }}</q-item-section>
+                      <q-item-section>
+                        <q-item-label>
+                          {{ factor.name }}
+                          <q-chip
+                            dense
+                            flat
+                            :color="getRiskColor(factor.level)"
+                            text-color="white"
+                            class="q-ml-xs"
+                            style="font-size: 10px"
+                          >
+                            {{ getRiskLabel(factor.level) }}
+                          </q-chip>
+                        </q-item-label>
+                        <q-item-label caption>{{ factor.description }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-item-label caption>权重 {{ factor.weight }}%</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item v-if="!riskFactorsData?.factors?.length">
+                      <q-item-section class="text-grey-7">暂无风险因素数据</q-item-section>
                     </q-item>
                   </q-list>
+
+                  <!-- 个性化建议 -->
+                  <div class="q-mt-md" v-if="riskFactorsData?.recommendations?.length">
+                    <div class="text-body2 text-weight-medium q-mb-sm">个性化建议</div>
+                    <q-list dense bordered separator>
+                      <q-item
+                        v-for="(rec, idx) in riskFactorsData.recommendations"
+                        :key="`rec-${idx}`"
+                      >
+                        <q-item-section avatar>
+                          <q-icon name="tips_and_updates" color="amber-8" />
+                        </q-item-section>
+                        <q-item-section>{{ rec }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
                 </div>
               </div>
-            </div>
-          </q-card-section>
-        </q-card>
-      </q-tab-panel>
+            </q-card-section>
+          </q-card>
+        </q-tab-panel>
       </q-tab-panels>
     </template>
   </q-page>
@@ -778,10 +891,7 @@ import { storeToRefs } from 'pinia';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 import { usePatientInsightsStore } from 'stores/patientInsightsStore';
-import type {
-  PatientInsightTimelineEvent,
-  PatientInsightTrend,
-} from 'src/services/api';
+import type { PatientInsightTimelineEvent, PatientInsightTrend } from 'src/services/api';
 
 const $q = useQuasar();
 const router = useRouter();
@@ -1030,11 +1140,7 @@ async function loadInitialData() {
     timelineDateTo.value = insightsStore.timelineFilters.date_to || '';
     timelineLimit.value = insightsStore.timelineFilters.limit || 12;
     initCompareSelection();
-    if (
-      leftStudyId.value &&
-      rightStudyId.value &&
-      leftStudyId.value !== rightStudyId.value
-    ) {
+    if (leftStudyId.value && rightStudyId.value && leftStudyId.value !== rightStudyId.value) {
       try {
         await insightsStore.fetchCompare(patientId.value, leftStudyId.value, rightStudyId.value);
       } catch {
@@ -1061,7 +1167,8 @@ function initCompareSelection() {
   }
 
   leftStudyId.value = compareStudyOptions.value[0]?.value ?? null;
-  rightStudyId.value = compareStudyOptions.value[compareStudyOptions.value.length - 1]?.value ?? null;
+  rightStudyId.value =
+    compareStudyOptions.value[compareStudyOptions.value.length - 1]?.value ?? null;
 }
 
 async function applyHistoryFilters() {
@@ -1410,12 +1517,22 @@ function updateDiseaseChart() {
     ],
     series: [
       {
-        name: '风险权重', type: 'line', smooth: true, data: riskData,
-        itemStyle: { color: '#ef4444' }, lineStyle: { width: 2 }, yAxisIndex: 0,
+        name: '风险权重',
+        type: 'line',
+        smooth: true,
+        data: riskData,
+        itemStyle: { color: '#ef4444' },
+        lineStyle: { width: 2 },
+        yAxisIndex: 0,
       },
       {
-        name: '置信度(%)', type: 'line', smooth: true, data: confData,
-        itemStyle: { color: '#2563eb' }, lineStyle: { width: 2 }, yAxisIndex: 1,
+        name: '置信度(%)',
+        type: 'line',
+        smooth: true,
+        data: confData,
+        itemStyle: { color: '#2563eb' },
+        lineStyle: { width: 2 },
+        yAxisIndex: 1,
       },
     ],
   };
@@ -1507,14 +1624,18 @@ watch(activeTab, async (tab) => {
       await nextTick();
       initDiseaseChart();
       updateDiseaseChart();
-    } catch { /* 非关键错误不阻断 */ }
+    } catch {
+      /* 非关键错误不阻断 */
+    }
   } else if (tab === 'riskFactors' && !riskFactorsData.value) {
     try {
       await insightsStore.fetchRiskFactors(patientId.value);
       await nextTick();
       initRadarChart();
       updateRadarChart();
-    } catch { /* 非关键错误不阻断 */ }
+    } catch {
+      /* 非关键错误不阻断 */
+    }
   }
 });
 

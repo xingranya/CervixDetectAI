@@ -191,7 +191,7 @@ router.get('/monitor', authenticate, async (req, res) => {
           total: totalMem,
           free: freeMem,
           used: totalMem - freeMem,
-          usagePercent: ((totalMem - freeMem) / totalMem * 100).toFixed(1),
+          usagePercent: (((totalMem - freeMem) / totalMem) * 100).toFixed(1),
           process: {
             rss: processMemory.rss,
             heapTotal: processMemory.heapTotal,

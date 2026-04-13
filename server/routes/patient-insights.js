@@ -43,7 +43,10 @@ router.get('/:patientId/overview', authenticate, async (req, res) => {
       data: overview,
     });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/overview' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/overview',
+    });
   }
 });
 
@@ -72,7 +75,10 @@ router.get('/:patientId/history', authenticate, async (req, res) => {
       data: history,
     });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/history' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/history',
+    });
   }
 });
 
@@ -106,7 +112,10 @@ router.get('/:patientId/compare', authenticate, async (req, res) => {
       data: compare,
     });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/compare' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/compare',
+    });
   }
 });
 
@@ -136,7 +145,10 @@ router.get('/:patientId/timeline', authenticate, async (req, res) => {
       data: timeline,
     });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/timeline' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/timeline',
+    });
   }
 });
 
@@ -160,7 +172,10 @@ router.get('/:patientId/risk-profile', authenticate, async (req, res) => {
       data: riskProfile,
     });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/risk-profile' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/risk-profile',
+    });
   }
 });
 
@@ -181,7 +196,10 @@ router.get('/:patientId/disease-alert', authenticate, async (req, res) => {
     const result = await predictDiseaseProgression(patientId);
     return res.json({ success: true, data: result });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/disease-alert' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/disease-alert',
+    });
   }
 });
 
@@ -204,7 +222,10 @@ router.get('/:patientId/comparison', authenticate, async (req, res) => {
     const result = await crossPeriodComparison(patientId, periodA, periodB);
     return res.json({ success: true, data: result });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/comparison' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/comparison',
+    });
   }
 });
 
@@ -225,7 +246,10 @@ router.get('/:patientId/risk-factors', authenticate, async (req, res) => {
     const result = await analyzeRiskFactors(patientId);
     return res.json({ success: true, data: result });
   } catch (error) {
-    return handleRouteError(res, error, { service: 'PatientInsights', endpoint: 'GET /:patientId/risk-factors' });
+    return handleRouteError(res, error, {
+      service: 'PatientInsights',
+      endpoint: 'GET /:patientId/risk-factors',
+    });
   }
 });
 

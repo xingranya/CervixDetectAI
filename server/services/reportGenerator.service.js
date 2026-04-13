@@ -278,7 +278,10 @@ async function generatePDF(studyId, template) {
       .fontSize(8)
       .fillColor('#999999')
       .text(template.footer, 50, doc.y, { align: 'center', width: 495 });
-    doc.text(`报告生成时间：${new Date().toLocaleString('zh-CN')}`, { align: 'center', width: 495 });
+    doc.text(`报告生成时间：${new Date().toLocaleString('zh-CN')}`, {
+      align: 'center',
+      width: 495,
+    });
 
     doc.end();
 
@@ -330,9 +333,7 @@ async function generateWord(studyId, template) {
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
   const filePath = path.join(outputDir, fileName);
 
-  const studyDate = study.study_date
-    ? new Date(study.study_date).toLocaleDateString('zh-CN')
-    : '-';
+  const studyDate = study.study_date ? new Date(study.study_date).toLocaleDateString('zh-CN') : '-';
   const confidence = analysisResult?.confidence
     ? `${Math.round(Number(analysisResult.confidence) * 100)}%`
     : '-';
@@ -370,7 +371,11 @@ async function generateWord(studyId, template) {
 
   // 检查信息
   sections.push(
-    new Paragraph({ text: '二、检查信息', heading: HeadingLevel.HEADING_2, spacing: { before: 300 } }),
+    new Paragraph({
+      text: '二、检查信息',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 300 },
+    }),
     new Table({
       rows: [
         createKVRow('检查类型', study.study_type),
@@ -384,7 +389,11 @@ async function generateWord(studyId, template) {
 
   // 分析结果
   sections.push(
-    new Paragraph({ text: '三、AI分析结果', heading: HeadingLevel.HEADING_2, spacing: { before: 300 } }),
+    new Paragraph({
+      text: '三、AI分析结果',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 300 },
+    }),
   );
 
   if (analysisResult) {
@@ -402,7 +411,11 @@ async function generateWord(studyId, template) {
     // 临床建议
     if (analysisResult.recommendations?.length > 0) {
       sections.push(
-        new Paragraph({ text: '四、临床建议', heading: HeadingLevel.HEADING_2, spacing: { before: 300 } }),
+        new Paragraph({
+          text: '四、临床建议',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 300 },
+        }),
       );
       for (const rec of analysisResult.recommendations) {
         sections.push(
@@ -417,7 +430,11 @@ async function generateWord(studyId, template) {
     // 详细报告
     if (analysisResult.detailed_report) {
       sections.push(
-        new Paragraph({ text: '五、详细病理报告', heading: HeadingLevel.HEADING_2, spacing: { before: 300 } }),
+        new Paragraph({
+          text: '五、详细病理报告',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 300 },
+        }),
         new Paragraph({
           children: [new TextRun({ text: analysisResult.detailed_report, size: 20 })],
         }),
@@ -498,9 +515,7 @@ async function generateExcel(studyId) {
   };
   ws1.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
 
-  const studyDate = study.study_date
-    ? new Date(study.study_date).toLocaleDateString('zh-CN')
-    : '-';
+  const studyDate = study.study_date ? new Date(study.study_date).toLocaleDateString('zh-CN') : '-';
 
   const infoRows = [
     { key: '姓名', value: patient?.name || '-' },

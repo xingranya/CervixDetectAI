@@ -11,7 +11,14 @@ const { AuditLog } = require('../models');
  * @param {object|null} params.details - 操作详情
  * @param {object} params.req - Express请求对象（用于提取IP和UA）
  */
-async function logAudit({ userId, action, resourceType, resourceId = null, details = null, req = null }) {
+async function logAudit({
+  userId,
+  action,
+  resourceType,
+  resourceId = null,
+  details = null,
+  req = null,
+}) {
   try {
     await AuditLog.create({
       user_id: userId,

@@ -83,7 +83,9 @@
           <q-badge color="green" floating>{{ completedCount }}</q-badge>
         </q-tab>
         <q-tab name="processing" label="处理中" icon="hourglass_empty">
-          <q-badge v-if="processingCount > 0" color="orange" floating>{{ processingCount }}</q-badge>
+          <q-badge v-if="processingCount > 0" color="orange" floating>{{
+            processingCount
+          }}</q-badge>
         </q-tab>
         <q-tab name="failed" label="失败" icon="error">
           <q-badge v-if="failedCount > 0" color="red" floating>{{ failedCount }}</q-badge>
@@ -478,10 +480,7 @@ watch(
   ([page, rowsPerPage]) => {
     if (syncingFromRoute.value) return;
 
-    if (
-      queryState.value.page === page &&
-      queryState.value.rowsPerPage === rowsPerPage
-    ) {
+    if (queryState.value.page === page && queryState.value.rowsPerPage === rowsPerPage) {
       return;
     }
 
@@ -494,12 +493,11 @@ watch(
 );
 
 watch(
-  () =>
-    ({
-      rowsNumber: filteredStudies.value.length,
-      currentPage: queryState.value.page,
-      rowsPerPage: pagination.value?.rowsPerPage ?? DEFAULT_STUDIES_QUERY_STATE.rowsPerPage,
-    }),
+  () => ({
+    rowsNumber: filteredStudies.value.length,
+    currentPage: queryState.value.page,
+    rowsPerPage: pagination.value?.rowsPerPage ?? DEFAULT_STUDIES_QUERY_STATE.rowsPerPage,
+  }),
   ({ rowsNumber, currentPage, rowsPerPage }) => {
     const maxPage = Math.max(1, Math.ceil(rowsNumber / rowsPerPage));
     const nextPage = Math.min(currentPage, maxPage);
@@ -619,7 +617,9 @@ const handleBatchAnalyze = () => {
         const failedItems = items.filter((item: BatchOperationItem) => item.status !== 'PENDING');
         if (failedItems.length > 0) {
           const failedDetails = failedItems
-            .map((item: BatchOperationItem) => `病例 ${item.study_id}: ${item.error || item.status}`)
+            .map(
+              (item: BatchOperationItem) => `病例 ${item.study_id}: ${item.error || item.status}`,
+            )
             .join('\n');
           $q.notify({
             type: 'warning',
@@ -700,7 +700,10 @@ const handleBatchReview = () => {
     void (async () => {
       try {
         batchReviewing.value = true;
-        const result = await batchAPI.batchReview({ study_ids: studyIds, review_status: 'reviewed' });
+        const result = await batchAPI.batchReview({
+          study_ids: studyIds,
+          review_status: 'reviewed',
+        });
         const { summary, items } = result.data;
 
         // 显示操作结果

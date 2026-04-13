@@ -7,7 +7,11 @@ const { User, UserAvatar, EmailCode } = require('../models');
 const emailService = require('../services/email.service');
 const { uploadBufferToTucang } = require('../services/tucang.service');
 const { authenticate, authorize } = require('../middleware/auth');
-const { CODE_EXPIRE_MINUTES, SEND_INTERVAL_SECONDS, MAX_DAILY_SEND_COUNT } = require('../constants/verification');
+const {
+  CODE_EXPIRE_MINUTES,
+  SEND_INTERVAL_SECONDS,
+  MAX_DAILY_SEND_COUNT,
+} = require('../constants/verification');
 const { validateEmail } = require('../utils/validators');
 const { checkSendInterval, checkDailyLimit } = require('../utils/rateLimiter');
 const { handleRouteError } = require('../utils/errorHandler');
@@ -159,7 +163,11 @@ router.post('/me/email/send-code', authenticate, async (req, res) => {
 
     // 频率限制：检查发送间隔
     const intervalResult = await checkSendInterval(
-      EmailCode, 'email', normalizedEmail, SEND_INTERVAL_SECONDS, { type: 'change_email' },
+      EmailCode,
+      'email',
+      normalizedEmail,
+      SEND_INTERVAL_SECONDS,
+      { type: 'change_email' },
     );
     if (!intervalResult.allowed) {
       return res.status(429).json({
@@ -171,7 +179,11 @@ router.post('/me/email/send-code', authenticate, async (req, res) => {
 
     // 频率限制：检查每日发送上限
     const dailyResult = await checkDailyLimit(
-      EmailCode, 'email', normalizedEmail, MAX_DAILY_SEND_COUNT, { type: 'change_email' },
+      EmailCode,
+      'email',
+      normalizedEmail,
+      MAX_DAILY_SEND_COUNT,
+      { type: 'change_email' },
     );
     if (!dailyResult.allowed) {
       return res.status(429).json({
@@ -255,7 +267,11 @@ router.post('/me/email/confirm', authenticate, async (req, res) => {
       });
     }
 
-    const validCode = await EmailCode.findValidCode(normalizedEmail, normalizedCode, 'change_email');
+    const validCode = await EmailCode.findValidCode(
+      normalizedEmail,
+      normalizedCode,
+      'change_email',
+    );
     if (!validCode) {
       return res.status(400).json({
         success: false,
@@ -349,7 +365,9 @@ router.post('/me/avatar', authenticate, uploadAvatar.single('avatar'), async (re
     });
     const avatarUrl = uploadedAvatar.url;
 
-    const metadata = await sharp(req.file.buffer).metadata().catch(() => null);
+    const metadata = await sharp(req.file.buffer)
+      .metadata()
+      .catch(() => null);
 
     // 保存到数据库
     const avatar = await UserAvatar.create({

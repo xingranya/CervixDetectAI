@@ -325,7 +325,11 @@ router.get('/', authenticate, async (req, res) => {
     const { count, rows } = await MedicalReport.findAndCountAll({
       where,
       include: [
-        { model: Study, as: 'study', attributes: ['id', 'study_id', 'study_type', 'study_date', 'status'] },
+        {
+          model: Study,
+          as: 'study',
+          attributes: ['id', 'study_id', 'study_type', 'study_date', 'status'],
+        },
         { model: Patient, as: 'patient', attributes: ['id', 'patient_id', 'name', 'gender'] },
         { model: User, as: 'generator', attributes: ['id', 'username', 'real_name'] },
       ],

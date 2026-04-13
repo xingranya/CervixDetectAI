@@ -15,7 +15,9 @@
       <div class="col-md-3 col-sm-6 col-xs-12">
         <q-card flat bordered>
           <q-card-section class="text-center">
-            <div class="text-h4 text-primary">{{ statistics?.completionRate ?? '-' }}<span class="text-subtitle1">%</span></div>
+            <div class="text-h4 text-primary">
+              {{ statistics?.completionRate ?? '-' }}<span class="text-subtitle1">%</span>
+            </div>
             <div class="text-caption text-grey-7">完成率</div>
           </q-card-section>
         </q-card>
@@ -39,7 +41,9 @@
       <div class="col-md-3 col-sm-6 col-xs-12">
         <q-card flat bordered>
           <q-card-section class="text-center">
-            <div class="text-h4 text-grey-8">{{ statistics?.avgCompletionDays ?? 0 }}<span class="text-subtitle1">天</span></div>
+            <div class="text-h4 text-grey-8">
+              {{ statistics?.avgCompletionDays ?? 0 }}<span class="text-subtitle1">天</span>
+            </div>
             <div class="text-caption text-grey-7">平均完成周期</div>
           </q-card-section>
         </q-card>
@@ -47,7 +51,14 @@
     </div>
 
     <!-- 标签页切换 -->
-    <q-tabs v-model="activeTab" class="q-mb-md text-primary" active-color="primary" indicator-color="primary" dense align="left">
+    <q-tabs
+      v-model="activeTab"
+      class="q-mb-md text-primary"
+      active-color="primary"
+      indicator-color="primary"
+      dense
+      align="left"
+    >
       <q-tab name="list" label="随访列表" icon="list" />
       <q-tab name="stats" label="统计报表" icon="bar_chart" />
     </q-tabs>
@@ -55,185 +66,199 @@
     <q-tab-panels v-model="activeTab" animated>
       <!-- 列表面板 -->
       <q-tab-panel name="list" class="q-pa-none">
-
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section class="q-py-sm">
-        <div class="row q-col-gutter-md items-center">
-          <div class="col-md-3 col-sm-6 col-xs-12">
-            <q-input
-              v-model="filters.keyword"
-              outlined
-              dense
-              clearable
-              placeholder="患者姓名/编号/随访编号"
-              @keyup.enter="applyFilters"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" />
-              </template>
-            </q-input>
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12">
-            <q-select
-              v-model="filters.status"
-              :options="statusFilterOptions"
-              outlined
-              dense
-              emit-value
-              map-options
-              label="状态"
-            />
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12">
-            <q-select
-              v-model="filters.highAttention"
-              :options="highAttentionFilterOptions"
-              outlined
-              dense
-              emit-value
-              map-options
-              label="重点关注"
-            />
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12">
-            <q-input v-model="filters.dateFrom" outlined dense label="开始日期" type="date" />
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12">
-            <q-input v-model="filters.dateTo" outlined dense label="结束日期" type="date" />
-          </div>
-          <div class="col-auto">
-            <q-btn color="primary" label="筛选" @click="applyFilters" />
-          </div>
-          <div class="col-auto">
-            <q-btn flat color="grey-7" label="重置" @click="resetFilters" />
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section class="row items-center">
-        <div class="text-subtitle1 text-weight-medium">提醒渠道设置</div>
-        <q-space />
-        <q-toggle
-          v-model="emailReminderEnabled"
-          disable
-          checked-icon="email"
-          unchecked-icon="email"
-          color="primary"
-          label="邮件提醒（即将上线）"
-        />
-      </q-card-section>
-    </q-card>
-
-    <q-card flat bordered>
-      <q-card-section class="q-pa-none">
-        <q-table
-          :rows="rows"
-          :columns="columns"
-          row-key="id"
-          :loading="loading"
-          v-model:pagination="pagination"
-          @request="onTableRequest"
-        >
-          <template v-slot:body-cell-patient="props">
-            <q-td :props="props">
-              <div class="text-weight-medium">{{ props.row.patient?.name || '-' }}</div>
-              <div class="text-caption text-grey-7">{{ props.row.patient?.patient_id || '-' }}</div>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-risk_level_snapshot="props">
-            <q-td :props="props">
-              <q-chip dense :color="getRiskColor(props.row.risk_level_snapshot)" text-color="white">
-                {{ getRiskText(props.row.risk_level_snapshot) }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-is_high_attention="props">
-            <q-td :props="props">
-              <q-chip
-                dense
-                :color="props.row.is_high_attention ? 'deep-orange' : 'grey-6'"
-                text-color="white"
-              >
-                {{ props.row.is_high_attention ? '重点关注' : '常规' }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-status="props">
-            <q-td :props="props">
-              <q-chip dense :color="getStatusColor(props.row.status)" text-color="white">
-                {{ getStatusText(props.row.status) }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn flat dense round icon="edit" color="primary" @click="openEditDialog(props.row)" aria-label="编辑">
-                <q-tooltip>编辑</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                icon="priority_high"
-                :color="props.row.doctor_marked_high_attention ? 'deep-orange' : 'grey-7'"
-                @click="toggleDoctorAttention(props.row)"
-              >
-                <q-tooltip>{{
-                  props.row.doctor_marked_high_attention ? '取消医生重点标记' : '标记医生重点关注'
-                }}</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                icon="notifications_active"
-                color="teal"
-                @click="sendReminder(props.row)"
-              >
-                <q-tooltip>立即发送提醒</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                icon="task_alt"
-                color="positive"
-                :disable="props.row.status === 'completed' || props.row.status === 'cancelled'"
-                @click="markComplete(props.row)"
-              >
-                <q-tooltip>标记完成</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                icon="cancel"
-                color="negative"
-                :disable="props.row.status === 'completed' || props.row.status === 'cancelled'"
-                @click="markCancelled(props.row)"
-              >
-                <q-tooltip>取消计划</q-tooltip>
-              </q-btn>
-            </q-td>
-          </template>
-
-          <template v-slot:no-data>
-            <div class="full-width column flex-center q-pa-lg text-grey-6">
-              <q-icon name="event_note" size="56px" />
-              <div class="text-h6 q-mt-sm">暂无随访计划</div>
-              <div class="text-body2">点击右上角“新建随访计划”开始管理复查任务</div>
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="q-py-sm">
+            <div class="row q-col-gutter-md items-center">
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <q-input
+                  v-model="filters.keyword"
+                  outlined
+                  dense
+                  clearable
+                  placeholder="患者姓名/编号/随访编号"
+                  @keyup.enter="applyFilters"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-md-2 col-sm-6 col-xs-12">
+                <q-select
+                  v-model="filters.status"
+                  :options="statusFilterOptions"
+                  outlined
+                  dense
+                  emit-value
+                  map-options
+                  label="状态"
+                />
+              </div>
+              <div class="col-md-2 col-sm-6 col-xs-12">
+                <q-select
+                  v-model="filters.highAttention"
+                  :options="highAttentionFilterOptions"
+                  outlined
+                  dense
+                  emit-value
+                  map-options
+                  label="重点关注"
+                />
+              </div>
+              <div class="col-md-2 col-sm-6 col-xs-12">
+                <q-input v-model="filters.dateFrom" outlined dense label="开始日期" type="date" />
+              </div>
+              <div class="col-md-2 col-sm-6 col-xs-12">
+                <q-input v-model="filters.dateTo" outlined dense label="结束日期" type="date" />
+              </div>
+              <div class="col-auto">
+                <q-btn color="primary" label="筛选" @click="applyFilters" />
+              </div>
+              <div class="col-auto">
+                <q-btn flat color="grey-7" label="重置" @click="resetFilters" />
+              </div>
             </div>
-          </template>
-        </q-table>
-      </q-card-section>
-    </q-card>
+          </q-card-section>
+        </q-card>
 
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="row items-center">
+            <div class="text-subtitle1 text-weight-medium">提醒渠道设置</div>
+            <q-space />
+            <q-toggle
+              v-model="emailReminderEnabled"
+              disable
+              checked-icon="email"
+              unchecked-icon="email"
+              color="primary"
+              label="邮件提醒（即将上线）"
+            />
+          </q-card-section>
+        </q-card>
+
+        <q-card flat bordered>
+          <q-card-section class="q-pa-none">
+            <q-table
+              :rows="rows"
+              :columns="columns"
+              row-key="id"
+              :loading="loading"
+              v-model:pagination="pagination"
+              @request="onTableRequest"
+            >
+              <template v-slot:body-cell-patient="props">
+                <q-td :props="props">
+                  <div class="text-weight-medium">{{ props.row.patient?.name || '-' }}</div>
+                  <div class="text-caption text-grey-7">
+                    {{ props.row.patient?.patient_id || '-' }}
+                  </div>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-risk_level_snapshot="props">
+                <q-td :props="props">
+                  <q-chip
+                    dense
+                    :color="getRiskColor(props.row.risk_level_snapshot)"
+                    text-color="white"
+                  >
+                    {{ getRiskText(props.row.risk_level_snapshot) }}
+                  </q-chip>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-is_high_attention="props">
+                <q-td :props="props">
+                  <q-chip
+                    dense
+                    :color="props.row.is_high_attention ? 'deep-orange' : 'grey-6'"
+                    text-color="white"
+                  >
+                    {{ props.row.is_high_attention ? '重点关注' : '常规' }}
+                  </q-chip>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-status="props">
+                <q-td :props="props">
+                  <q-chip dense :color="getStatusColor(props.row.status)" text-color="white">
+                    {{ getStatusText(props.row.status) }}
+                  </q-chip>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="edit"
+                    color="primary"
+                    @click="openEditDialog(props.row)"
+                    aria-label="编辑"
+                  >
+                    <q-tooltip>编辑</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="priority_high"
+                    :color="props.row.doctor_marked_high_attention ? 'deep-orange' : 'grey-7'"
+                    @click="toggleDoctorAttention(props.row)"
+                  >
+                    <q-tooltip>{{
+                      props.row.doctor_marked_high_attention
+                        ? '取消医生重点标记'
+                        : '标记医生重点关注'
+                    }}</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="notifications_active"
+                    color="teal"
+                    @click="sendReminder(props.row)"
+                  >
+                    <q-tooltip>立即发送提醒</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="task_alt"
+                    color="positive"
+                    :disable="props.row.status === 'completed' || props.row.status === 'cancelled'"
+                    @click="markComplete(props.row)"
+                  >
+                    <q-tooltip>标记完成</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="cancel"
+                    color="negative"
+                    :disable="props.row.status === 'completed' || props.row.status === 'cancelled'"
+                    @click="markCancelled(props.row)"
+                  >
+                    <q-tooltip>取消计划</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+
+              <template v-slot:no-data>
+                <div class="full-width column flex-center q-pa-lg text-grey-6">
+                  <q-icon name="event_note" size="56px" />
+                  <div class="text-h6 q-mt-sm">暂无随访计划</div>
+                  <div class="text-body2">点击右上角“新建随访计划”开始管理复查任务</div>
+                </div>
+              </template>
+            </q-table>
+          </q-card-section>
+        </q-card>
       </q-tab-panel>
 
       <!-- 统计报表面板 -->
@@ -258,14 +283,20 @@
               <q-card-section>
                 <div class="text-subtitle1 text-weight-medium q-mb-md">医生工作量</div>
                 <q-list separator>
-                  <q-item v-for="doc in (statistics?.byDoctor || [])" :key="doc.doctorId">
+                  <q-item v-for="doc in statistics?.byDoctor || []" :key="doc.doctorId">
                     <q-item-section>
                       <q-item-label>{{ doc.doctorName }}</q-item-label>
-                      <q-item-label caption>总计 {{ doc.total }} 个随访，完成 {{ doc.completed }} 个</q-item-label>
+                      <q-item-label caption
+                        >总计 {{ doc.total }} 个随访，完成 {{ doc.completed }} 个</q-item-label
+                      >
                     </q-item-section>
                     <q-item-section side>
-                      <q-badge :color="doc.total > 0 && doc.completed / doc.total >= 0.8 ? 'positive' : 'warning'">
-                        {{ doc.total > 0 ? Math.round(doc.completed / doc.total * 100) : 0 }}%
+                      <q-badge
+                        :color="
+                          doc.total > 0 && doc.completed / doc.total >= 0.8 ? 'positive' : 'warning'
+                        "
+                      >
+                        {{ doc.total > 0 ? Math.round((doc.completed / doc.total) * 100) : 0 }}%
                       </q-badge>
                     </q-item-section>
                   </q-item>
@@ -332,17 +363,24 @@
               <div class="text-subtitle2 text-weight-medium">
                 <q-icon name="auto_awesome" color="amber" class="q-mr-xs" />
                 智能推荐模板
-                <q-chip dense size="sm" color="primary" text-color="white">{{ recommendSource }}</q-chip>
+                <q-chip dense size="sm" color="primary" text-color="white">{{
+                  recommendSource
+                }}</q-chip>
               </div>
               <q-card flat bordered class="q-mt-sm">
                 <q-card-section class="q-py-sm">
                   <div class="row items-center">
                     <div class="col">
-                      <div class="text-body2 text-weight-medium">{{ recommendedTemplate.name }}</div>
-                      <div class="text-caption text-grey-7">{{ recommendedTemplate.description }}</div>
+                      <div class="text-body2 text-weight-medium">
+                        {{ recommendedTemplate.name }}
+                      </div>
+                      <div class="text-caption text-grey-7">
+                        {{ recommendedTemplate.description }}
+                      </div>
                       <div class="text-caption text-grey-6 q-mt-xs">
-                        复查周期：{{ recommendedTemplate.interval_months }}个月 | 
-                        检查项：{{ recommendedTemplate.checklist.join('、') }}
+                        复查周期：{{ recommendedTemplate.interval_months }}个月 | 检查项：{{
+                          recommendedTemplate.checklist.join('、')
+                        }}
                       </div>
                     </div>
                     <div class="col-auto">
@@ -399,7 +437,12 @@
               />
             </div>
             <div class="col-md-6 col-xs-12">
-              <q-input v-model="form.planned_date" outlined label="计划复查日期（可选）" type="date" />
+              <q-input
+                v-model="form.planned_date"
+                outlined
+                label="计划复查日期（可选）"
+                type="date"
+              />
             </div>
             <div class="col-md-6 col-xs-12">
               <q-toggle
@@ -441,7 +484,12 @@
 
         <q-card-actions align="right">
           <q-btn flat label="取消" color="grey-7" v-close-popup />
-          <q-btn color="primary" :label="isEditing ? '保存' : '创建'" :loading="saving" @click="submitForm" />
+          <q-btn
+            color="primary"
+            :label="isEditing ? '保存' : '创建'"
+            :loading="saving"
+            @click="submitForm"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>

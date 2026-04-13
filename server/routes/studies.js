@@ -216,7 +216,9 @@ router.post('/:id/images', authenticate, uploadImages.array('images', 10), async
         }
       }),
     );
-    const responseImages = await Promise.all(images.map((img) => serializeStudyImageForResponse(img)));
+    const responseImages = await Promise.all(
+      images.map((img) => serializeStudyImageForResponse(img)),
+    );
 
     res.json({
       success: true,

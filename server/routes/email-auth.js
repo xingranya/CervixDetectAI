@@ -3,7 +3,11 @@ const express = require('express');
 const router = express.Router();
 const { EmailCode, User } = require('../models');
 const emailService = require('../services/email.service');
-const { CODE_EXPIRE_MINUTES, SEND_INTERVAL_SECONDS, MAX_DAILY_SEND_COUNT } = require('../constants/verification');
+const {
+  CODE_EXPIRE_MINUTES,
+  SEND_INTERVAL_SECONDS,
+  MAX_DAILY_SEND_COUNT,
+} = require('../constants/verification');
 const { validateEmail } = require('../utils/validators');
 const { checkSendInterval, checkDailyLimit } = require('../utils/rateLimiter');
 const { handleRouteError } = require('../utils/errorHandler');
@@ -62,7 +66,12 @@ router.post('/send-code', async (req, res) => {
     }
 
     // 频率限制：检查发送间隔
-    const intervalResult = await checkSendInterval(EmailCode, 'email', email, SEND_INTERVAL_SECONDS);
+    const intervalResult = await checkSendInterval(
+      EmailCode,
+      'email',
+      email,
+      SEND_INTERVAL_SECONDS,
+    );
     if (!intervalResult.allowed) {
       return res.status(429).json({
         success: false,
@@ -206,7 +215,11 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    const validCode = await EmailCode.findValidCode(normalizedEmail, normalizedCode, 'reset_password');
+    const validCode = await EmailCode.findValidCode(
+      normalizedEmail,
+      normalizedCode,
+      'reset_password',
+    );
     if (!validCode) {
       return res.status(400).json({
         success: false,

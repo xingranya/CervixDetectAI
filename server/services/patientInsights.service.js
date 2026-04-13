@@ -684,7 +684,9 @@ async function getPatientTimeline(patientId, options = {}) {
     return true;
   });
 
-  filteredEvents.sort((a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime());
+  filteredEvents.sort(
+    (a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime(),
+  );
 
   const total = filteredEvents.length;
   const pages = Math.max(Math.ceil(total / limit), 1);
@@ -718,7 +720,9 @@ async function getPatientRiskProfile(patientId) {
     critical: 35,
   };
 
-  const highRiskCount = series.filter((item) => ['high', 'critical'].includes(item.risk_level)).length;
+  const highRiskCount = series.filter((item) =>
+    ['high', 'critical'].includes(item.risk_level),
+  ).length;
   const highRiskRatio = series.length > 0 ? highRiskCount / series.length : 0;
   const highRiskRatioScore = Math.round(highRiskRatio * 25);
 
@@ -856,70 +860,78 @@ async function getPatientRiskProfile(patientId) {
 async function getPatientOverview(patientId) {
   const patient = await ensurePatientExists(patientId);
 
-  const [totalStudies, totalAnalyses, highRiskAnalyses, latestStudy, latestResult, pendingFollowups, overdueFollowups, riskProfile] =
-    await Promise.all([
-      Study.count({
-        where: { patient_id: patientId },
-      }),
-      AnalysisResult.count({
-        include: [
-          {
-            model: Study,
-            as: 'study',
-            required: true,
-            attributes: [],
-            where: { patient_id: patientId },
-          },
-        ],
-      }),
-      AnalysisResult.count({
-        where: {
-          risk_level: {
-            [Op.in]: ['high', 'critical'],
-          },
+  const [
+    totalStudies,
+    totalAnalyses,
+    highRiskAnalyses,
+    latestStudy,
+    latestResult,
+    pendingFollowups,
+    overdueFollowups,
+    riskProfile,
+  ] = await Promise.all([
+    Study.count({
+      where: { patient_id: patientId },
+    }),
+    AnalysisResult.count({
+      include: [
+        {
+          model: Study,
+          as: 'study',
+          required: true,
+          attributes: [],
+          where: { patient_id: patientId },
         },
-        include: [
-          {
-            model: Study,
-            as: 'study',
-            required: true,
-            attributes: [],
-            where: { patient_id: patientId },
-          },
-        ],
-      }),
-      Study.findOne({
-        where: { patient_id: patientId },
-        attributes: ['id', 'study_id', 'study_date', 'study_type', 'status', 'created_at'],
-        order: [['study_date', 'DESC']],
-      }),
-      AnalysisResult.findOne({
-        attributes: ['id', 'study_id', 'diagnosis', 'confidence', 'risk_level', 'created_at'],
-        include: [
-          {
-            model: Study,
-            as: 'study',
-            required: true,
-            attributes: ['id', 'study_id', 'study_date', 'study_type'],
-            where: { patient_id: patientId },
-          },
-        ],
-        order: [['created_at', 'DESC']],
-      }),
-      FollowUp.count({
-        where: {
-          patient_id: patientId,
-          status: 'pending',
+      ],
+    }),
+    AnalysisResult.count({
+      where: {
+        risk_level: {
+          [Op.in]: ['high', 'critical'],
         },
-      }),
-      FollowUp.count({
-        where: {
-          patient_id: patientId,
-          status: 'overdue',
+      },
+      include: [
+        {
+          model: Study,
+          as: 'study',
+          required: true,
+          attributes: [],
+          where: { patient_id: patientId },
         },
-      }),
-      getPatientRiskProfile(patientId),
-    ]);
+      ],
+    }),
+    Study.findOne({
+      where: { patient_id: patientId },
+      attributes: ['id', 'study_id', 'study_date', 'study_type', 'status', 'created_at'],
+      order: [['study_date', 'DESC']],
+    }),
+    AnalysisResult.findOne({
+      attributes: ['id', 'study_id', 'diagnosis', 'confidence', 'risk_level', 'created_at'],
+      include: [
+        {
+          model: Study,
+          as: 'study',
+          required: true,
+          attributes: ['id', 'study_id', 'study_date', 'study_type'],
+          where: { patient_id: patientId },
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    }),
+    FollowUp.count({
+      where: {
+        patient_id: patientId,
+        status: 'pending',
+      },
+    }),
+    FollowUp.count({
+      where: {
+        patient_id: patientId,
+        status: 'overdue',
+      },
+    }),
+    getPatientRiskProfile(patientId),
+  ]);
 
   const latestResultRaw = latestResult?.toJSON();
   const latestStudyRaw = latestStudy?.toJSON();
@@ -1181,7 +1193,9 @@ async function crossPeriodComparison(patientId, periodA, periodB) {
 
     // 出现次数最多的风险等级
     const riskCounts = { low: 0, medium: 0, high: 0, critical: 0 };
-    items.forEach((i) => { riskCounts[i.riskLevel] += 1; });
+    items.forEach((i) => {
+      riskCounts[i.riskLevel] += 1;
+    });
     const dominantRisk = Object.entries(riskCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'low';
 
     return { results: items, avgConfidence, dominantRisk, count: items.length };
@@ -1222,8 +1236,14 @@ async function crossPeriodComparison(patientId, periodA, periodB) {
 async function analyzeRiskFactors(patientId) {
   const patient = await Patient.findByPk(patientId, {
     attributes: [
-      'id', 'patient_id', 'name', 'gender', 'birth_date',
-      'sexual_history', 'family_history', 'medical_history',
+      'id',
+      'patient_id',
+      'name',
+      'gender',
+      'birth_date',
+      'sexual_history',
+      'family_history',
+      'medical_history',
     ],
   });
   if (!patient) {
@@ -1278,16 +1298,26 @@ async function analyzeRiskFactors(patientId) {
       (Date.now() - new Date(patientRaw.birth_date).getTime()) / (365.25 * 86400000),
     );
     if (age < 25) {
-      ageScore = 15; ageLevel = 'low'; ageDesc = `${age}岁，低龄段，宫颈病变风险相对较低`;
+      ageScore = 15;
+      ageLevel = 'low';
+      ageDesc = `${age}岁，低龄段，宫颈病变风险相对较低`;
     } else if (age <= 45) {
-      ageScore = 45; ageLevel = 'medium'; ageDesc = `${age}岁，处于宫颈癌高发年龄段`;
+      ageScore = 45;
+      ageLevel = 'medium';
+      ageDesc = `${age}岁，处于宫颈癌高发年龄段`;
     } else {
-      ageScore = 70; ageLevel = 'high'; ageDesc = `${age}岁，高龄段需持续关注`;
+      ageScore = 70;
+      ageLevel = 'high';
+      ageDesc = `${age}岁，高龄段需持续关注`;
     }
   }
   factors.push({
-    name: '年龄因素', category: '人口学', score: ageScore,
-    weight: 15, description: ageDesc, level: ageLevel,
+    name: '年龄因素',
+    category: '人口学',
+    score: ageScore,
+    weight: 15,
+    description: ageDesc,
+    level: ageLevel,
   });
 
   // —— 2. 性行为史（权重 20）——
@@ -1297,7 +1327,8 @@ async function analyzeRiskFactors(patientId) {
   let sexLevel = 'low';
   let sexDesc = '无特殊性行为史记录';
   if (highRiskSexual.includes(sexHistory)) {
-    sexScore = 75; sexLevel = 'high';
+    sexScore = 75;
+    sexLevel = 'high';
     const labelMap = {
       irregular: '不规律性行为',
       multiple_partners: '多伴侣',
@@ -1305,13 +1336,21 @@ async function analyzeRiskFactors(patientId) {
     };
     sexDesc = `存在${labelMap[sexHistory] || '高风险'}性行为史，HPV感染风险较高`;
   } else if (sexHistory === 'regular') {
-    sexScore = 25; sexLevel = 'low'; sexDesc = '规律性行为史，风险相对可控';
+    sexScore = 25;
+    sexLevel = 'low';
+    sexDesc = '规律性行为史，风险相对可控';
   } else if (sexHistory === 'other') {
-    sexScore = 40; sexLevel = 'medium'; sexDesc = '其他性行为情况，建议进一步评估';
+    sexScore = 40;
+    sexLevel = 'medium';
+    sexDesc = '其他性行为情况，建议进一步评估';
   }
   factors.push({
-    name: '性行为史', category: '行为', score: sexScore,
-    weight: 20, description: sexDesc, level: sexLevel,
+    name: '性行为史',
+    category: '行为',
+    score: sexScore,
+    weight: 20,
+    description: sexDesc,
+    level: sexLevel,
   });
 
   // —— 3. 家族史（权重 15）——
@@ -1319,12 +1358,17 @@ async function analyzeRiskFactors(patientId) {
   let familyLevel = 'low';
   let familyDesc = '无相关家族病史记录';
   if (patientRaw.family_history && patientRaw.family_history.trim().length > 0) {
-    familyScore = 65; familyLevel = 'high';
+    familyScore = 65;
+    familyLevel = 'high';
     familyDesc = '存在家族病史记录，遗传风险需关注';
   }
   factors.push({
-    name: '家族病史', category: '遗传', score: familyScore,
-    weight: 15, description: familyDesc, level: familyLevel,
+    name: '家族病史',
+    category: '遗传',
+    score: familyScore,
+    weight: 15,
+    description: familyDesc,
+    level: familyLevel,
   });
 
   // —— 4. 既往诊断（权重 25）——
@@ -1347,8 +1391,12 @@ async function analyzeRiskFactors(patientId) {
     }
   }
   factors.push({
-    name: '既往诊断', category: '临床', score: pastScore,
-    weight: 25, description: pastDesc, level: pastLevel,
+    name: '既往诊断',
+    category: '临床',
+    score: pastScore,
+    weight: 25,
+    description: pastDesc,
+    level: pastLevel,
   });
 
   // —— 5. 随访合规（权重 15）——
@@ -1356,7 +1404,8 @@ async function analyzeRiskFactors(patientId) {
   let complianceLevel = 'low';
   let complianceDesc = '随访记录良好';
   if (totalFollowups === 0) {
-    complianceScore = 30; complianceLevel = 'medium';
+    complianceScore = 30;
+    complianceLevel = 'medium';
     complianceDesc = '暂无随访记录，建议建立随访计划';
   } else if (overdueFollowups > 0) {
     const overdueRatio = overdueFollowups / totalFollowups;
@@ -1365,8 +1414,12 @@ async function analyzeRiskFactors(patientId) {
     complianceDesc = `${overdueFollowups}/${totalFollowups} 条随访逾期（${(overdueRatio * 100).toFixed(0)}%）`;
   }
   factors.push({
-    name: '随访合规', category: '管理', score: complianceScore,
-    weight: 15, description: complianceDesc, level: complianceLevel,
+    name: '随访合规',
+    category: '管理',
+    score: complianceScore,
+    weight: 15,
+    description: complianceDesc,
+    level: complianceLevel,
   });
 
   // —— 6. HPV 生物标志物（权重 10）——
@@ -1378,17 +1431,23 @@ async function analyzeRiskFactors(patientId) {
     if (biomarkers && typeof biomarkers === 'object') {
       const hpvValue = biomarkers.HPV || biomarkers.hpv || biomarkers.hpv_status || '';
       if (/positive|阳性|高危/i.test(String(hpvValue))) {
-        hpvScore = 80; hpvLevel = 'critical';
+        hpvScore = 80;
+        hpvLevel = 'critical';
         hpvDesc = 'HPV 阳性/高危型，宫颈病变风险显著增高';
       } else if (/negative|阴性/i.test(String(hpvValue))) {
-        hpvScore = 5; hpvLevel = 'low';
+        hpvScore = 5;
+        hpvLevel = 'low';
         hpvDesc = 'HPV 阴性，当前感染风险较低';
       }
     }
   }
   factors.push({
-    name: 'HPV 状态', category: '生物标志物', score: hpvScore,
-    weight: 10, description: hpvDesc, level: hpvLevel,
+    name: 'HPV 状态',
+    category: '生物标志物',
+    score: hpvScore,
+    weight: 10,
+    description: hpvDesc,
+    level: hpvLevel,
   });
 
   // 加权计算综合评分

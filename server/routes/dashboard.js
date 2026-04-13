@@ -310,7 +310,7 @@ router.get('/pending-tasks', authenticate, async (req, res) => {
         order: [['created_at', 'DESC']],
         limit: 5,
       });
-      
+
       if (allTasks.length > 0) {
         historyTasks = allTasks;
       }

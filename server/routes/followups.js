@@ -43,9 +43,7 @@ function normalizeDateOnly(dateInput) {
 
 function mapFollowUpItem(followUp) {
   const raw = followUp.toJSON();
-  raw.is_high_attention = !!(
-    raw.ai_flagged_high_attention || raw.doctor_marked_high_attention
-  );
+  raw.is_high_attention = !!(raw.ai_flagged_high_attention || raw.doctor_marked_high_attention);
   return raw;
 }
 
@@ -160,17 +158,14 @@ router.get('/statistics', authenticate, async (req, res) => {
 
     // 完成率
     const completionDenominator = overview.completed + overview.overdue;
-    const completionRate = completionDenominator > 0
-      ? Math.round((overview.completed / completionDenominator) * 100)
-      : 0;
+    const completionRate =
+      completionDenominator > 0
+        ? Math.round((overview.completed / completionDenominator) * 100)
+        : 0;
 
     // 平均完成天数（从创建到完成）
     const avgResult = await FollowUp.findOne({
-      attributes: [
-        [fn('AVG',
-          literal('DATEDIFF(completed_at, created_at)'),
-        ), 'avg_days'],
-      ],
+      attributes: [[fn('AVG', literal('DATEDIFF(completed_at, created_at)')), 'avg_days']],
       where: { status: 'completed', completed_at: { [Op.ne]: null } },
       raw: true,
     });
@@ -207,11 +202,7 @@ router.get('/statistics', authenticate, async (req, res) => {
 
     // 按风险等级统计
     const riskRaw = await FollowUp.findAll({
-      attributes: [
-        'risk_level_snapshot',
-        'status',
-        [fn('COUNT', col('id')), 'count'],
-      ],
+      attributes: ['risk_level_snapshot', 'status', [fn('COUNT', col('id')), 'count']],
       where: { risk_level_snapshot: { [Op.ne]: null } },
       group: ['risk_level_snapshot', 'status'],
       raw: true,
@@ -232,11 +223,7 @@ router.get('/statistics', authenticate, async (req, res) => {
 
     // 按医生统计
     const doctorRaw = await FollowUp.findAll({
-      attributes: [
-        'assigned_doctor_id',
-        'status',
-        [fn('COUNT', col('FollowUp.id')), 'count'],
-      ],
+      attributes: ['assigned_doctor_id', 'status', [fn('COUNT', col('FollowUp.id')), 'count']],
       include: [
         { model: User, as: 'assigned_doctor', attributes: ['id', 'username', 'real_name'] },
       ],
@@ -252,7 +239,8 @@ router.get('/statistics', authenticate, async (req, res) => {
       if (!doctorMap[docId]) {
         doctorMap[docId] = {
           doctorId: docId,
-          doctorName: row.assigned_doctor?.real_name || row.assigned_doctor?.username || `医生#${docId}`,
+          doctorName:
+            row.assigned_doctor?.real_name || row.assigned_doctor?.username || `医生#${docId}`,
           total: 0,
           completed: 0,
         };
@@ -358,9 +346,14 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     const finalReason = reason || (templateData ? templateData.description : undefined);
-    const finalNotes = notes || (templateData ? `检查清单：${templateData.checklist.join('、')}` : undefined);
-    const finalIntervalMonths = templateData ? templateData.interval_months : recommendedIntervalMonths;
-    const finalPlannedDate = normalizedPlannedDate || (templateData ? addMonthsFromToday(templateData.interval_months) : normalizedPlannedDate);
+    const finalNotes =
+      notes || (templateData ? `检查清单：${templateData.checklist.join('、')}` : undefined);
+    const finalIntervalMonths = templateData
+      ? templateData.interval_months
+      : recommendedIntervalMonths;
+    const finalPlannedDate =
+      normalizedPlannedDate ||
+      (templateData ? addMonthsFromToday(templateData.interval_months) : normalizedPlannedDate);
 
     const followUp = await FollowUp.create({
       patient_id: Number(patient_id),

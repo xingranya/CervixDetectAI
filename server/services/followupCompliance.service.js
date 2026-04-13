@@ -14,9 +14,7 @@ async function checkCompliance(patientId) {
       patient_id: patientId,
       status: { [Op.ne]: 'cancelled' },
     },
-    include: [
-      { model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_id'] },
-    ],
+    include: [{ model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_id'] }],
     order: [['planned_date', 'ASC']],
   });
 
@@ -52,7 +50,8 @@ async function checkCompliance(patientId) {
 
   // 合规评分：按时完成 / (按时完成 + 逾期) * 100
   const denominator = completed + overdue;
-  const score = denominator > 0 ? Math.round((completed / denominator) * 100) : (total === 0 ? 100 : 0);
+  const score =
+    denominator > 0 ? Math.round((completed / denominator) * 100) : total === 0 ? 100 : 0;
 
   return { score, total, completed, overdue, pending, details };
 }
@@ -73,9 +72,7 @@ async function batchComplianceScan() {
       status: 'pending',
       planned_date: { [Op.lt]: todayStr },
     },
-    include: [
-      { model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_id'] },
-    ],
+    include: [{ model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_id'] }],
   });
 
   result.scanned = overdueFollowUps.length;

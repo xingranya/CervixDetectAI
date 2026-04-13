@@ -8,7 +8,9 @@ type StudyTaskLike = Array<{ task_id?: string; status: string; created_at: strin
 /**
  * 标准化任务状态，兼容历史返回值与大小写差异。
  */
-export function normalizeLatestTaskStatus(status: string | undefined): LatestTaskStatus | undefined {
+export function normalizeLatestTaskStatus(
+  status: string | undefined,
+): LatestTaskStatus | undefined {
   if (!status) return undefined;
 
   const normalized = status.toUpperCase();
@@ -60,7 +62,9 @@ export function resolveLatestTaskStatus(tasks: StudyTaskLike): LatestTaskStatus 
 export function resolveLatestTask(tasks: StudyTaskLike) {
   if (!tasks?.length) return undefined;
 
-  return [...tasks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  return [...tasks].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  )[0];
 }
 
 /**
@@ -114,7 +118,10 @@ export function mapStudyRawToStudy(raw: StudyRaw): Study {
   const imageUrl = getImageUrl(raw.images?.[0]?.file_path);
 
   let displayTaskStatus = latestTaskStatus;
-  if (analysisResult && (!latestTaskStatus || latestTaskStatus === 'PENDING' || latestTaskStatus === 'PROCESSING')) {
+  if (
+    analysisResult &&
+    (!latestTaskStatus || latestTaskStatus === 'PENDING' || latestTaskStatus === 'PROCESSING')
+  ) {
     displayTaskStatus = 'SUCCESS';
   }
 

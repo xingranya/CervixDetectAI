@@ -31,9 +31,7 @@ const requestLogger = require('./middleware/requestLogger');
 const { handleRouteError } = require('./utils/errorHandler');
 const { testConnection, syncDatabase, sequelize } = require('./config/sequelize');
 const swaggerUi = require('swagger-ui-express');
-const {
-  ensureFollowUpInfrastructure,
-} = require('./services/followupScheduler.service');
+const { ensureFollowUpInfrastructure } = require('./services/followupScheduler.service');
 const { ensureEmailInfrastructure } = require('./services/emailInfrastructure.service');
 
 const app = express();
@@ -220,9 +218,10 @@ app.listen(PORT, async () => {
     await testConnection();
     console.log('✅ 数据库连接成功');
 
-    const isDbSyncEnabled = String(process.env.DB_SYNC || '')
-      .trim()
-      .toLowerCase() === 'true';
+    const isDbSyncEnabled =
+      String(process.env.DB_SYNC || '')
+        .trim()
+        .toLowerCase() === 'true';
 
     console.log(`🧭 DB_SYNC 当前值: ${process.env.DB_SYNC || '未设置'}`);
 

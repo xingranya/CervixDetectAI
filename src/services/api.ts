@@ -117,17 +117,19 @@ export const authAPI = {
     real_name?: string;
     phone?: string;
   }): Promise<ApiResponse<AuthData>> {
-    const { data } = await apiClient.post<ApiResponse<AuthData>>(
-      '/auth/register',
-      userData,
-      { withCredentials: true },
-    );
+    const { data } = await apiClient.post<ApiResponse<AuthData>>('/auth/register', userData, {
+      withCredentials: true,
+    });
     return data;
   },
 
   async logout(): Promise<ApiResponse<null>> {
     // 登出时携带 Cookie 以便后端清除 refreshToken
-    const { data } = await apiClient.post<ApiResponse<null>>('/auth/logout', {}, { withCredentials: true });
+    const { data } = await apiClient.post<ApiResponse<null>>(
+      '/auth/logout',
+      {},
+      { withCredentials: true },
+    );
     return data;
   },
 
@@ -614,12 +616,10 @@ export const reportAPI = {
     apiClient.get<ApiResponse<unknown>>('/reports', { params }),
 
   /** 报告详情 */
-  detail: (id: number) =>
-    apiClient.get<ApiResponse<unknown>>(`/reports/${id}`),
+  detail: (id: number) => apiClient.get<ApiResponse<unknown>>(`/reports/${id}`),
 
   /** 下载报告 */
-  download: (id: number) =>
-    apiClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
+  download: (id: number) => apiClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
 
   /** 创建分享链接 */
   share: (id: number, data?: ReportShareData) =>
@@ -802,7 +802,9 @@ export interface UpdateFollowUpPayload {
 }
 
 export const followUpAPI = {
-  async createFollowUp(payload: CreateFollowUpPayload): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+  async createFollowUp(
+    payload: CreateFollowUpPayload,
+  ): Promise<ApiResponse<{ followup: FollowUpItem }>> {
     const { data } = await apiClient.post<ApiResponse<{ followup: FollowUpItem }>>(
       '/followups',
       payload,
@@ -824,9 +826,7 @@ export const followUpAPI = {
     const normalizedParams = {
       ...params,
       high_attention:
-        typeof params?.high_attention === 'boolean'
-          ? String(params.high_attention)
-          : undefined,
+        typeof params?.high_attention === 'boolean' ? String(params.high_attention) : undefined,
     };
     const { data } = await apiClient.get<ApiResponse<FollowUpListData>>('/followups', {
       params: normalizedParams,
@@ -835,7 +835,9 @@ export const followUpAPI = {
   },
 
   async getFollowUp(id: number): Promise<ApiResponse<{ followup: FollowUpItem }>> {
-    const { data } = await apiClient.get<ApiResponse<{ followup: FollowUpItem }>>(`/followups/${id}`);
+    const { data } = await apiClient.get<ApiResponse<{ followup: FollowUpItem }>>(
+      `/followups/${id}`,
+    );
     return data;
   },
 
@@ -864,7 +866,10 @@ export const followUpAPI = {
     return data;
   },
 
-  async setHighAttention(id: number, marked: boolean): Promise<ApiResponse<{ followup: FollowUpItem }>> {
+  async setHighAttention(
+    id: number,
+    marked: boolean,
+  ): Promise<ApiResponse<{ followup: FollowUpItem }>> {
     const { data } = await apiClient.patch<ApiResponse<{ followup: FollowUpItem }>>(
       `/followups/${id}/high-attention`,
       { marked },
@@ -880,11 +885,13 @@ export const followUpAPI = {
   },
 
   /** 根据病例分析结果推荐随访模板 */
-  async recommendTemplate(studyId: number): Promise<ApiResponse<{
-    recommended: FollowUpTemplate;
-    alternatives: FollowUpTemplate[];
-    source: { diagnosis: string; risk_level: string };
-  }>> {
+  async recommendTemplate(studyId: number): Promise<
+    ApiResponse<{
+      recommended: FollowUpTemplate;
+      alternatives: FollowUpTemplate[];
+      source: { diagnosis: string; risk_level: string };
+    }>
+  > {
     const { data } = await apiClient.get(`/followups/templates/recommend`, {
       params: { study_id: studyId },
     });
@@ -892,22 +899,24 @@ export const followUpAPI = {
   },
 
   /** 获取患者随访合规性评分 */
-  async getCompliance(patientId: number): Promise<ApiResponse<{
-    score: number;
-    total: number;
-    completed: number;
-    overdue: number;
-    pending: number;
-    details: Array<{
-      id: number;
-      follow_up_id: string;
-      planned_date: string;
-      status: string;
-      risk_level_snapshot: string;
-      completed_at: string | null;
-      compliance: string;
-    }>;
-  }>> {
+  async getCompliance(patientId: number): Promise<
+    ApiResponse<{
+      score: number;
+      total: number;
+      completed: number;
+      overdue: number;
+      pending: number;
+      details: Array<{
+        id: number;
+        follow_up_id: string;
+        planned_date: string;
+        status: string;
+        risk_level_snapshot: string;
+        completed_at: string | null;
+        compliance: string;
+      }>;
+    }>
+  > {
     const { data } = await apiClient.get(`/followups/compliance/${patientId}`);
     return data;
   },
@@ -1304,9 +1313,8 @@ export const notificationAPI = {
   },
 
   async markAllAsRead(): Promise<ApiResponse<{ updatedCount: number }>> {
-    const { data } = await apiClient.patch<ApiResponse<{ updatedCount: number }>>(
-      '/notifications/read-all',
-    );
+    const { data } =
+      await apiClient.patch<ApiResponse<{ updatedCount: number }>>('/notifications/read-all');
     return data;
   },
 };
@@ -1316,11 +1324,7 @@ export const notificationAPI = {
 // ============================================================
 
 export const paymentAPI = {
-  createOrder: (
-    planType: string,
-    paymentMethod: string,
-    payload?: { device?: string },
-  ) =>
+  createOrder: (planType: string, paymentMethod: string, payload?: { device?: string }) =>
     apiClient.post<ApiResponse<PaymentCreateData>>('/payment/create', {
       planType,
       paymentMethod,
@@ -1573,8 +1577,7 @@ export interface AuditLogListData {
 
 export const systemAPI = {
   /** 获取实时系统监控数据 */
-  monitor: () =>
-    apiClient.get<ApiResponse<SystemMonitorData>>('/system/monitor'),
+  monitor: () => apiClient.get<ApiResponse<SystemMonitorData>>('/system/monitor'),
 
   /** 获取历史统计数据 */
   monitorHistory: (hours: number) =>
@@ -1593,11 +1596,7 @@ export const systemAPI = {
   }) => apiClient.get<ApiResponse<AuditLogListData>>('/audit/logs', { params }),
 
   /** 导出审计日志 CSV */
-  auditExport: (params?: {
-    action?: string;
-    date_from?: string;
-    date_to?: string;
-  }) =>
+  auditExport: (params?: { action?: string; date_from?: string; date_to?: string }) =>
     apiClient.get('/audit/logs/export', {
       params,
       responseType: 'blob',

@@ -16,7 +16,7 @@ const DEFAULT_TEMPLATE = {
 
 // 按 hospital_id 扩展模板
 const HOSPITAL_TEMPLATES = {
-  'hospital_jzzxyy': {
+  hospital_jzzxyy: {
     ...DEFAULT_TEMPLATE,
     id: 'jzzxyy',
     name: '荆州市中心医院检测报告',

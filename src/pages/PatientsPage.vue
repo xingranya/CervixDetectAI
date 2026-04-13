@@ -11,8 +11,21 @@
           <div class="text-subtitle2 text-grey-7">管理所有患者信息</div>
         </div>
         <div class="col-auto q-gutter-sm">
-          <q-btn outline color="primary" icon="upload_file" label="导入患者" no-caps @click="showImportDialog = true" />
-          <q-btn color="primary" icon="person_add" label="新增患者" no-caps @click="openAddDialog" />
+          <q-btn
+            outline
+            color="primary"
+            icon="upload_file"
+            label="导入患者"
+            no-caps
+            @click="showImportDialog = true"
+          />
+          <q-btn
+            color="primary"
+            icon="person_add"
+            label="新增患者"
+            no-caps
+            @click="openAddDialog"
+          />
         </div>
       </div>
     </div>
@@ -55,7 +68,9 @@
         <div class="row items-center no-wrap">
           <q-icon name="list" class="q-mr-sm text-primary" />
           <span class="text-subtitle2 text-weight-medium">患者列表</span>
-          <span class="text-caption text-grey-6 q-ml-sm">({{ patientStore.allPatients.length }} 条记录)</span>
+          <span class="text-caption text-grey-6 q-ml-sm"
+            >({{ patientStore.allPatients.length }} 条记录)</span
+          >
         </div>
       </q-card-section>
       <q-separator />
@@ -101,19 +116,59 @@
           <!-- 操作列 -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="patient-actions-cell">
-              <q-btn flat size="sm" no-caps icon="visibility" label="查看" color="primary" @click="viewPatient(props.row)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="visibility"
+                label="查看"
+                color="primary"
+                @click="viewPatient(props.row)"
+              >
                 <q-tooltip>查看详情</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" no-caps icon="edit" label="编辑" color="secondary" @click="editPatient(props.row)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="edit"
+                label="编辑"
+                color="secondary"
+                @click="editPatient(props.row)"
+              >
                 <q-tooltip>编辑</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" no-caps icon="folder_open" label="病例" color="teal" @click="viewStudies(props.row.id)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="folder_open"
+                label="病例"
+                color="teal"
+                @click="viewStudies(props.row.id)"
+              >
                 <q-tooltip>查看病例</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" no-caps icon="insights" label="洞察" color="indigo" @click="viewInsights(props.row.id)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="insights"
+                label="洞察"
+                color="indigo"
+                @click="viewInsights(props.row.id)"
+              >
                 <q-tooltip>患者洞察</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" no-caps icon="delete" label="删除" color="negative" @click="confirmDelete(props.row)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="delete"
+                label="删除"
+                color="negative"
+                @click="confirmDelete(props.row)"
+              >
                 <q-tooltip>删除</q-tooltip>
               </q-btn>
             </q-td>

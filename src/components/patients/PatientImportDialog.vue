@@ -1,5 +1,11 @@
 <template>
-  <q-dialog v-model="dialogVisible" persistent maximized transition-show="slide-up" transition-hide="slide-down">
+  <q-dialog
+    v-model="dialogVisible"
+    persistent
+    maximized
+    transition-show="slide-up"
+    transition-hide="slide-down"
+  >
     <q-card class="import-dialog-card">
       <!-- 标题栏 -->
       <q-card-section class="row items-center q-pb-none dialog-header">
@@ -54,9 +60,7 @@
                 <q-icon name="cloud_upload" size="64px" color="primary" class="q-mb-md" />
                 <div class="text-h6 text-grey-8">拖拽文件到此处</div>
                 <div class="text-body2 text-grey-6 q-mt-xs">或点击选择文件</div>
-                <div class="text-caption text-grey-5 q-mt-sm">
-                  支持 CSV、Excel 文件，最大 10MB
-                </div>
+                <div class="text-caption text-grey-5 q-mt-sm">支持 CSV、Excel 文件，最大 10MB</div>
               </div>
 
               <!-- 已选文件 -->
@@ -130,16 +134,9 @@
             >
               <!-- 行样式：错误行红色、重复行黄色 -->
               <template v-slot:body="props">
-                <q-tr
-                  :props="props"
-                  :class="getRowClass(props.row)"
-                >
+                <q-tr :props="props" :class="getRowClass(props.row)">
                   <q-td auto-width>
-                    <q-checkbox
-                      v-model="props.selected"
-                      dense
-                      :disable="hasErrors(props.row)"
-                    />
+                    <q-checkbox v-model="props.selected" dense :disable="hasErrors(props.row)" />
                   </q-td>
                   <q-td v-for="col in props.cols" :key="col.name" :props="props">
                     <template v-if="col.name === 'status'">
@@ -180,7 +177,14 @@
                 :disable="selectedRows.length === 0"
                 @click="handleConfirmImport"
               />
-              <q-btn flat no-caps color="grey" label="返回上一步" class="q-ml-sm" @click="step = 1" />
+              <q-btn
+                flat
+                no-caps
+                color="grey"
+                label="返回上一步"
+                class="q-ml-sm"
+                @click="step = 1"
+              />
               <span class="text-caption text-grey-6 q-ml-md">
                 已选择 {{ selectedRows.length }} 条数据
               </span>
@@ -274,14 +278,32 @@ const importResult = ref<ImportConfirmData | null>(null);
 
 // 预览表格列定义
 const previewColumns = [
-  { name: 'status', label: '状态', field: '_rowIndex', align: 'center' as const, style: 'width: 60px' },
-  { name: '_rowIndex', label: '行号', field: '_rowIndex', align: 'center' as const, style: 'width: 50px' },
+  {
+    name: 'status',
+    label: '状态',
+    field: '_rowIndex',
+    align: 'center' as const,
+    style: 'width: 60px',
+  },
+  {
+    name: '_rowIndex',
+    label: '行号',
+    field: '_rowIndex',
+    align: 'center' as const,
+    style: 'width: 50px',
+  },
   { name: 'name', label: '姓名', field: 'name', align: 'left' as const },
   { name: 'gender', label: '性别', field: 'gender', align: 'center' as const },
   { name: 'birth_date', label: '出生日期', field: 'birth_date', align: 'left' as const },
   { name: 'phone', label: '手机号', field: 'phone', align: 'left' as const },
   { name: 'id_card', label: '身份证号', field: 'id_card', align: 'left' as const },
-  { name: 'issues', label: '问题', field: '_errors', align: 'left' as const, style: 'min-width: 150px' },
+  {
+    name: 'issues',
+    label: '问题',
+    field: '_errors',
+    align: 'left' as const,
+    style: 'min-width: 150px',
+  },
 ];
 
 // 对话框打开时重置状态
@@ -387,9 +409,7 @@ async function handleUpload() {
     if (res.success && res.data) {
       previewData.value = res.data;
       // 默认选中所有有效且非重复的行
-      selectedRows.value = res.data.rows.filter(
-        (r) => !hasErrors(r) && !r._duplicate,
-      );
+      selectedRows.value = res.data.rows.filter((r) => !hasErrors(r) && !r._duplicate);
       step.value = 2;
     } else {
       $q.notify({ type: 'negative', message: res.message || '解析失败', position: 'top' });

@@ -11,10 +11,21 @@
           <div class="text-subtitle2 text-grey-7">实时性能指标与操作审计</div>
         </div>
         <div class="col-auto">
-          <q-chip :color="autoRefreshEnabled ? 'positive' : 'grey'" text-color="white" icon="autorenew">
+          <q-chip
+            :color="autoRefreshEnabled ? 'positive' : 'grey'"
+            text-color="white"
+            icon="autorenew"
+          >
             {{ autoRefreshEnabled ? '自动刷新中' : '已暂停' }}
           </q-chip>
-          <q-btn flat dense icon="refresh" class="q-ml-sm" @click="fetchAll" :loading="loadingMonitor">
+          <q-btn
+            flat
+            dense
+            icon="refresh"
+            class="q-ml-sm"
+            @click="fetchAll"
+            :loading="loadingMonitor"
+          >
             <q-tooltip>手动刷新</q-tooltip>
           </q-btn>
         </div>
@@ -33,7 +44,10 @@
             <div class="metric-value">{{ monitorData.cpu?.loadAvg?.[0]?.toFixed(2) ?? '--' }}</div>
             <div class="metric-sub text-grey-7">
               1m / 5m / 15m:
-              {{ (monitorData.cpu?.loadAvg || []).map((v: number) => v.toFixed(2)).join(' / ') || '--' }}
+              {{
+                (monitorData.cpu?.loadAvg || []).map((v: number) => v.toFixed(2)).join(' / ') ||
+                '--'
+              }}
               <br />{{ monitorData.cpu?.count ?? 0 }} 核心
             </div>
           </q-card-section>
@@ -55,7 +69,8 @@
               size="8px"
             />
             <div class="metric-sub text-grey-7 q-mt-xs">
-              {{ formatBytes(monitorData.memory?.used) }} / {{ formatBytes(monitorData.memory?.total) }}
+              {{ formatBytes(monitorData.memory?.used) }} /
+              {{ formatBytes(monitorData.memory?.total) }}
             </div>
           </q-card-section>
         </q-card>
@@ -69,7 +84,8 @@
             </div>
             <div class="metric-value">{{ monitorData.database?.size ?? 0 }}</div>
             <div class="metric-sub text-grey-7">
-              可用 {{ monitorData.database?.available ?? 0 }} / 等待 {{ monitorData.database?.pending ?? 0 }}
+              可用 {{ monitorData.database?.available ?? 0 }} / 等待
+              {{ monitorData.database?.pending ?? 0 }}
             </div>
           </q-card-section>
         </q-card>
@@ -83,8 +99,8 @@
             </div>
             <div class="metric-value">{{ monitorData.analysisQueue?.running ?? 0 }}</div>
             <div class="metric-sub text-grey-7">
-              等待 {{ monitorData.analysisQueue?.waiting ?? 0 }} /
-              并发上限 {{ monitorData.analysisQueue?.concurrency ?? 3 }}
+              等待 {{ monitorData.analysisQueue?.waiting ?? 0 }} / 并发上限
+              {{ monitorData.analysisQueue?.concurrency ?? 3 }}
             </div>
             <div class="metric-sub text-grey-6 q-mt-xs">
               运行时间 {{ formatUptime(monitorData.uptime) }}
@@ -150,7 +166,15 @@
             <q-icon name="list_alt" class="q-mr-sm" />
             操作日志
           </div>
-          <q-btn flat dense no-caps color="primary" icon="download" label="导出CSV" @click="exportCsv" />
+          <q-btn
+            flat
+            dense
+            no-caps
+            color="primary"
+            icon="download"
+            label="导出CSV"
+            @click="exportCsv"
+          />
         </div>
       </q-card-section>
       <q-separator />
@@ -196,7 +220,11 @@
         >
           <template #body-cell-user="props">
             <q-td :props="props">
-              {{ props.row.user?.real_name || props.row.user?.username || (props.row.user_id ? `#${props.row.user_id}` : '系统') }}
+              {{
+                props.row.user?.real_name ||
+                props.row.user?.username ||
+                (props.row.user_id ? `#${props.row.user_id}` : '系统')
+              }}
             </q-td>
           </template>
           <template #body-cell-action="props">
@@ -235,15 +263,27 @@ import type { QTableProps } from 'quasar';
 
 interface MonitorData {
   cpu?: { loadAvg: number[]; count: number };
-  memory?: { total: number; free: number; used: number; usagePercent: string; process: { rss: number; heapTotal: number; heapUsed: number } };
+  memory?: {
+    total: number;
+    free: number;
+    used: number;
+    usagePercent: string;
+    process: { rss: number; heapTotal: number; heapUsed: number };
+  };
   database?: { size: number; available: number; pending: number };
   analysisQueue?: { running: number; waiting: number; concurrency: number };
   uptime?: number;
   timestamp?: string;
 }
 
-interface HourlyItem { hour: string; count: number }
-interface ActionItem { action: string; count: number }
+interface HourlyItem {
+  hour: string;
+  count: number;
+}
+interface ActionItem {
+  action: string;
+  count: number;
+}
 
 // ======================== 状态 ========================
 
@@ -306,8 +346,20 @@ const logColumns: QTableProps['columns'] = [
   { name: 'created_at', label: '时间', field: 'created_at', align: 'left', style: 'width: 160px' },
   { name: 'user', label: '用户', field: 'user', align: 'left', style: 'width: 120px' },
   { name: 'action', label: '操作', field: 'action', align: 'left', style: 'width: 140px' },
-  { name: 'resource_type', label: '资源类型', field: 'resource_type', align: 'left', style: 'width: 100px' },
-  { name: 'resource_id', label: '资源ID', field: 'resource_id', align: 'left', style: 'width: 80px' },
+  {
+    name: 'resource_type',
+    label: '资源类型',
+    field: 'resource_type',
+    align: 'left',
+    style: 'width: 100px',
+  },
+  {
+    name: 'resource_id',
+    label: '资源ID',
+    field: 'resource_id',
+    align: 'left',
+    style: 'width: 80px',
+  },
   { name: 'ip_address', label: 'IP', field: 'ip_address', align: 'left', style: 'width: 130px' },
   { name: 'details', label: '详情', field: 'details', align: 'left' },
 ];
@@ -319,7 +371,10 @@ function formatBytes(bytes?: number): string {
   const units = ['B', 'KB', 'MB', 'GB'];
   let i = 0;
   let val = bytes;
-  while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024;
+    i++;
+  }
   return `${val.toFixed(1)} ${units[i]}`;
 }
 
@@ -342,9 +397,16 @@ function formatDate(iso?: string): string {
 
 function getActionColor(action: string): string {
   const map: Record<string, string> = {
-    LOGIN: 'blue', LOGOUT: 'grey', CREATE_PATIENT: 'teal', UPDATE_PATIENT: 'orange',
-    DELETE_PATIENT: 'red', CREATE_STUDY: 'indigo', UPLOAD_IMAGE: 'cyan',
-    CREATE_ANALYSIS: 'purple', CREATE_FOLLOWUP: 'green', COMPLETE_FOLLOWUP: 'positive',
+    LOGIN: 'blue',
+    LOGOUT: 'grey',
+    CREATE_PATIENT: 'teal',
+    UPDATE_PATIENT: 'orange',
+    DELETE_PATIENT: 'red',
+    CREATE_STUDY: 'indigo',
+    UPLOAD_IMAGE: 'cyan',
+    CREATE_ANALYSIS: 'purple',
+    CREATE_FOLLOWUP: 'green',
+    COMPLETE_FOLLOWUP: 'positive',
   };
   return map[action] || 'grey-7';
 }
@@ -418,7 +480,8 @@ async function exportCsv() {
     if (filters.value.date_to) params.date_to = filters.value.date_to;
 
     const res = await systemAPI.auditExport(params);
-    const blob = res.data instanceof Blob ? res.data : new Blob([res.data as string], { type: 'text/csv' });
+    const blob =
+      res.data instanceof Blob ? res.data : new Blob([res.data as string], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -453,30 +516,39 @@ function renderBarChart() {
   });
   const yData = hourlyStats.value.map((i) => Number(i.count));
 
-  barChart.setOption({
-    tooltip: {
-      trigger: 'axis',
-      ...(isDark && { backgroundColor: '#1e1e1e', borderColor: '#334155', textStyle: { color: '#e2e8f0' } }),
+  barChart.setOption(
+    {
+      tooltip: {
+        trigger: 'axis',
+        ...(isDark && {
+          backgroundColor: '#1e1e1e',
+          borderColor: '#334155',
+          textStyle: { color: '#e2e8f0' },
+        }),
+      },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: xData,
+        axisLabel: { color: isDark ? '#94a3b8' : '#64748b', rotate: xData.length > 30 ? 45 : 0 },
+        axisLine: { lineStyle: { color: isDark ? '#334155' : '#e2e8f0' } },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { color: isDark ? '#94a3b8' : '#64748b' },
+        splitLine: { lineStyle: { color: isDark ? '#1e293b' : '#f1f5f9' } },
+      },
+      series: [
+        {
+          data: yData,
+          type: 'bar',
+          itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] },
+          barMaxWidth: 28,
+        },
+      ],
     },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: xData,
-      axisLabel: { color: isDark ? '#94a3b8' : '#64748b', rotate: xData.length > 30 ? 45 : 0 },
-      axisLine: { lineStyle: { color: isDark ? '#334155' : '#e2e8f0' } },
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: { color: isDark ? '#94a3b8' : '#64748b' },
-      splitLine: { lineStyle: { color: isDark ? '#1e293b' : '#f1f5f9' } },
-    },
-    series: [{
-      data: yData,
-      type: 'bar',
-      itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] },
-      barMaxWidth: 28,
-    }],
-  }, true);
+    true,
+  );
 }
 
 function renderPieChart() {
@@ -484,35 +556,58 @@ function renderPieChart() {
   if (!pieChart) pieChart = echarts.init(pieChartRef.value);
 
   const isDark = themeStore.isDark;
-  const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
+  const colors = [
+    '#6366f1',
+    '#22c55e',
+    '#f59e0b',
+    '#ef4444',
+    '#06b6d4',
+    '#a855f7',
+    '#ec4899',
+    '#14b8a6',
+    '#f97316',
+    '#8b5cf6',
+  ];
   const data = actionStats.value.map((i, idx) => ({
     value: Number(i.count),
     name: i.action,
     itemStyle: { color: colors[idx % colors.length] },
   }));
 
-  pieChart.setOption({
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)',
-      ...(isDark && { backgroundColor: '#1e1e1e', borderColor: '#334155', textStyle: { color: '#e2e8f0' } }),
+  pieChart.setOption(
+    {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)',
+        ...(isDark && {
+          backgroundColor: '#1e1e1e',
+          borderColor: '#334155',
+          textStyle: { color: '#e2e8f0' },
+        }),
+      },
+      legend: {
+        orient: 'horizontal',
+        bottom: 0,
+        textStyle: { color: isDark ? '#94a3b8' : '#64748b', fontSize: 11 },
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: ['36%', '66%'],
+          center: ['50%', '42%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 6, borderColor: isDark ? '#1e293b' : '#fff', borderWidth: 2 },
+          label: { show: false },
+          emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+          data:
+            data.length > 0
+              ? data
+              : [{ value: 1, name: '暂无数据', itemStyle: { color: '#e2e8f0' } }],
+        },
+      ],
     },
-    legend: {
-      orient: 'horizontal',
-      bottom: 0,
-      textStyle: { color: isDark ? '#94a3b8' : '#64748b', fontSize: 11 },
-    },
-    series: [{
-      type: 'pie',
-      radius: ['36%', '66%'],
-      center: ['50%', '42%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 6, borderColor: isDark ? '#1e293b' : '#fff', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
-      data: data.length > 0 ? data : [{ value: 1, name: '暂无数据', itemStyle: { color: '#e2e8f0' } }],
-    }],
-  }, true);
+    true,
+  );
 }
 
 function handleResize() {
@@ -522,10 +617,13 @@ function handleResize() {
 
 // ======================== 生命周期 ========================
 
-watch(() => themeStore.isDark, () => {
-  renderBarChart();
-  renderPieChart();
-});
+watch(
+  () => themeStore.isDark,
+  () => {
+    renderBarChart();
+    renderPieChart();
+  },
+);
 
 onMounted(async () => {
   await fetchAll();
@@ -573,10 +671,18 @@ onUnmounted(() => {
   border-radius: var(--app-radius-lg);
   box-shadow: var(--app-shadow-md);
   border: 1px solid var(--app-border-default);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 
-  &:hover { box-shadow: var(--app-shadow-lg); transform: translateY(-2px); }
-  .card-header { padding: 20px 24px 12px; border-bottom: 1px solid var(--app-border-light); }
+  &:hover {
+    box-shadow: var(--app-shadow-lg);
+    transform: translateY(-2px);
+  }
+  .card-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid var(--app-border-light);
+  }
 }
 
 .metric-card {
@@ -586,15 +692,32 @@ onUnmounted(() => {
     gap: 10px;
     margin-bottom: 12px;
   }
-  .metric-label { font-size: 14px; color: var(--app-text-secondary); font-weight: 500; }
-  .metric-value { font-size: 32px; font-weight: 700; color: var(--app-text-primary); line-height: 1.1; }
-  .metric-sub { font-size: 12px; margin-top: 6px; }
+  .metric-label {
+    font-size: 14px;
+    color: var(--app-text-secondary);
+    font-weight: 500;
+  }
+  .metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--app-text-primary);
+    line-height: 1.1;
+  }
+  .metric-sub {
+    font-size: 12px;
+    margin-top: 6px;
+  }
 }
 
-.chart-container { height: 300px; width: 100%; }
+.chart-container {
+  height: 300px;
+  width: 100%;
+}
 
 @media (max-width: 1200px) {
-  .system-monitor-page { padding: 16px; }
+  .system-monitor-page {
+    padding: 16px;
+  }
 }
 </style>
 
@@ -607,8 +730,12 @@ body.body--dark {
       border-color: var(--app-border-default);
     }
     .metric-card {
-      .metric-value { color: var(--app-text-primary); }
-      .metric-label { color: var(--app-text-secondary); }
+      .metric-value {
+        color: var(--app-text-primary);
+      }
+      .metric-label {
+        color: var(--app-text-secondary);
+      }
     }
   }
 }

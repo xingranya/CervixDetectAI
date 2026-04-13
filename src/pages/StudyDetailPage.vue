@@ -1148,7 +1148,12 @@ const generateReport = async (format: ReportFormat) => {
     const { data } = await reportAPI.generate({ study_id: study.value.id, format });
     const resp = data as { success: boolean; message?: string; data?: { report?: { id: number } } };
     if (resp.success) {
-      $q.notify({ type: 'positive', message: `${format.toUpperCase()} 报告生成成功！`, position: 'top', icon: 'check_circle' });
+      $q.notify({
+        type: 'positive',
+        message: `${format.toUpperCase()} 报告生成成功！`,
+        position: 'top',
+        icon: 'check_circle',
+      });
       // 自动下载
       const reportId = resp.data?.report?.id;
       if (reportId) {
@@ -1165,7 +1170,9 @@ const generateReport = async (format: ReportFormat) => {
       $q.notify({ type: 'negative', message: resp.message || '生成失败', position: 'top' });
     }
   } catch (error: unknown) {
-    const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '生成报告失败';
+    const msg =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      '生成报告失败';
     $q.notify({ type: 'negative', message: msg, position: 'top' });
   } finally {
     generatingFormat.value = null;

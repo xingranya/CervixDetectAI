@@ -9,7 +9,11 @@ const { User } = require('../models');
 const SmsCode = require('../models/SmsCode');
 const smsService = require('../services/sms.service');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const { CODE_EXPIRE_MINUTES, SEND_INTERVAL_SECONDS, MAX_DAILY_SEND_COUNT } = require('../constants/verification');
+const {
+  CODE_EXPIRE_MINUTES,
+  SEND_INTERVAL_SECONDS,
+  MAX_DAILY_SEND_COUNT,
+} = require('../constants/verification');
 const { validatePhone, validateEmail } = require('../utils/validators');
 const { checkSendInterval, checkDailyLimit } = require('../utils/rateLimiter');
 const { handleRouteError } = require('../utils/errorHandler');

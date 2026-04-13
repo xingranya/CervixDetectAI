@@ -40,7 +40,7 @@ function handleRouteError(res, error, context = {}) {
 
   // Sequelize 数据验证错误
   if (error.name === 'SequelizeValidationError') {
-    const details = error.errors?.map(e => e.message).join('; ') || error.message;
+    const details = error.errors?.map((e) => e.message).join('; ') || error.message;
     console.error(`[${service}] ${endpoint} 数据验证失败:`, { details });
     return res.status(400).json({
       success: false,

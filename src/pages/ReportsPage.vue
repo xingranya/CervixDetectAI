@@ -8,7 +8,9 @@
             <q-icon name="description" class="q-mr-sm text-primary" />
             报告中心
           </div>
-          <div class="text-subtitle2 text-grey-7">管理与下载检测报告，支持 PDF / Word / Excel 多格式导出</div>
+          <div class="text-subtitle2 text-grey-7">
+            管理与下载检测报告，支持 PDF / Word / Excel 多格式导出
+          </div>
         </div>
         <q-btn
           unelevated
@@ -37,7 +39,14 @@
             />
           </div>
           <div class="col-md-3 col-sm-6 col-12">
-            <q-btn flat color="primary" icon="refresh" label="刷新" @click="loadReports" :loading="loading" />
+            <q-btn
+              flat
+              color="primary"
+              icon="refresh"
+              label="刷新"
+              @click="loadReports"
+              :loading="loading"
+            />
           </div>
         </div>
       </q-card-section>
@@ -112,10 +121,27 @@
           <!-- 操作列 -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="report-actions-cell">
-              <q-btn flat size="sm" no-caps icon="file_download" label="下载" color="teal" @click="downloadReport(props.row)" :loading="downloadingId === props.row.id">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="file_download"
+                label="下载"
+                color="teal"
+                @click="downloadReport(props.row)"
+                :loading="downloadingId === props.row.id"
+              >
                 <q-tooltip>下载报告文件</q-tooltip>
               </q-btn>
-              <q-btn flat size="sm" no-caps icon="share" label="分享" color="secondary" @click="openShareDialog(props.row)">
+              <q-btn
+                flat
+                size="sm"
+                no-caps
+                icon="share"
+                label="分享"
+                color="secondary"
+                @click="openShareDialog(props.row)"
+              >
                 <q-tooltip>生成分享链接</q-tooltip>
               </q-btn>
             </q-td>
@@ -155,7 +181,14 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="取消" color="grey" v-close-popup />
-          <q-btn unelevated label="生成" color="primary" icon="play_arrow" @click="generateReport" :loading="generating" />
+          <q-btn
+            unelevated
+            label="生成"
+            color="primary"
+            icon="play_arrow"
+            @click="generateReport"
+            :loading="generating"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -190,12 +223,7 @@
         </q-card-section>
         <q-card-section v-else>
           <div class="text-body2 q-mb-sm text-grey-8">分享链接已生成：</div>
-          <q-input
-            :model-value="String(shareResult.share_url || '')"
-            readonly
-            outlined
-            dense
-          >
+          <q-input :model-value="String(shareResult.share_url || '')" readonly outlined dense>
             <template v-slot:append>
               <q-btn flat dense icon="content_copy" @click="copyShareUrl">
                 <q-tooltip>复制链接</q-tooltip>
@@ -211,7 +239,15 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="关闭" color="grey" v-close-popup @click="shareResult = null" />
-          <q-btn v-if="!shareResult" unelevated label="生成链接" color="secondary" icon="link" @click="createShareLink" :loading="sharing" />
+          <q-btn
+            v-if="!shareResult"
+            unelevated
+            label="生成链接"
+            color="secondary"
+            icon="link"
+            @click="createShareLink"
+            :loading="sharing"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -291,23 +327,51 @@ const shareForm = ref({ expires_hours: 24, max_access_count: 0 });
 
 // 表格列定义
 const reportColumns = [
-  { name: 'report_id', label: '报告编号', field: 'report_id', align: 'left' as const, sortable: true },
+  {
+    name: 'report_id',
+    label: '报告编号',
+    field: 'report_id',
+    align: 'left' as const,
+    sortable: true,
+  },
   { name: 'patient', label: '患者', field: 'patient', align: 'left' as const },
   { name: 'study', label: '病例编号', field: 'study', align: 'left' as const },
   { name: 'format', label: '格式', field: 'file_path', align: 'center' as const },
   { name: 'status', label: '状态', field: 'status', align: 'center' as const },
-  { name: 'download_count', label: '下载次数', field: 'download_count', align: 'center' as const, sortable: true },
-  { name: 'created_at', label: '生成时间', field: 'created_at', align: 'left' as const, sortable: true },
+  {
+    name: 'download_count',
+    label: '下载次数',
+    field: 'download_count',
+    align: 'center' as const,
+    sortable: true,
+  },
+  {
+    name: 'created_at',
+    label: '生成时间',
+    field: 'created_at',
+    align: 'left' as const,
+    sortable: true,
+  },
   { name: 'actions', label: '操作', field: 'actions', align: 'center' as const },
 ];
 
 // 工具函数
 function statusColor(s: string) {
-  const map: Record<string, string> = { draft: 'grey', pending_review: 'warning', approved: 'positive', rejected: 'negative' };
+  const map: Record<string, string> = {
+    draft: 'grey',
+    pending_review: 'warning',
+    approved: 'positive',
+    rejected: 'negative',
+  };
   return map[s] || 'grey';
 }
 function statusLabel(s: string) {
-  const map: Record<string, string> = { draft: '草稿', pending_review: '待审核', approved: '已通过', rejected: '已拒绝' };
+  const map: Record<string, string> = {
+    draft: '草稿',
+    pending_review: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝',
+  };
   return map[s] || s;
 }
 function formatIcon(fp: string) {
@@ -347,7 +411,10 @@ async function loadReports() {
     if (filterStatus.value) params.status = filterStatus.value;
 
     const { data } = await reportAPI.list(params);
-    const resp = data as { success: boolean; data: { reports: ReportRow[]; pagination?: { total: number } } };
+    const resp = data as {
+      success: boolean;
+      data: { reports: ReportRow[]; pagination?: { total: number } };
+    };
     if (resp.success) {
       reports.value = resp.data.reports;
       tablePagination.value.rowsNumber = resp.data.pagination?.total || 0;
@@ -381,14 +448,21 @@ async function generateReport() {
     });
     const resp = data as { success: boolean; message?: string };
     if (resp.success) {
-      $q.notify({ type: 'positive', message: '报告生成成功！', position: 'top', icon: 'check_circle' });
+      $q.notify({
+        type: 'positive',
+        message: '报告生成成功！',
+        position: 'top',
+        icon: 'check_circle',
+      });
       showGenerateDialog.value = false;
       void loadReports();
     } else {
       $q.notify({ type: 'negative', message: resp.message || '生成失败', position: 'top' });
     }
   } catch (error: unknown) {
-    const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '生成报告失败';
+    const msg =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      '生成报告失败';
     $q.notify({ type: 'negative', message: msg, position: 'top' });
   } finally {
     generating.value = false;
@@ -404,7 +478,9 @@ async function downloadReport(row: ReportRow) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const fileName = row.file_path ? (String(row.file_path).split('/').pop() ?? `report_${row.report_id}`) : `report_${row.report_id}`;
+    const fileName = row.file_path
+      ? (String(row.file_path).split('/').pop() ?? `report_${row.report_id}`)
+      : `report_${row.report_id}`;
     a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
@@ -429,7 +505,11 @@ async function createShareLink() {
   sharing.value = true;
   try {
     const { data } = await reportAPI.share(shareReportId.value, shareForm.value);
-    const resp = data as { success: boolean; message?: string; data: { share_link: ShareLinkResult } };
+    const resp = data as {
+      success: boolean;
+      message?: string;
+      data: { share_link: ShareLinkResult };
+    };
     if (resp.success) {
       shareResult.value = resp.data.share_link;
     } else {

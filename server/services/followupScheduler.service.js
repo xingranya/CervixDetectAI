@@ -54,7 +54,8 @@ async function createFollowUpNotification({
   }
 
   const payload =
-    reminderPayload || buildReminderPayload(followUp, patientName || '未知患者', formatDateOnly(new Date()));
+    reminderPayload ||
+    buildReminderPayload(followUp, patientName || '未知患者', formatDateOnly(new Date()));
 
   const notification = await Notification.create({
     user_id: userId,

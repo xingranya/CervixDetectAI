@@ -127,7 +127,9 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
         if (!item.study_id) return;
         if (map.has(item.study_id)) return;
 
-        const date = item.study_date ? new Date(item.study_date).toLocaleDateString('zh-CN') : '未知日期';
+        const date = item.study_date
+          ? new Date(item.study_date).toLocaleDateString('zh-CN')
+          : '未知日期';
         const label = `${item.study_unique_id || `病例${item.study_id}`} · ${date}`;
         map.set(item.study_id, {
           label,
@@ -201,11 +203,7 @@ export const usePatientInsightsStore = defineStore('patientInsights', {
       return token;
     },
 
-    isActiveRequest(
-      key: keyof PatientInsightsRequestTokens,
-      token: number,
-      patientId: number,
-    ) {
+    isActiveRequest(key: keyof PatientInsightsRequestTokens, token: number, patientId: number) {
       return this.currentPatientId === patientId && this.requestTokens[key] === token;
     },
 
