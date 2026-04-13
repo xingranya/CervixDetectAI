@@ -69,8 +69,8 @@ async function markAnalysisTaskFailed({
     taskUpdateData.processing_time = Math.round(processingTime);
   }
 
-  await AnalysisTask.update(taskUpdateData, { where: { id: analysisTaskId } }).catch((updateError) =>
-    console.error('[AnalysisService] 状态更新失败:', updateError),
+  await AnalysisTask.update(taskUpdateData, { where: { id: analysisTaskId } }).catch(
+    (updateError) => console.error('[AnalysisService] 状态更新失败:', updateError),
   );
 
   if (studyId) {

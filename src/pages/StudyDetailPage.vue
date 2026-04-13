@@ -104,7 +104,10 @@
                     </div>
                     <div class="text-grey-7">个高风险区域</div>
                   </div>
-                  <q-scroll-area class="suspicious-areas-scroll" v-if="analysisResult.suspiciousAreas">
+                  <q-scroll-area
+                    class="suspicious-areas-scroll"
+                    v-if="analysisResult.suspiciousAreas"
+                  >
                     <div
                       v-for="(area, idx) in analysisResult.suspiciousAreas"
                       :key="idx"
@@ -159,7 +162,9 @@
             >
               <q-card flat class="bg-grey-1">
                 <q-card-section>
-                  <div class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block">
+                  <div
+                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block"
+                  >
                     {{ analysisResult.detailedReport }}
                   </div>
                 </q-card-section>
@@ -219,7 +224,11 @@
         </q-card>
 
         <!-- Image Preview Section -->
-        <q-card class="full-height shadow-3 rounded-borders study-surface-card" v-else ref="previewCardRef">
+        <q-card
+          class="full-height shadow-3 rounded-borders study-surface-card"
+          v-else
+          ref="previewCardRef"
+        >
           <!-- Header -->
           <q-card-section
             class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
@@ -411,7 +420,12 @@
                     :class="{ 'complete-icon': isAnalyzingComplete }"
                   >
                     <transition name="icon-swap" mode="out-in">
-                      <q-spinner-orbit v-if="!isAnalyzingComplete" color="white" size="28px" key="spin" />
+                      <q-spinner-orbit
+                        v-if="!isAnalyzingComplete"
+                        color="white"
+                        size="28px"
+                        key="spin"
+                      />
                       <q-icon v-else name="check_circle" color="white" size="28px" key="check" />
                     </transition>
                   </div>
@@ -607,9 +621,7 @@
                     v-ripple
                   >
                     <q-icon name="grain" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold advanced-option-label">
-                      核质增强
-                    </div>
+                    <div class="text-caption text-weight-bold advanced-option-label">核质增强</div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
@@ -632,9 +644,7 @@
                     v-ripple
                   >
                     <q-icon name="layers_clear" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold advanced-option-label">
-                      重叠分离
-                    </div>
+                    <div class="text-caption text-weight-bold advanced-option-label">重叠分离</div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
@@ -657,9 +667,7 @@
                     v-ripple
                   >
                     <q-icon name="filter_alt_off" size="sm" class="q-mb-xs" />
-                    <div class="text-caption text-weight-bold advanced-option-label">
-                      杂质过滤
-                    </div>
+                    <div class="text-caption text-weight-bold advanced-option-label">杂质过滤</div>
                     <q-icon
                       name="check_circle"
                       class="absolute-top-right q-ma-xs"
@@ -815,7 +823,10 @@
                     <div class="text-body2 text-grey-9 q-mt-xs">{{ log.message }}</div>
                   </q-item-section>
                 </q-item>
-                <div v-if="logs.length === 0" class="text-center text-grey-5 q-pa-md flex flex-center analysis-log-empty">
+                <div
+                  v-if="logs.length === 0"
+                  class="text-center text-grey-5 q-pa-md flex flex-center analysis-log-empty"
+                >
                   <div class="column flex-center">
                     <q-icon name="history" size="md" class="q-mb-sm" />
                     暂无日志记录
@@ -850,7 +861,14 @@
     </div>
     <!-- AI 追问对话 FAB -->
     <q-page-sticky v-if="analysisResult" position="bottom-right" :offset="[24, 24]">
-      <q-btn fab icon="smart_toy" color="primary" @click="chatOpen = !chatOpen" class="chat-fab" aria-label="打开AI追问助手">
+      <q-btn
+        fab
+        icon="smart_toy"
+        color="primary"
+        @click="chatOpen = !chatOpen"
+        class="chat-fab"
+        aria-label="打开AI追问助手"
+      >
         <q-badge v-if="!chatOpen" color="positive" floating rounded label="AI" />
         <q-tooltip>AI 追问助手</q-tooltip>
       </q-btn>
@@ -1205,7 +1223,11 @@ const stopPollingAndRefresh = async ({
 };
 
 const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
-  if (sessionId !== pollingSessionToken || currentTaskId.value !== taskId || pollingRequestInFlight) {
+  if (
+    sessionId !== pollingSessionToken ||
+    currentTaskId.value !== taskId ||
+    pollingRequestInFlight
+  ) {
     return;
   }
 
@@ -1411,7 +1433,11 @@ const refreshStudyData = async (options?: { allowResumePolling?: boolean }) => {
       // 优先级：已有分析结果时，直接视为完成，避免被历史任务状态覆盖
       if (updatedStudy?.analysisResult && !currentTaskId.value) {
         completeAnalysisFromResult();
-      } else if (allowResumePolling && updatedStudy?.status === 'processing' && updatedStudy.taskId) {
+      } else if (
+        allowResumePolling &&
+        updatedStudy?.status === 'processing' &&
+        updatedStudy.taskId
+      ) {
         // 检查是否有正在进行的任务，如果有则自动开始轮询
         isAnalyzing.value = true;
         currentTaskId.value = updatedStudy.taskId;
@@ -1887,9 +1913,15 @@ onUnmounted(() => {
 
 /* 完成入场脉冲效果 */
 @keyframes successCardPulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.015); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.015);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* 完成态进度条颜色 */
