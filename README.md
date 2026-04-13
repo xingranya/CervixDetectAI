@@ -319,7 +319,8 @@ CervixDetectAI/
 │   │   ├── 📁 patients/             # 患者相关组件
 │   │   │   ├── PatientForm.vue     # 患者表单
 │   │   │   ├── PatientDetail.vue   # 患者详情
-│   │   │   └── PatientSelector.vue # 患者选择器
+│   │   │   ├── PatientSelector.vue # 患者选择器
+│   │   │   └── PatientImportDialog.vue # 患者批量导入对话框
 │   │   ├── 📁 studies/              # 病例相关组件
 │   │   │   ├── ImageUploader.vue   # 影像上传
 │   │   │   ├── ImageAnalyzer.vue   # 影像标注
@@ -354,6 +355,7 @@ CervixDetectAI/
 │   │   ├── AiPreferencesPage.vue   # AI 偏好设置
 │   │   ├── ProfilePage.vue          # 个人资料
 │   │   ├── SettingsPage.vue         # 系统设置
+│   │   ├── SystemMonitorPage.vue    # 系统监控
 │   │   └── ...                      # 其他页面
 │   ├── 📁 router/                   # 路由配置
 │   │   └── index.ts                 # 路由定义
@@ -390,6 +392,8 @@ CervixDetectAI/
 │   │   ├── FollowUp.js              # 随访计划模型
 │   │   ├── Order.js                 # 订单模型
 │   │   ├── UserAvatar.js            # 用户头像模型
+│   │   ├── AuditLog.js             # 审计日志模型
+│   │   ├── ReportShareLink.js       # 报告分享链接模型
 │   │   └── index.js                 # 模型关联
 │   ├── 📁 routes/                   # 路由控制器
 │   │   ├── auth.js                  # 认证接口
@@ -407,7 +411,9 @@ CervixDetectAI/
 │   │   ├── payment.js               # 支付接口
 │   │   ├── settings.js             # 系统设置
 │   │   ├── dashboard.js            # 仪表盘数据
-│   │   └── system.js                # 系统管理
+│   │   ├── system.js                # 系统管理
+│   │   ├── audit.js                 # 审计日志
+│   │   └── import.js                # 数据导入
 │   ├── 📁 services/                 # 业务逻辑
 │   │   ├── qwenService.js           # 通义千问分析/对话服务
 │   │   ├── simpleAnalysisQueue.service.js # 异步任务队列
@@ -418,12 +424,27 @@ CervixDetectAI/
 │   │   ├── email.service.js         # 邮件服务
 │   │   ├── tucang.service.js       # 图仓存储服务
 │   │   ├── studyImageStorage.service.js # 影像存储服务
-│   │   └── databaseCleanup.service.js # 数据库清理服务
+│   │   ├── databaseCleanup.service.js # 数据库清理服务
+│   │   ├── dataImport.service.js    # 患者数据导入服务
+│   │   ├── followupCompliance.service.js # 随访合规服务
+│   │   ├── followupTemplate.service.js # 随访模板服务
+│   │   └── reportGenerator.service.js # 报告生成服务
 │   ├── 📁 middleware/               # 中间件
-│   │   └── auth.js                  # JWT 认证中间件
+│   │   ├── auth.js                  # JWT 认证中间件
+│   │   ├── auditLogger.js           # 审计日志中间件
+│   │   ├── rateLimiter.js           # 限流中间件
+│   │   └── requestLogger.js        # 请求日志中间件
 │   ├── 📁 scripts/                  # 数据库脚本
 │   │   ├── init-database.js         # 数据库初始化
 │   │   └── ...                      # 其他脚本
+│   ├── 📁 constants/                # 常量配置
+│   │   ├── followupTemplates.js    # 随访模板常量
+│   │   ├── reportTemplates.js      # 报告模板常量
+│   │   └── verification.js         # 验证常量
+│   ├── 📁 utils/                    # 工具函数
+│   │   ├── errorHandler.js          # 错误处理器
+│   │   ├── rateLimiter.js           # 限流工具
+│   │   └── validators.js            # 验证器
 │   ├── 📁 uploads/                  # 上传文件目录
 │   ├── 📁 reports/                  # 生成的报告目录
 │   ├── .env                         # 环境变量

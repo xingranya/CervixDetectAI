@@ -51,11 +51,11 @@
 系统采用安全的验证码生成机制，确保每次发送的验证码具有高随机性和不可预测性。
 
 ### 生成规则
-验证码为6位纯数字，由以下方法生成：
+验证码为6位纯数字，由 `crypto.randomInt` 密码学安全随机数生成：
 ```js
-Math.floor(100000 + Math.random() * 900000).toString()
+const code = crypto.randomInt(100000, 999999).toString();
 ```
-该算法确保生成的验证码始终为6位数（范围：100000 ~ 999999），避免前导零或位数不足的问题。
+使用 Node.js 内置 `crypto.randomInt()` 替代 `Math.random()`，生成密码学安全的随机数，消除验证码可预测风险。
 
 ### 有效期控制
 验证码默认有效期为 **5分钟**，系统在创建记录时自动计算 `expires_at` 字段：
@@ -72,7 +72,7 @@ const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
 **代码来源**
 - [sms.service.js](file://server/services/sms.service.js#L39-L41)
-- [sms-auth.js](file://server/routes/sms-auth.js#L132-L133)
+- [sms-auth.js](file://server/routes/sms-auth.js#L130-L135)
 
 ## 多场景支持机制
 系统通过 `type` 字段实现多业务场景的统一管理，支持三种验证码用途：

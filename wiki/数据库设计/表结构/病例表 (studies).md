@@ -39,6 +39,9 @@
 | symptoms | TEXT | 是 | NULL | 症状描述 |
 | status | ENUM | 否 | pending | 状态机：pending/uploaded/processing/completed/failed |
 | priority | ENUM | 否 | normal | 优先级：normal/urgent/emergency |
+| review_status | ENUM | 否 | pending | 审核状态：pending/reviewed/rejected |
+| reviewed_at | DATETIME | 是 | NULL | 审核时间 |
+| reviewed_by | BIGINT | 是 | NULL | 审核人用户ID |
 | uploaded_at | DATE | 否 | NOW() | 上传时间 |
 
 **Section sources**
@@ -111,6 +114,9 @@ date study_date
 string study_type
 enum status
 enum priority
+enum review_status
+datetime reviewed_at
+bigint reviewed_by FK
 datetime uploaded_at
 }
 PATIENTS ||--o{ STUDIES : "拥有多个"
@@ -126,12 +132,24 @@ USERS ||--o{ STUDIES : "创建多个"
 
 为提升查询性能，`studies` 表定义了多个索引，特别是复合索引的设计显著优化了常见查询场景：
 
-- 单字段索引：`study_id`（唯一）、`patient_id`、`user_id`
+- 单字段索引：`study_id`（唯一）、`patient_id`、`user_id`、`review_status`
 - 复合索引：
   - `(patient_id, study_date)`：支持按患者查询历史检查记录
   - `(status, created_at)`：支持按状态和时间排序获取待处理病例（如分页查询）
 
 其中，`(status, created_at)` 复合索引对于任务调度器至关重要，能够高效检索出所有 `pending` 状态且按创建时间排序的病例，确保先进先出（FIFO）或优先级混合调度的实现。
+
+### 审核状态字段
+
+`review_status` 字段用于病例的医疗审核流程：
+
+| 值 | 说明 |
+| :--- | :--- |
+| `pending` | 待审核（默认） |
+| `reviewed` | 已审核 |
+| `rejected` | 已驳回 |
+
+审核相关字段记录了审核操作的执行时间与执行人，支持审计追溯。
 
 **Section sources**
 - [Study.js](file://server/models/Study.js#L89-L105)

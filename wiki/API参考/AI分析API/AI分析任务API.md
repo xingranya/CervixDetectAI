@@ -285,6 +285,64 @@ Note over Client : 轮询感知到终态
 - [api.ts](file://src/services/api.ts#L460-L486)
 - [openapi.yaml](file://server/docs/openapi.yaml#L1868-L1900)
 
+### 批量分析（对已有病例）
+
+对已有病例批量创建分析任务，适用于批量送检场景。
+
+#### 请求信息
+- **HTTP方法**: POST
+- **URL路径**: /api/analysis-tasks/batch-analyze
+- **请求头**:
+  - Authorization: Bearer <token>
+  - Content-Type: application/json
+
+#### 请求参数
+| 参数名 | 位置 | 类型 | 是否必填 | 描述 |
+|-------|------|------|---------|------|
+| study_ids | body | integer[] | 是 | 病例ID数组 |
+| priority | body | string | 否 | 优先级（normal/urgent/emergency），默认 normal |
+
+#### 请求体JSON Schema
+```json
+{
+  "study_ids": [101, 102, 103],
+  "priority": "normal"
+}
+```
+
+#### 响应体JSON Schema
+```json
+{
+  "success": true,
+  "message": "批量分析任务创建完成，成功 3 条，失败/跳过 0 条",
+  "data": {
+    "batchId": "batch_analyze_xxx",
+    "summary": {
+      "total": 3,
+      "success": 3,
+      "failed": 0
+    }
+  }
+}
+```
+
+#### HTTP状态码
+| 状态码 | 说明 | 错误信息示例 |
+|-------|------|------------|
+| 200 | 批量创建完成 | "批量分析任务创建完成，成功 3 条，失败/跳过 0 条" |
+| 400 | 请求参数错误 | "study_ids 必须是非空数组" / "批量操作数量不能超过50条" |
+| 401 | 未认证 | "未提供认证令牌" |
+| 500 | 服务器错误 | "批量创建分析任务失败" |
+
+#### 行为说明
+- 单次批量上限 **50 条**，超出返回 400 错误。
+- 遍历每个 study_id，检查病例存在性、状态有效性及是否已有进行中任务；无效项计入 `failed`。
+- 每个有效病例独立创建 `AnalysisTask` 并加入任务队列。
+- 整体原子性：接口返回批量汇总结果，不因单个失败中断。
+
+**Section sources**
+- [analysis-tasks.js](file://server/routes/analysis-tasks.js#L250-L401)
+
 ### 获取分析任务列表
 获取分析任务的分页列表。
 
