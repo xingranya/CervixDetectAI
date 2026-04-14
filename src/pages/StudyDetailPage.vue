@@ -366,6 +366,7 @@
                       :src="displayImageUrl"
                       :initial-annotations="aiAnnotations"
                       @zoom="handleAiZoom"
+                      @image-load="handleAnalyzerImageLoad"
                     />
                     <div v-else class="text-center q-pa-md text-grey flex flex-center full-height">
                       <div class="column flex-center">
@@ -931,6 +932,7 @@ import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
 import { type SuspiciousArea } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
+import type { Annotation as AnalyzerAnnotation } from 'components/studies/analyzer/types';
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
 import { reportAPI } from 'src/services/api';
@@ -987,6 +989,7 @@ const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
 // 用于跟踪当前进度阶段，避免重复添加日志
 let lastProgressPhase = '';
 const aiZoomLevel = ref(1);
+const analyzerImageSize = ref({ width: 0, height: 0 });
 const POLLING_INTERVAL_MS = 2000;
 const MAX_POLLING_FAILURES = 3;
 const STALLED_PROGRESS_MIN = 90;
@@ -1019,52 +1022,98 @@ const estimatedTimeRemaining = computed(() => {
   return `约${remainingSeconds}秒`;
 });
 
-// Annotations from AI result
-interface Annotation {
-  type: 'rect';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  label: string;
-  confidence: number;
+function clampNormalizedCoordinate(value: number) {
+  return Math.max(0, Math.min(value, 999));
 }
 
-const aiAnnotations = computed<Annotation[]>(() => {
+function toPixelCoordinate(value: number, size: number) {
+  return (clampNormalizedCoordinate(value) / 1000) * size;
+}
+
+function resolveSuspiciousAreaBox(
+  area: SuspiciousArea,
+): { x1: number; y1: number; x2: number; y2: number } | null {
+  const officialBox = Array.isArray(area.bbox_2d) ? area.bbox_2d : null;
+  if (officialBox && officialBox.length === 4) {
+    const x1 = officialBox[0];
+    const y1 = officialBox[1];
+    const x2 = officialBox[2];
+    const y2 = officialBox[3];
+    if ([x1, y1, x2, y2].some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
+      return null;
+    }
+    return {
+      x1: Number(x1),
+      y1: Number(y1),
+      x2: Number(x2),
+      y2: Number(y2),
+    };
+  }
+
+  const projectBox = Array.isArray(area.box_2d) ? area.box_2d : null;
+  if (projectBox && projectBox.length === 4) {
+    const ymin = projectBox[0];
+    const xmin = projectBox[1];
+    const ymax = projectBox[2];
+    const xmax = projectBox[3];
+    if (
+      [ymin, xmin, ymax, xmax].some(
+        (value) => typeof value !== 'number' || !Number.isFinite(value),
+      )
+    ) {
+      return null;
+    }
+    return {
+      x1: Number(xmin),
+      y1: Number(ymin),
+      x2: Number(xmax),
+      y2: Number(ymax),
+    };
+  }
+
+  return null;
+}
+
+// Annotations from AI result
+const aiAnnotations = computed<AnalyzerAnnotation[]>(() => {
   const result = analysisResult.value;
-  if (!result?.suspiciousAreas) return [];
+  const { width: imageWidth, height: imageHeight } = analyzerImageSize.value;
+  if (!result?.suspiciousAreas || !imageWidth || !imageHeight) return [];
 
   return result.suspiciousAreas
-    .map((area: SuspiciousArea): Annotation | null => {
-      // 如果有 box_2d 坐标,使用它
-      if (area.box_2d && area.box_2d.length === 4) {
-        // 假设 box_2d 是 [ymin, xmin, ymax, xmax] 归一化坐标 (0-1000)
-        // 需要转换为 ImageAnalyzer 需要的像素坐标或百分比
-        // 这里简化处理,假设 ImageAnalyzer 内部处理缩放
-        // 注意:ImageAnalyzer 目前接收的是像素坐标,这里需要知道图片尺寸才能转换
-        // 暂时使用模拟数据或后续在 ImageAnalyzer 中支持归一化坐标
-        const box = area.box_2d;
-        const x = box[1];
-        const y = box[0];
-        const width = box[3] !== undefined && box[1] !== undefined ? box[3] - box[1] : 0;
-        const height = box[2] !== undefined && box[0] !== undefined ? box[2] - box[0] : 0;
+    .map((area: SuspiciousArea): AnalyzerAnnotation | null => {
+      const normalizedBox = resolveSuspiciousAreaBox(area);
+      if (!normalizedBox) return null;
 
-        // 确保所有值都不为 undefined
-        if (x === undefined || y === undefined) return null;
+      const minX = Math.min(normalizedBox.x1, normalizedBox.x2);
+      const minY = Math.min(normalizedBox.y1, normalizedBox.y2);
+      const maxX = Math.max(normalizedBox.x1, normalizedBox.x2);
+      const maxY = Math.max(normalizedBox.y1, normalizedBox.y2);
 
-        return {
-          type: 'rect' as const,
-          x,
-          y,
-          width,
-          height,
-          label: area.description || '异常区域',
-          confidence: result.confidence || 0.85,
-        };
-      }
-      return null;
+      const x = toPixelCoordinate(minX, imageWidth);
+      const y = toPixelCoordinate(minY, imageHeight);
+      const width = toPixelCoordinate(maxX, imageWidth) - x;
+      const height = toPixelCoordinate(maxY, imageHeight) - y;
+
+      if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0) return null;
+
+      return {
+        type: 'rect',
+        x,
+        y,
+        width,
+        height,
+        label: area.description || '异常区域',
+        confidence: result.confidence || 0.85,
+        source: 'ai',
+        description: area.location || area.features?.join('、') || area.description || 'AI识别区域',
+      };
     })
-    .filter((item): item is Annotation => item !== null);
+    .filter((item): item is AnalyzerAnnotation => item !== null);
+});
+
+watch(displayImageUrl, () => {
+  analyzerImageSize.value = { width: 0, height: 0 };
 });
 
 // Methods
@@ -1137,6 +1186,10 @@ const handleAiZoom = (scale: number) => {
   aiZoomLevel.value = scale;
 };
 
+const handleAnalyzerImageLoad = (width: number, height: number) => {
+  analyzerImageSize.value = { width, height };
+};
+
 // 生成报告
 const generateReport = async (format: ReportFormat) => {
   if (!study.value?.id) {
@@ -1157,14 +1210,21 @@ const generateReport = async (format: ReportFormat) => {
       // 自动下载
       const reportId = resp.data?.report?.id;
       if (reportId) {
-        const dlResp = await reportAPI.download(reportId);
-        const blob = new Blob([dlResp.data as BlobPart]);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `report_${study.value.id}.${format === 'pdf' ? 'pdf' : format === 'word' ? 'docx' : 'xlsx'}`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        try {
+          const dlResp = await reportAPI.download(reportId);
+          const blob = new Blob([dlResp.data as BlobPart]);
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `report_${study.value.id}.${format === 'pdf' ? 'pdf' : format === 'word' ? 'docx' : 'xlsx'}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } catch (downloadError: unknown) {
+          const downloadMessage =
+            (downloadError as { response?: { data?: { message?: string } } })?.response?.data
+              ?.message || '报告已生成，但自动下载失败';
+          $q.notify({ type: 'warning', message: downloadMessage, position: 'top' });
+        }
       }
     } else {
       $q.notify({ type: 'negative', message: resp.message || '生成失败', position: 'top' });
