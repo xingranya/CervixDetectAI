@@ -241,7 +241,6 @@
                     round
                     icon="cancel"
                     color="negative"
-                    :disable="props.row.status === 'completed' || props.row.status === 'cancelled'"
                     @click="markCancelled(props.row)"
                   >
                     <q-tooltip>取消计划</q-tooltip>

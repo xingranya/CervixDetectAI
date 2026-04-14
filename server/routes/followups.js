@@ -420,7 +420,10 @@ router.get('/', authenticate, async (req, res) => {
     } = req.query;
 
     const where = {};
-    if (status && validateStatus(status)) {
+    // 默认排除已取消的随访，除非明确筛选该状态
+    if (!status) {
+      where.status = { [Op.ne]: 'cancelled' };
+    } else if (validateStatus(status)) {
       where.status = status;
     }
     if (patient_id) {
@@ -726,13 +729,7 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
       });
     }
 
-    if (followUp.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: '已完成的随访计划无法取消',
-      });
-    }
-
+    // 所有状态都可取消（包括已完成）
     if (followUp.status === 'cancelled') {
       return res.json({
         success: true,

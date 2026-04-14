@@ -10,7 +10,6 @@ const {
   TableCell,
   HeadingLevel,
   AlignmentType,
-  BorderStyle,
   WidthType,
 } = require('docx');
 const ExcelJS = require('exceljs');
@@ -19,7 +18,7 @@ const path = require('path');
 const { Study, Patient, AnalysisResult, StudyImage } = require('../models');
 
 // 中文字体路径
-const FONT_PATH = path.join(__dirname, '../../public/fonts/SimSun.ttf');
+const FONT_PATH = path.join(__dirname, '../public/fonts/SimSun.ttf');
 const HAS_CN_FONT = fs.existsSync(FONT_PATH);
 
 /**

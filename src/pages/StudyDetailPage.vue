@@ -161,7 +161,7 @@
               class="bg-white"
             >
               <q-card flat class="bg-grey-1">
-                <q-card-section>
+                <q-card-section class="q-pa-sm">
                   <!-- eslint-disable-next-line vue/no-v-html -->
                   <div
                     class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block detailed-report-markdown"
@@ -1965,44 +1965,7 @@ onUnmounted(() => {
 }
 
 .report-text-block {
-  line-height: 1.6;
-}
-
-.detailed-report-markdown {
-  :deep(h1),
-  :deep(h2),
-  :deep(h3),
-  :deep(h4) {
-    margin: 0 0 10px;
-    color: #24324a;
-    font-weight: 700;
-    line-height: 1.45;
-  }
-
-  :deep(h3:not(:first-child)),
-  :deep(h4:not(:first-child)) {
-    margin-top: 18px;
-  }
-
-  :deep(p) {
-    margin: 8px 0;
-  }
-
-  :deep(ul),
-  :deep(ol) {
-    margin: 8px 0 0;
-    padding-left: 22px;
-  }
-
-  :deep(li) {
-    margin: 6px 0;
-    color: #3d4b63;
-  }
-
-  :deep(strong) {
-    color: #1f2a44;
-    font-weight: 700;
-  }
+  line-height: 1.5;
 }
 
 .ai-diagnosis-bg-icon {
@@ -2434,6 +2397,61 @@ body.body--dark {
 
   .image-panel-wrapper:hover {
     box-shadow: var(--app-image-panel-hover-shadow) !important;
+  }
+}
+
+.detailed-report-markdown {
+  h1, h2, h3, h4 {
+    color: #24324a !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    margin-top: 12px !important;
+    margin-bottom: 6px !important;
+  }
+
+  h1:first-child,
+  h2:first-child,
+  h3:first-child,
+  h4:first-child {
+    margin-top: 0 !important;
+  }
+
+  h1 { font-size: 1.15rem !important; }
+  h2 { font-size: 1.05rem !important; }
+  h3 { font-size: 0.95rem !important; }
+  h4 { font-size: 0.9rem !important; }
+
+  p {
+    margin: 3px 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  ul, ol {
+    margin: 2px 0 0 !important;
+    padding-left: 20px !important;
+  }
+
+  li {
+    margin: 2px 0 !important;
+    color: #3d4b63 !important;
+    line-height: 1.4 !important;
+  }
+
+  strong {
+    color: #1f2a44 !important;
+    font-weight: 700 !important;
+  }
+}
+
+body.body--dark .detailed-report-markdown {
+  h1, h2, h3, h4 {
+    color: #e2e8f0 !important;
+  }
+  li {
+    color: #cbd5e1 !important;
+  }
+  strong {
+    color: #f1f5f9 !important;
   }
 }
 </style>
