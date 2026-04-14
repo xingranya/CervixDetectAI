@@ -1119,9 +1119,7 @@ function resolveSuspiciousAreaBox(
     const ymax = projectBox[2];
     const xmax = projectBox[3];
     if (
-      [ymin, xmin, ymax, xmax].some(
-        (value) => typeof value !== 'number' || !Number.isFinite(value),
-      )
+      [ymin, xmin, ymax, xmax].some((value) => typeof value !== 'number' || !Number.isFinite(value))
     ) {
       return null;
     }
