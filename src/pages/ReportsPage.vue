@@ -400,6 +400,12 @@ function formatDate(d: string) {
   return new Date(d).toLocaleString('zh-CN');
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback
+  );
+}
+
 // 加载报告列表
 async function loadReports() {
   loading.value = true;
@@ -421,7 +427,11 @@ async function loadReports() {
     }
   } catch (error) {
     console.error('加载报告列表失败:', error);
-    $q.notify({ type: 'negative', message: '加载报告列表失败', position: 'top' });
+    $q.notify({
+      type: 'negative',
+      message: getErrorMessage(error, '加载报告列表失败'),
+      position: 'top',
+    });
   } finally {
     loading.value = false;
   }
@@ -460,10 +470,11 @@ async function generateReport() {
       $q.notify({ type: 'negative', message: resp.message || '生成失败', position: 'top' });
     }
   } catch (error: unknown) {
-    const msg =
-      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-      '生成报告失败';
-    $q.notify({ type: 'negative', message: msg, position: 'top' });
+    $q.notify({
+      type: 'negative',
+      message: getErrorMessage(error, '生成报告失败'),
+      position: 'top',
+    });
   } finally {
     generating.value = false;
   }
@@ -485,8 +496,12 @@ async function downloadReport(row: ReportRow) {
     a.click();
     window.URL.revokeObjectURL(url);
     $q.notify({ type: 'positive', message: '下载成功', position: 'top' });
-  } catch {
-    $q.notify({ type: 'negative', message: '下载失败', position: 'top' });
+  } catch (error: unknown) {
+    $q.notify({
+      type: 'negative',
+      message: getErrorMessage(error, '下载失败'),
+      position: 'top',
+    });
   } finally {
     downloadingId.value = null;
   }
@@ -515,8 +530,12 @@ async function createShareLink() {
     } else {
       $q.notify({ type: 'negative', message: resp.message || '生成分享链接失败', position: 'top' });
     }
-  } catch {
-    $q.notify({ type: 'negative', message: '生成分享链接失败', position: 'top' });
+  } catch (error: unknown) {
+    $q.notify({
+      type: 'negative',
+      message: getErrorMessage(error, '生成分享链接失败'),
+      position: 'top',
+    });
   } finally {
     sharing.value = false;
   }

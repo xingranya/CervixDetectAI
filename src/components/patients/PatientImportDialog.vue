@@ -37,7 +37,7 @@
                   @click="handleDownloadTemplate"
                 />
                 <div class="text-caption text-grey-6 q-mt-xs">
-                  请按照模板格式填写数据，支持 .csv / .xlsx / .xls 文件
+                  请按照模板格式填写数据，仅支持 .xlsx 文件
                 </div>
               </div>
 
@@ -53,14 +53,14 @@
                 <input
                   ref="fileInputRef"
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".xlsx"
                   class="hidden"
                   @change="handleFileChange"
                 />
                 <q-icon name="cloud_upload" size="64px" color="primary" class="q-mb-md" />
                 <div class="text-h6 text-grey-8">拖拽文件到此处</div>
                 <div class="text-body2 text-grey-6 q-mt-xs">或点击选择文件</div>
-                <div class="text-caption text-grey-5 q-mt-sm">支持 CSV、Excel 文件，最大 10MB</div>
+                <div class="text-caption text-grey-5 q-mt-sm">仅支持 .xlsx 文件，最大 10MB</div>
               </div>
 
               <!-- 已选文件 -->
@@ -349,8 +349,8 @@ function handleDrop(e: DragEvent) {
   if (!file) return;
 
   const ext = file.name.split('.').pop()?.toLowerCase();
-  if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
-    $q.notify({ type: 'warning', message: '仅支持 CSV 和 Excel 文件', position: 'top' });
+  if (ext !== 'xlsx') {
+    $q.notify({ type: 'warning', message: '仅支持 .xlsx 文件', position: 'top' });
     return;
   }
   selectedFile.value = file;
