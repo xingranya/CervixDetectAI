@@ -101,6 +101,19 @@ function getLocalImagePaths(images) {
   return result;
 }
 
+function convertMarkdownToPlainText(text) {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/^\s*\d+\.\s+/gm, '• ')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // ============================================================
 // PDF 报告生成
 // ============================================================
@@ -229,7 +242,9 @@ async function generatePDF(studyId, template) {
       if (analysisResult.detailed_report) {
         doc.text('详细病理报告：', 60);
         doc.moveDown(0.2);
-        doc.fontSize(9).text(analysisResult.detailed_report, 60, doc.y, { width: 480 });
+        doc.fontSize(9).text(convertMarkdownToPlainText(analysisResult.detailed_report), 60, doc.y, {
+          width: 480,
+        });
         doc.fontSize(10);
         doc.moveDown(0.3);
       }
@@ -436,7 +451,12 @@ async function generateWord(studyId, template) {
           spacing: { before: 300 },
         }),
         new Paragraph({
-          children: [new TextRun({ text: analysisResult.detailed_report, size: 20 })],
+          children: [
+            new TextRun({
+              text: convertMarkdownToPlainText(analysisResult.detailed_report),
+              size: 20,
+            }),
+          ],
         }),
       );
     }

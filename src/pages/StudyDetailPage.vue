@@ -162,11 +162,11 @@
             >
               <q-card flat class="bg-grey-1">
                 <q-card-section>
+                  <!-- eslint-disable-next-line vue/no-v-html -->
                   <div
-                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block"
-                  >
-                    {{ analysisResult.detailedReport }}
-                  </div>
+                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block detailed-report-markdown"
+                    v-html="renderedDetailedReportHtml"
+                  />
                 </q-card-section>
               </q-card>
             </q-expansion-item>
@@ -926,6 +926,8 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { useThemeStore } from 'stores/themeStore';
 import * as echarts from 'echarts';
 import { useStudyStore } from 'stores/studyStore';
@@ -995,6 +997,8 @@ const MAX_POLLING_FAILURES = 3;
 const STALLED_PROGRESS_MIN = 90;
 const MAX_STALLED_PROGRESS_POLLS = 90;
 
+marked.setOptions({ breaks: true, gfm: true });
+
 // Mock Data
 const patientOptions = ['张丽 (ID: P20251212001)', '王芳 (ID: P20251211045)'];
 const imageTypeOptions = ['细胞学涂片', '阴道镜图像', '组织病理切片'];
@@ -1006,6 +1010,64 @@ const displayImageUrl = computed(
 );
 
 const analysisResult = computed(() => studyStore.currentStudy?.analysisResult || null);
+
+function hasStructuredMarkdown(text: string) {
+  return /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)/m.test(text);
+}
+
+function splitReportSentences(text: string) {
+  return text
+    .split(/(?<=[。；])/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildMarkdownSection(title: string, content: string) {
+  const sentences = splitReportSentences(content);
+  if (sentences.length === 0) {
+    return `### ${title}`;
+  }
+  return `### ${title}\n${sentences.map((sentence) => `- ${sentence}`).join('\n')}`;
+}
+
+function normalizeDetailedReportToMarkdown(text?: string) {
+  const normalized = String(text || '')
+    .replace(/\r\n/g, '\n')
+    .trim();
+
+  if (!normalized) return '';
+  if (hasStructuredMarkdown(normalized)) {
+    return normalized;
+  }
+
+  const paragraphs = normalized
+    .split(/\n{2,}/)
+    .map((item) => item.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  const sections = paragraphs.map((paragraph, index) => {
+    const sectionMatch = paragraph.match(/^([^：:\n]{2,30})[：:]\s*(.+)$/s);
+    if (sectionMatch?.[1] && sectionMatch?.[2]) {
+      const title = sectionMatch[1];
+      const content = sectionMatch[2];
+      return buildMarkdownSection(title.trim(), content.trim());
+    }
+
+    const fallbackTitle = index === 0 ? '病理观察' : `补充说明 ${index}`;
+    return buildMarkdownSection(fallbackTitle, paragraph);
+  });
+
+  return sections.join('\n\n');
+}
+
+const detailedReportMarkdown = computed(() =>
+  normalizeDetailedReportToMarkdown(analysisResult.value?.detailedReport),
+);
+
+const renderedDetailedReportHtml = computed(() => {
+  if (!detailedReportMarkdown.value) return '';
+  return DOMPurify.sanitize(marked.parse(detailedReportMarkdown.value) as string);
+});
 
 // 预计剩余时间计算
 const estimatedTimeRemaining = computed(() => {
@@ -1905,8 +1967,44 @@ onUnmounted(() => {
 }
 
 .report-text-block {
-  white-space: pre-wrap;
   line-height: 1.6;
+}
+
+.detailed-report-markdown {
+  :deep(h1),
+  :deep(h2),
+  :deep(h3),
+  :deep(h4) {
+    margin: 0 0 10px;
+    color: #24324a;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  :deep(h3:not(:first-child)),
+  :deep(h4:not(:first-child)) {
+    margin-top: 18px;
+  }
+
+  :deep(p) {
+    margin: 8px 0;
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    margin: 8px 0 0;
+    padding-left: 22px;
+  }
+
+  :deep(li) {
+    margin: 6px 0;
+    color: #3d4b63;
+  }
+
+  :deep(strong) {
+    color: #1f2a44;
+    font-weight: 700;
+  }
 }
 
 .ai-diagnosis-bg-icon {

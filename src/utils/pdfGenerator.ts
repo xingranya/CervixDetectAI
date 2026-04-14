@@ -26,6 +26,19 @@ interface AnalysisResult {
   detailedReport?: string;
 }
 
+function convertMarkdownToPlainText(text?: string): string {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/^\s*\d+\.\s+/gm, '• ')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
  * PDF 报告数据接口
  */
@@ -237,7 +250,7 @@ export async function generatePDFReport(data: PDFReportData): Promise<void> {
 
     doc.setFontSize(9);
     const reportLines = doc.splitTextToSize(
-      data.result.detailedReport,
+      convertMarkdownToPlainText(data.result.detailedReport),
       pageWidth - 2 * margin - 10,
     );
 
