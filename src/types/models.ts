@@ -69,6 +69,7 @@ export interface StudyImage {
 
 export interface SuspiciousArea {
   box_2d?: number[];
+  bbox_2d?: number[];
   description?: string;
 }
 

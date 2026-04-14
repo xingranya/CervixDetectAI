@@ -4,6 +4,7 @@ import type { TaskStatusResponse } from 'src/services/apiService';
 
 export interface SuspiciousArea {
   box_2d?: number[];
+  bbox_2d?: number[];
   description?: string;
   location?: string;
   features?: string[];

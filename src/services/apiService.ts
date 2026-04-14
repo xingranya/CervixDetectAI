@@ -33,6 +33,7 @@ export interface ApiSuspiciousArea {
   description?: string;
   location?: string;
   box_2d?: number[];
+  bbox_2d?: number[];
   features?: string[];
 }
 

@@ -330,6 +330,7 @@ interface StudyAnalysisResultRaw {
   recommendations?: string[];
   suspicious_areas?: Array<{
     box_2d?: number[];
+    bbox_2d?: number[];
     description?: string;
     location?: string;
     features?: string[];
