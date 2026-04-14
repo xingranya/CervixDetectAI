@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * 数据导入路由
- * 提供患者 CSV / Excel 文件上传预览、确认导入与模板下载接口
+ * 提供患者 XLSX 文件上传预览、确认导入与模板下载接口
  */
 
 const express = require('express');
@@ -34,10 +34,10 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (['.csv', '.xlsx', '.xls'].includes(ext)) {
+    if (ext === '.xlsx') {
       cb(null, true);
     } else {
-      cb(new Error('仅支持 CSV 和 Excel 文件'));
+      cb(new Error('仅支持 XLSX 文件'));
     }
   },
 });
@@ -65,7 +65,7 @@ router.post('/patients/preview', authenticate, upload.single('file'), async (req
     }
 
     // 1. 解析文件
-    const rows = parseFile(req.file.path);
+    const rows = await parseFile(req.file.path);
 
     if (rows.length === 0) {
       cleanupTempFile(req.file.path);
@@ -137,7 +137,7 @@ router.post('/patients/confirm', authenticate, async (req, res) => {
 // ------------------------------------------------------------------
 router.get('/patients/template', authenticate, async (_req, res) => {
   try {
-    const buffer = generateTemplate();
+    const buffer = await generateTemplate();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

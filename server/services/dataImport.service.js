@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * 数据导入服务
- * 支持 CSV / Excel 文件解析、验证、去重与批量导入
+ * 支持 XLSX 文件解析、验证、去重与批量导入
  */
 
 const ExcelJS = require('exceljs');
@@ -24,7 +24,7 @@ const BULK_BATCH_SIZE = 500;
 // ------------------------------------------------------------------
 
 /**
- * 解析上传的文件（CSV 或 Excel）
+ * 解析上传的 XLSX 文件
  * @param {string} filePath - 文件路径
  * @returns {object[]} 标准化数据数组
  */

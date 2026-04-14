@@ -146,11 +146,9 @@ const MedicalReport = sequelize.define(
   }
 );
 
-async function ensureReportId(report) {
-  if (report.report_id) {
-    return;
-  }
+const MAX_REPORT_ID_RETRY_COUNT = 5;
 
+async function generateReportIdCandidate() {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const prefix = `R${dateStr}`;
@@ -165,7 +163,23 @@ async function ensureReportId(report) {
   });
 
   const sequence = String(count + 1).padStart(6, '0');
-  report.report_id = `${prefix}${sequence}`;
+  return `${prefix}${sequence}`;
+}
+
+function isReportIdUniqueConflict(error) {
+  if (error.name !== 'SequelizeUniqueConstraintError') {
+    return false;
+  }
+
+  return (error.errors || []).some((item) => item.path === 'report_id');
+}
+
+async function ensureReportId(report) {
+  if (report.report_id) {
+    return;
+  }
+
+  report.report_id = await generateReportIdCandidate();
 }
 
 // Hook：校验前自动生成 report_id，避免 allowNull 校验先于 beforeCreate 触发
@@ -177,5 +191,33 @@ MedicalReport.beforeValidate(async (report) => {
 MedicalReport.beforeCreate(async (report) => {
   await ensureReportId(report);
 });
+
+MedicalReport.createWithRetry = async function createWithRetry(values, options = {}) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= MAX_REPORT_ID_RETRY_COUNT; attempt += 1) {
+    try {
+      const reportId = await generateReportIdCandidate();
+      return await MedicalReport.create(
+        {
+          ...values,
+          report_id: reportId,
+        },
+        options,
+      );
+    } catch (error) {
+      if (!isReportIdUniqueConflict(error)) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+
+  const retryError = new Error('报告编号生成冲突，请稍后重试');
+  retryError.statusCode = 500;
+  retryError.code = 'REPORT_ID_GENERATION_FAILED';
+  retryError.cause = lastError;
+  throw retryError;
+};
 
 module.exports = MedicalReport;

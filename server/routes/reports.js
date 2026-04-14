@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const { Op } = require('sequelize');
 const { authenticate } = require('../middleware/auth');
 const { handleRouteError } = require('../utils/errorHandler');
 const {
@@ -17,6 +18,61 @@ const {
 } = require('../models');
 const { generatePDF, generateWord, generateExcel } = require('../services/reportGenerator.service');
 const { getTemplate } = require('../constants/reportTemplates');
+
+function canAccessStudyReport(user, study) {
+  if (!user || !study) return false;
+  if (user.role === 'admin') return true;
+  return study.user_id === null || study.user_id === user.id;
+}
+
+function buildReportStudyAccessWhere(user) {
+  if (!user || user.role === 'admin') {
+    return {};
+  }
+
+  return {
+    [Op.or]: [{ user_id: user.id }, { user_id: null }],
+  };
+}
+
+async function getStudyForReportAccess(studyId, user, include = []) {
+  const study = await Study.findByPk(studyId, {
+    include,
+  });
+
+  if (!study) {
+    return { study: null, denied: false };
+  }
+
+  if (!canAccessStudyReport(user, study)) {
+    return { study: null, denied: true };
+  }
+
+  return { study, denied: false };
+}
+
+async function getReportForUser(reportId, user, extraIncludes = []) {
+  const report = await MedicalReport.findByPk(reportId, {
+    include: [
+      {
+        model: Study,
+        as: 'study',
+        attributes: ['id', 'study_id', 'study_type', 'study_date', 'status', 'user_id'],
+      },
+      ...extraIncludes,
+    ],
+  });
+
+  if (!report) {
+    return { report: null, denied: false };
+  }
+
+  if (!canAccessStudyReport(user, report.study)) {
+    return { report: null, denied: true };
+  }
+
+  return { report, denied: false };
+}
 
 // ============================================================
 // 公开接口（无需认证）— 必须放在 /:id 之前以避免路由冲突
@@ -48,12 +104,10 @@ router.get('/shared/:token', async (req, res) => {
       return res.status(404).json({ success: false, message: '分享链接不存在或已失效' });
     }
 
-    // 检查过期
     if (new Date() > new Date(shareLink.expires_at)) {
       return res.status(410).json({ success: false, message: '分享链接已过期' });
     }
 
-    // 检查访问次数
     if (
       shareLink.max_access_count > 0 &&
       shareLink.current_access_count >= shareLink.max_access_count
@@ -61,7 +115,6 @@ router.get('/shared/:token', async (req, res) => {
       return res.status(410).json({ success: false, message: '分享链接访问次数已用完' });
     }
 
-    // 更新访问次数
     await shareLink.increment('current_access_count');
 
     const report = shareLink.report;
@@ -69,7 +122,6 @@ router.get('/shared/:token', async (req, res) => {
       return res.status(404).json({ success: false, message: '关联报告不存在' });
     }
 
-    // 如果文件存在则返回下载，否则返回报告数据
     const filePath = report.file_path;
     if (filePath && fs.existsSync(filePath)) {
       const ext = path.extname(filePath).toLowerCase();
@@ -83,7 +135,6 @@ router.get('/shared/:token', async (req, res) => {
       return fs.createReadStream(filePath).pipe(res);
     }
 
-    // 文件不存在时返回报告元数据
     return res.json({
       success: true,
       data: {
@@ -117,12 +168,10 @@ router.post('/batch-export', authenticate, async (req, res) => {
   try {
     const { study_ids, format = 'pdf' } = req.body;
 
-    // 参数校验
     if (!Array.isArray(study_ids) || study_ids.length === 0) {
       return res.status(400).json({ success: false, message: 'study_ids 必须为非空数组' });
     }
 
-    // 数量限制（最多50条）
     if (study_ids.length > 50) {
       return res.status(400).json({ success: false, message: '批量导出数量不能超过50条' });
     }
@@ -135,11 +184,9 @@ router.post('/batch-export', authenticate, async (req, res) => {
       });
     }
 
-    // 获取模板
     const user = await User.findByPk(req.user.id);
     const template = getTemplate(user?.hospital_id);
 
-    // 准备 ZIP 响应
     const timestamp = Date.now();
     const zipFileName = `reports_batch_${timestamp}.zip`;
 
@@ -155,16 +202,17 @@ router.post('/batch-export', authenticate, async (req, res) => {
 
     for (const studyId of study_ids) {
       try {
-        // 验证病例存在且有分析结果
-        const study = await Study.findByPk(studyId, {
-          include: [
-            { model: Patient, as: 'patient' },
-            { model: AnalysisResult, as: 'analysis_results' },
-          ],
-        });
+        const { study, denied } = await getStudyForReportAccess(studyId, req.user, [
+          { model: Patient, as: 'patient' },
+          { model: AnalysisResult, as: 'analysis_results' },
+        ]);
 
         if (!study) {
-          items.push({ study_id: studyId, status: 'FAILED', error: '病例不存在' });
+          items.push({
+            study_id: studyId,
+            status: 'FAILED',
+            error: denied ? '无权访问该病例报告' : '病例不存在',
+          });
           failCount += 1;
           continue;
         }
@@ -175,7 +223,6 @@ router.post('/batch-export', authenticate, async (req, res) => {
           continue;
         }
 
-        // 生成报告文件
         let result;
         if (format === 'pdf') {
           result = await generatePDF(studyId, template);
@@ -185,7 +232,6 @@ router.post('/batch-export', authenticate, async (req, res) => {
           result = await generateExcel(studyId);
         }
 
-        // 添加到 ZIP
         const fileStream = fs.createReadStream(result.filePath);
         archive.append(fileStream, { name: result.fileName });
 
@@ -197,7 +243,6 @@ router.post('/batch-export', authenticate, async (req, res) => {
       }
     }
 
-    // 在 ZIP 中添加结果摘要
     const summaryContent = JSON.stringify(
       {
         export_time: new Date().toISOString(),
@@ -212,10 +257,8 @@ router.post('/batch-export', authenticate, async (req, res) => {
     );
     archive.append(summaryContent, { name: '_export_summary.json' });
 
-    // 完成 ZIP 打包
     await archive.finalize();
   } catch (error) {
-    // 如果响应头已发送，无法返回错误 JSON
     if (!res.headersSent) {
       handleRouteError(res, error, { service: 'Reports', endpoint: 'POST /batch-export' });
     } else {
@@ -235,23 +278,21 @@ router.post('/generate', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: '缺少 study_id 参数' });
     }
 
-    // 验证病例存在且有分析结果
-    const study = await Study.findByPk(study_id, {
-      include: [
-        { model: Patient, as: 'patient' },
-        { model: AnalysisResult, as: 'analysis_results' },
-      ],
-    });
+    const { study, denied } = await getStudyForReportAccess(study_id, req.user, [
+      { model: Patient, as: 'patient' },
+      { model: AnalysisResult, as: 'analysis_results' },
+    ]);
 
     if (!study) {
-      return res.status(404).json({ success: false, message: '病例不存在' });
+      return res
+        .status(denied ? 403 : 404)
+        .json({ success: false, message: denied ? '无权访问该病例报告' : '病例不存在' });
     }
 
     if (!study.analysis_results || study.analysis_results.length === 0) {
       return res.status(400).json({ success: false, message: '该病例暂无分析结果，无法生成报告' });
     }
 
-    // 获取模板
     const user = await User.findByPk(req.user.id);
     const template = getTemplate(user?.hospital_id, template_id);
 
@@ -272,9 +313,8 @@ router.post('/generate', authenticate, async (req, res) => {
       result = await generateExcel(study_id);
     }
 
-    // 创建 MedicalReport 记录
     const latestResult = study.analysis_results[study.analysis_results.length - 1];
-    const report = await MedicalReport.create({
+    const report = await MedicalReport.createWithRetry({
       study_id: study.id,
       analysis_result_id: latestResult.id,
       patient_id: study.patient_id,
@@ -328,7 +368,9 @@ router.get('/', authenticate, async (req, res) => {
         {
           model: Study,
           as: 'study',
-          attributes: ['id', 'study_id', 'study_type', 'study_date', 'status'],
+          attributes: ['id', 'study_id', 'study_type', 'study_date', 'status', 'user_id'],
+          where: buildReportStudyAccessWhere(req.user),
+          required: true,
         },
         { model: Patient, as: 'patient', attributes: ['id', 'patient_id', 'name', 'gender'] },
         { model: User, as: 'generator', attributes: ['id', 'username', 'real_name'] },
@@ -360,18 +402,17 @@ router.get('/', authenticate, async (req, res) => {
  */
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const report = await MedicalReport.findByPk(req.params.id, {
-      include: [
-        { model: Study, as: 'study' },
-        { model: Patient, as: 'patient' },
-        { model: AnalysisResult, as: 'analysis_result' },
-        { model: User, as: 'generator', attributes: ['id', 'username', 'real_name'] },
-        { model: ReportShareLink, as: 'shareLinks' },
-      ],
-    });
+    const { report, denied } = await getReportForUser(req.params.id, req.user, [
+      { model: Patient, as: 'patient' },
+      { model: AnalysisResult, as: 'analysis_result' },
+      { model: User, as: 'generator', attributes: ['id', 'username', 'real_name'] },
+      { model: ReportShareLink, as: 'shareLinks' },
+    ]);
 
     if (!report) {
-      return res.status(404).json({ success: false, message: '报告不存在' });
+      return res
+        .status(denied ? 403 : 404)
+        .json({ success: false, message: denied ? '无权访问该报告' : '报告不存在' });
     }
 
     return res.json({ success: true, data: { report } });
@@ -385,9 +426,12 @@ router.get('/:id', authenticate, async (req, res) => {
  */
 router.get('/:id/download', authenticate, async (req, res) => {
   try {
-    const report = await MedicalReport.findByPk(req.params.id);
+    const { report, denied } = await getReportForUser(req.params.id, req.user);
+
     if (!report) {
-      return res.status(404).json({ success: false, message: '报告不存在' });
+      return res
+        .status(denied ? 403 : 404)
+        .json({ success: false, message: denied ? '无权下载该报告' : '报告不存在' });
     }
 
     const filePath = report.file_path;
@@ -395,7 +439,6 @@ router.get('/:id/download', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: '报告文件不存在，可能已被清理' });
     }
 
-    // 更新下载统计
     await report.update({
       download_count: (report.download_count || 0) + 1,
       last_downloaded_at: new Date(),
@@ -423,12 +466,14 @@ router.post('/:id/share', authenticate, async (req, res) => {
     const { expires_hours = 24, max_access_count = 0 } = req.body;
     const reportId = req.params.id;
 
-    const report = await MedicalReport.findByPk(reportId);
+    const { report, denied } = await getReportForUser(reportId, req.user);
+
     if (!report) {
-      return res.status(404).json({ success: false, message: '报告不存在' });
+      return res
+        .status(denied ? 403 : 404)
+        .json({ success: false, message: denied ? '无权分享该报告' : '报告不存在' });
     }
 
-    // 生成分享令牌
     const shareToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + expires_hours * 60 * 60 * 1000);
 
@@ -440,7 +485,6 @@ router.post('/:id/share', authenticate, async (req, res) => {
       created_by: req.user.id,
     });
 
-    // 构造分享URL
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const shareUrl = `${baseUrl}/api/reports/shared/${shareToken}`;
 
