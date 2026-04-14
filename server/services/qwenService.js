@@ -1,9 +1,61 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+const https = require('https');
 const axios = require('axios');
 const fs = require('fs').promises;
+const path = require('path');
 
 function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || ''));
+}
+
+function inferMimeType(source) {
+  const pathname = (() => {
+    const raw = String(source || '').trim();
+    if (!raw) return '';
+    if (isHttpUrl(raw)) {
+      try {
+        return new URL(raw).pathname || '';
+      } catch {
+        return '';
+      }
+    }
+    return raw;
+  })();
+
+  const ext = path.extname(pathname).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.bmp') return 'image/bmp';
+  if (ext === '.tif' || ext === '.tiff') return 'image/tiff';
+  return 'image/jpeg';
+}
+
+function bufferToDataUrl(buffer, mimeType = 'image/jpeg') {
+  return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+}
+
+function parseBoolean(value, fallback = true) {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  const text = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(text)) return true;
+  if (['0', 'false', 'no', 'off'].includes(text)) return false;
+  return fallback;
+}
+
+function createRemoteImageHttpsAgent(url) {
+  if (!String(url || '').startsWith('https://')) {
+    return undefined;
+  }
+
+  return new https.Agent({
+    rejectUnauthorized: parseBoolean(
+      process.env.TUCANG_TLS_REJECT_UNAUTHORIZED,
+      true,
+    ),
+  });
 }
 
 function stripMarkdownCodeFence(content) {
@@ -343,20 +395,127 @@ class QwenService {
   async imageToBase64(imagePath) {
     try {
       const imageBuffer = await fs.readFile(imagePath);
-      const base64String = imageBuffer.toString('base64');
-
-      // 获取MIME类型
-      let mimeType = 'image/jpeg';
-      if (imagePath.endsWith('.png')) {
-        mimeType = 'image/png';
-      } else if (imagePath.endsWith('.tiff') || imagePath.endsWith('.tif')) {
-        mimeType = 'image/tiff';
-      }
-
-      return `data:${mimeType};base64,${base64String}`;
+      return bufferToDataUrl(imageBuffer, inferMimeType(imagePath));
     } catch (error) {
       throw new Error(`图像Base64编码失败: ${error.message}`);
     }
+  }
+
+  /**
+   * 检测远程图像是否适合直接交给模型拉取
+   * @param {string} imageUrl - 远程图像URL
+   * @returns {Promise<{ canUseRemoteUrl: boolean, reason: string }>}
+   */
+  async inspectRemoteImageUrl(imageUrl) {
+    try {
+      const response = await axios.head(imageUrl, {
+        timeout: parseInt(process.env.QWEN_REMOTE_IMAGE_HEAD_TIMEOUT_MS || '', 10) || 10000,
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400,
+        httpsAgent: createRemoteImageHttpsAgent(imageUrl),
+      });
+
+      const contentLength = Number.parseInt(String(response.headers?.['content-length'] || ''), 10);
+      const contentType = String(response.headers?.['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+
+      if (!Number.isFinite(contentLength) || contentLength <= 0) {
+        return {
+          canUseRemoteUrl: false,
+          reason: '最终响应缺少有效的 Content-Length',
+        };
+      }
+
+      if (!contentType.startsWith('image/')) {
+        return {
+          canUseRemoteUrl: false,
+          reason: `最终响应的 Content-Type 为 ${contentType || '空值'}`,
+        };
+      }
+
+      return {
+        canUseRemoteUrl: true,
+        reason: '',
+      };
+    } catch (error) {
+      return {
+        canUseRemoteUrl: false,
+        reason: `远程探测失败: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * 下载远程图像并转换为Base64，规避上游对 Content-Length 的限制
+   * @param {string} imageUrl - 远程图像URL
+   * @returns {Promise<string>}
+   */
+  async remoteImageToBase64(imageUrl) {
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: parseInt(process.env.QWEN_REMOTE_IMAGE_FETCH_TIMEOUT_MS || '', 10) || 30000,
+        maxRedirects: 5,
+        maxContentLength: parseInt(process.env.QWEN_REMOTE_IMAGE_MAX_BYTES || '', 10) || 20 * 1024 * 1024,
+        httpsAgent: createRemoteImageHttpsAgent(imageUrl),
+        headers: {
+          Accept: 'image/*,*/*;q=0.8',
+        },
+      });
+
+      const headerMimeType = String(response.headers?.['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+      const mimeType = headerMimeType.startsWith('image/')
+        ? headerMimeType
+        : inferMimeType(imageUrl);
+
+      return bufferToDataUrl(response.data, mimeType);
+    } catch (error) {
+      const causeCode = String(error?.cause?.code || error?.code || '');
+      if (
+        causeCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
+        /unable to verify the first certificate/i.test(String(error?.message || ''))
+      ) {
+        throw new Error(
+          '远程图像下载失败：TLS 证书链校验失败，请配置 TUCANG_TLS_REJECT_UNAUTHORIZED=false 或修复图床服务器证书链',
+        );
+      }
+      throw new Error(`远程图像下载失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 统一解析图像输入，优先远程直传，不满足条件时回退为Base64
+   * @param {string} imagePath - 图像来源（本地路径或公网URL）
+   * @returns {Promise<{imageDataUrl: string, sourceLabel: string}>}
+   */
+  async resolveImageInput(imagePath) {
+    if (!isHttpUrl(imagePath)) {
+      return {
+        imageDataUrl: await this.imageToBase64(imagePath),
+        sourceLabel: '本地文件(Base64)',
+      };
+    }
+
+    const remoteProbe = await this.inspectRemoteImageUrl(imagePath);
+    if (remoteProbe.canUseRemoteUrl) {
+      return {
+        imageDataUrl: imagePath,
+        sourceLabel: '远程 URL',
+      };
+    }
+
+    console.warn(
+      `⚠️ 图床展示链接不满足模型直拉要求（${remoteProbe.reason}），已自动回退为下载后Base64上传，不影响本次分析`,
+    );
+    return {
+      imageDataUrl: await this.remoteImageToBase64(imagePath),
+      sourceLabel: '远程 URL(Base64回退)',
+    };
   }
 
   /**
@@ -369,8 +528,7 @@ class QwenService {
   async analyzeImage(imagePath, modality = '巴氏染色涂片（Pap Smear）', retryCount = 3) {
     const startedAt = Date.now();
     try {
-      // 远程URL直传模型；本地路径转换为Base64
-      const imageDataUrl = isHttpUrl(imagePath) ? imagePath : await this.imageToBase64(imagePath);
+      const { imageDataUrl, sourceLabel } = await this.resolveImageInput(imagePath);
 
       // 根据检查方式生成优化的提示词
       const systemPrompt = generatePrompt(modality);
@@ -402,7 +560,7 @@ class QwenService {
 
       // 发送请求
       console.log(`🤖 调用通义千问 API (${this.model})...`);
-      console.log(`📊 图像来源：${isHttpUrl(imagePath) ? '远程 URL' : '本地文件'}`);
+      console.log(`📊 图像来源：${sourceLabel}`);
       console.log(`🔬 检查方式：${modality}`);
       console.log(`⏱️ 超时配置：${this.axiosInstance.defaults.timeout}ms`);
       const response = await this.axiosInstance.post('/chat/completions', requestBody);

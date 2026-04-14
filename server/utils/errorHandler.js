@@ -26,6 +26,13 @@ class ApiError extends Error {
  */
 function handleRouteError(res, error, context = {}) {
   const { service = 'API', endpoint = '' } = context;
+  const explicitStatusCode =
+    Number.isInteger(error.statusCode) && error.statusCode >= 400
+      ? error.statusCode
+      : Number.isInteger(error.status) && error.status >= 400
+        ? error.status
+        : null;
+  const explicitCode = typeof error.code === 'string' && error.code ? error.code : null;
 
   // Sequelize 唯一约束冲突
   if (error.name === 'SequelizeUniqueConstraintError') {
@@ -70,6 +77,20 @@ function handleRouteError(res, error, context = {}) {
       success: false,
       message: error.message,
       code: error.code,
+    });
+  }
+
+  // 兼容普通 Error 上挂载的状态码与错误代码
+  if (explicitStatusCode) {
+    console.error(`[${service}] ${endpoint} 业务错误:`, {
+      code: explicitCode || 'REQUEST_ERROR',
+      statusCode: explicitStatusCode,
+      message: error.message,
+    });
+    return res.status(explicitStatusCode).json({
+      success: false,
+      message: error.message || '请求处理失败',
+      code: explicitCode || 'REQUEST_ERROR',
     });
   }
 
