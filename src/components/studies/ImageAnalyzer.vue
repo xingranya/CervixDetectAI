@@ -42,7 +42,12 @@ const props = defineProps<{
   initialAnnotations?: Annotation[];
 }>();
 
-const emit = defineEmits(['update:annotations', 'export', 'zoom']);
+const emit = defineEmits<{
+  (e: 'update:annotations', annotations: Annotation[]): void;
+  (e: 'export', data: unknown): void;
+  (e: 'zoom', relative: number): void;
+  (e: 'image-load', width: number, height: number): void;
+}>();
 
 const $q = useQuasar();
 
@@ -76,6 +81,7 @@ const onImageLoad = (width: number, height: number) => {
   imageWidth.value = width;
   imageHeight.value = height;
   initialFitScale.value = 0; // Reset for new image
+  emit('image-load', width, height);
   void fitToScreen();
 };
 
