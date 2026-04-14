@@ -19,7 +19,6 @@ const { Study, Patient, AnalysisResult, StudyImage } = require('../models');
 
 // 中文字体路径
 const FONT_PATH = path.join(__dirname, '../public/fonts/SimSun.ttf');
-const HAS_CN_FONT = fs.existsSync(FONT_PATH);
 
 /**
  * 获取报告所需的完整数据
@@ -138,14 +137,17 @@ async function generatePDF(studyId, template) {
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     const stream = fs.createWriteStream(filePath);
 
-    // 注册中文字体
-    if (HAS_CN_FONT) {
-      doc.registerFont('SimSun', FONT_PATH);
-      doc.font('SimSun');
+    // 优先使用中文字体文件
+    if (fs.existsSync(FONT_PATH)) {
+      doc.font(FONT_PATH);
     }
 
     let pageCount = 1;
     doc.on('pageAdded', () => {
+      // 每增加一页都确保字体正确（虽然PDFKit通常会保留，但这样更稳妥）
+      if (fs.existsSync(FONT_PATH)) {
+        doc.font(FONT_PATH);
+      }
       pageCount += 1;
     });
 

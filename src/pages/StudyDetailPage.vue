@@ -938,6 +938,7 @@ import type { Annotation as AnalyzerAnnotation } from 'components/studies/analyz
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
 import { reportAPI } from 'src/services/api';
+import { downloadStudyReport } from 'src/composables/useStudyReportDownload';
 
 /** 报告生成格式 */
 type ReportFormat = 'pdf' | 'word' | 'excel';
@@ -1256,6 +1257,20 @@ const generateReport = async (format: ReportFormat) => {
     $q.notify({ type: 'warning', message: '病例数据未加载，无法生成报告', position: 'top' });
     return;
   }
+
+  // PDF 格式使用前端生成（已验证中文字体支持更好）
+  if (format === 'pdf') {
+    try {
+      generatingFormat.value = 'pdf';
+      await downloadStudyReport({ id: study.value.id, $q });
+    } catch (error) {
+      console.error('前端生成 PDF 失败:', error);
+    } finally {
+      generatingFormat.value = null;
+    }
+    return;
+  }
+
   generatingFormat.value = format;
   try {
     const { data } = await reportAPI.generate({ study_id: study.value.id, format });
@@ -1276,7 +1291,9 @@ const generateReport = async (format: ReportFormat) => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `report_${study.value.id}.${format === 'pdf' ? 'pdf' : format === 'word' ? 'docx' : 'xlsx'}`;
+          // 此处 format 只可能是 'word' 或 'excel'，因为 'pdf' 已提前 return
+          const suffix = format === 'word' ? 'docx' : 'xlsx';
+          a.download = `report_${study.value.id}.${suffix}`;
           a.click();
           window.URL.revokeObjectURL(url);
         } catch (downloadError: unknown) {
