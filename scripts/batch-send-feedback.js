@@ -31,11 +31,11 @@ const SMTP_CONFIG = {
 // ========== 邮件配置 ==========
 const EMAIL_CONFIG = {
   from: '"CervixDetectAI 系统" <support@hpvsc.icu>',
-  to: 'support@mail.hpvsc.icu',     // 收件邮箱
+  to: 'support@mail.hpvsc.icu', // 收件邮箱
   subjectPrefix: '【用户反馈】',
   feedbackFile: path.join(__dirname, '../test-feedbacks.json'),
-  sendInterval: 1000,                    // 发送间隔（毫秒），30秒避免触发反垃圾策略
-  enableSend: true                        // true=实际发送，false=仅模拟
+  sendInterval: 1000, // 发送间隔（毫秒），30秒避免触发反垃圾策略
+  enableSend: true, // true=实际发送，false=仅模拟
 };
 
 // ========== 生成邮件HTML模板 ==========
@@ -74,10 +74,10 @@ function createTransporter() {
     secure: SMTP_CONFIG.secure,
     auth: {
       user: SMTP_CONFIG.auth.user,
-      pass: SMTP_CONFIG.auth.pass
+      pass: SMTP_CONFIG.auth.pass,
     },
     connectionTimeout: 10000,
-    greetingTimeout: 10000
+    greetingTimeout: 10000,
   });
 }
 
@@ -87,7 +87,7 @@ async function sendEmail(transporter, subject, html) {
     from: EMAIL_CONFIG.from,
     to: EMAIL_CONFIG.to,
     subject: EMAIL_CONFIG.subjectPrefix + subject,
-    html: html
+    html: html,
   });
 }
 
@@ -100,11 +100,11 @@ async function main() {
   console.log(`⏱️ 发送间隔: ${EMAIL_CONFIG.sendInterval}ms`);
 
   if (EMAIL_CONFIG.enableSend) {
-      console.log('⚠️ 实际发送模式');
-    } else {
-      console.log('⚡ 模拟模式（不会实际发送邮件）');
-    }
-    console.log('='.repeat(50));
+    console.log('⚠️ 实际发送模式');
+  } else {
+    console.log('⚡ 模拟模式（不会实际发送邮件）');
+  }
+  console.log('='.repeat(50));
 
   // 读取反馈数据
   let feedbacks;
@@ -143,7 +143,7 @@ async function main() {
           retries++;
           if (retries < 3) {
             console.log(`  ⚠️ 发送失败，${3 - retries}秒后重试 (${retries}/2): ${err.message}`);
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise((r) => setTimeout(r, 3000));
             // 重连SMTP
             transporter.close();
             Object.assign(transporter, createTransporter());
@@ -160,7 +160,7 @@ async function main() {
 
     // 发送间隔
     if (i < feedbacks.length - 1) {
-      await new Promise(r => setTimeout(r, EMAIL_CONFIG.sendInterval));
+      await new Promise((r) => setTimeout(r, EMAIL_CONFIG.sendInterval));
     }
   }
 
