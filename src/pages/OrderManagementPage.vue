@@ -148,41 +148,74 @@
 
     <div class="row q-col-gutter-md">
       <div class="col-12 col-xl-8">
-        <q-card flat bordered class="q-mb-md">
+        <q-card flat bordered class="q-mb-md order-table-card">
           <q-card-section class="section-head">
             <div class="row items-center justify-between">
               <div>
                 <div class="eyebrow">订单主表</div>
-                <div class="text-h6 text-weight-bold q-mt-xs">真实订单与账单状态</div>
+                <div class="text-h5 text-weight-bold q-mt-xs">订单与账单状态</div>
               </div>
-              <div class="text-caption text-grey-7">共 {{ filteredOrders.length }} 条 · 当前选中 {{ selectedOverview.name }}</div>
+              <div class="text-body2 text-grey-7">共 {{ filteredOrders.length }} 条 · 当前选中 {{ selectedOverview.name }}</div>
             </div>
           </q-card-section>
           <q-separator />
-          <q-card-section class="q-pa-none">
-            <q-table flat :rows="filteredOrders" :columns="columns" row-key="id" hide-bottom :pagination="{ rowsPerPage: 0 }" class="orders-table">
+          <q-card-section class="q-pa-lg">
+            <q-table flat :rows="filteredOrders" :columns="columns" row-key="id" hide-bottom :pagination="{ rowsPerPage: 0 }" class="orders-table orders-table--large">
               <template #body="props">
-                <q-tr :props="props" class="order-row" :class="{ 'order-row--active': selectedOrderId === props.row.id }" @click="selectOrder(props.row.id)">
-                  <q-td key="orderNo">{{ props.row.orderNo }}</q-td>
-                  <q-td key="hospitalName">
+                <q-tr :props="props" class="order-row order-row--large" :class="{ 'order-row--active': selectedOrderId === props.row.id }" @click="selectOrder(props.row.id)">
+                  <q-td key="orderNo" class="order-td--large">{{ props.row.orderNo }}</q-td>
+                  <q-td key="hospitalName" class="order-td--large">
                     <div class="row items-center no-wrap q-gutter-sm">
-                      <HospitalAvatar :hospital-id="props.row.hospitalId" size="30px" small />
-                      <span>{{ props.row.hospitalName }}</span>
+                      <HospitalAvatar :hospital-id="props.row.hospitalId" size="42px" />
+                      <span class="text-body1">{{ props.row.hospitalName }}</span>
                     </div>
                   </q-td>
-                  <q-td key="planName">{{ props.row.planName }}</q-td>
-                  <q-td key="billingCycle">{{ props.row.billingCycle }}</q-td>
-                  <q-td key="paymentMethod">{{ props.row.paymentMethod }}</q-td>
-                  <q-td key="amount" class="text-weight-bold">{{ money(props.row.amount) }}</q-td>
-                  <q-td key="status"><StatusChip :status="props.row.status" compact /></q-td>
-                  <q-td key="billStatus">{{ props.row.billStatus }}</q-td>
-                  <q-td key="orderTime">{{ props.row.orderTime }}</q-td>
-                  <q-td key="paymentTime">{{ props.row.paymentTime }}</q-td>
+                  <q-td key="planName" class="order-td--large">{{ props.row.planName }}</q-td>
+                  <q-td key="billingCycle" class="order-td--large">{{ props.row.billingCycle }}</q-td>
+                  <q-td key="paymentMethod" class="order-td--large">{{ props.row.paymentMethod }}</q-td>
+                  <q-td key="amount" class="text-weight-bold order-td--large order-td--amount">{{ money(props.row.amount) }}</q-td>
+                  <q-td key="status" class="order-td--large"><StatusChip :status="props.row.status" /></q-td>
+                  <q-td key="billStatus" class="order-td--large">{{ props.row.billStatus }}</q-td>
+                  <q-td key="orderTime" class="order-td--large">{{ props.row.orderTime }}</q-td>
+                  <q-td key="paymentTime" class="order-td--large">{{ props.row.paymentTime }}</q-td>
                 </q-tr>
               </template>
             </q-table>
           </q-card-section>
         </q-card>
+
+        <div class="order-table-standalone q-mb-xl">
+          <q-card flat bordered class="order-table-card-only">
+            <q-card-section class="q-pa-xl">
+              <div class="text-h2 text-weight-bold q-mb-lg" style="color: var(--app-text-primary);">
+                <q-icon name="receipt_long" class="q-mr-sm" color="primary" size="48px" />
+                订单主表
+              </div>
+              <div class="text-body1 text-grey-7 q-mb-xl">订单与账单状态 · 共 {{ filteredOrders.length }} 条</div>
+              <q-table flat :rows="filteredOrders" :columns="columns" row-key="id" hide-bottom :pagination="{ rowsPerPage: 0 }" class="orders-table orders-table--standalone">
+                <template #body="props">
+                  <q-tr :props="props" class="order-row order-row--standalone">
+                    <q-td key="orderNo" class="order-td--standalone text-weight-medium">{{ props.row.orderNo }}</q-td>
+                    <q-td key="hospitalName" class="order-td--standalone">
+                      <div class="row items-center no-wrap q-gutter-md">
+                        <HospitalAvatar :hospital-id="props.row.hospitalId" size="64px" />
+                        <span class="text-h5 text-weight-medium">{{ props.row.hospitalName }}</span>
+                      </div>
+                    </q-td>
+                    <q-td key="planName" class="order-td--standalone text-h5">{{ props.row.planName }}</q-td>
+                    <q-td key="billingCycle" class="order-td--standalone text-h5">{{ props.row.billingCycle }}</q-td>
+                    <q-td key="paymentMethod" class="order-td--standalone text-h5">{{ props.row.paymentMethod }}</q-td>
+                    <q-td key="amount" class="order-td--standalone order-td--amount-standalone text-weight-bold">{{ money(props.row.amount) }}</q-td>
+                    <q-td key="status" class="order-td--standalone"><StatusChip :status="props.row.status" /></q-td>
+                    <q-td key="billStatus" class="order-td--standalone text-h5">{{ props.row.billStatus }}</q-td>
+                    <q-td key="orderTime" class="order-td--standalone text-h5">{{ props.row.orderTime }}</q-td>
+                    <q-td key="paymentTime" class="order-td--standalone text-h5">{{ props.row.paymentTime }}</q-td>
+                  </q-tr>
+                </template>
+              </q-table>
+            </q-card-section>
+          </q-card>
+        </div>
 
         <q-card flat bordered>
           <q-card-section class="section-head">
@@ -385,6 +418,11 @@ const orders: OrderRow[] = [
   { id: 'CD202603270008', orderNo: 'CD202603270008', hospitalId: 'JZ_CENTRAL', hospitalName: '荆州市中心医院', planName: '顶级套餐连续包月', billingCycle: '月度', paymentMethod: '银行转账', amount: 999, status: '历史归档', billStatus: '已归档', orderTime: '2025-12-18 09:40', paymentTime: '—' },
   { id: 'CD202603270009', orderNo: 'CD202603270009', hospitalId: 'WH_PEOPLE', hospitalName: '武汉大学人民医院', planName: '顶级套餐一月版', billingCycle: '月度', paymentMethod: '支付宝', amount: 1280, status: '已支付', billStatus: '本期账单已结清', orderTime: '2026-02-28 13:36', paymentTime: '2026-02-28 13:41' },
   { id: 'CD202603270010', orderNo: 'CD202603270010', hospitalId: 'JZ_JINDUN', hospitalName: '荆州区金盾门诊', planName: '基础套餐一月版', billingCycle: '月度', paymentMethod: '微信支付', amount: 980, status: '已支付', billStatus: '已开票', orderTime: '2026-02-05 10:10', paymentTime: '2026-02-05 10:13' },
+  { id: 'CD202603270011', orderNo: 'CD202603270011', hospitalId: 'JZ_CENTRAL', hospitalName: '荆州市中心医院', planName: '顶级套餐连续包月', billingCycle: '月度', paymentMethod: '银行转账', amount: 999, status: '已支付', billStatus: '本期账单已结清', orderTime: '2026-02-18 10:20', paymentTime: '2026-02-18 10:25' },
+  { id: 'CD202603270012', orderNo: 'CD202603270012', hospitalId: 'HUST_TONGJI', hospitalName: '华中科技大学同济医学院', planName: '顶级套餐半年版', billingCycle: '半年', paymentMethod: '银行转账', amount: 6699, status: '已支付', billStatus: '已开票', orderTime: '2025-09-30 15:30', paymentTime: '2025-10-01 09:15' },
+  { id: 'CD202603270013', orderNo: 'CD202603270013', hospitalId: 'JZ_FUYOU', hospitalName: '荆州市妇幼保健院', planName: '顶级套餐连续包月', billingCycle: '月度', paymentMethod: '微信支付', amount: 999, status: '已支付', billStatus: '本期账单已结清', orderTime: '2026-02-09 11:05', paymentTime: '2026-02-09 11:08' },
+  { id: 'CD202603270014', orderNo: 'CD202603270014', hospitalId: 'JZ_JINDUN', hospitalName: '荆州区金盾门诊', planName: '基础套餐一月版', billingCycle: '月度', paymentMethod: '微信支付', amount: 980, status: '已支付', billStatus: '已开票', orderTime: '2026-01-05 09:30', paymentTime: '2026-01-05 09:35' },
+  { id: 'CD202603270015', orderNo: 'CD202603270015', hospitalId: 'WH_PEOPLE', hospitalName: '武汉大学人民医院', planName: '顶级套餐半年版', billingCycle: '半年', paymentMethod: '支付宝', amount: 6699, status: '已支付', billStatus: '已开票', orderTime: '2025-07-30 16:45', paymentTime: '2025-07-30 17:02' },
 ];
 
 const details: Record<string, DetailItem> = {
@@ -610,6 +648,79 @@ onUnmounted(() => {
 .order-row { cursor: pointer; transition: background-color .2s ease; }
 .order-row:hover { background: rgba(37,99,235,.04); }
 .order-row--active { background: rgba(37,99,235,.08); }
+
+/* 订单表格放大样式 */
+.order-table-card {
+  overflow: visible;
+}
+
+.orders-table--large :deep(th) {
+  font-size: 0.95rem;
+  padding: 18px 16px !important;
+  background: rgba(248,250,252,.98);
+}
+
+.order-row--large {
+  font-size: 1rem;
+}
+
+.order-row--large td {
+  padding: 18px 16px !important;
+  font-size: 1rem;
+}
+
+.order-td--large {
+  font-size: 1rem !important;
+}
+
+.order-td--amount {
+  font-size: 1.1rem !important;
+  color: var(--app-text-primary);
+}
+
+/* 独立订单表格样式 - 用于截图 */
+.order-table-standalone {
+  width: 100%;
+}
+
+.order-table-card-only {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+
+.orders-table--standalone :deep(th) {
+  font-size: 1.4rem !important;
+  padding: 28px 24px !important;
+  background: rgba(248,250,252,.98) !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+.order-row--standalone {
+  font-size: 1.4rem;
+  transition: background-color .2s ease;
+}
+
+.order-row--standalone:hover {
+  background: rgba(37,99,235,.06);
+}
+
+.order-row--standalone td {
+  padding: 28px 24px !important;
+  font-size: 1.4rem;
+}
+
+.order-td--standalone {
+  font-size: 1.4rem !important;
+  padding: 28px 24px !important;
+}
+
+.order-td--amount-standalone {
+  font-size: 1.55rem !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
 .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .bill-item { display: flex; justify-content: space-between; gap: 14px; padding: 14px; }
 .summary-card { height: 100%; padding: 18px; border-radius: 18px; background: rgba(255,255,255,.84); border: 1px solid rgba(148,163,184,.18); }
