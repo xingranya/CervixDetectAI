@@ -1,8 +1,14 @@
 import apiClient from 'src/services/apiClient';
-import { normalizeApiBaseUrl, DEFAULT_API_BASE_URL } from 'src/utils/apiBaseUrl';
+
+const DEFAULT_API_BASE_URL = '/api';
+
+const resolveApiBaseUrl = () => {
+  const value = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).trim();
+  return value.replace(/\/+$/, '') || DEFAULT_API_BASE_URL;
+};
 
 // API 基础地址（用于公开接口）
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
+const API_BASE_URL = resolveApiBaseUrl();
 
 // ============================================================
 // 通用响应类型

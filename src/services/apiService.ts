@@ -1,7 +1,13 @@
 import apiClient from './apiClient';
-import { normalizeApiBaseUrl, DEFAULT_API_BASE_URL } from 'src/utils/apiBaseUrl';
 
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL);
+const DEFAULT_API_BASE_URL = '/api';
+
+const resolveApiBaseUrl = () => {
+  const value = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).trim();
+  return value.replace(/\/+$/, '') || DEFAULT_API_BASE_URL;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 interface ApiResponse<T> {
   success: boolean;
