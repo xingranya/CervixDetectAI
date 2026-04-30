@@ -80,20 +80,24 @@ export interface TaskStatusResponse {
   result?: {
     diagnosis: string;
     confidence: number;
-    suspiciousAreas: string[];
-    biomarkers: {
-      HPV: string;
-      p16: string;
-      Ki67: string;
-    };
-    recommendations: string[];
-    detailedReport: string;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    suspiciousAreas?: Array<{
+      description?: string;
+      location?: string;
+      box_2d?: number[];
+      bbox_2d?: number[];
+      features?: string[];
+    }>;
+    biomarkers?: Record<string, string>;
+    recommendations?: string[];
+    detailedReport?: string;
   };
   error?: string;
 }
 
 export interface StudyAnalysisResponse extends TaskStatusResponse {
   studyInfo: {
+    patientDbId?: number;
     patientName: string;
     patientId: string;
     studyDate: string;

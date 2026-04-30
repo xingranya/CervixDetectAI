@@ -1,4 +1,5 @@
 import { getStudyAnalysis } from 'src/services/apiService';
+import { patientInsightsAPI, type PatientInsightHistoryData } from 'src/services/api';
 import type { QVueGlobals } from 'quasar';
 
 interface DownloadStudyReportParams {
@@ -26,6 +27,19 @@ export async function downloadStudyReport({
       return;
     }
 
+    let historyData: PatientInsightHistoryData | null = null;
+    const patientDbId = studyData.studyInfo.patientDbId;
+
+    if (patientDbId) {
+      try {
+        $q.loading.show({ message: '正在整理历史趋势...', spinnerColor: 'primary' });
+        const historyResponse = await patientInsightsAPI.getHistory(patientDbId, { limit: 6 });
+        historyData = historyResponse.data || null;
+      } catch (error) {
+        console.warn('获取患者历史趋势失败，将回退为本次检查趋势图:', error);
+      }
+    }
+
     $q.loading.show({ message: '正在生成PDF报告...', spinnerColor: 'primary' });
     const { generatePDFReport } = await import('src/utils/pdfGenerator');
 
@@ -36,8 +50,12 @@ export async function downloadStudyReport({
         patientId: studyData.studyInfo.patientId,
         studyDate: studyData.studyInfo.studyDate,
         modality: studyData.studyInfo.modality,
+        description: studyData.studyInfo.description,
+        imageUrl: studyData.studyInfo.imageUrl,
+        ...(patientDbId ? { patientDbId } : {}),
       },
       result: studyData.result,
+      history: historyData,
     });
 
     $q.notify({

@@ -384,7 +384,7 @@ router.get('/study/:studyId', async (req, res) => {
     const study = await Study.findOne({
       where: whereClause,
       include: [
-        { model: Patient, as: 'patient', attributes: ['name', 'patient_id'] },
+        { model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_id'] },
         { model: StudyImage, as: 'images', limit: 1 },
       ],
     });
@@ -409,6 +409,7 @@ router.get('/study/:studyId', async (req, res) => {
     }
 
     const studyInfo = {
+      patientDbId: study.patient?.id,
       patientName: study.patient?.name,
       patientId: study.patient?.patient_id,
       studyDate: study.study_date,
@@ -444,7 +445,10 @@ router.get('/study/:studyId', async (req, res) => {
       response.result = {
         diagnosis: latestTask.result.diagnosis,
         confidence: latestTask.result.confidence,
+        riskLevel: latestTask.result.risk_level,
         recommendations: latestTask.result.recommendations,
+        suspiciousAreas: latestTask.result.suspicious_areas,
+        biomarkers: latestTask.result.biomarkers,
         detailedReport: latestTask.result.detailed_report,
       };
       response.completedAt = latestTask.completed_at;

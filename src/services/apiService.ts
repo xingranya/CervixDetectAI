@@ -57,6 +57,7 @@ export interface TaskStatusResponse {
 
 export interface StudyAnalysisResponse extends TaskStatusResponse {
   studyInfo: {
+    patientDbId?: number;
     patientName: string;
     patientId: string;
     studyDate: string;
