@@ -11,7 +11,7 @@
 [![Vue Version](https://img.shields.io/badge/Vue-3.0+-42b883)](https://vuejs.org)
 [![Quasar](https://img.shields.io/badge/Quasar-2.16-0x1b8b6a)](https://quasar.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6)](https://www.typescriptlang.org)
-[![LOC](https://img.shields.io/badge/LOC-172655-blue)](#-项目统计)
+[![LOC](https://img.shields.io/badge/LOC-172657-blue)](#-项目统计)
 
 [![GitHub stars](https://img.shields.io/github/stars/xingranya/CervixDetectAI?style=social)](https://github.com/xingranya/CervixDetectAI/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/xingranya/CervixDetectAI?style=social)](https://github.com/xingranya/CervixDetectAI/network/members)
