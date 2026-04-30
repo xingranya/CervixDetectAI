@@ -29,15 +29,20 @@
 - 在线即时生成：前端直接调用 PDF 工具生成本地 PDF 并自动下载。
 - 后端生成并落库：后端基于 AI 分析结果生成结构化报告并持久化，随后可下载。
 
+当前 PDF 输出采用医生归档版结构，统一包含诊断摘要、影像对比、关键指标、可疑区域、患者趋势曲线、临床建议、详细说明、免责声明与页码信息。前端即时导出会额外拉取患者最近 6 次历史分析结果，用于绘制风险趋势；后端生成链路兼容本地影像和图仓远程 URL。
+
 ## 项目结构
 围绕 PDF 报告生成的关键文件与职责如下：
 - 前端
-  - ReportsPage.vue：展示已完成的病例列表，提供“下载报告”入口，调用 PDF 工具生成并下载。
-  - pdfGenerator.ts：统一的 PDF 报告生成器，负责布局、中文字体、分页与页脚。
+  - ReportsPage.vue / StudyDetailPage.vue / StudiesPage.vue：提供报告生成与下载入口。
+  - useStudyReportDownload.ts：统一病例报告下载流程，负责获取病例分析结果与患者历史趋势。
+  - pdfGenerator.ts：统一的医生归档版 PDF 报告生成器，负责布局、中文字体、影像对比、趋势图、分页与页脚。
   - pdfFonts.ts：中文字体加载与降级策略。
+  - studyAnnotations.ts：统一 AI 可疑区域坐标转换，供页面标注与 PDF 标注复用。
   - api.ts：前端 API 客户端，封装后端接口调用。
 - 后端
-  - reports.js：报告相关 API（创建、生成、查询、更新、下载、删除）。
+  - reports.js：报告相关 API（生成、批量导出、查询、下载、分享）。
+  - reportGenerator.service.js：服务端 PDF / Word / Excel 报告生成，PDF 支持远程影像 Buffer 嵌入。
   - MedicalReport.js：报告数据模型，含 report_id 自动编号、状态与归档字段。
   - index.js：模型关系定义，明确报告与病例、患者、分析结果的关联。
   - qwenService.js：AI 分析服务，对接通义千问，返回结构化诊断结果。
@@ -76,7 +81,13 @@ PG --> PF["pdfFonts.ts"]
 ## 核心组件
 - 前端 PDF 生成器
   - 职责：接收“病例 + AI 分析结果”数据，动态生成 PDF，自动保存并下载。
-  - 特性：A4 页面、中文字体支持、分页、页眉页脚、免责声明页。
+  - 特性：A4 页面、中文字体支持、医生归档版首页、影像对比、关键指标表、可疑区域表、患者趋势曲线、分页、页眉页脚、免责声明。
+- 患者历史趋势
+  - 职责：根据 `patientDbId` 查询最近 6 次历史分析结果，生成风险权重与置信度曲线。
+  - 降级：历史接口失败或数据不足时回退为本次检查趋势，不阻断报告导出。
+- 影像与标注
+  - 职责：原始影像与 AI 标注摘要图并排输出，可疑区域坐标由 `studyAnnotations.ts` 统一转换。
+  - 降级：远程或本地影像不可用时输出占位说明，保留结构化报告主体。
 - 中文字体支持
   - 职责：优先加载 SimSun；失败则尝试 SourceHanSansSC；均失败则回退至 helvetica 并提示乱码风险。
 - 报告路由与模型
@@ -117,8 +128,8 @@ UI->>PDF : generatePDFReport
 PDF-->>U : 下载本地PDF
 Note over R,M : 后端生成并落库
 U->>UI : 点击生成并下载
-UI->>API : 调用 /reports/generate/:studyId
-API->>R : POST /reports/generate/:studyId
+UI->>API : 调用 /reports/generate
+API->>R : POST /reports/generate
 R->>Q : 获取最新分析结果
 Q-->>R : 返回结构化结果
 R->>M : 创建 MedicalReport 记录
@@ -140,16 +151,18 @@ R-->>UI : 返回PDF文件流
 ## 详细组件分析
 
 ### 前端即时 PDF 生成流程
-- 触发：用户在“报告中心”点击“下载报告”。
-- 数据准备：调用前端 API 获取指定病例的 study 信息与分析结果。
-- 生成与下载：动态导入 pdfGenerator.ts，传入 study 与 result，生成并自动保存 PDF。
+- 触发：用户在病例详情页或病例列表点击 PDF 导出。
+- 数据准备：调用 `/api/analyze/study/:studyId` 获取病例、影像、诊断结果、风险等级、可疑区域与生物标志物。
+- 趋势补充：若返回 `patientDbId`，调用患者洞察历史接口获取最近 6 次分析趋势。
+- 生成与下载：动态导入 pdfGenerator.ts，传入 study、result、history，生成并自动保存 PDF。
 
 ```mermaid
 flowchart TD
-Start(["点击下载报告"]) --> Fetch["获取病例与分析数据"]
+Start(["点击导出 PDF"]) --> Fetch["获取病例与分析数据"]
 Fetch --> HasResult{"存在分析结果?"}
 HasResult --> |否| Warn["提示暂无可生成报告"]
-HasResult --> |是| Gen["调用 generatePDFReport()"]
+HasResult --> |是| History["尝试获取患者历史趋势"]
+History --> Gen["调用 generatePDFReport(study,result,history)"]
 Gen --> Save["自动保存PDF"]
 Save --> End(["完成"])
 Warn --> End
@@ -164,8 +177,22 @@ Warn --> End
 - [pdfGenerator.ts](file://src/utils/pdfGenerator.ts#L42-L276)
 
 ### 后端生成与下载流程
-- 生成：POST /api/reports/generate/:studyId，校验权限与分析结果，组装结构化报告内容，创建 MedicalReport 记录。
+- 生成：POST /api/reports/generate，校验权限与分析结果，调用 `reportGenerator.service.js` 生成文件，创建 MedicalReport 记录。
 - 下载：GET /api/reports/:id/download，校验权限与文件存在性，设置 Content-Type 与 Content-Disposition，返回 PDF 文件流。
+- 批量：POST /api/reports/batch-export 支持将多份 PDF 打包为 ZIP，并写入导出摘要。
+
+### 医生归档版 PDF 内容结构
+
+| 模块 | 说明 |
+| :--- | :--- |
+| 首页摘要 | 诊断结论、风险等级、置信度、检查日期、检查方式 |
+| 影像对比 | 原始影像与 AI 标注摘要图并排展示 |
+| 关键指标 | 患者编号、检查方式、诊断结论、风险等级、置信度、生物标志物 |
+| 可疑区域明细 | 序号、描述、位置、特征 |
+| 患者趋势曲线 | 最近 6 次风险权重与置信度变化 |
+| 临床建议 | AI 分析返回的建议列表，缺失时给出保守复查建议 |
+| 详细说明 | Markdown 详细报告转纯文本分段渲染 |
+| 免责声明 | 强调 AI 辅助筛查属性，不替代执业医师诊断 |
 
 ```mermaid
 sequenceDiagram
@@ -173,7 +200,7 @@ participant C as "客户端"
 participant R as "reports.js"
 participant M as "MedicalReport.js"
 participant Q as "qwenService.js"
-C->>R : POST /reports/generate/ : studyId
+C->>R : POST /reports/generate
 R->>Q : 获取最新分析结果
 Q-->>R : 返回结构化结果
 R->>M : 创建报告记录
@@ -259,8 +286,8 @@ Fallback --> End
 
 ## 依赖分析
 - 前端
-  - ReportsPage.vue 依赖 api.ts 获取数据，依赖 pdfGenerator.ts 生成 PDF。
-  - pdfGenerator.ts 依赖 pdfFonts.ts 提供中文字体。
+  - StudyDetailPage.vue / StudiesPage.vue 通过 useStudyReportDownload.ts 获取病例分析与患者历史趋势，依赖 pdfGenerator.ts 生成即时 PDF。
+  - pdfGenerator.ts 依赖 pdfFonts.ts 提供中文字体，依赖 studyAnnotations.ts 统一可疑区域坐标转换。
 - 后端
   - reports.js 依赖 MedicalReport 模型、Study/Patient/AnalysisResult 关联、qwenService.js。
   - MedicalReport.js 通过 index.js 建立与 Study、Patient、AnalysisResult 的关系。
@@ -304,8 +331,9 @@ MR --> IDX["index.js"]
   - MedicalReport、Study 等模型在关键字段建立索引，提升查询效率。
 - 报告内容存储
   - 报告内容以 JSON 字符串形式存储，避免复杂 JOIN，提高读取性能。
-- 前端生成
-  - 仅在浏览器侧生成 PDF，避免服务器存储 PDF 文件，减少 IO 压力。
+- PDF 生成
+  - 前端即时导出用于快速下载；后端生成用于报告中心、批量导出和归档落库。
+  - 影像加载支持图仓远程 URL，失败时使用占位说明，避免整份报告生成失败。
 
 章节来源
 - [qwenService.js](file://server/services/qwenService.js#L194-L251)
@@ -318,7 +346,7 @@ MR --> IDX["index.js"]
   - 若 PDF 未生成，检查后端生成接口是否成功创建 MedicalReport 记录。
 - 后端下载失败
   - 检查 /api/reports/:id/download 是否返回“报告不存在/PDF 未生成/文件不存在”。
-  - 确认 report.pdf_path 是否存在且文件系统中对应路径存在。
+  - 确认 MedicalReport 记录中的 `file_path` 存在且服务器文件系统可读取。
 - AI 分析失败
   - 检查 QWEN_API_KEY、QWEN_API_URL 环境变量是否配置正确。
   - 查看 qwenService.js 的错误日志，区分网络超时、API 限流、服务不可用等情况。
@@ -337,7 +365,7 @@ MR --> IDX["index.js"]
 ## 附录
 - 接口参考（节选）
   - 创建报告：POST /api/reports
-  - 自动生成报告：POST /api/reports/generate/:studyId
+  - 自动生成报告：POST /api/reports/generate
   - 获取报告列表：GET /api/reports
   - 获取报告详情：GET /api/reports/:id
   - 更新报告：PUT /api/reports/:id

@@ -215,6 +215,29 @@ enum risk_level
 - [AnalysisTask.js](file://server/models/AnalysisTask.js#L1-L109)
 - [AnalysisResult.js](file://server/models/AnalysisResult.js#L1-L127)
 
+### 基于病例获取分析结果
+
+`GET /api/analyze/study/:studyId` 用于前端按病例 ID 获取最新分析结果。该接口除返回任务状态外，还会返回 PDF 报告导出所需的病例、影像和结构化分析字段。
+
+**关键响应字段：**
+
+| 字段 | 说明 |
+| :--- | :--- |
+| `studyInfo.patientDbId` | 患者数据库 ID，用于前端继续拉取患者历史趋势 |
+| `studyInfo.patientName` / `studyInfo.patientId` | 患者姓名与患者编号 |
+| `studyInfo.studyDate` / `studyInfo.modality` | 检查日期与检查方式 |
+| `studyInfo.description` | 病例描述 |
+| `studyInfo.imageUrl` | 首张病例影像地址，可能是图仓远程 URL 或本地路径 |
+| `result.diagnosis` | 诊断结论 |
+| `result.confidence` | 模型置信度 |
+| `result.riskLevel` | 风险等级，取值为 `low` / `medium` / `high` / `critical` |
+| `result.suspiciousAreas` | 可疑区域列表，支持 `box_2d` / `bbox_2d` 坐标和描述字段 |
+| `result.biomarkers` | 生物标志物字典，如 HPV、p16、Ki67 |
+| `result.recommendations` | 临床建议列表 |
+| `result.detailedReport` | Markdown 结构化详细报告 |
+
+该接口当前服务于病例详情页展示和 PDF 即时导出。PDF 导出会复用 `suspiciousAreas` 坐标生成 AI 标注摘要图，并通过 `patientDbId` 补充最近 6 次患者历史趋势；历史趋势查询失败不会影响该接口本身返回。
+
 ## 依赖分析
 系统各组件间存在明确的依赖关系。`analyze.js`路由依赖`qwenService.js`进行AI分析，同时依赖多个Sequelize模型进行数据持久化。`qwenService.js`依赖axios进行HTTP请求，依赖Node.js的fs模块进行文件操作。
 

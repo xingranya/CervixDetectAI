@@ -12,7 +12,7 @@
 4. [PDF下载机制](#pdf下载机制)
 5. [API端点详情](#api端点详情)
    - [创建医疗报告 (/api/reports)](#创建医疗报告-apireports)
-   - [自动生成报告 (/api/reports/generate/:studyId)](#自动生成报告-apireportsgeneratestudyid)
+   - [自动生成报告 (/api/reports/generate)](#自动生成报告-apireportsgenerate)
    - [获取报告列表 (/api/reports)](#获取报告列表-apireports)
    - [获取报告详情 (/api/reports/:id)](#获取报告详情-apireportsid)
    - [更新报告 (/api/reports/:id)](#更新报告-apireportsid)
@@ -20,13 +20,13 @@
    - [删除报告 (/api/reports/:id)](#删除报告-apireportsid)
 
 ## 简介
-报告管理API提供了一套完整的医疗报告生命周期管理功能，包括创建、生成、查询、更新、下载和删除报告。系统通过RESTful接口实现，所有请求都需要经过身份验证。每个报告都与特定的病例（study）相关联，并包含详细的分析结果和患者信息。
+报告管理API提供医疗报告生成、批量导出、查询、下载和分享能力。系统通过RESTful接口实现，除分享访问外请求均需要经过身份验证。每个报告都与特定病例（study）和分析结果相关联，PDF 生成使用医生归档版结构，包含影像对比、关键指标、可疑区域、患者趋势、临床建议与免责声明。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L1-L487)
 
 ## 报告生成流程
-报告的自动生成流程始于用户请求`/api/reports/generate/:studyId`端点。系统首先验证用户权限，确保用户有权访问指定的病例。然后，系统会查找该病例最新的已完成分析任务及其结果。基于分析结果，系统会构建包含患者信息、检查信息和分析结果的报告内容。最后，系统创建一个新的医疗报告记录，状态初始化为"draft"（草稿），并返回包含完整报告信息的响应。
+报告的自动生成流程始于用户请求`POST /api/reports/generate`端点，并在请求体中传入`study_id`、`format`和可选`template_id`。系统首先验证用户权限，确保用户有权访问指定病例；随后查找该病例最新分析结果，调用报告生成服务输出 PDF / Word / Excel 文件。PDF 会采用医生归档版结构，并兼容图仓远程影像。生成成功后系统创建 MedicalReport 记录，状态初始化为`approved`，并返回报告元数据。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L86-L201)
@@ -38,7 +38,7 @@
 - [MedicalReport.js](file://server/models/MedicalReport.js#L102-L106)
 
 ## PDF下载机制
-报告的PDF文件下载通过`/api/reports/:id/download`端点实现。系统首先验证报告是否存在以及用户是否有权下载。然后检查报告的`pdf_path`字段，确认PDF文件已生成。系统使用`path.join()`构建服务器上的完整文件路径，并通过`fs.existsSync()`验证文件是否存在。如果所有检查通过，系统会设置适当的HTTP响应头（Content-Type为application/pdf，Content-Disposition为附件），然后通过`fs.createReadStream()`创建文件流并将其管道传输到响应对象，实现文件下载。
+报告文件下载通过`/api/reports/:id/download`端点实现。系统首先验证报告是否存在以及用户是否有权下载，然后检查 MedicalReport 记录中的`file_path`字段并确认服务器文件可读取。如果所有检查通过，系统会根据扩展名设置适当的HTTP响应头（PDF 为 `application/pdf`），然后通过`fs.createReadStream()`创建文件流并将其管道传输到响应对象，实现文件下载。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L383-L437)
@@ -124,21 +124,27 @@
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L10-L84)
 
-### 自动生成报告 (/api/reports/generate/:studyId)
+### 自动生成报告 (/api/reports/generate)
 此端点用于基于病例的分析结果自动生成报告。
 
 **HTTP方法**: POST  
-**URL路径**: `/api/reports/generate/:studyId`  
+**URL路径**: `/api/reports/generate`  
 **请求头**: 
 - `Authorization: Bearer <token>` (必填)
 - `Content-Type: application/json` (必填)
 
-**请求参数 (路径)**:
-- `studyId`: integer, 必填, 病例ID
+**请求参数 (路径)**: 无
 
 **请求参数 (查询)**: 无
 
-**请求体 (JSON Schema)**: 无
+**请求体 (JSON Schema)**:
+```json
+{
+  "study_id": "integer, 必填, 病例ID",
+  "format": "string, 可选, pdf | word | excel，默认 pdf",
+  "template_id": "string, 可选, 指定报告模板"
+}
+```
 
 **响应体 (JSON Schema)**:
 ```json
@@ -185,8 +191,8 @@
 ```
 
 **可能的HTTP状态码及错误信息**:
-- `201 Created`: 报告生成成功
-- `400 Bad Request`: 未找到该病例的分析结果
+- `200 OK`: 报告生成成功
+- `400 Bad Request`: 缺少 study_id、格式不支持或该病例暂无分析结果
 - `401 Unauthorized`: 未提供认证令牌或令牌无效
 - `403 Forbidden`: 用户无权为该病例生成报告
 - `404 Not Found`: 指定的病例不存在
