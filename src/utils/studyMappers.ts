@@ -1,7 +1,7 @@
 import type { StudyRaw } from 'src/services/api';
 import { getImageUrl } from 'src/utils/mappers';
 import type { AnalysisResult } from 'src/stores/analysisStore';
-import type { LatestTaskStatus, ReviewStatus, Study, StudyDisplayStatus } from 'src/types/study';
+import type { LatestTaskStatus, Study, StudyDisplayStatus } from 'src/types/study';
 
 type StudyTaskLike = Array<{ task_id?: string; status: string; created_at: string }> | undefined;
 
@@ -147,7 +147,7 @@ export function mapStudyRawToStudy(raw: StudyRaw): Study {
     riskLevel: raw.analysis_results?.[0]?.risk_level,
     confidence: normalizedConfidence,
     latestTaskStatus: displayTaskStatus,
-    reviewStatus: (raw.review_status as ReviewStatus) || 'pending',
+    reviewStatus: raw.review_status || 'pending',
     reviewedAt: raw.reviewed_at,
     reviewedBy: raw.reviewed_by,
     ...(latestTask &&

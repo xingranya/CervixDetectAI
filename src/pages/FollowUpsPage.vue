@@ -542,6 +542,14 @@ interface FollowUpForm {
   email_notify: boolean;
 }
 
+interface FollowUpFilters {
+  keyword: string;
+  status: '' | FollowUpStatus;
+  highAttention: 'all' | 'true' | 'false';
+  dateFrom: string;
+  dateTo: string;
+}
+
 const $q = useQuasar();
 const route = useRoute();
 const themeStore = useThemeStore();
@@ -605,10 +613,10 @@ const followUpPresets: FollowUpPreset[] = [
   },
 ];
 
-const filters = ref({
+const filters = ref<FollowUpFilters>({
   keyword: '',
-  status: '' as '' | FollowUpStatus,
-  highAttention: 'all' as 'all' | 'true' | 'false',
+  status: '',
+  highAttention: 'all',
   dateFrom: '',
   dateTo: '',
 });

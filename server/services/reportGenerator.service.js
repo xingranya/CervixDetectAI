@@ -98,27 +98,6 @@ function genderText(g) {
   return map[g] || g || '未知';
 }
 
-/**
- * 获取可嵌入的本地图像路径列表（跳过远程URL）
- * @param {Array} images
- * @returns {string[]}
- */
-function getLocalImagePaths(images) {
-  const result = [];
-  for (const img of images) {
-    const fp = img.file_path;
-    if (!fp) continue;
-    // 跳过远程URL
-    if (fp.startsWith('http://') || fp.startsWith('https://')) continue;
-    // 构造绝对路径
-    const absPath = path.isAbsolute(fp) ? fp : path.join(__dirname, '..', fp);
-    if (fs.existsSync(absPath)) {
-      result.push(absPath);
-    }
-  }
-  return result;
-}
-
 function convertMarkdownToPlainText(text) {
   return String(text || '')
     .replace(/\r\n/g, '\n')

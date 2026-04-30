@@ -20,7 +20,7 @@ export const useStudyStore = defineStore('study', {
     currentStudy: null as Study | null,
     loading: false,
     error: null as string | null,
-    pagination: { ...DEFAULT_PAGINATION } as StudiesPaginationState,
+    pagination: { ...DEFAULT_PAGINATION },
   }),
 
   getters: {

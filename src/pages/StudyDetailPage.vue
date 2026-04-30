@@ -932,7 +932,6 @@ import { useThemeStore } from 'stores/themeStore';
 import * as echarts from 'echarts';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
-import { type SuspiciousArea } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
 import type { Annotation as AnalyzerAnnotation } from 'components/studies/analyzer/types';
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
@@ -1093,7 +1092,7 @@ const aiAnnotations = computed<AnalyzerAnnotation[]>(() => {
   if (!result?.suspiciousAreas || !imageWidth || !imageHeight) return [];
 
   return convertSuspiciousAreasToAnnotations({
-    areas: result.suspiciousAreas as SuspiciousArea[],
+    areas: result.suspiciousAreas,
     imageWidth,
     imageHeight,
     confidence: result.confidence || 0.85,

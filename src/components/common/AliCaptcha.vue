@@ -154,7 +154,7 @@ const initCaptcha = async (options?: { keepSession?: boolean } | Event) => {
     !!options &&
     typeof options === 'object' &&
     'keepSession' in options &&
-    (options as { keepSession?: boolean }).keepSession === true;
+    options.keepSession === true;
   loading.value = true;
   error.value = '';
   lastVerifyParam.value = '';

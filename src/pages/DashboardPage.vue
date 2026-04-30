@@ -369,7 +369,16 @@ const loading = ref(false);
 const pendingTasks = ref<Task[]>([]);
 
 // Stats data (从API获取)
-const statsData = ref({
+const statsData = ref<{
+  todayTotal: number;
+  todayGrowth: number;
+  highRiskCount: number;
+  highRiskPercent: number;
+  avgProcessTime: number;
+  timeImprovement: number;
+  completedToday: number;
+  diagnosisStats: Record<string, number>;
+}>({
   todayTotal: 0,
   todayGrowth: 0,
   highRiskCount: 0,
@@ -377,7 +386,7 @@ const statsData = ref({
   avgProcessTime: 0,
   timeImprovement: 0,
   completedToday: 0,
-  diagnosisStats: {} as Record<string, number>,
+  diagnosisStats: {},
 });
 
 // Quick actions

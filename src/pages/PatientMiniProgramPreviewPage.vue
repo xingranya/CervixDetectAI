@@ -592,7 +592,7 @@ const currentAiDraft = computed(() =>
 const previewAiMessages = computed<AiPreviewMessage[]>(() => {
   const baseMessages = demoData.ai.messages.map((message) => ({
     id: message.id,
-    role: message.role as AiMessageRole,
+    role: message.role,
     lines: [...message.lines],
   }));
 
