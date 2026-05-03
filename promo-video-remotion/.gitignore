@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+.env
+.venv-edge-tts
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Generated audio assets. Recreate with npm run generate:music / generate:voiceover.
+public/audio/*.wav
+public/voiceover/*.mp3
+public/voiceover/*.wav

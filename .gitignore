@@ -38,3 +38,11 @@ yarn-error.log*
 # Temporary directory
 .tmp/
 .zread/
+
+# Generated video drafts and local render artifacts
+/promo-video/
+/promo-video-remotion/.venv-edge-tts/
+/promo-video-remotion/out/
+/promo-video-remotion/public/audio/*.wav
+/promo-video-remotion/public/voiceover/*.mp3
+/promo-video-remotion/public/voiceover/*.wav
