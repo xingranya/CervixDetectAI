@@ -104,7 +104,6 @@ const formatDate = (val: string) => {
 const planBenefitTextMap: Record<string, string> = {
   monthly: '月度订阅会员（30天）',
   yearly: '年度订阅会员（365天）',
-  'basic-trial-once': '基础套餐试用权益（1次）',
   'basic-formal-once': '基础套餐正式权益（1次）',
   'basic-monthly-auto': '基础套餐连续包月（30天）',
   'basic-monthly': '基础套餐一月版（30天）',

@@ -10,8 +10,7 @@ const RAW_PLANS = {
   'package-50': { name: '50次AI分析包', price: 649.0, credits: 50, type: 'package' },
   monthly: { name: '月度订阅会员', price: 270.0, credits: 20, days: 30, type: 'subscription' },
   yearly: { name: '年度订阅会员', price: 2700.0, credits: 300, days: 365, type: 'subscription' },
-  'basic-trial-once': { name: '基础套餐按次体验', price: 0.1, credits: 1, type: 'package' },
-  'basic-formal-once': { name: '基础套餐单次版', price: 9.9, credits: 1, type: 'package' },
+  'basic-formal-once': { name: '基础套餐单次版', price: 29.9, credits: 1, type: 'package' },
   'basic-monthly-auto': {
     name: '基础套餐连续包月',
     price: 888.0,

@@ -129,7 +129,7 @@ export function useSubscriptionPlans() {
     {
       label: '成本规划',
       value: '周期越长越稳',
-      description: '按次试用适合启动阶段，周期套餐更适合固定筛查计划。',
+      description: '按次正式开通适合启动阶段，周期套餐更适合固定筛查计划。',
     },
   ];
   const planComparisonRows = demoPlanComparisonRows;
@@ -370,7 +370,7 @@ export function useSubscriptionPlans() {
 
   const getOfferSupportText = (offer: DemoOffer): string => {
     if (offer.billingMode === 'usage') {
-      return offer.amount < 1 ? '适合首次试用或短期体验' : '适合低频按次使用';
+      return '适合低频按次使用';
     }
 
     if (offer.autoRenewHint) {
@@ -382,7 +382,7 @@ export function useSubscriptionPlans() {
 
   const getOfferCompactDescription = (offer: DemoOffer): string => {
     if (offer.billingMode === 'usage') {
-      return offer.amount < 1 ? '适合先行试用基础能力。' : '适合按需开通正式单次服务。';
+      return '适合按需开通正式单次服务。';
     }
 
     if (offer.durationDays) {
@@ -402,7 +402,7 @@ export function useSubscriptionPlans() {
   const getActionLabel = (tier: DemoPlanTier): string => {
     const selectedOffer = getSelectedOffer(tier);
     if (selectedOffer.billingMode === 'usage') {
-      return selectedOffer.amount < 1 ? '立即开通试用' : '购买单次版';
+      return '购买单次版';
     }
 
     return tier === 'premium' ? '选择顶级套餐' : '选择基础套餐';

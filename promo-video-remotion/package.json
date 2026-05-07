@@ -30,7 +30,10 @@
     "lint": "eslint src && tsc",
     "generate:music": "node scripts/generate-music.mjs",
     "generate:voiceover": "node scripts/generate-voiceover.mjs",
-    "render:business": "remotion render CervixDetectAIIntro out/cervixdetectai-intro-business-20s.mp4 --codec=h264 --crf=18 --concurrency=4"
+    "render:business": "remotion render CervixDetectAIIntro out/cervixdetectai-intro-business-20s.mp4 --codec=h264 --crf=18 --concurrency=4",
+    "render:ai-engine": "remotion render CervixDetectAIDiagnosisEngineLoop out/cervixdetectai-ai-diagnosis-engine-loop.mp4 --codec=h264 --crf=18 --concurrency=4",
+    "render:queue-flow": "remotion render CervixDetectAIQueueFlowLoop out/cervixdetectai-queue-flow-loop.mp4 --codec=h264 --crf=18 --concurrency=4",
+    "render:report-closure": "remotion render CervixDetectAIReportClosureLoop out/cervixdetectai-report-closure-loop.mp4 --codec=h264 --crf=18 --concurrency=4"
   },
   "sideEffects": [
     "*.css"
