@@ -41,6 +41,7 @@ yarn-error.log*
 
 # Generated video drafts and local render artifacts
 /promo-video/
+/promo-video-remotion/
 /promo-video-remotion/.venv-edge-tts/
 /promo-video-remotion/out/
 /promo-video-remotion/public/audio/*.wav
