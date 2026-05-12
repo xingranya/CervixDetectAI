@@ -12,9 +12,9 @@
             <div class="header-info">
               <div class="header-title-row">
                 <div class="header-title">AI 辅助医疗助手</div>
-                <q-badge color="positive" rounded class="free-badge">
-                  <q-icon name="local_offer" size="10px" class="q-mr-xs" />
-                  限时免费
+                <q-badge color="positive" rounded class="assistant-badge">
+                  <q-icon name="health_and_safety" size="10px" class="q-mr-xs" />
+                  专业辅助
                 </q-badge>
               </div>
               <div class="header-subtitle">基于当前分析结果提供解读建议</div>
@@ -668,7 +668,7 @@ onUnmounted(() => {
     text-overflow: ellipsis;
   }
 
-  .free-badge {
+  .assistant-badge {
     flex-shrink: 0;
     font-size: 10px;
     padding: 2px 6px;
