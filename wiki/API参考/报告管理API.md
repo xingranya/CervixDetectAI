@@ -26,7 +26,7 @@
 - [reports.js](file://server/routes/reports.js#L1-L487)
 
 ## 报告生成流程
-报告的自动生成流程始于用户请求`POST /api/reports/generate`端点，并在请求体中传入`study_id`、`format`和可选`template_id`。系统首先验证用户权限，确保用户有权访问指定病例；随后查找该病例最新分析结果，调用报告生成服务输出 PDF / Word / Excel 文件。PDF 会采用医生归档版结构，并兼容图仓远程影像。生成成功后系统创建 MedicalReport 记录，状态初始化为`approved`，并返回报告元数据。
+报告的自动生成流程始于用户请求`POST /api/reports/generate`端点，并在请求体中传入`study_id`、`format`和可选`template_id`。系统首先验证用户权限，确保用户有权访问指定病例；随后查找该病例最新分析结果，调用报告生成服务输出 PDF / Word / Excel 文件。生成完成后，后端会根据 `REPORT_STORAGE_PROVIDER` 决定报告最终落点：本地模式保留文件路径，`edgeone-blob` 模式则由 Node 后端直连官方 `@edgeone/pages-blob` SDK 上传对象，并将 `storage_provider / storage_key / storage_namespace / storage_status` 写入 `medical_reports`。写库成功后会清理本地临时文件。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L86-L201)
@@ -38,7 +38,12 @@
 - [MedicalReport.js](file://server/models/MedicalReport.js#L102-L106)
 
 ## PDF下载机制
-报告文件下载通过`/api/reports/:id/download`端点实现。系统首先验证报告是否存在以及用户是否有权下载，然后检查 MedicalReport 记录中的`file_path`字段并确认服务器文件可读取。如果所有检查通过，系统会根据扩展名设置适当的HTTP响应头（PDF 为 `application/pdf`），然后通过`fs.createReadStream()`创建文件流并将其管道传输到响应对象，实现文件下载。
+报告文件下载通过`/api/reports/:id/download`端点实现。系统首先验证报告是否存在以及用户是否有权下载，然后根据 `storage_provider` 选择文件来源：
+
+- `local`：读取 `file_path` 指向的本地文件
+- `edgeone-blob`：使用官方 Blob SDK 按 `storage_key` 读取远程对象
+
+无论底层来源是什么，接口都会统一设置合适的 `Content-Type` 和 `Content-Disposition`，前端调用方式保持不变。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L383-L437)

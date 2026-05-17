@@ -671,6 +671,34 @@ TUCANG_AVATAR_FOLDER_ID=your_avatar_folder_id_here
 - 用户头像上传直接走内存缓冲区上传图仓，并将远程 URL 写回 `avatar_url`。
 - 若图仓同步失败，病例影像仍保留本地路径，分析阶段自动使用回退链路。
 
+### 🌐 EdgeOne Pages Blob 报告存储配置
+
+```env
+# 报告存储提供方：local / edgeone-blob
+REPORT_STORAGE_PROVIDER=local
+
+# Blob Store 名称
+EDGEONE_BLOB_STORE=reports-poc
+
+# EdgeOne Pages 项目 ID
+EDGEONE_PROJECT_ID=pages-heyujty4ymg1
+
+# EdgeOne Pages API Token（由后端环境变量持有）
+EDGEONE_API_TOKEN=your_edgeone_pages_api_token
+
+# 读取一致性：strong / eventual
+EDGEONE_BLOB_CONSISTENCY=strong
+
+# EdgeOne 请求超时（毫秒）
+EDGEONE_REQUEST_TIMEOUT_MS=15000
+```
+
+- `REPORT_STORAGE_PROVIDER=local` 时保持现有报告落本地磁盘行为。
+- 切到 `edgeone-blob` 后，新生成的 PDF / Word / Excel 报告会先由后端生成，再由 Node 后端直连官方 `@edgeone/pages-blob` SDK 上传到 EdgeOne。
+- 报告下载接口仍保持 `GET /api/reports/:id/download` 不变，前端无需改调用方式。
+- 报告分享仍走后端受控接口 `/api/reports/shared/:token`，不依赖本地 Edge Functions 调试链路。
+- `edge-functions/` 与 `edgeone-pages-poc/` 当前仅保留为实验性边缘分发原型，不属于正式主链路。
+
 ### 📧 腾讯云邮件配置
 
 ```env

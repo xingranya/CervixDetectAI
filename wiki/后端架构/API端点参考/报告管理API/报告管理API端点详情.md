@@ -20,7 +20,7 @@
 1. [简介](#简介)
 2. [API端点详情](#api端点详情)
    - [创建医疗报告 (/api/reports)](#创建医疗报告-apireports)
-   - [自动生成报告 (/api/reports/generate/:studyId)](#自动生成报告-apireportsgeneratestudyid)
+   - [自动生成报告 (/api/reports/generate)](#自动生成报告-apireportsgenerate)
    - [获取报告列表 (/api/reports)](#获取报告列表-apireports)
    - [获取报告详情 (/api/reports/:id)](#获取报告详情-apireportsid)
    - [更新报告 (/api/reports/:id)](#更新报告-apireportsid)
@@ -81,16 +81,18 @@
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L14-L84)
 
-### 自动生成报告 (/api/reports/generate/:studyId)
+### 自动生成报告 (/api/reports/generate)
 **HTTP方法**: POST  
-**URL路径**: `/api/reports/generate/:studyId`  
+**URL路径**: `/api/reports/generate`  
 **请求头**: 
 - `Authorization: Bearer <token>`
 
-**路径参数**:
+**请求体**:
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| studyId | number | 是 | 病例ID |
+| study_id | number | 是 | 病例ID |
+| format | string | 否 | `pdf \| word \| excel`，默认 `pdf` |
+| template_id | string | 否 | 指定报告模板 |
 
 **响应格式**:
 ```json
@@ -321,7 +323,7 @@
 - 404: 报告或PDF文件不存在
 - 500: 服务器错误
 
-**更新说明**: 此端点已从返回模拟报告更新为返回真实的PDF文件。系统现在会在报告状态变为"finalized"时自动生成PDF文件，并存储在服务器上。用户可以通过此端点下载生成的PDF报告。
+**更新说明**: 此端点当前支持本地磁盘与 EdgeOne Blob 双存储来源。下载前会先校验病例归属权限，再根据 `storage_provider` 选择本地文件或远程对象作为最终内容源。
 
 **Section sources**
 - [reports.js](file://server/routes/reports.js#L387-L437)
@@ -383,14 +385,18 @@
    - 医生姓名
    - 报告状态
 
-5. **PDF文件信息**
+5. **报告文件信息**
    - `file_path`: PDF文件存储路径
+   - `storage_provider`: 存储提供方（`local` / `edgeone-blob`）
+   - `storage_key`: 对象存储内部对象键
+   - `storage_namespace`: 对象存储命名空间或桶标识
+   - `storage_status`: 存储状态
    - `file_size`: 文件大小（字节）
    - `page_count`: 页数
    - `download_count`: 下载次数
    - `last_downloaded_at`: 最后下载时间
 
-报告内容以JSON格式存储在数据库中，确保数据的可读性和可扩展性。当报告状态变为"finalized"时，系统会自动生成PDF文件，并将文件路径和相关信息存储在数据库中。
+报告文件最终可以落在本地磁盘或 EdgeOne Blob，对外下载接口保持不变，存储来源由后端内部按 `storage_provider` 决定。
 
 **Section sources**
 - [MedicalReport.js](file://server/models/MedicalReport.js#L56-L64)
