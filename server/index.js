@@ -33,9 +33,27 @@ const { testConnection, syncDatabase, sequelize } = require('./config/sequelize'
 const swaggerUi = require('swagger-ui-express');
 const { ensureFollowUpInfrastructure } = require('./services/followupScheduler.service');
 const { ensureEmailInfrastructure } = require('./services/emailInfrastructure.service');
+const { ensureMedicalReportsInfrastructure } = require('./services/medicalReportsInfrastructure.service');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+function parseTrustProxySetting(value) {
+  if (value === undefined || value === null || value === '') {
+    return false;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+
+  const numeric = Number.parseInt(normalized, 10);
+  if (!Number.isNaN(numeric) && numeric >= 0) {
+    return numeric;
+  }
+
+  return String(value).trim();
+}
 
 // OpenAPI 文档路径（放在 server/docs 目录下，方便部署）
 const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
@@ -51,6 +69,8 @@ if (!fs.existsSync(uploadDir)) {
 if (!fs.existsSync(reportsDir)) {
   fs.mkdirSync(reportsDir, { recursive: true });
 }
+
+app.set('trust proxy', parseTrustProxySetting(process.env.TRUST_PROXY));
 
 // 中间件
 // 生产环境安全头设置
@@ -239,6 +259,8 @@ app.listen(PORT, async () => {
     await ensureFollowUpInfrastructure();
     // 独立保障邮箱验证码枚举，避免 DB_SYNC=false 导致 change_email 不可用
     await ensureEmailInfrastructure();
+    // 独立保障报告存储扩展字段，避免 PoC 场景依赖全量 alter
+    await ensureMedicalReportsInfrastructure();
   } catch (error) {
     console.error('❌ 数据库连接失败:', error.message);
   }

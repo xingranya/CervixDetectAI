@@ -18,6 +18,42 @@ const {
 } = require('../models');
 const { generatePDF, generateWord, generateExcel } = require('../services/reportGenerator.service');
 const { getTemplate } = require('../constants/reportTemplates');
+const {
+  createLocalFileReadStream,
+  deleteReport,
+  getReportDownloadTarget,
+  getSignedShareTarget,
+  guessMimeType,
+  saveReport,
+} = require('../services/reportStorage.service');
+
+function resolveDownloadFileName(report) {
+  const rawPath = String(report?.file_path || report?.storage_url || report?.storage_key || '').trim();
+  if (!rawPath) {
+    return `report_${report?.report_id || report?.id || 'unknown'}`;
+  }
+
+  const withoutQuery = rawPath.split('?')[0];
+  const fileName = path.basename(withoutQuery);
+  return fileName || `report_${report?.report_id || report?.id || 'unknown'}`;
+}
+
+function setFileHeaders(res, fileName) {
+  res.setHeader('Content-Type', guessMimeType(fileName));
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+}
+
+async function sendReportFile(res, report, target) {
+  const fileName = resolveDownloadFileName(report);
+
+  if (target.type === 'buffer') {
+    setFileHeaders(res, fileName);
+    return res.end(target.buffer);
+  }
+
+  setFileHeaders(res, fileName);
+  return createLocalFileReadStream(target.filePath).pipe(res);
+}
 
 function canAccessStudyReport(user, study) {
   if (!user || !study) return false;
@@ -122,34 +158,10 @@ router.get('/shared/:token', async (req, res) => {
       return res.status(404).json({ success: false, message: '关联报告不存在' });
     }
 
-    const filePath = report.file_path;
-    if (filePath && fs.existsSync(filePath)) {
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeMap = {
-        '.pdf': 'application/pdf',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      };
-      res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
-      return fs.createReadStream(filePath).pipe(res);
-    }
+    const target = await getSignedShareTarget(report, shareLink.share_token);
 
-    return res.json({
-      success: true,
-      data: {
-        report: {
-          id: report.id,
-          report_id: report.report_id,
-          report_title: report.report_title,
-          status: report.status,
-          created_at: report.created_at,
-          study: report.study,
-          patient: report.patient,
-          analysis_result: report.analysis_result,
-        },
-      },
-    });
+    await sendReportFile(res, report, target);
+    return;
   } catch (error) {
     handleRouteError(res, error, { service: 'Reports', endpoint: 'GET /shared/:token' });
   }
@@ -197,6 +209,7 @@ router.post('/batch-export', authenticate, async (req, res) => {
     archive.pipe(res);
 
     const items = [];
+    const temporaryBlobKeys = [];
     let successCount = 0;
     let failCount = 0;
 
@@ -231,11 +244,37 @@ router.post('/batch-export', authenticate, async (req, res) => {
         } else {
           result = await generateExcel(studyId);
         }
+        const storedReport = await saveReport(result.filePath, {
+          reportId: `batch-${study.study_id || study.id}`,
+          studyId: study.study_id || study.id,
+          patientId: study.patient?.patient_id || study.patient_id,
+          provider: process.env.REPORT_STORAGE_PROVIDER,
+        });
+        const target = await getReportDownloadTarget({
+          storage_provider: storedReport.storageProvider,
+          storage_key: storedReport.storageKey,
+          storage_namespace: storedReport.storageNamespace,
+          storage_url: storedReport.storageUrl,
+          file_path: storedReport.filePath,
+        });
 
-        const fileStream = fs.createReadStream(result.filePath);
-        archive.append(fileStream, { name: result.fileName });
+        if (storedReport.storageProvider === 'edgeone-blob') {
+          temporaryBlobKeys.push(storedReport.storageKey);
+          await fs.promises.unlink(result.filePath).catch(() => {});
+        }
 
-        items.push({ study_id: studyId, status: 'SUCCESS', file_name: result.fileName });
+        if (target.type === 'buffer') {
+          archive.append(target.buffer, { name: storedReport.fileName });
+        } else {
+          archive.append(fs.createReadStream(target.filePath), { name: result.fileName });
+        }
+
+        items.push({
+          study_id: studyId,
+          status: 'SUCCESS',
+          file_name: storedReport.fileName,
+          storage_provider: storedReport.storageProvider,
+        });
         successCount += 1;
       } catch (err) {
         items.push({ study_id: studyId, status: 'FAILED', error: err.message || '生成报告失败' });
@@ -258,6 +297,13 @@ router.post('/batch-export', authenticate, async (req, res) => {
     archive.append(summaryContent, { name: '_export_summary.json' });
 
     await archive.finalize();
+    await Promise.all(
+      temporaryBlobKeys.map((storageKey) =>
+        deleteReport(storageKey, {
+          storage_provider: 'edgeone-blob',
+        }).catch(() => {}),
+      ),
+    );
   } catch (error) {
     if (!res.headersSent) {
       handleRouteError(res, error, { service: 'Reports', endpoint: 'POST /batch-export' });
@@ -314,19 +360,48 @@ router.post('/generate', authenticate, async (req, res) => {
     }
 
     const latestResult = study.analysis_results[study.analysis_results.length - 1];
-    const report = await MedicalReport.createWithRetry({
-      study_id: study.id,
-      analysis_result_id: latestResult.id,
-      patient_id: study.patient_id,
-      report_type: 'final',
-      report_title: `${template.header} - ${study.study_id}`,
-      file_path: result.filePath,
-      file_size: result.fileSize,
-      page_count: result.pageCount || null,
-      template_version: template.version,
-      generated_by: req.user.id,
-      status: 'approved',
+    const storedReport = await saveReport(result.filePath, {
+      reportId: latestResult.task_id || `study-${study.id}`,
+      studyId: study.study_id || study.id,
+      patientId: study.patient?.patient_id || study.patient_id,
+      provider: process.env.REPORT_STORAGE_PROVIDER,
     });
+    let report;
+    try {
+      report = await MedicalReport.createWithRetry({
+        study_id: study.id,
+        analysis_result_id: latestResult.id,
+        patient_id: study.patient_id,
+        report_type: 'final',
+        report_title: `${template.header} - ${study.study_id}`,
+        file_path: storedReport.filePath,
+        storage_provider: storedReport.storageProvider,
+        storage_key: storedReport.storageKey,
+        storage_namespace: storedReport.storageNamespace,
+        storage_url: storedReport.storageUrl,
+        storage_status: storedReport.storageStatus,
+        file_size: storedReport.fileSize || result.fileSize,
+        page_count: result.pageCount || null,
+        template_version: template.version,
+        generated_by: req.user.id,
+        status: 'approved',
+      });
+    } catch (error) {
+      if (storedReport.storageProvider === 'edgeone-blob' && storedReport.storageKey) {
+        try {
+          await deleteReport(storedReport.storageKey, {
+            storage_provider: storedReport.storageProvider,
+          });
+        } catch (cleanupError) {
+          console.error('[Reports] 报告写库失败后清理 EdgeOne Blob 失败:', cleanupError.message);
+        }
+      }
+      throw error;
+    }
+
+    if (storedReport.storageProvider === 'edgeone-blob') {
+      await fs.promises.unlink(result.filePath).catch(() => {});
+    }
 
     return res.json({
       success: true,
@@ -336,8 +411,10 @@ router.post('/generate', authenticate, async (req, res) => {
           id: report.id,
           report_id: report.report_id,
           report_title: report.report_title,
-          file_path: result.fileName,
-          file_size: result.fileSize,
+          file_path: storedReport.fileName,
+          file_size: storedReport.fileSize || result.fileSize,
+          storage_provider: report.storage_provider,
+          storage_status: report.storage_status,
           format,
           status: report.status,
           created_at: report.created_at,
@@ -434,25 +511,14 @@ router.get('/:id/download', authenticate, async (req, res) => {
         .json({ success: false, message: denied ? '无权下载该报告' : '报告不存在' });
     }
 
-    const filePath = report.file_path;
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: '报告文件不存在，可能已被清理' });
-    }
+    const target = await getReportDownloadTarget(report);
 
     await report.update({
       download_count: (report.download_count || 0) + 1,
       last_downloaded_at: new Date(),
     });
 
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeMap = {
-      '.pdf': 'application/pdf',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    };
-    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
-    return fs.createReadStream(filePath).pipe(res);
+    return sendReportFile(res, report, target);
   } catch (error) {
     handleRouteError(res, error, { service: 'Reports', endpoint: 'GET /:id/download' });
   }
@@ -485,8 +551,8 @@ router.post('/:id/share', authenticate, async (req, res) => {
       created_by: req.user.id,
     });
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const shareUrl = `${baseUrl}/api/reports/shared/${shareToken}`;
+    const shareBaseUrl = `${req.protocol}://${req.get('host')}`;
+    const shareUrl = `${shareBaseUrl}/api/reports/shared/${shareToken}`;
 
     return res.json({
       success: true,

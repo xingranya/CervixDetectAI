@@ -58,6 +58,33 @@ const MedicalReport = sequelize.define(
       allowNull: false,
       comment: 'PDF文件存储路径',
     },
+    storage_provider: {
+      type: DataTypes.ENUM('local', 'edgeone-blob'),
+      allowNull: false,
+      defaultValue: 'local',
+      comment: '报告文件存储提供方',
+    },
+    storage_key: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '存储提供方内部对象键',
+    },
+    storage_namespace: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: '对象所属命名空间或桶标识',
+    },
+    storage_url: {
+      type: DataTypes.STRING(1000),
+      allowNull: true,
+      comment: '存储提供方返回的对象访问地址',
+    },
+    storage_status: {
+      type: DataTypes.ENUM('pending', 'completed', 'failed'),
+      allowNull: false,
+      defaultValue: 'completed',
+      comment: '报告文件存储状态',
+    },
     file_size: {
       type: DataTypes.BIGINT,
       allowNull: false,
@@ -138,6 +165,9 @@ const MedicalReport = sequelize.define(
       },
       {
         fields: ['patient_id', 'created_at'],
+      },
+      {
+        fields: ['storage_provider', 'storage_status'],
       },
       {
         fields: ['status', 'created_at'],

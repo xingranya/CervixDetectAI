@@ -47,3 +47,11 @@ yarn-error.log*
 /promo-video-remotion/public/audio/*.wav
 /promo-video-remotion/public/voiceover/*.mp3
 /promo-video-remotion/public/voiceover/*.wav
+
+# EdgeOne 本地凭证
+.edgeone/.token
+
+# EdgeOne 本地调试/实验目录（不属于正式主链路）
+/.edgeone/
+/edge-functions/
+/edgeone-pages-poc/

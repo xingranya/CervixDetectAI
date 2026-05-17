@@ -21,6 +21,7 @@
     "@alicloud/tea-console": "^1.0.0",
     "@alicloud/tea-typescript": "^1.8.0",
     "@alicloud/tea-util": "^1.4.10",
+    "@edgeone/pages-blob": "^0.0.7",
     "archiver": "^7.0.1",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
