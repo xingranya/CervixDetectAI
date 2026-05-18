@@ -1219,8 +1219,17 @@ const isUploading = ref(false);
 const chatOpen = ref(false);
 const generatingFormat = ref<ReportFormat | null>(null);
 const reportPreviewVisible = ref(false);
-const reportPreviewMeta = ref({
-  kind: 'pdf' as ReportFormat,
+const reportPreviewMeta = ref<{
+  kind: ReportFormat;
+  title: string;
+  label: string;
+  icon: string;
+  objectUrl: string;
+  fileName: string;
+  placeholderTitle: string;
+  placeholderDescription: string;
+}>({
+  kind: 'pdf',
   title: '',
   label: '',
   icon: 'description',
