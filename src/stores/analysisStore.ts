@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { pollTaskStatus, getStudyAnalysis, getTaskStatus } from 'src/services/apiService';
 import type { TaskStatusResponse } from 'src/services/apiService';
+import { analysisTaskAPI } from 'src/services/api';
 
 export interface SuspiciousArea {
   box_2d?: number[];
@@ -96,7 +97,6 @@ export const useAnalysisStore = defineStore('analysis', {
     async fetchTasks(params?: { study_id?: number; status?: string }) {
       try {
         this.loading = true;
-        const { analysisTaskAPI } = await import('src/services/api');
         const response = await analysisTaskAPI.getTasks(params);
 
         if (response.success && response.data.tasks) {

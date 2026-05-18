@@ -511,103 +511,21 @@
             <div
               class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-body2 shadow-1"
             >
-              <div
-                v-for="(item, idx) in lesionLegendItems"
-                :key="`lesion-legend-${idx}`"
-                class="flex items-center"
-                :class="{ 'q-mb-xs': idx < lesionLegendItems.length - 1 }"
-              >
-                <div class="q-mr-sm rounded-circle legend-dot" :style="{ backgroundColor: item.color }"></div>
-                <span class="text-brown-9" :class="{ 'text-weight-bold': idx === 0 }">{{ item.label }}</span>
+              <div class="text-body2 text-brown-9 text-weight-bold q-mb-xs">
+                {{ lesionOverviewSummary.title }}
+              </div>
+              <div class="text-body2 text-brown-8 q-mb-xs">
+                {{ lesionOverviewSummary.emphasis }}
+              </div>
+              <div class="text-body2 text-brown-8">
+                {{ lesionOverviewSummary.recommendation }}
               </div>
             </div>
           </q-card-section>
         </q-card>
 
         <div v-if="analysisResult" class="row q-col-gutter-sm q-mt-sm">
-          <div class="col-md-6 col-12">
-            <q-card class="shadow-3 rounded-borders study-surface-card">
-              <q-card-section class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light">
-                <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
-                  <q-icon name="summarize" class="q-mr-sm text-primary" size="20px" />
-                  本次病灶概览
-                </div>
-                <q-chip dense color="red-1" text-color="negative" icon="warning">
-                  {{ getRiskLevelText(analysisResult.riskLevel, analysisResult.diagnosis) }}
-                </q-chip>
-              </q-card-section>
-
-              <q-card-section class="q-pa-sm bg-grey-1">
-                <div class="row q-col-gutter-xs q-mb-sm">
-                  <div class="col-4">
-                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
-                      <div class="text-h6 text-negative text-weight-bold">
-                        {{ lesionMetricSummary.areaCount }}
-                      </div>
-                      <div class="text-body2 text-grey-7">{{ lesionMetricSummary.areaLabel }}</div>
-                    </div>
-                  </div>
-                  <div class="col-4">
-                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
-                      <div class="text-h6 text-primary text-weight-bold">
-                        {{ lesionMetricSummary.confidenceText }}
-                      </div>
-                      <div class="text-body2 text-grey-7">{{ lesionMetricSummary.confidenceLabel }}</div>
-                    </div>
-                  </div>
-                  <div class="col-4">
-                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
-                      <div
-                        class="text-subtitle1 text-weight-bold"
-                        :class="getRiskColorClass(analysisResult.riskLevel, analysisResult.diagnosis)"
-                      >
-                        {{ analysisResult.diagnosis }}
-                      </div>
-                      <div class="text-body2 text-grey-7">诊断结论</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="q-gutter-y-xs">
-                  <div
-                    v-for="(area, idx) in compactSuspiciousAreas"
-                    :key="`compact-area-${idx}`"
-                    class="bg-white q-pa-xs rounded-borders shadow-1"
-                  >
-                    <div class="row items-start justify-between q-mb-xs">
-                      <div class="text-body2 text-weight-bold text-grey-9">
-                        区域 {{ idx + 1 }} · {{ area.location }}
-                      </div>
-                      <q-badge color="negative" rounded :label="area.tag" />
-                    </div>
-                    <div class="text-body2 text-grey-8 q-mb-xs">
-                      {{ area.description }}
-                    </div>
-                    <div class="text-body2 text-grey-6">
-                      关键特征：{{ area.features }}
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="analysisResult.biomarkers" class="q-mt-md">
-                  <div class="text-body2 text-weight-bold text-grey-7 q-mb-xs flex items-center">
-                    <q-icon name="biotech" class="q-mr-xs text-secondary" />
-                    协同检验指标
-                  </div>
-                  <div class="row q-col-gutter-xs">
-                    <div class="col-auto" v-for="item in biomarkerSummaryItems" :key="item.label">
-                      <q-chip square color="white" text-color="grey-8" class="shadow-1 q-px-sm q-py-xs">
-                        <span class="text-weight-medium">{{ item.label }}</span>
-                        <span class="q-ml-xs">{{ item.value }}</span>
-                      </q-chip>
-                    </div>
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-md-6 col-12">
+          <div class="col-12">
             <q-card class="shadow-3 rounded-borders study-surface-card">
               <q-card-section class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light">
                 <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
@@ -1180,6 +1098,7 @@ import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
 import { convertSuspiciousAreasToAnnotations } from 'src/utils/studyAnnotations';
 import {
+  analysisTaskAPI,
   patientInsightsAPI,
   reportAPI,
   type PatientInsightDiseaseAlertData,
@@ -1538,15 +1457,6 @@ const compactSuspiciousAreas = computed(() => {
     };
   });
 });
-const biomarkerSummaryItems = computed(() => {
-  const biomarkers = analysisResult.value?.biomarkers;
-  if (!biomarkers) return [];
-  return [
-    { label: 'HPV', value: biomarkers.HPV || '-' },
-    { label: 'p16', value: biomarkers.p16 || '-' },
-    { label: 'Ki67', value: biomarkers.Ki67 || '-' },
-  ];
-});
 const renderedDetailedReportHighlightsHtml = computed(() => {
   const markdown = detailedReportMarkdown.value;
   if (!markdown) return '';
@@ -1606,29 +1516,6 @@ const fallbackInsightHighlights = computed(() => {
     firstRecommendation || '建议尽快结合 HPV / TCT 结果与临床症状安排下一步检查。',
   ];
 });
-const lesionLegendItems = computed(() => {
-  const riskLevel = analysisResult.value?.riskLevel;
-  const diagnosis = analysisResult.value?.diagnosis || '当前分析结果';
-  const confidencePercent = effectiveConfidencePercent.value;
-  const firstArea = compactSuspiciousAreas.value[0];
-
-  return [
-    {
-      color: getRiskColorHex(riskLevel, diagnosis),
-      label: `${diagnosis} · ${confidencePercent ? `${confidencePercent}% 置信度` : '建议人工复核'}`,
-    },
-    {
-      color: '#f59e0b',
-      label: firstArea
-        ? `${firstArea.location} · ${firstArea.features}`
-        : '整体视野未见明确高危病灶',
-    },
-    {
-      color: '#2563eb',
-      label: analysisResult.value?.recommendations?.[0] || '建议结合临床与随访结果继续评估',
-    },
-  ];
-});
 const lesionSummaryCards = computed(() => {
   const cards = compactSuspiciousAreas.value.map((area, index) => ({
     id: `lesion-card-${index}`,
@@ -1665,6 +1552,22 @@ const lesionSummaryGridClass = computed(() => {
   if (realAreaCount <= 1) return 'lesion-summary-grid--single';
   if (realAreaCount === 2) return 'lesion-summary-grid--double';
   return 'lesion-summary-grid--multi';
+});
+const lesionOverviewSummary = computed(() => {
+  const diagnosis = analysisResult.value?.diagnosis || '当前分析结果';
+  const confidenceText = effectiveConfidencePercent.value
+    ? `${effectiveConfidencePercent.value}% 置信度`
+    : '建议人工复核';
+  const firstArea = compactSuspiciousAreas.value[0];
+  const firstRecommendation = analysisResult.value?.recommendations?.[0];
+
+  return {
+    title: `${diagnosis} · ${confidenceText}`,
+    emphasis: firstArea
+      ? `${firstArea.location} · ${firstArea.features}`
+      : '当前未见可独立拆分的局灶高危病灶区域',
+    recommendation: firstRecommendation || '建议结合临床资料、病理报告和后续复查计划综合判断。',
+  };
 });
 
 function hasStructuredMarkdown(text: string) {
@@ -1993,7 +1896,6 @@ const startAnalysis = async () => {
 
   try {
     // 调用后端API创建分析任务
-    const { analysisTaskAPI } = await import('src/services/api');
     const response = await analysisTaskAPI.createTask({ study_id: study.value.id });
 
     if (response.success && response.data.task) {
@@ -2347,18 +2249,6 @@ const getRiskColorClass = (
   if (diagnosis.includes('LSIL') || diagnosis.includes('ASC-H')) return 'text-warning';
   if (diagnosis.includes('ASC-US')) return 'text-info';
   return 'text-positive';
-};
-
-const getRiskColorHex = (
-  riskLevel?: 'low' | 'medium' | 'high' | 'critical',
-  diagnosis?: string | null,
-) => {
-  const className = getRiskColorClass(riskLevel, diagnosis);
-  if (className === 'text-negative') return '#ef4444';
-  if (className === 'text-warning') return '#f59e0b';
-  if (className === 'text-info') return '#3b82f6';
-  if (className === 'text-positive') return '#10b981';
-  return '#64748b';
 };
 
 // 监听study变化，确保数据同步
