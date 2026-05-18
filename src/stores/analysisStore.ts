@@ -13,6 +13,7 @@ export interface SuspiciousArea {
 export interface AnalysisResult {
   diagnosis: string;
   confidence: number;
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
   recommendations: string[];
   suspiciousAreas?: SuspiciousArea[] | undefined;
   biomarkers?: Record<string, string> | undefined;
@@ -208,6 +209,7 @@ export const useAnalysisStore = defineStore('analysis', {
       return {
         diagnosis: apiResult.diagnosis,
         confidence,
+        ...(apiResult.riskLevel && { riskLevel: apiResult.riskLevel }),
         recommendations: apiResult.recommendations || [],
         ...(suspiciousAreas && { suspiciousAreas }),
         ...(apiResult.biomarkers && { biomarkers: apiResult.biomarkers }),

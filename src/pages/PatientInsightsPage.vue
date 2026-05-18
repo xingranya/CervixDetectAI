@@ -1061,6 +1061,7 @@ function getStudyDisplayLabel(studyId?: number | null) {
 }
 
 function getTrendLabel(trend?: PatientInsightTrend) {
+  if (trend === 'baseline') return '基线建立中';
   if (trend === 'up') return '上升';
   if (trend === 'down') return '下降';
   if (trend === 'stable') return '平稳';
@@ -1412,6 +1413,7 @@ function getAlertLabel(level?: string) {
 }
 
 function getDiseaseTrendLabel(trend?: string) {
+  if (trend === 'baseline') return '基线建立中';
   if (trend === 'worsening') return '恶化';
   if (trend === 'improving') return '改善';
   if (trend === 'fluctuating') return '波动';

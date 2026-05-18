@@ -937,7 +937,7 @@ export const followUpAPI = {
 // ============================================================
 
 export type PatientInsightRiskLevel = 'low' | 'medium' | 'high' | 'critical';
-export type PatientInsightTrend = 'up' | 'down' | 'stable' | 'insufficient';
+export type PatientInsightTrend = 'up' | 'down' | 'stable' | 'insufficient' | 'baseline';
 
 export interface PatientInsightBasicPatient {
   id: number;

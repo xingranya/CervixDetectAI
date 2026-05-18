@@ -99,6 +99,7 @@ export function mapStudyAnalysisResult(raw: StudyRaw): AnalysisResult | undefine
   return {
     diagnosis: latestResult.diagnosis || '',
     confidence: normalizeConfidenceValue(latestResult.confidence) ?? 0,
+    ...(latestResult.risk_level ? { riskLevel: latestResult.risk_level } : {}),
     recommendations: latestResult.recommendations || [],
     suspiciousAreas: latestResult.suspicious_areas || [],
     biomarkers: latestResult.biomarkers,
