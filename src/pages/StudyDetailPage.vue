@@ -919,6 +919,57 @@
 
     <!-- AI 聊天浮窗 -->
     <AIChatPanel v-model="chatOpen" :study-id="study?.id ?? null" />
+
+    <q-dialog v-model="reportPreviewVisible" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="report-preview-dialog">
+        <q-card-section class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light">
+          <div class="text-subtitle1 text-weight-bold text-grey-9 flex items-center">
+            <q-icon :name="reportPreviewMeta.icon" class="q-mr-sm text-primary" />
+            {{ reportPreviewMeta.title }}
+          </div>
+          <div class="row items-center q-gutter-sm">
+            <q-chip dense color="grey-2" text-color="grey-8">{{ reportPreviewMeta.label }}</q-chip>
+            <q-btn
+              unelevated
+              color="primary"
+              icon="download"
+              label="下载文件"
+              @click="downloadCurrentPreview"
+              :disable="!reportPreviewMeta.objectUrl"
+            />
+            <q-btn flat round dense icon="close" color="grey-7" @click="closeReportPreview" />
+          </div>
+        </q-card-section>
+
+        <q-card-section class="report-preview-body q-pa-none">
+          <iframe
+            v-if="reportPreviewMeta.kind === 'pdf' && reportPreviewMeta.objectUrl"
+            :src="reportPreviewMeta.objectUrl"
+            class="report-preview-frame"
+            title="PDF报告预览"
+          />
+
+          <div v-else class="report-preview-placeholder">
+            <q-icon :name="reportPreviewMeta.icon" size="52px" color="grey-5" />
+            <div class="text-subtitle1 text-weight-bold q-mt-md text-grey-9">
+              {{ reportPreviewMeta.placeholderTitle }}
+            </div>
+            <div class="text-body2 text-grey-7 q-mt-sm text-center report-preview-placeholder-copy">
+              {{ reportPreviewMeta.placeholderDescription }}
+            </div>
+            <q-btn
+              unelevated
+              color="primary"
+              icon="download"
+              label="继续下载"
+              class="q-mt-lg"
+              @click="downloadCurrentPreview"
+              :disable="!reportPreviewMeta.objectUrl"
+            />
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -938,7 +989,7 @@ import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
 import { convertSuspiciousAreasToAnnotations } from 'src/utils/studyAnnotations';
 import { reportAPI } from 'src/services/api';
-import { downloadStudyReport } from 'src/composables/useStudyReportDownload';
+import { getStudyAnalysis } from 'src/services/apiService';
 
 /** 报告生成格式 */
 type ReportFormat = 'pdf' | 'word' | 'excel';
@@ -969,6 +1020,17 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const isUploading = ref(false);
 const chatOpen = ref(false);
 const generatingFormat = ref<ReportFormat | null>(null);
+const reportPreviewVisible = ref(false);
+const reportPreviewMeta = ref({
+  kind: 'pdf' as ReportFormat,
+  title: '',
+  label: '',
+  icon: 'description',
+  objectUrl: '',
+  fileName: '',
+  placeholderTitle: '',
+  placeholderDescription: '',
+});
 
 interface LogEntry {
   time: string;
@@ -997,6 +1059,82 @@ const POLLING_INTERVAL_MS = 2000;
 const MAX_POLLING_FAILURES = 3;
 const STALLED_PROGRESS_MIN = 90;
 const MAX_STALLED_PROGRESS_POLLS = 90;
+
+function revokePreviewUrl() {
+  if (reportPreviewMeta.value.objectUrl) {
+    window.URL.revokeObjectURL(reportPreviewMeta.value.objectUrl);
+  }
+}
+
+function closeReportPreview() {
+  revokePreviewUrl();
+  reportPreviewVisible.value = false;
+  reportPreviewMeta.value = {
+    kind: 'pdf',
+    title: '',
+    label: '',
+    icon: 'description',
+    objectUrl: '',
+    fileName: '',
+    placeholderTitle: '',
+    placeholderDescription: '',
+  };
+}
+
+function buildPreviewMeta(format: ReportFormat, objectUrl: string, fileName: string) {
+  if (format === 'pdf') {
+    return {
+      kind: format,
+      title: 'PDF 报告预览',
+      label: 'PDF',
+      icon: 'picture_as_pdf',
+      objectUrl,
+      fileName,
+      placeholderTitle: '',
+      placeholderDescription: '',
+    };
+  }
+
+  if (format === 'word') {
+    return {
+      kind: 'pdf' as ReportFormat,
+      title: 'Word 报告预览',
+      label: 'Word · PDF预览',
+      icon: 'article',
+      objectUrl,
+      fileName,
+      placeholderTitle: 'Word 报告预览已生成',
+      placeholderDescription: '当前展示的是与 Word 内容对应的高质量 PDF 预览副本，便于在线查看；如需编辑或归档，请下载原始 Word 文件。',
+    };
+  }
+
+  return {
+    kind: 'pdf' as ReportFormat,
+    title: 'Excel 报告预览',
+    label: 'Excel · PDF预览',
+    icon: 'table_chart',
+    objectUrl,
+    fileName,
+    placeholderTitle: 'Excel 报告预览已生成',
+    placeholderDescription: '当前展示的是与 Excel 内容对应的高质量 PDF 预览副本，便于在线查看；如需继续分析表格数据，请下载原始 Excel 文件。',
+  };
+}
+
+function openReportPreview(format: ReportFormat, blob: Blob, fileName: string) {
+  closeReportPreview();
+  const objectUrl = window.URL.createObjectURL(blob);
+  reportPreviewMeta.value = buildPreviewMeta(format, objectUrl, fileName);
+  reportPreviewVisible.value = true;
+}
+
+function downloadCurrentPreview() {
+  if (!reportPreviewMeta.value.objectUrl) return;
+  const anchor = document.createElement('a');
+  anchor.href = reportPreviewMeta.value.objectUrl;
+  anchor.download = reportPreviewMeta.value.fileName;
+  anchor.click();
+  $q.notify({ type: 'positive', message: '下载已开始', position: 'top' });
+}
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -1184,14 +1322,56 @@ const generateReport = async (format: ReportFormat) => {
     return;
   }
 
+  closeReportPreview();
+
   // PDF 格式使用前端生成（已验证中文字体支持更好）
   if (format === 'pdf') {
     try {
       generatingFormat.value = 'pdf';
-      await downloadStudyReport({ id: study.value.id, $q });
+      $q.loading.show({ message: '正在准备 PDF 预览...', spinnerColor: 'primary' });
+      const studyData = await getStudyAnalysis(String(study.value?.id));
+      if (!studyData.result) {
+        $q.notify({
+          type: 'warning',
+          message: '该病例暂无分析结果，无法生成报告',
+          position: 'top',
+        });
+        return;
+      }
+
+      const { generatePDFReport } = await import('src/utils/pdfGenerator');
+      const { blob, fileName } = await generatePDFReport({
+        study: {
+          id: String(study.value.id),
+          patientName: studyData.studyInfo.patientName,
+          patientId: studyData.studyInfo.patientId,
+          studyDate: studyData.studyInfo.studyDate,
+          modality: studyData.studyInfo.modality,
+          description: studyData.studyInfo.description,
+          imageUrl: studyData.studyInfo.imageUrl,
+          ...(studyData.studyInfo.patientDbId
+            ? { patientDbId: studyData.studyInfo.patientDbId }
+            : {}),
+        },
+        result: studyData.result,
+        history: null,
+      });
+      openReportPreview('pdf', blob, fileName);
+      $q.notify({
+        type: 'positive',
+        message: 'PDF 预览已就绪，请确认后下载',
+        position: 'top',
+        icon: 'visibility',
+      });
     } catch (error) {
       console.error('前端生成 PDF 失败:', error);
+      $q.notify({
+        type: 'negative',
+        message: '生成 PDF 预览失败，请稍后重试',
+        position: 'top',
+      });
     } finally {
+      $q.loading.hide();
       generatingFormat.value = null;
     }
     return;
@@ -1204,11 +1384,10 @@ const generateReport = async (format: ReportFormat) => {
     if (resp.success) {
       $q.notify({
         type: 'positive',
-        message: `${format.toUpperCase()} 报告生成成功！`,
+        message: `${format.toUpperCase()} 报告已生成，正在打开预览`,
         position: 'top',
         icon: 'check_circle',
       });
-      // 自动下载
       const reportId = resp.data?.report?.id;
       if (reportId) {
         try {
@@ -1217,7 +1396,6 @@ const generateReport = async (format: ReportFormat) => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          // 此处 format 只可能是 'word' 或 'excel'，因为 'pdf' 已提前 return
           const suffix = format === 'word' ? 'docx' : 'xlsx';
           a.download = `report_${study.value.id}.${suffix}`;
           a.click();
@@ -1866,6 +2044,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  closeReportPreview();
   // 清理轮询定时器
   clearPollingTaskStatus();
   window.removeEventListener('resize', () => chartInstance?.resize());
@@ -1894,6 +2073,31 @@ onUnmounted(() => {
 }
 .border-warning {
   border: 2px solid #f59e0b;
+}
+.report-preview-dialog {
+  background: var(--app-surface-primary, #fff);
+}
+.report-preview-body {
+  height: calc(100vh - 72px);
+  background: linear-gradient(180deg, #f7fafc 0%, #eef4ff 100%);
+}
+.report-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #f8fafc;
+}
+.report-preview-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+.report-preview-placeholder-copy {
+  max-width: 520px;
+  line-height: 1.8;
 }
 .font-mono {
   font-family: monospace;

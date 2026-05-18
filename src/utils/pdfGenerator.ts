@@ -1292,7 +1292,9 @@ function drawDisclaimer(doc: jsPDF, startY: number) {
   return y + 44;
 }
 
-export async function generatePDFReport(data: PDFReportData): Promise<void> {
+export async function generatePDFReport(
+  data: PDFReportData,
+): Promise<{ blob: Blob; fileName: string }> {
   const { default: jsPDF } = await import('jspdf');
   const { setupChineseFontAdvanced } = await import('./pdfFonts');
 
@@ -1346,9 +1348,13 @@ export async function generatePDFReport(data: PDFReportData): Promise<void> {
     addFooter(doc, i, totalPages);
   }
 
-  const filename = `CervixDetect_Report_${sanitizeFileSegment(
+  const fileName = `CervixDetect_Report_${sanitizeFileSegment(
     data.study.patientId,
     'patient',
   )}_${sanitizeFileSegment(data.study.id, 'study')}_${Date.now()}.pdf`;
-  doc.save(filename);
+  const blob = doc.output('blob');
+  return {
+    blob,
+    fileName,
+  };
 }
