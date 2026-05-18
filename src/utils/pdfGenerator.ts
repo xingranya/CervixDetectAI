@@ -158,6 +158,10 @@ function inferRiskLevelFromDiagnosis(diagnosis?: string): PatientInsightRiskLeve
   return 'low';
 }
 
+function resolveEffectiveRiskLevel(result: AnalysisResult): PatientInsightRiskLevel {
+  return result.riskLevel || inferRiskLevelFromDiagnosis(result.diagnosis);
+}
+
 function resolveRiskLevelLabel(level: PatientInsightRiskLevel): string {
   if (level === 'critical') return '极高风险';
   if (level === 'high') return '高风险';
@@ -215,12 +219,12 @@ function buildTrendSeries(data: PDFReportData): { points: TrendPoint[]; isFallba
     };
   }
 
-  const riskLevel = data.result.riskLevel || inferRiskLevelFromDiagnosis(data.result.diagnosis);
+  const effectiveRiskLevel = resolveEffectiveRiskLevel(data.result);
   return {
     points: [
       {
         label: '本次检查',
-        riskWeight: resolveRiskWeight(riskLevel),
+        riskWeight: resolveRiskWeight(effectiveRiskLevel),
         confidencePercent: Number((normalizeConfidence(data.result.confidence) * 100).toFixed(2)),
       },
     ],
@@ -617,7 +621,7 @@ async function createAnnotatedImageAsset(data: PDFReportData): Promise<ReportIma
   const gap = 22;
   const suspiciousAreas = normalizeSuspiciousAreas(data.result.suspiciousAreas);
   const confidence = normalizeConfidence(data.result.confidence);
-  const riskLevel = data.result.riskLevel || inferRiskLevelFromDiagnosis(data.result.diagnosis);
+  const riskLevel = resolveEffectiveRiskLevel(data.result);
   const { canvas, ctx } = createCanvas(width, height);
   fillCanvasBackground(ctx, width, height);
 
@@ -1065,7 +1069,7 @@ function drawHeroHeader(doc: jsPDF, data: PDFReportData, reportId: string) {
     maxLines: 2,
   });
 
-  const riskLevel = data.result.riskLevel || inferRiskLevelFromDiagnosis(data.result.diagnosis);
+  const riskLevel = resolveEffectiveRiskLevel(data.result);
   const riskColor = resolveRiskLevelColor(riskLevel);
   const riskBadgeWidth = 42;
   const riskBadgeY = 56;
@@ -1204,14 +1208,14 @@ function drawImagePairSection(
 }
 
 function drawKeyMetricsTable(doc: jsPDF, data: PDFReportData, startY: number) {
-  const suspiciousAreas = normalizeSuspiciousAreas(data.result.suspiciousAreas);
+  const suspiciousAreaCount = data.result.suspiciousAreas?.length || 0;
   const biomarkers = data.result.biomarkers || {};
-  const riskLevel = data.result.riskLevel || inferRiskLevelFromDiagnosis(data.result.diagnosis);
+  const riskLevel = resolveEffectiveRiskLevel(data.result);
   const rows: Array<[string, string, string, string]> = [
     ['患者编号', data.study.patientId || '-', '检查日期', formatDate(data.study.studyDate)],
     ['检查方式', data.study.modality || '-', '诊断结论', data.result.diagnosis || '-'],
     ['风险等级', resolveRiskLevelLabel(riskLevel), '置信度', formatPercent(data.result.confidence)],
-    ['可疑区域数', String(suspiciousAreas.length), 'HPV', biomarkers.HPV || biomarkers.hpv || '-'],
+    ['可疑区域数', String(suspiciousAreaCount), 'HPV', biomarkers.HPV || biomarkers.hpv || '-'],
     ['p16', biomarkers.p16 || '-', 'Ki67', biomarkers.Ki67 || biomarkers.ki67 || '-'],
   ];
 
@@ -1283,7 +1287,14 @@ function measureSuspiciousAreaRowHeight(
 
 function drawSuspiciousAreaTable(doc: jsPDF, data: PDFReportData, startY: number) {
   const areas = normalizeSuspiciousAreas(data.result.suspiciousAreas);
-  if (areas.length === 0) return startY;
+  if (areas.length === 0) {
+    const y = ensurePageSpace(doc, startY, 22);
+    drawRoundedPanel(doc, PDF_CONFIG.MARGIN_X, y, PDF_CONFIG.CONTENT_WIDTH, 14, PDF_CONFIG.COLORS.STRIPE);
+    doc.setFontSize(8.8);
+    setTextColor(doc, PDF_CONFIG.COLORS.TEXT_MUTED);
+    doc.text('当前图像整体视野未见明确高危病灶，建议结合整体形态与临床资料综合判断。', PDF_CONFIG.MARGIN_X + 4, y + 9);
+    return y + 18;
+  }
 
   const headers = ['序号', '描述', '位置', '特征'];
   const columnWidths = [11, 56, 28, 87];

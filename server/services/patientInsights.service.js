@@ -8,6 +8,11 @@ const {
   FollowUp,
   MedicalReport,
 } = require('../models');
+const {
+  normalizeConfidenceValue,
+  normalizePersistedAnalysisResult,
+  normalizeRiskLevel,
+} = require('./analysisResultNormalizer.service');
 
 const RISK_LEVEL_WEIGHT = {
   low: 1,
@@ -27,12 +32,7 @@ function clamp(value, min, max) {
 }
 
 function toConfidenceNumber(value) {
-  const num = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(num)) return 0;
-  if (num > 1 && num <= 100) {
-    return num / 100;
-  }
-  return clamp(num, 0, 1);
+  return normalizeConfidenceValue(value, 0);
 }
 
 function parseDateBoundary(dateText, boundary) {
@@ -94,10 +94,6 @@ function resolveRiskLevelByScore(score) {
   if (score >= 60) return 'high';
   if (score >= 30) return 'medium';
   return 'low';
-}
-
-function normalizeRiskLevel(level) {
-  return ['low', 'medium', 'high', 'critical'].includes(level) ? level : 'low';
 }
 
 async function ensurePatientExists(patientId) {
@@ -171,18 +167,21 @@ async function getPatientHistory(patientId, options = {}) {
 
   const rawSeries = results.map((item) => {
     const raw = item.toJSON();
-    const riskLevel = normalizeRiskLevel(raw.risk_level);
-    const confidence = toConfidenceNumber(raw.confidence);
+    const normalizedResult = normalizePersistedAnalysisResult(raw);
+    const riskLevel = normalizeRiskLevel(normalizedResult.risk_level || 'low', 'low');
+    const confidence = toConfidenceNumber(normalizedResult.confidence);
     return {
       analysis_result_id: raw.id,
       study_id: raw.study?.id,
       study_unique_id: raw.study?.study_id,
       study_date: raw.study?.study_date,
       study_type: raw.study?.study_type,
-      diagnosis: raw.diagnosis,
+      diagnosis: normalizedResult.diagnosis,
       risk_level: riskLevel,
       confidence,
-      recommendations: Array.isArray(raw.recommendations) ? raw.recommendations : [],
+      recommendations: Array.isArray(normalizedResult.recommendations)
+        ? normalizedResult.recommendations
+        : [],
       analysis_at: raw.created_at,
     };
   });
@@ -231,7 +230,7 @@ async function getPatientHistory(patientId, options = {}) {
       latest_detection_at: series[series.length - 1]?.analysis_at,
       risk_distribution: riskDistribution,
       average_confidence: avgConfidence,
-      trend,
+      trend: series.length < 2 ? 'insufficient' : trend,
     },
   };
 }
@@ -280,6 +279,7 @@ async function getStudySnapshot(patientId, studyId) {
   const resultRaw = latestResult?.toJSON();
   const taskRaw = latestTask?.toJSON();
   const followupRaw = latestFollowup?.toJSON();
+  const normalizedResult = normalizePersistedAnalysisResult(resultRaw || {});
 
   return {
     study_id: study.id,
@@ -287,10 +287,12 @@ async function getStudySnapshot(patientId, studyId) {
     study_date: study.study_date,
     study_type: study.study_type,
     study_status: study.status,
-    diagnosis: resultRaw?.diagnosis || '',
-    risk_level: normalizeRiskLevel(resultRaw?.risk_level || 'low'),
-    confidence: toConfidenceNumber(resultRaw?.confidence),
-    recommendations: Array.isArray(resultRaw?.recommendations) ? resultRaw.recommendations : [],
+    diagnosis: normalizedResult.diagnosis || '',
+    risk_level: normalizeRiskLevel(normalizedResult.risk_level || 'low', 'low'),
+    confidence: toConfidenceNumber(normalizedResult.confidence),
+    recommendations: Array.isArray(normalizedResult.recommendations)
+      ? normalizedResult.recommendations
+      : [],
     analysis_at: resultRaw?.created_at,
     latest_task: taskRaw
       ? {
@@ -559,15 +561,16 @@ async function getPatientTimeline(patientId, options = {}) {
 
   results.forEach((item) => {
     const raw = item.toJSON();
-    const confidence = Math.round(toConfidenceNumber(raw.confidence) * 100);
+    const normalized = normalizePersistedAnalysisResult(raw);
+    const confidence = Math.round(toConfidenceNumber(normalized.confidence) * 100);
     events.push(
       buildTimelineEvent({
         eventId: `analysis_result_${raw.id}`,
         eventType: 'analysis_result',
         eventTime: raw.created_at,
         title: '生成分析结果',
-        description: `${raw.diagnosis || '未知诊断'}（置信度 ${confidence}%）`,
-        riskLevel: normalizeRiskLevel(raw.risk_level || 'low'),
+        description: `${normalized.diagnosis || '未知诊断'}（置信度 ${confidence}%）`,
+        riskLevel: normalizeRiskLevel(normalized.risk_level || 'low', 'low'),
         meta: {
           analysis_result_id: raw.id,
           study_id: raw.study_id,
@@ -756,10 +759,10 @@ async function getPatientRiskProfile(patientId) {
 
   const factorScores = {
     latest_risk: latestRiskScoreMap[latestRiskLevel],
-    high_risk_ratio: highRiskRatioScore,
-    trend: trendScoreMap[trend],
-    followup_overdue: overdueScore,
-    high_attention: highAttentionScore,
+    high_risk_ratio: series.length > 0 ? clamp(highRiskRatioScore, 0, 25) : 0,
+    trend: series.length < 2 ? 0 : trendScoreMap[trend],
+    followup_overdue: clamp(overdueScore, 0, 12),
+    high_attention: clamp(highAttentionScore, 0, 12),
   };
 
   const score = clamp(
@@ -837,7 +840,9 @@ async function getPatientRiskProfile(patientId) {
   }
 
   if (series.length === 0) {
-    suggestions.push('当前暂无可用于评分的历史分析数据');
+    suggestions.push('历史趋势样本尚未形成，当前建议以本次检查结果建立后续随访基线');
+  } else if (series.length === 1) {
+    suggestions.push('当前仅有一次分析结果，建议在下次复查后再综合评估长期趋势变化');
   }
 
   return {
@@ -935,6 +940,7 @@ async function getPatientOverview(patientId) {
 
   const latestResultRaw = latestResult?.toJSON();
   const latestStudyRaw = latestStudy?.toJSON();
+  const normalizedLatestResult = normalizePersistedAnalysisResult(latestResultRaw || {});
 
   return {
     patient: patient.toJSON(),
@@ -959,9 +965,9 @@ async function getPatientOverview(patientId) {
             analysis_result_id: latestResultRaw.id,
             study_id: latestResultRaw.study_id,
             study_unique_id: latestResultRaw.study?.study_id,
-            diagnosis: latestResultRaw.diagnosis,
-            confidence: toConfidenceNumber(latestResultRaw.confidence),
-            risk_level: normalizeRiskLevel(latestResultRaw.risk_level || 'low'),
+            diagnosis: normalizedLatestResult.diagnosis,
+            confidence: toConfidenceNumber(normalizedLatestResult.confidence),
+            risk_level: normalizeRiskLevel(normalizedLatestResult.risk_level || 'low', 'low'),
             analysis_at: latestResultRaw.created_at,
           }
         : null,
@@ -1003,11 +1009,12 @@ async function predictDiseaseProgression(patientId) {
 
   const historyItems = results.map((item) => {
     const raw = item.toJSON();
+    const normalized = normalizePersistedAnalysisResult(raw);
     return {
       date: raw.study?.study_date || raw.created_at,
-      diagnosis: raw.diagnosis || '',
-      riskLevel: normalizeRiskLevel(raw.risk_level),
-      confidence: toConfidenceNumber(raw.confidence),
+      diagnosis: normalized.diagnosis || '',
+      riskLevel: normalizeRiskLevel(normalized.risk_level || 'low', 'low'),
+      confidence: toConfidenceNumber(normalized.confidence),
     };
   });
 
@@ -1016,9 +1023,9 @@ async function predictDiseaseProgression(patientId) {
     return {
       alertLevel: 'none',
       alerts: [],
-      trend: 'stable',
+      trend: 'baseline',
       history: historyItems,
-      prediction: '当前数据量不足，无法进行趋势预测。建议完成更多检查后再查看。',
+      prediction: '历史趋势样本尚未形成，建议先围绕本次检查结果建立随访基线并持续补充检查数据。',
     };
   }
 
@@ -1177,11 +1184,12 @@ async function crossPeriodComparison(patientId, periodA, periodB) {
   function summarizePeriod(rawResults) {
     const items = rawResults.map((item) => {
       const raw = item.toJSON();
+      const normalized = normalizePersistedAnalysisResult(raw);
       return {
         date: raw.study?.study_date || raw.created_at,
-        diagnosis: raw.diagnosis || '',
-        riskLevel: normalizeRiskLevel(raw.risk_level),
-        confidence: toConfidenceNumber(raw.confidence),
+        diagnosis: normalized.diagnosis || '',
+        riskLevel: normalizeRiskLevel(normalized.risk_level || 'low', 'low'),
+        confidence: toConfidenceNumber(normalized.confidence),
         studyType: raw.study?.study_type || '',
       };
     });
@@ -1382,7 +1390,8 @@ async function analyzeRiskFactors(patientId) {
   }
   // 叠加最新结果
   if (latestResult) {
-    const latestRisk = normalizeRiskLevel(latestResult.risk_level);
+    const normalizedLatestResult = normalizePersistedAnalysisResult(latestResult.toJSON());
+    const latestRisk = normalizeRiskLevel(normalizedLatestResult.risk_level || 'low', 'low');
     if (latestRisk === 'critical') {
       pastScore = clamp(pastScore + 20, 0, 100);
       pastLevel = 'critical';

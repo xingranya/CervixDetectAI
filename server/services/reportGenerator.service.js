@@ -17,6 +17,11 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { Study, Patient, AnalysisResult, StudyImage } = require('../models');
+const {
+  buildRiskPresentation,
+  normalizeConfidenceValue,
+  normalizePersistedAnalysisResult,
+} = require('./analysisResultNormalizer.service');
 
 // 中文字体路径
 const FONT_PATH = path.join(__dirname, '../public/fonts/SimSun.ttf');
@@ -139,10 +144,7 @@ const DEFAULT_REPORT_FOOTER =
   '本报告由 CervixDetect AI 生成，仅作为辅助筛查与归档参考，不能替代执业医师的临床诊断、活检结果或最终治疗决策。';
 
 function normalizeConfidence(value) {
-  const raw = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(raw)) return 0;
-  if (raw > 1 && raw <= 100) return Math.min(raw / 100, 1);
-  return Math.max(0, Math.min(raw, 1));
+  return normalizeConfidenceValue(value, 0);
 }
 
 function formatPercent(value) {
@@ -160,14 +162,6 @@ function formatDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleString('zh-CN', { hour12: false });
-}
-
-function inferRiskLevelFromDiagnosis(diagnosis) {
-  const text = String(diagnosis || '');
-  if (text.includes('浸润性癌') || text.includes('SCC')) return 'critical';
-  if (text.includes('HSIL') || text.includes('ASC-H')) return 'high';
-  if (text.includes('LSIL') || text.includes('ASC-US') || text.includes('AGC')) return 'medium';
-  return 'low';
 }
 
 function resolveRiskColor(level) {
@@ -213,10 +207,10 @@ function normalizeSuspiciousAreas(areas) {
 
 function normalizeReportData(rawData, template) {
   const { study, patient, analysisResult, images, history } = rawData;
-  const riskLevel =
-    analysisResult?.risk_level || inferRiskLevelFromDiagnosis(analysisResult?.diagnosis);
-  const suspiciousAreas = normalizeSuspiciousAreas(analysisResult?.suspicious_areas);
-  const biomarkers = analysisResult?.biomarkers || {};
+  const normalizedResult = normalizePersistedAnalysisResult(analysisResult || {});
+  const riskPresentation = buildRiskPresentation(normalizedResult.risk_level);
+  const suspiciousAreas = normalizeSuspiciousAreas(normalizedResult.suspicious_areas);
+  const biomarkers = normalizedResult.biomarkers || {};
 
   return {
     reportId: `RPT-${sanitizeFileSegment(study.study_id || study.id, 'study')}-${Date.now()
@@ -241,18 +235,18 @@ function normalizeReportData(rawData, template) {
       medicalCardNo: patient?.medical_card_no || '-',
     },
     result: {
-      diagnosis: analysisResult?.diagnosis || '暂无分析结果',
-      confidenceText: analysisResult ? formatPercent(analysisResult.confidence) : '-',
-      confidence: normalizeConfidence(analysisResult?.confidence),
-      riskLevel,
-      riskText: riskLevelText(riskLevel),
-      riskColor: resolveRiskColor(riskLevel),
+      diagnosis: normalizedResult.diagnosis || '暂无分析结果',
+      confidenceText: analysisResult ? formatPercent(normalizedResult.confidence) : '-',
+      confidence: normalizeConfidence(normalizedResult.confidence),
+      riskLevel: riskPresentation.level,
+      riskText: riskPresentation.label,
+      riskColor: resolveRiskColor(riskPresentation.level),
       biomarkers,
       suspiciousAreas,
-      recommendations: Array.isArray(analysisResult?.recommendations)
-        ? analysisResult.recommendations
+      recommendations: Array.isArray(normalizedResult.recommendations)
+        ? normalizedResult.recommendations
         : [],
-      detailedReport: convertMarkdownToPlainText(analysisResult?.detailed_report),
+      detailedReport: convertMarkdownToPlainText(normalizedResult.detailed_report),
     },
     trend: buildServerTrendSeries(history, analysisResult),
     images: Array.isArray(images) ? images : [],
@@ -269,7 +263,8 @@ function buildServerTrendSeries(history, fallbackResult) {
     }));
   }
 
-  const level = fallbackResult?.risk_level || inferRiskLevelFromDiagnosis(fallbackResult?.diagnosis);
+  const normalizedFallback = normalizePersistedAnalysisResult(fallbackResult || {});
+  const level = normalizedFallback.risk_level || 'medium';
   return [
     {
       label: '本次检查',
@@ -512,9 +507,12 @@ function drawImagePairServer(doc, data, imageAssets, y) {
 
 function drawKeyMetricsServer(doc, data, y) {
   const markerText = (key) => data.result.biomarkers[key] || data.result.biomarkers[key.toLowerCase()] || '-';
+  const suspiciousAreaCount = Array.isArray(data.result.suspiciousAreas)
+    ? data.result.suspiciousAreas.length
+    : 0;
   const rows = [
     ['诊断结论', data.result.diagnosis, '风险等级', data.result.riskText],
-    ['置信度', data.result.confidenceText, '可疑区域数', String(data.result.suspiciousAreas.length)],
+    ['置信度', data.result.confidenceText, '可疑区域数', String(suspiciousAreaCount)],
     ['HPV', markerText('HPV'), 'p16', markerText('p16')],
     ['Ki67', markerText('Ki67'), '检查描述', data.study.description],
   ];

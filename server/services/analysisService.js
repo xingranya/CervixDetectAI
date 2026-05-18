@@ -3,29 +3,11 @@ const qwenService = require('./qwenService');
 const { Study, AnalysisTask, AnalysisResult, User, sequelize } = require('../models');
 const { createAnalysisNotifications } = require('./notificationService');
 const emailService = require('./email.service');
+const {
+  normalizeAnalysisResult,
+} = require('./analysisResultNormalizer.service');
 
 const DEFAULT_ANALYSIS_TIMEOUT_MS = 180000;
-
-// 风险等级配置（关键词 -> 等级映射）
-const RISK_LEVEL_CONFIG = [
-  { keywords: ['浸润性癌', 'HSIL', '高度鳞状上皮内病变'], level: 'critical' },
-  { keywords: ['LSIL', 'ASC-H', '低度鳞状上皮内病变'], level: 'high' },
-  { keywords: ['ASC-US', '意义不明确'], level: 'medium' },
-];
-
-/**
- * 根据诊断结果判断风险等级
- * @param {string} diagnosis - 诊断结果文本
- * @returns {string} 风险等级 (critical/high/medium/low)
- */
-function getRiskLevel(diagnosis) {
-  for (const config of RISK_LEVEL_CONFIG) {
-    if (config.keywords.some((kw) => diagnosis.includes(kw))) {
-      return config.level;
-    }
-  }
-  return 'low';
-}
 
 function resolveAnalysisTimeoutMs() {
   const parsed = parseInt(process.env.ANALYSIS_TIMEOUT_MS || '', 10);
@@ -148,10 +130,11 @@ async function processTask(analysisTaskId, imagePath, studyId) {
 
     try {
       // 调用 Qwen 服务进行分析
-      const result = await withAnalysisTimeout(
+      const rawResult = await withAnalysisTimeout(
         qwenService.analyzeImage(imagePath, modality),
         resolveAnalysisTimeoutMs(),
       );
+      const result = normalizeAnalysisResult(rawResult);
 
       // 停止进度模拟器
       clearInterval(progressInterval);
@@ -162,8 +145,8 @@ async function processTask(analysisTaskId, imagePath, studyId) {
       // 更新进度到90%
       await AnalysisTask.update({ progress: 90 }, { where: { id: analysisTaskId } });
 
-      // 根据诊断结果确定风险等级
-      const riskLevel = getRiskLevel(result.diagnosis);
+      // 根据统一归一化结果确定风险等级
+      const riskLevel = result.riskLevel;
 
       // 更新进度到95%
       await AnalysisTask.update({ progress: 95 }, { where: { id: analysisTaskId } });
@@ -181,7 +164,7 @@ async function processTask(analysisTaskId, imagePath, studyId) {
             suspicious_areas: result.suspiciousAreas || [],
             biomarkers: result.biomarkers || {},
             detailed_report: result.detailedReport,
-            raw_output: result.rawResponse ? { rawResponse: result.rawResponse } : null,
+            raw_output: rawResult.rawResponse ? { rawResponse: rawResult.rawResponse } : null,
           },
           { transaction: t },
         );

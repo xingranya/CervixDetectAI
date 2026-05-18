@@ -18,6 +18,9 @@ const { markAnalysisTaskFailed } = analysisService;
 const { createAnalysisNotifications } = require('../services/notificationService');
 const emailService = require('../services/email.service');
 const {
+  normalizePersistedAnalysisResult,
+} = require('../services/analysisResultNormalizer.service');
+const {
   persistStudyImage,
   syncStudyImageToTucang,
 } = require('../services/studyImageStorage.service');
@@ -836,9 +839,15 @@ router.post('/:id/result', authenticate, async (req, res) => {
       });
     }
 
-    const finalRecommendations = Array.isArray(recommendations) ? recommendations : [];
-    const finalBiomarkers = biomarkers && typeof biomarkers === 'object' ? biomarkers : null;
-    const finalSuspiciousAreas = Array.isArray(suspicious_areas) ? suspicious_areas : null;
+    const normalizedResult = normalizePersistedAnalysisResult({
+      risk_level,
+      diagnosis: finalDiagnosis,
+      confidence: finalConfidence,
+      recommendations,
+      biomarkers,
+      suspicious_areas,
+      detailed_report: finalDetailedReport,
+    });
 
     // 检查是否已存在结果
     const existingResult = await AnalysisResult.findOne({
@@ -848,13 +857,13 @@ router.post('/:id/result', authenticate, async (req, res) => {
     if (existingResult) {
       // 更新现有结果
       await existingResult.update({
-        risk_level,
-        diagnosis: finalDiagnosis,
-        confidence: finalConfidence,
-        recommendations: finalRecommendations,
-        biomarkers: finalBiomarkers,
-        suspicious_areas: finalSuspiciousAreas,
-        detailed_report: finalDetailedReport,
+        risk_level: normalizedResult.risk_level,
+        diagnosis: normalizedResult.diagnosis,
+        confidence: normalizedResult.confidence,
+        recommendations: normalizedResult.recommendations,
+        biomarkers: normalizedResult.biomarkers,
+        suspicious_areas: normalizedResult.suspicious_areas,
+        detailed_report: normalizedResult.detailed_report,
         raw_output: raw_output && typeof raw_output === 'object' ? raw_output : null,
       });
 
@@ -877,13 +886,13 @@ router.post('/:id/result', authenticate, async (req, res) => {
       const result = await AnalysisResult.create({
         task_id: task.id,
         study_id: task.study_id,
-        risk_level,
-        diagnosis: finalDiagnosis,
-        confidence: finalConfidence,
-        recommendations: finalRecommendations,
-        biomarkers: finalBiomarkers,
-        suspicious_areas: finalSuspiciousAreas,
-        detailed_report: finalDetailedReport,
+        risk_level: normalizedResult.risk_level,
+        diagnosis: normalizedResult.diagnosis,
+        confidence: normalizedResult.confidence,
+        recommendations: normalizedResult.recommendations,
+        biomarkers: normalizedResult.biomarkers,
+        suspicious_areas: normalizedResult.suspicious_areas,
+        detailed_report: normalizedResult.detailed_report,
         raw_output: raw_output && typeof raw_output === 'object' ? raw_output : null,
       });
 
@@ -903,9 +912,9 @@ router.post('/:id/result', authenticate, async (req, res) => {
           userId: task.user_id,
           studyId: task.study_id,
           studyCode: relatedStudy?.study_id,
-          diagnosis: finalDiagnosis,
-          riskLevel: risk_level,
-          confidence: finalConfidence,
+          diagnosis: normalizedResult.diagnosis,
+          riskLevel: normalizedResult.risk_level,
+          confidence: normalizedResult.confidence,
         });
       } catch (notifyError) {
         console.error('创建分析通知失败:', notifyError.message);
@@ -922,8 +931,8 @@ router.post('/:id/result', authenticate, async (req, res) => {
           });
           const sendResult = await emailService.sendReportReadyEmail(receiver.email, {
             studyId: relatedStudy?.study_id || String(task.study_id),
-            diagnosis: finalDiagnosis,
-            riskLevel: risk_level,
+            diagnosis: normalizedResult.diagnosis,
+            riskLevel: normalizedResult.risk_level,
             completedAt: new Date().toLocaleString('zh-CN'),
           });
           if (!sendResult.success) {

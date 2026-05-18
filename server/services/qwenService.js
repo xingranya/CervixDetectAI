@@ -3,6 +3,9 @@ const https = require('https');
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
+const {
+  normalizeAnalysisResult,
+} = require('./analysisResultNormalizer.service');
 
 function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || ''));
@@ -318,6 +321,10 @@ ${diagnosisOptions}
   - 置信度应以0到1之间的小数表示（0.0-1.0）
   - **如果图像不是细胞学或组织学图像（如CT、MRI、超声等），必须诊断为"无法诊断"**
   - **如果图像质量过差无法判读，必须诊断为"无法诊断"并说明原因**
+  - **除上述两种场景外，不要输出“无法得出结论”“未知”“待补充”这类空泛词汇**
+  - **recommendations 必须给出 2-4 条可执行建议，禁止仅输出“结合临床”一条空泛建议**
+  - **suspiciousAreas 至少返回 1 条可展示信息；若未见明确局灶病灶，也要说明“整体视野未见明确高危病灶”并给出位置**
+  - **detailedReport 必须是可直接展示的完整 Markdown，不要输出提示语、模板说明或让前端再加工的占位文本**
 
 - OutputFormat: 必须以严格的JSON格式返回结果，包含以下字段：
   {
@@ -594,31 +601,10 @@ class QwenService {
         }
       }
 
-      // 标准化数据结构
+      const normalizedResult = normalizeAnalysisResult(result);
+
       return {
-        diagnosis: result.diagnosis || '未知',
-        confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
-        qualityAssessment: result.qualityAssessment || {
-          score: 3,
-          clarity: '未知',
-          adequacy: '未知',
-          details: '未提供质量评估',
-        },
-        riskAssessment: result.riskAssessment || {
-          level: '未知',
-          score: 0,
-          rationale: '未提供风险评估',
-        },
-        suspiciousAreas: Array.isArray(result.suspiciousAreas) ? result.suspiciousAreas : [],
-        biomarkers: result.biomarkers || {
-          HPV: '未检测',
-          p16: '未检测',
-          Ki67: '未检测',
-        },
-        recommendations: Array.isArray(result.recommendations)
-          ? result.recommendations
-          : ['请咨询专科医生'],
-        detailedReport: result.detailedReport || '分析报告生成失败',
+        ...normalizedResult,
         rawResponse: content, // 保存原始响应用于调试
       };
     } catch (error) {
