@@ -988,7 +988,14 @@ import type { Annotation as AnalyzerAnnotation } from 'components/studies/analyz
 import AIChatPanel from 'components/chat/AIChatPanel.vue';
 import { getImageUrl } from 'src/utils/mappers';
 import { convertSuspiciousAreasToAnnotations } from 'src/utils/studyAnnotations';
-import { reportAPI } from 'src/services/api';
+import {
+  patientInsightsAPI,
+  reportAPI,
+  type PatientInsightDiseaseAlertData,
+  type PatientInsightHistoryData,
+  type PatientInsightRiskFactorsData,
+  type PatientInsightRiskProfileData,
+} from 'src/services/api';
 import { getStudyAnalysis } from 'src/services/apiService';
 
 /** 报告生成格式 */
@@ -1339,6 +1346,26 @@ const generateReport = async (format: ReportFormat) => {
         return;
       }
 
+      let historyData: PatientInsightHistoryData | null = null;
+      let riskProfileData: PatientInsightRiskProfileData | null = null;
+      let riskFactorsData: PatientInsightRiskFactorsData | null = null;
+      let diseaseAlertData: PatientInsightDiseaseAlertData | null = null;
+      const patientDbId = studyData.studyInfo.patientDbId;
+
+      if (patientDbId) {
+        const settled = await Promise.allSettled([
+          patientInsightsAPI.getHistory(patientDbId, { limit: 6 }),
+          patientInsightsAPI.getRiskProfile(patientDbId),
+          patientInsightsAPI.getRiskFactors(patientDbId),
+          patientInsightsAPI.getDiseaseAlert(patientDbId),
+        ]);
+
+        historyData = settled[0].status === 'fulfilled' ? settled[0].value.data || null : null;
+        riskProfileData = settled[1].status === 'fulfilled' ? settled[1].value.data || null : null;
+        riskFactorsData = settled[2].status === 'fulfilled' ? settled[2].value.data || null : null;
+        diseaseAlertData = settled[3].status === 'fulfilled' ? settled[3].value.data || null : null;
+      }
+
       const { generatePDFReport } = await import('src/utils/pdfGenerator');
       const { blob, fileName } = await generatePDFReport({
         study: {
@@ -1354,7 +1381,10 @@ const generateReport = async (format: ReportFormat) => {
             : {}),
         },
         result: studyData.result,
-        history: null,
+        history: historyData,
+        riskProfile: riskProfileData,
+        riskFactors: riskFactorsData,
+        diseaseAlert: diseaseAlertData,
       });
       openReportPreview('pdf', blob, fileName);
       $q.notify({

@@ -1,5 +1,11 @@
 import { getStudyAnalysis } from 'src/services/apiService';
-import { patientInsightsAPI, type PatientInsightHistoryData } from 'src/services/api';
+import {
+  patientInsightsAPI,
+  type PatientInsightDiseaseAlertData,
+  type PatientInsightHistoryData,
+  type PatientInsightRiskFactorsData,
+  type PatientInsightRiskProfileData,
+} from 'src/services/api';
 import type { QVueGlobals } from 'quasar';
 
 interface DownloadStudyReportParams {
@@ -28,16 +34,24 @@ export async function downloadStudyReport({
     }
 
     let historyData: PatientInsightHistoryData | null = null;
+    let riskProfileData: PatientInsightRiskProfileData | null = null;
+    let riskFactorsData: PatientInsightRiskFactorsData | null = null;
+    let diseaseAlertData: PatientInsightDiseaseAlertData | null = null;
     const patientDbId = studyData.studyInfo.patientDbId;
 
     if (patientDbId) {
-      try {
-        $q.loading.show({ message: '正在整理历史趋势...', spinnerColor: 'primary' });
-        const historyResponse = await patientInsightsAPI.getHistory(patientDbId, { limit: 6 });
-        historyData = historyResponse.data || null;
-      } catch (error) {
-        console.warn('获取患者历史趋势失败，将回退为本次检查趋势图:', error);
-      }
+      $q.loading.show({ message: '正在整理患者洞察...', spinnerColor: 'primary' });
+      const settled = await Promise.allSettled([
+        patientInsightsAPI.getHistory(patientDbId, { limit: 6 }),
+        patientInsightsAPI.getRiskProfile(patientDbId),
+        patientInsightsAPI.getRiskFactors(patientDbId),
+        patientInsightsAPI.getDiseaseAlert(patientDbId),
+      ]);
+
+      historyData = settled[0].status === 'fulfilled' ? settled[0].value.data || null : null;
+      riskProfileData = settled[1].status === 'fulfilled' ? settled[1].value.data || null : null;
+      riskFactorsData = settled[2].status === 'fulfilled' ? settled[2].value.data || null : null;
+      diseaseAlertData = settled[3].status === 'fulfilled' ? settled[3].value.data || null : null;
     }
 
     $q.loading.show({ message: '正在生成PDF报告...', spinnerColor: 'primary' });
@@ -56,6 +70,9 @@ export async function downloadStudyReport({
       },
       result: studyData.result,
       history: historyData,
+      riskProfile: riskProfileData,
+      riskFactors: riskFactorsData,
+      diseaseAlert: diseaseAlertData,
     });
 
     $q.notify({
