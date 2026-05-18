@@ -441,31 +441,34 @@
           </q-card-section>
 
           <q-card-section class="q-pa-md bg-grey-1">
-            <div class="bg-white q-pa-sm rounded-borders shadow-1 q-mb-md">
-              <div v-if="hasLesionChartData" ref="chartRef" class="lesion-chart"></div>
-              <div v-else class="lesion-chart lesion-chart-empty">
-                <div class="lesion-chart-empty__preview">
-                  <img
-                    v-if="displayImageUrl"
-                    :src="displayImageUrl"
-                    alt="当前病例影像预览"
-                    class="lesion-chart-empty__image"
+            <div class="lesion-summary-grid q-mb-md" :class="lesionSummaryGridClass">
+              <div
+                v-for="card in lesionSummaryCards"
+                :key="card.id"
+                class="bg-white q-pa-sm rounded-borders shadow-1 lesion-summary-card"
+              >
+                <div class="row items-start justify-between no-wrap q-mb-xs">
+                  <div class="row items-center no-wrap">
+                    <div class="lesion-summary-card__index q-mr-sm">{{ card.index }}</div>
+                    <div>
+                      <div class="text-body2 text-weight-bold text-grey-9">{{ card.title }}</div>
+                      <div class="text-caption text-grey-6">{{ card.subtitle }}</div>
+                    </div>
+                  </div>
+                  <q-badge
+                    rounded
+                    :color="card.badgeColor"
+                    text-color="white"
+                    :label="card.badgeLabel"
                   />
-                  <div v-else class="lesion-chart-empty__placeholder">
-                    <q-icon name="image_not_supported" size="42px" color="grey-5" />
-                    <div class="q-mt-sm">当前病例暂无可展示影像</div>
-                  </div>
                 </div>
-                <div class="lesion-chart-empty__copy">
-                  <div class="text-body1 text-weight-bold text-grey-8 q-mb-xs">当前未生成可视化病灶图</div>
-                  <div class="text-body2 text-grey-7">
-                    本次结果未返回可绘制的区域坐标，已保留诊断结论、风险等级和临床建议供医生复核。
-                  </div>
-                </div>
+
+                  <div class="text-body2 text-grey-8 q-mb-xs">{{ card.description }}</div>
+                  <div class="text-caption text-grey-6">{{ card.featureSummary }}</div>
               </div>
             </div>
 
-            <div class="row q-col-gutter-sm">
+            <div class="row q-col-gutter-sm q-mt-md">
               <div class="col-md-4 col-sm-4 col-12">
                 <div
                   class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
@@ -1167,8 +1170,8 @@ import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { useThemeStore } from 'stores/themeStore';
 import * as echarts from 'echarts';
+import type { ECharts } from 'echarts';
 import { useStudyStore } from 'stores/studyStore';
 import { useAnalysisStore } from 'stores/analysisStore';
 import ImageAnalyzer from 'components/studies/ImageAnalyzer.vue';
@@ -1194,7 +1197,6 @@ const $q = useQuasar();
 const route = useRoute();
 const studyStore = useStudyStore();
 const analysisStore = useAnalysisStore();
-const themeStore = useThemeStore();
 
 // State
 const selectedPatient = ref(null);
@@ -1239,11 +1241,9 @@ const patientInsightErrorFlags = ref({
   diseaseAlert: false,
 });
 
-const chartRef = ref<HTMLElement | null>(null);
 const previewCardRef = ref<{ $el: HTMLElement } | null>(null);
 const studyDetailRadarChartRef = ref<HTMLElement | null>(null);
-let chartInstance: echarts.ECharts | null = null;
-let studyDetailRadarChartInstance: echarts.ECharts | null = null;
+let studyDetailRadarChartInstance: ECharts | null = null;
 let pollingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let pollingSessionToken = 0;
 let pollingRequestInFlight = false;
@@ -1251,7 +1251,6 @@ let pollingFailureCount = 0;
 let stalledProgressPollCount = 0;
 let lastServerProgress = 0;
 const handleWindowResize = () => {
-  chartInstance?.resize();
   studyDetailRadarChartInstance?.resize();
 };
 const currentTaskId = ref<string | null>(null);
@@ -1563,7 +1562,6 @@ const renderedDetailedReportHighlightsHtml = computed(() => {
   return DOMPurify.sanitize(marked.parse(markdownList) as string);
 });
 const compactRiskFactors = computed(() => (patientRiskFactors.value?.factors || []).slice(0, 4));
-const hasLesionChartData = computed(() => Boolean(analysisResult.value?.suspiciousAreas?.length));
 const suspiciousAreaSummaryLabel = computed(() => {
   const areaCount = analysisResult.value?.suspiciousAreas?.length || 0;
   return areaCount > 0 ? '个高风险区域' : '当前未见局灶高危病灶';
@@ -1621,6 +1619,43 @@ const lesionLegendItems = computed(() => {
       label: analysisResult.value?.recommendations?.[0] || '建议结合临床与随访结果继续评估',
     },
   ];
+});
+const lesionSummaryCards = computed(() => {
+  const cards = compactSuspiciousAreas.value.map((area, index) => ({
+    id: `lesion-card-${index}`,
+    index: index + 1,
+    title: area.location,
+    subtitle: `区域 ${index + 1}`,
+    badgeLabel: index === 0 ? '优先复核' : '建议复核',
+    badgeColor: index === 0 ? 'negative' : 'warning',
+    description: area.description,
+    featureSummary: `关键特征：${area.features}`,
+  }));
+
+  if (cards.length > 0) {
+    return cards;
+  }
+
+  return [
+    {
+      id: 'lesion-card-empty',
+      index: 0,
+      title: '当前无独立病灶区域摘要',
+      subtitle: '区域信息待补充',
+      badgeLabel: '提示',
+      badgeColor: 'grey-7',
+      description: displayImageUrl.value
+        ? '当前未返回可独立拆分的病灶区域信息，建议继续结合上方完整影像对比视图与临床建议复核。'
+        : '当前病例暂无可展示影像，但系统仍保留诊断结论与临床建议，不会出现空白区。',
+      featureSummary: '关键特征：请结合诊断结论、病理报告与临床建议综合判断。',
+    },
+  ];
+});
+const lesionSummaryGridClass = computed(() => {
+  const realAreaCount = compactSuspiciousAreas.value.length;
+  if (realAreaCount <= 1) return 'lesion-summary-grid--single';
+  if (realAreaCount === 2) return 'lesion-summary-grid--double';
+  return 'lesion-summary-grid--multi';
 });
 
 function hasStructuredMarkdown(text: string) {
@@ -2262,10 +2297,6 @@ const refreshStudyData = async (options?: { allowResumePolling?: boolean }) => {
         }
       }
 
-      // 强制更新图表
-      setTimeout(() => {
-        updateChart();
-      }, 100);
     } catch (error) {
       console.error('刷新病例数据失败:', error);
     }
@@ -2321,113 +2352,15 @@ const getRiskColorHex = (
   return '#64748b';
 };
 
-const initChart = () => {
-  if (!hasLesionChartData.value || !chartRef.value) {
-    return;
-  }
-
-  if (chartInstance) {
-    chartInstance.dispose();
-    chartInstance = null;
-  }
-
-  chartInstance = echarts.init(chartRef.value);
-  updateChart();
-};
-
-// 根据暗色模式创建图表配置
-const createChartOption = () => {
-  const isDark = themeStore.isDark;
-
-  // 使用真实的AI分析结果数据
-  const result = analysisResult.value;
-  let chartData: { value: number; itemStyle: { color: string } }[] = [];
-  let categories: string[] = [];
-
-  if (result?.suspiciousAreas && result.suspiciousAreas.length > 0) {
-    chartData = result.suspiciousAreas.slice(0, 5).map(() => {
-      const confidence = effectiveConfidencePercent.value || 60;
-      let color = '#375A64';
-      if (confidence >= 90) color = '#ef4444';
-      else if (confidence >= 75) color = '#f59e0b';
-      return { value: Math.round(confidence), itemStyle: { color } };
-    });
-    categories = result.suspiciousAreas.slice(0, 5).map((_, i) => `区域${i + 1}`);
-  } else {
-    chartData = [
-      {
-        value: effectiveConfidencePercent.value || 60,
-        itemStyle: { color: getRiskColorHex(result?.riskLevel, result?.diagnosis) },
-      },
-    ];
-    categories = ['本次检查'];
-  }
-
-  return {
-    tooltip: { trigger: 'axis' },
-    grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: categories,
-      axisLine: { lineStyle: { color: isDark ? '#475569' : '#ccc' } },
-      axisLabel: { color: isDark ? '#94a3b8' : '#333' },
-    },
-    yAxis: {
-      type: 'value',
-      max: 100,
-      splitLine: { lineStyle: { color: isDark ? '#334155' : '#e0e0e0', type: 'dashed' } },
-      axisLabel: { color: isDark ? '#94a3b8' : '#666' },
-    },
-    series: [{ data: chartData, type: 'bar', barWidth: '40%' }],
-  };
-};
-
-// 更新图表
-const updateChart = () => {
-  if (!chartInstance) return;
-  const option = createChartOption();
-  chartInstance.setOption(option);
-};
-
-// 监听分析结果变化，自动更新图表
-watch(
-  () => analysisResult.value,
-  async (result) => {
-    await nextTick();
-    if (hasLesionChartData.value && chartRef.value && !chartInstance) {
-      initChart();
-    }
-    updateChart();
-
-    // 只要有结果就结束“分析中”态，避免显示与数据不一致
-    if (result && isAnalyzing.value && !currentTaskId.value) {
-        completeAnalysisFromResult();
-    }
-  },
-  { deep: true },
-);
-
-// 监听暗色模式变化，重新渲染图表
-watch(
-  () => themeStore.isDark,
-  () => {
-    if (chartInstance) {
-      const option = createChartOption();
-      chartInstance.setOption(option);
-    }
-  },
-);
-
 // 监听study变化，确保数据同步
 watch(
   () => study.value,
-  async (newStudy) => {
+  (newStudy) => {
     if (newStudy) {
-      await nextTick();
-      if (hasLesionChartData.value && chartRef.value && !chartInstance) {
-        initChart();
+      // 只要有结果就结束“分析中”态，避免显示与数据不一致
+      if (analysisResult.value && isAnalyzing.value && !currentTaskId.value) {
+        completeAnalysisFromResult();
       }
-      updateChart();
     }
   },
   { deep: true },
@@ -2545,7 +2478,6 @@ onMounted(async () => {
     }
   }
 
-  setTimeout(initChart, 100);
   window.addEventListener('resize', handleWindowResize);
 });
 
@@ -2554,7 +2486,6 @@ onUnmounted(() => {
   // 清理轮询定时器
   clearPollingTaskStatus();
   window.removeEventListener('resize', handleWindowResize);
-  chartInstance?.dispose();
   studyDetailRadarChartInstance?.dispose();
 });
 </script>
@@ -2675,8 +2606,51 @@ onUnmounted(() => {
   font-size: 11px;
 }
 
-.lesion-chart {
-  height: 200px;
+.lesion-summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.lesion-summary-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.lesion-summary-grid--double {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lesion-summary-grid--multi {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.lesion-summary-card {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  min-height: 128px;
+}
+
+.lesion-summary-card__index {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.lesion-summary-empty {
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+}
+
+@media (max-width: 1023px) {
+  .lesion-summary-grid--double,
+  .lesion-summary-grid--multi {
+    grid-template-columns: 1fr;
+  }
 }
 
 .detail-observation-card {
