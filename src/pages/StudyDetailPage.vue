@@ -11,32 +11,32 @@
     </div>
 
     <!-- AI分析结果卡片 - 优先显示 -->
-    <div v-if="analysisResult" class="row q-mb-md">
+    <div v-if="analysisResult" class="row q-mb-sm">
       <div class="col-12">
         <q-card class="ai-result-card shadow-3 rounded-borders study-surface-card">
           <q-card-section
-            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+            class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light"
           >
-            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
-              <q-icon name="psychology" class="q-mr-sm text-primary" size="20px" />
+            <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="psychology" class="q-mr-sm text-primary" size="18px" />
               AI诊断结果
             </div>
             <q-badge color="primary" rounded label="已完成" v-if="analysisResult" />
           </q-card-section>
 
-          <q-card-section class="q-pa-md bg-grey-1">
-            <div class="row q-col-gutter-md">
+          <q-card-section class="q-pa-sm bg-grey-1">
+            <div class="row q-col-gutter-sm">
               <!-- Diagnosis Conclusion -->
               <div class="col-md-4 col-12">
                 <div
-                  class="bg-white q-pa-md rounded-borders shadow-1 h-full relative-position overflow-hidden"
+                  class="bg-white q-pa-sm rounded-borders shadow-1 h-full relative-position overflow-hidden"
                 >
-                  <div class="text-subtitle2 text-grey-7 q-mb-sm flex items-center">
+                  <div class="text-caption text-grey-7 q-mb-xs flex items-center">
                     <q-icon name="health_and_safety" class="q-mr-xs" />
                     诊断结论
                   </div>
                   <div
-                    class="text-h4 text-weight-bold q-mb-sm"
+                    class="text-h5 text-weight-bold q-mb-xs"
                     :class="getRiskColorClass(analysisResult.diagnosis)"
                   >
                     {{ analysisResult.diagnosis }}
@@ -58,16 +58,16 @@
 
               <!-- Biomarkers -->
               <div class="col-md-4 col-12" v-if="analysisResult.biomarkers">
-                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full">
-                  <div class="text-subtitle2 text-grey-7 q-mb-md flex items-center">
+                <div class="bg-white q-pa-sm rounded-borders shadow-1 h-full">
+                  <div class="text-caption text-grey-7 q-mb-xs flex items-center">
                     <q-icon name="biotech" class="q-mr-xs" />
                     生物标志物
                   </div>
-                  <div class="q-gutter-y-sm">
+                  <div class="q-gutter-y-xs">
                     <div
-                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xxs rounded-borders"
                     >
-                      <span class="text-weight-medium text-grey-8">HPV</span>
+                      <span class="text-weight-medium text-grey-8 text-caption">HPV</span>
                       <q-badge
                         :color="analysisResult.biomarkers.HPV === '阳性' ? 'negative' : 'positive'"
                         rounded
@@ -76,16 +76,16 @@
                       />
                     </div>
                     <div
-                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xxs rounded-borders"
                     >
-                      <span class="text-weight-medium text-grey-8">p16</span>
-                      <span class="text-grey-7">{{ analysisResult.biomarkers.p16 }}</span>
+                      <span class="text-weight-medium text-grey-8 text-caption">p16</span>
+                      <span class="text-grey-7 text-caption">{{ analysisResult.biomarkers.p16 }}</span>
                     </div>
                     <div
-                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xs rounded-borders"
+                      class="row items-center justify-between bg-grey-1 q-px-sm q-py-xxs rounded-borders"
                     >
-                      <span class="text-weight-medium text-grey-8">Ki67</span>
-                      <span class="text-grey-7">{{ analysisResult.biomarkers.Ki67 }}</span>
+                      <span class="text-weight-medium text-grey-8 text-caption">Ki67</span>
+                      <span class="text-grey-7 text-caption">{{ analysisResult.biomarkers.Ki67 }}</span>
                     </div>
                   </div>
                 </div>
@@ -93,16 +93,16 @@
 
               <!-- Suspicious Areas -->
               <div class="col-md-4 col-12">
-                <div class="bg-white q-pa-md rounded-borders shadow-1 h-full">
-                  <div class="text-subtitle2 text-grey-7 q-mb-sm flex items-center">
+                <div class="bg-white q-pa-sm rounded-borders shadow-1 h-full">
+                  <div class="text-caption text-grey-7 q-mb-xs flex items-center">
                     <q-icon name="warning_amber" class="q-mr-xs" />
                     可疑区域
                   </div>
-                  <div class="row items-baseline q-mb-sm">
-                    <div class="text-h4 text-negative text-weight-bold q-mr-sm">
+                  <div class="row items-baseline q-mb-xs">
+                    <div class="text-h5 text-negative text-weight-bold q-mr-sm">
                       {{ analysisResult.suspiciousAreas?.length || 0 }}
                     </div>
-                    <div class="text-grey-7">个高风险区域</div>
+                    <div class="text-grey-7 text-caption">个高风险区域</div>
                   </div>
                   <q-scroll-area
                     class="suspicious-areas-scroll"
@@ -130,17 +130,17 @@
           <!-- Recommendations -->
           <q-card-section
             v-if="analysisResult.recommendations?.length"
-            class="bg-white border-top-light"
+            class="bg-white border-top-light q-pa-sm"
           >
-            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-md flex items-center">
-              <q-icon name="recommend" class="q-mr-sm text-primary" />
+            <div class="text-caption text-weight-bold text-grey-9 q-mb-xs flex items-center">
+              <q-icon name="recommend" class="q-mr-sm text-primary" size="18px" />
               临床建议
             </div>
-            <div class="row q-col-gutter-sm">
+            <div class="row q-col-gutter-xs">
               <div class="col-12" v-for="(rec, idx) in analysisResult.recommendations" :key="idx">
-                <div class="bg-blue-50 q-pa-sm rounded-borders flex items-center text-blue-10">
-                  <q-icon name="check_circle" color="primary" class="q-mr-sm" size="sm" />
-                  {{ rec }}
+                <div class="bg-blue-50 q-pa-xs rounded-borders flex items-start text-blue-10">
+                  <q-icon name="check_circle" color="primary" class="q-mr-xs q-mt-xxs" size="xs" />
+                  <div class="text-body2">{{ rec }}</div>
                 </div>
               </div>
             </div>
@@ -161,10 +161,10 @@
               class="bg-white"
             >
               <q-card flat class="bg-grey-1">
-                <q-card-section class="q-pa-sm">
+                <q-card-section class="q-pa-xs">
                   <!-- eslint-disable-next-line vue/no-v-html -->
                   <div
-                    class="text-body2 text-grey-9 bg-white q-pa-md rounded-borders shadow-1 report-text-block detailed-report-markdown"
+                    class="text-body2 text-grey-9 bg-white q-pa-sm rounded-borders shadow-1 report-text-block detailed-report-markdown"
                     v-html="renderedDetailedReportHtml"
                   />
                 </q-card-section>
@@ -173,13 +173,13 @@
           </q-card-section>
 
           <!-- 生成报告操作栏 -->
-          <q-card-section class="bg-white border-top-light">
-            <div class="row items-center justify-between">
-              <div class="text-subtitle2 text-grey-7 flex items-center">
+          <q-card-section class="bg-white border-top-light q-pa-sm">
+            <div class="row items-center justify-between no-wrap">
+              <div class="text-caption text-grey-7 flex items-center">
                 <q-icon name="file_download" class="q-mr-xs text-primary" />
                 导出报告
               </div>
-              <div class="row q-gutter-sm">
+              <div class="row q-gutter-xs">
                 <q-btn
                   unelevated
                   size="sm"
@@ -217,7 +217,7 @@
       </div>
     </div>
 
-    <div class="row q-col-gutter-md">
+    <div class="row q-col-gutter-md items-start">
       <!-- Left Column: Image Upload & Preview -->
       <div class="col-lg-8 col-md-12">
         <!-- Image Upload Section (Hidden if image exists) -->
@@ -266,16 +266,12 @@
         </q-card>
 
         <!-- Image Preview Section -->
-        <q-card
-          class="full-height shadow-3 rounded-borders study-surface-card"
-          v-else
-          ref="previewCardRef"
-        >
+        <q-card class="shadow-3 rounded-borders study-surface-card" v-else ref="previewCardRef">
           <!-- Header -->
           <q-card-section
-            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+            class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light"
           >
-            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+            <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
               <q-icon name="photo_library" class="q-mr-sm text-primary" size="20px" />
               影像预览与对比
             </div>
@@ -318,20 +314,20 @@
           </q-card-section>
 
           <!-- Content -->
-          <q-card-section class="q-pa-md bg-grey-1">
-            <div class="row q-col-gutter-md">
+          <q-card-section class="q-pa-sm bg-grey-1">
+            <div class="row q-col-gutter-sm">
               <!-- Original Image Panel -->
               <div class="col-md-6 col-12">
                 <div class="image-panel-wrapper bg-white shadow-1 rounded-borders overflow-hidden">
                   <div
-                    class="q-px-md q-py-sm text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center bg-grey-1"
+                    class="q-px-sm q-py-xs text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center bg-grey-1"
                   >
                     <q-icon name="image" class="q-mr-xs text-primary" />
                     原始影像
                   </div>
                   <div
                     class="image-container bg-grey-2 relative-position overflow-hidden"
-                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
+                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '350px' }"
                   >
                     <img
                       :src="displayImageUrl"
@@ -349,7 +345,7 @@
               <div class="col-md-6 col-12">
                 <div class="image-panel-wrapper bg-white shadow-1 rounded-borders overflow-hidden">
                   <div
-                    class="q-px-md q-py-sm text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center justify-between bg-grey-1"
+                    class="q-px-sm q-py-xs text-caption text-weight-bold text-grey-8 border-bottom-light flex items-center justify-between bg-grey-1"
                   >
                     <div class="flex items-center">
                       <q-icon name="auto_fix_high" class="q-mr-xs text-secondary" />
@@ -359,7 +355,7 @@
                   </div>
                   <div
                     class="annotated-view-container relative-position bg-grey-2"
-                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '420px' }"
+                    :style="{ height: $q.fullscreen.isActive ? 'calc(100vh - 160px)' : '350px' }"
                   >
                     <ImageAnalyzer
                       v-if="displayImageUrl"
@@ -381,7 +377,7 @@
 
             <!-- Footer Info Bar -->
             <div
-              class="row justify-between items-center q-mt-md q-px-md q-py-sm bg-white shadow-1 rounded-borders text-caption text-grey-8"
+              class="row justify-between items-center q-mt-sm q-px-sm q-py-xs bg-white shadow-1 rounded-borders text-caption text-grey-8"
             >
               <div class="flex items-center">
                 <q-chip
@@ -427,9 +423,205 @@
             </div>
           </q-card-section>
         </q-card>
+
+        <q-card v-if="analysisResult" class="q-mt-sm shadow-3 rounded-borders study-surface-card">
+          <q-card-section
+            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+          >
+            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="scanner" class="q-mr-sm text-primary" size="20px" />
+              病变特征识别结果
+            </div>
+            <q-btn flat round dense icon="download" color="grey-7" size="sm" aria-label="导出图表">
+              <q-tooltip>导出图表</q-tooltip>
+            </q-btn>
+          </q-card-section>
+
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="bg-white q-pa-sm rounded-borders shadow-1 q-mb-md">
+              <div ref="chartRef" class="lesion-chart"></div>
+            </div>
+
+            <div class="row q-col-gutter-sm">
+              <div class="col-md-4 col-sm-4 col-12">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div class="text-h5 text-primary text-weight-bold q-mb-xs">
+                    {{ analysisResult?.suspiciousAreas?.length || 0 }}
+                  </div>
+                  <div class="text-body2 text-grey-7">疑似区域</div>
+                </div>
+              </div>
+              <div class="col-md-4 col-sm-4 col-12">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div class="text-h5 text-secondary text-weight-bold q-mb-xs">
+                    {{ analysisResult?.confidence ? Math.round(analysisResult.confidence * 100) : 0
+                    }}<span class="text-body2">%</span>
+                  </div>
+                  <div class="text-body2 text-grey-7">置信度</div>
+                </div>
+              </div>
+              <div class="col-md-4 col-sm-4 col-12">
+                <div
+                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
+                >
+                  <div
+                    class="text-h6 text-weight-bold q-mb-xs"
+                    :class="getRiskColorClass(analysisResult?.diagnosis)"
+                  >
+                    {{ analysisResult ? getRiskLevelText(analysisResult.diagnosis) : '-' }}
+                  </div>
+                  <div class="text-body2 text-grey-7">风险等级</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-body2 shadow-1"
+            >
+              <div class="flex items-center q-mb-xs">
+                <div class="q-mr-sm bg-negative rounded-circle legend-dot"></div>
+                <span class="text-brown-9 text-weight-bold">HSIL - 高置信度</span>
+              </div>
+              <div class="flex items-center q-mb-xs">
+                <div class="q-mr-sm bg-warning rounded-circle legend-dot"></div>
+                <span class="text-brown-9">LSIL - 中置信度</span>
+              </div>
+              <div class="flex items-center">
+                <div class="q-mr-sm bg-primary rounded-circle legend-dot"></div>
+                <span class="text-brown-9">醋酸白上皮 - 已识别</span>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <div v-if="analysisResult" class="row q-col-gutter-sm q-mt-sm">
+          <div class="col-md-6 col-12">
+            <q-card class="shadow-3 rounded-borders study-surface-card">
+              <q-card-section class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light">
+                <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
+                  <q-icon name="summarize" class="q-mr-sm text-primary" size="20px" />
+                  本次病灶概览
+                </div>
+                <q-chip dense color="red-1" text-color="negative" icon="warning">
+                  {{ getRiskLevelText(analysisResult.diagnosis) }}
+                </q-chip>
+              </q-card-section>
+
+              <q-card-section class="q-pa-sm bg-grey-1">
+                <div class="row q-col-gutter-xs q-mb-sm">
+                  <div class="col-4">
+                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
+                      <div class="text-h6 text-negative text-weight-bold">
+                        {{ analysisResult.suspiciousAreas?.length || 0 }}
+                      </div>
+                      <div class="text-body2 text-grey-7">疑似区域</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
+                      <div class="text-h6 text-primary text-weight-bold">
+                        {{ Math.round(analysisResult.confidence * 100) }}%
+                      </div>
+                      <div class="text-body2 text-grey-7">置信度</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="bg-white q-pa-xs rounded-borders shadow-1 h-full text-center">
+                      <div class="text-subtitle1 text-weight-bold" :class="getRiskColorClass(analysisResult.diagnosis)">
+                        {{ analysisResult.diagnosis }}
+                      </div>
+                      <div class="text-body2 text-grey-7">诊断结论</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="q-gutter-y-xs">
+                  <div
+                    v-for="(area, idx) in compactSuspiciousAreas"
+                    :key="`compact-area-${idx}`"
+                    class="bg-white q-pa-xs rounded-borders shadow-1"
+                  >
+                    <div class="row items-start justify-between q-mb-xs">
+                      <div class="text-body2 text-weight-bold text-grey-9">
+                        区域 {{ idx + 1 }} · {{ area.location }}
+                      </div>
+                      <q-badge color="negative" rounded :label="area.tag" />
+                    </div>
+                    <div class="text-body2 text-grey-8 q-mb-xs">
+                      {{ area.description }}
+                    </div>
+                    <div class="text-body2 text-grey-6">
+                      关键特征：{{ area.features }}
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="analysisResult.biomarkers" class="q-mt-md">
+                  <div class="text-body2 text-weight-bold text-grey-7 q-mb-xs flex items-center">
+                    <q-icon name="biotech" class="q-mr-xs text-secondary" />
+                    协同检验指标
+                  </div>
+                  <div class="row q-col-gutter-xs">
+                    <div class="col-auto" v-for="item in biomarkerSummaryItems" :key="item.label">
+                      <q-chip square color="white" text-color="grey-8" class="shadow-1 q-px-sm q-py-xs">
+                        <span class="text-weight-medium">{{ item.label }}</span>
+                        <span class="q-ml-xs">{{ item.value }}</span>
+                      </q-chip>
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div class="col-md-6 col-12">
+            <q-card class="shadow-3 rounded-borders study-surface-card">
+              <q-card-section class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light">
+                <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
+                  <q-icon name="recommend" class="q-mr-sm text-primary" size="20px" />
+                  临床建议与下一步动作
+                </div>
+              </q-card-section>
+
+              <q-card-section class="q-pa-sm bg-grey-1">
+                <div class="q-gutter-y-xs q-mb-sm">
+                  <div
+                    v-for="(rec, idx) in analysisResult.recommendations || []"
+                    :key="`next-action-${idx}`"
+                    class="bg-white q-pa-xs rounded-borders shadow-1"
+                  >
+                    <div class="text-body2 text-primary text-weight-bold q-mb-xs">建议 {{ idx + 1 }}</div>
+                    <div class="text-body2 text-grey-9">{{ rec }}</div>
+                  </div>
+                </div>
+
+                <div v-if="detailedReportHighlights.length" class="bg-white q-pa-sm rounded-borders shadow-1">
+                  <div class="text-body2 text-weight-bold text-grey-7 q-mb-xs flex items-center">
+                    <q-icon name="visibility" class="q-mr-xs text-orange" />
+                    重点观察
+                  </div>
+                  <div class="q-gutter-y-xs">
+                    <div
+                      v-for="(item, idx) in detailedReportHighlights"
+                      :key="`detail-highlight-${idx}`"
+                      class="row items-start no-wrap"
+                    >
+                      <q-icon name="fiber_manual_record" size="7px" color="primary" class="q-mt-xs q-mr-sm" />
+                      <div class="text-body2 text-grey-8">{{ item }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
       </div>
 
-      <!-- Right Column: Controls & Stats -->
+      <!-- Right Column: Controls & Insights -->
       <div class="col-lg-4 col-md-12">
         <!-- AI分析失败卡片 -->
         <q-card v-if="lastFailedTask && !isAnalyzing" flat bordered class="q-mb-md bg-red-1">
@@ -739,165 +931,119 @@
           </q-card-section>
         </q-card>
 
-        <!-- Lesion Visualization -->
-        <!-- Lesion Visualization -->
-        <q-card class="q-mb-md shadow-3 rounded-borders study-surface-card">
-          <q-card-section
-            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
-          >
-            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
-              <q-icon name="scanner" class="q-mr-sm text-primary" size="20px" />
-              病变特征识别结果
-            </div>
-            <q-btn flat round dense icon="download" color="grey-7" size="sm" aria-label="导出图表">
-              <q-tooltip>导出图表</q-tooltip>
-            </q-btn>
-          </q-card-section>
-
-          <q-card-section class="q-pa-md bg-grey-1">
-            <div class="bg-white q-pa-sm rounded-borders shadow-1 q-mb-md">
-              <div ref="chartRef" class="lesion-chart"></div>
-            </div>
-
-            <div class="row q-col-gutter-sm">
-              <div class="col-4">
-                <div
-                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
-                >
-                  <div class="text-h5 text-primary text-weight-bold q-mb-xs">
-                    {{ analysisResult?.suspiciousAreas?.length || 0 }}
-                  </div>
-                  <div class="text-caption text-grey-7">疑似区域</div>
-                </div>
-              </div>
-              <div class="col-4">
-                <div
-                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
-                >
-                  <div class="text-h5 text-secondary text-weight-bold q-mb-xs">
-                    {{ analysisResult?.confidence ? Math.round(analysisResult.confidence * 100) : 0
-                    }}<span class="text-caption">%</span>
-                  </div>
-                  <div class="text-caption text-grey-7">置信度</div>
-                </div>
-              </div>
-              <div class="col-4">
-                <div
-                  class="text-center bg-white q-pa-sm rounded-borders shadow-1 h-full flex column flex-center"
-                >
-                  <div
-                    class="text-h6 text-weight-bold q-mb-xs"
-                    :class="getRiskColorClass(analysisResult?.diagnosis)"
-                  >
-                    {{ analysisResult ? getRiskLevelText(analysisResult.diagnosis) : '-' }}
-                  </div>
-                  <div class="text-caption text-grey-7">风险等级</div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="bg-orange-1 q-pa-sm rounded-borders border-warning q-mt-md text-caption shadow-1"
-            >
-              <div class="flex items-center q-mb-xs">
-                <div class="q-mr-sm bg-negative rounded-circle legend-dot"></div>
-                <span class="text-brown-9 text-weight-bold">HSIL - 高置信度</span>
-              </div>
-              <div class="flex items-center q-mb-xs">
-                <div class="q-mr-sm bg-warning rounded-circle legend-dot"></div>
-                <span class="text-brown-9">LSIL - 中置信度</span>
-              </div>
-              <div class="flex items-center">
-                <div class="q-mr-sm bg-primary rounded-circle legend-dot"></div>
-                <span class="text-brown-9">醋酸白上皮 - 已识别</span>
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-
         <!-- Analysis Log -->
-        <!-- Analysis Log -->
-        <q-card class="shadow-3 rounded-borders study-surface-card">
+        <q-card v-if="showPatientInsightPanel" class="shadow-3 rounded-borders study-surface-card q-mb-sm">
           <q-card-section
-            class="row items-center justify-between q-px-md q-py-sm bg-white border-bottom-light"
+            class="row items-center justify-between q-px-sm q-py-xs bg-white border-bottom-light"
           >
-            <div class="text-subtitle1 text-weight-bold flex items-center text-grey-9">
-              <q-icon name="assignment" class="q-mr-sm text-primary" size="20px" />
-              分析日志
+            <div class="text-subtitle2 text-weight-bold flex items-center text-grey-9">
+              <q-icon name="health_and_safety" class="q-mr-sm text-primary" size="20px" />
+              患者洞察
             </div>
-            <q-btn
-              flat
-              round
-              dense
-              icon="delete_outline"
-              color="grey-7"
-              size="sm"
-              @click="logs = []"
-            >
-              <q-tooltip>清空日志</q-tooltip>
-            </q-btn>
           </q-card-section>
 
-          <q-card-section class="q-pa-none bg-grey-1">
-            <q-scroll-area class="bg-white analysis-log-scroll-area">
-              <q-list separator class="q-py-xs">
-                <q-item v-for="(log, index) in logs" :key="index" class="q-py-sm hover-bg-grey-1">
-                  <q-item-section avatar class="analysis-log-avatar">
-                    <q-icon
-                      :name="log.message.includes('完成') ? 'check_circle' : 'info'"
-                      :color="log.message.includes('完成') ? 'positive' : 'primary'"
-                      size="sm"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <div class="row items-center justify-between">
-                      <div
-                        class="text-caption text-grey-5 font-mono bg-grey-1 q-px-xs rounded-borders"
-                      >
-                        {{ log.time }}
+          <q-card-section class="q-pa-sm bg-grey-1">
+            <div v-if="patientInsightLoading" class="bg-white q-pa-md rounded-borders shadow-1 text-center text-grey-6">
+              <q-spinner-dots color="primary" size="32px" class="q-mb-sm" />
+              <div>正在加载患者洞察...</div>
+            </div>
+
+            <div v-else-if="patientInsightAvailable" class="q-gutter-y-sm">
+              <div v-if="patientRiskProfile" class="bg-white q-pa-sm rounded-borders shadow-1">
+                <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">风险画像摘要</div>
+                <div class="row q-col-gutter-xs q-mb-xs">
+                  <div class="col-6">
+                    <div class="insight-metric-tile">
+                      <div class="insight-metric-value" :class="`text-${getRiskScoreColor(patientRiskProfile.score)}`">
+                        {{ patientRiskProfile.score }}
                       </div>
-                      <q-badge
-                        :color="getConfidenceColor(log.confidence)"
-                        :label="log.confidence + '%'"
-                        rounded
-                        size="sm"
-                      />
+                      <div class="insight-metric-label">综合评分</div>
                     </div>
-                    <div class="text-body2 text-grey-9 q-mt-xs">{{ log.message }}</div>
-                  </q-item-section>
-                </q-item>
-                <div
-                  v-if="logs.length === 0"
-                  class="text-center text-grey-5 q-pa-md flex flex-center analysis-log-empty"
-                >
-                  <div class="column flex-center">
-                    <q-icon name="history" size="md" class="q-mb-sm" />
-                    暂无日志记录
+                  </div>
+                  <div class="col-6">
+                    <div class="insight-metric-tile">
+                      <div class="text-subtitle1 text-weight-bold" :class="getRiskTextClass(patientRiskProfile.level)">
+                        {{ getRiskLabel(patientRiskProfile.level) }}
+                      </div>
+                      <div class="insight-metric-label">风险级别</div>
+                    </div>
                   </div>
                 </div>
-              </q-list>
-            </q-scroll-area>
-          </q-card-section>
+                <div class="row q-col-gutter-xs">
+                  <div class="col-6">
+                    <div class="insight-mini-stat">趋势：{{ getTrendLabel(patientRiskProfile.trend) }}</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="insight-mini-stat">
+                      高风险占比：{{ Math.round((patientRiskProfile.metrics.high_risk_ratio || 0) * 100) }}%
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <q-card-section
-            class="row justify-between items-center text-caption border-top-light bg-white q-px-md q-py-sm"
-          >
-            <div class="text-grey-6 flex items-center">
-              <q-icon name="update" class="q-mr-xs" />
-              最后更新: {{ lastUpdated }}
+              <div v-if="patientRiskFactors?.factors?.length" class="bg-white q-pa-sm rounded-borders shadow-1">
+                <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">风险因素雷达图</div>
+                <div ref="studyDetailRadarChartRef" class="study-detail-radar-chart q-mb-xs"></div>
+                <div class="q-gutter-y-xs">
+                  <div
+                    v-for="factor in compactRiskFactors"
+                    :key="factor.name"
+                    class="text-caption text-grey-8 row justify-between"
+                  >
+                    <span>{{ factor.name }}</span>
+                    <span class="text-weight-bold">{{ factor.score }} 分</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="patientDiseaseAlert" class="bg-white q-pa-sm rounded-borders shadow-1">
+                <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">疾病预警摘要</div>
+                <div class="text-body2 text-grey-9 q-mb-xs">
+                  {{ getDiseaseAlertLevelLabel(patientDiseaseAlert.alertLevel) }} ·
+                  {{ getDiseaseTrendLabel(patientDiseaseAlert.trend) }}
+                </div>
+                <div class="text-caption text-grey-7">
+                  {{ patientDiseaseAlert.prediction }}
+                </div>
+                <div v-if="patientDiseaseAlert.alerts?.length" class="q-mt-xs">
+                  <div
+                    v-for="(alert, idx) in patientDiseaseAlert.alerts.slice(0, 2)"
+                    :key="`alert-${idx}`"
+                    class="insight-alert-chip"
+                  >
+                    {{ alert.message }}
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="patientInsightHistory" class="bg-white q-pa-sm rounded-borders shadow-1">
+                <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">趋势摘要</div>
+                <div class="row q-col-gutter-xs">
+                  <div class="col-6">
+                    <div class="insight-mini-stat">近 6 次检测：{{ patientInsightHistory.stats.total_detections }}</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="insight-mini-stat">
+                      平均置信度：{{ Math.round((patientInsightHistory.stats.average_confidence || 0) * 100) }}%
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="insight-mini-stat">风险趋势：{{ getTrendLabel(patientInsightHistory.stats.trend) }}</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="insight-mini-stat">
+                      最近检测：{{ formatShortDate(patientInsightHistory.stats.latest_detection_at) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <q-badge
-              :color="isAnalyzing ? 'primary' : 'grey-5'"
-              :label="isAnalyzing ? '进行中' : '已停止'"
-              rounded
-              outline
-            >
-              <q-icon
-                :name="isAnalyzing ? 'sync' : 'stop'"
-                class="q-ml-xs"
-                :class="{ 'fa-spin': isAnalyzing }"
-              />
-            </q-badge>
+
+            <div v-else class="bg-white q-pa-md rounded-borders shadow-1 text-center text-grey-6">
+              <q-icon name="monitor_heart" size="36px" color="grey-4" class="q-mb-sm" />
+              <div class="text-body2">暂无患者洞察数据</div>
+              <div class="text-caption q-mt-xs">待患者建立更多检测历史后，这里会显示风险画像、趋势和预警摘要。</div>
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -974,7 +1120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { marked } from 'marked';
@@ -994,6 +1140,7 @@ import {
   type PatientInsightDiseaseAlertData,
   type PatientInsightHistoryData,
   type PatientInsightRiskFactorsData,
+  type PatientInsightRiskLevel,
   type PatientInsightRiskProfileData,
 } from 'src/services/api';
 import { getStudyAnalysis } from 'src/services/apiService';
@@ -1038,24 +1185,33 @@ const reportPreviewMeta = ref({
   placeholderTitle: '',
   placeholderDescription: '',
 });
+const patientInsightHistory = ref<PatientInsightHistoryData | null>(null);
+const patientRiskProfile = ref<PatientInsightRiskProfileData | null>(null);
+const patientRiskFactors = ref<PatientInsightRiskFactorsData | null>(null);
+const patientDiseaseAlert = ref<PatientInsightDiseaseAlertData | null>(null);
+const patientInsightLoading = ref(false);
+const patientInsightErrorFlags = ref({
+  history: false,
+  riskProfile: false,
+  riskFactors: false,
+  diseaseAlert: false,
+});
 
-interface LogEntry {
-  time: string;
-  message: string;
-  confidence: number;
-}
-
-const logs = ref<LogEntry[]>([]);
-const lastUpdated = ref(new Date().toLocaleString());
 const chartRef = ref<HTMLElement | null>(null);
 const previewCardRef = ref<{ $el: HTMLElement } | null>(null);
+const studyDetailRadarChartRef = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
+let studyDetailRadarChartInstance: echarts.ECharts | null = null;
 let pollingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let pollingSessionToken = 0;
 let pollingRequestInFlight = false;
 let pollingFailureCount = 0;
 let stalledProgressPollCount = 0;
 let lastServerProgress = 0;
+const handleWindowResize = () => {
+  chartInstance?.resize();
+  studyDetailRadarChartInstance?.resize();
+};
 const currentTaskId = ref<string | null>(null);
 const lastFailedTask = ref<{ id: string; error?: string } | null>(null);
 // 用于跟踪当前进度阶段，避免重复添加日志
@@ -1143,6 +1299,153 @@ function downloadCurrentPreview() {
   $q.notify({ type: 'positive', message: '下载已开始', position: 'top' });
 }
 
+function getRiskLabel(level?: PatientInsightRiskLevel) {
+  if (level === 'critical') return '极高风险';
+  if (level === 'high') return '高风险';
+  if (level === 'medium') return '中风险';
+  return '低风险';
+}
+
+function getTrendLabel(trend?: string) {
+  if (trend === 'up') return '上升';
+  if (trend === 'down') return '下降';
+  if (trend === 'stable') return '稳定';
+  if (trend === 'worsening') return '恶化';
+  if (trend === 'improving') return '改善';
+  if (trend === 'fluctuating') return '波动';
+  return '样本不足';
+}
+
+function getRiskTextClass(level?: PatientInsightRiskLevel) {
+  if (level === 'critical' || level === 'high') return 'text-negative';
+  if (level === 'medium') return 'text-warning';
+  return 'text-positive';
+}
+
+function getRiskScoreColor(score?: number) {
+  if ((score || 0) >= 80) return 'negative';
+  if ((score || 0) >= 60) return 'warning';
+  if ((score || 0) >= 40) return 'primary';
+  return 'positive';
+}
+
+function getDiseaseAlertLevelLabel(level?: string) {
+  if (level === 'critical') return '高危预警';
+  if (level === 'warning') return '风险预警';
+  if (level === 'watch') return '重点观察';
+  return '暂无预警';
+}
+
+function getDiseaseTrendLabel(trend?: string) {
+  if (trend === 'worsening') return '病程恶化';
+  if (trend === 'improving') return '病程改善';
+  if (trend === 'fluctuating') return '风险波动';
+  return '总体稳定';
+}
+
+function formatShortDate(value?: string) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('zh-CN');
+}
+
+async function loadPatientInsightsPanel() {
+  if (!study.value?.id || !analysisResult.value) {
+    patientInsightHistory.value = null;
+    patientRiskProfile.value = null;
+    patientRiskFactors.value = null;
+    patientDiseaseAlert.value = null;
+    return;
+  }
+
+  let patientDbId: number | undefined;
+  try {
+    const studyData = await getStudyAnalysis(String(study.value.id));
+    patientDbId = studyData.studyInfo.patientDbId;
+  } catch (error) {
+    console.warn('加载患者洞察前获取病例分析数据失败:', error);
+  }
+
+  if (!patientDbId) {
+    patientInsightHistory.value = null;
+    patientRiskProfile.value = null;
+    patientRiskFactors.value = null;
+    patientDiseaseAlert.value = null;
+    return;
+  }
+
+  patientInsightLoading.value = true;
+  patientInsightErrorFlags.value = {
+    history: false,
+    riskProfile: false,
+    riskFactors: false,
+    diseaseAlert: false,
+  };
+
+  const settled = await Promise.allSettled([
+    patientInsightsAPI.getHistory(patientDbId, { limit: 6 }),
+    patientInsightsAPI.getRiskProfile(patientDbId),
+    patientInsightsAPI.getRiskFactors(patientDbId),
+    patientInsightsAPI.getDiseaseAlert(patientDbId),
+  ]);
+
+  patientInsightHistory.value =
+    settled[0].status === 'fulfilled' ? settled[0].value.data || null : null;
+  patientRiskProfile.value =
+    settled[1].status === 'fulfilled' ? settled[1].value.data || null : null;
+  patientRiskFactors.value =
+    settled[2].status === 'fulfilled' ? settled[2].value.data || null : null;
+  patientDiseaseAlert.value =
+    settled[3].status === 'fulfilled' ? settled[3].value.data || null : null;
+
+  patientInsightErrorFlags.value = {
+    history: settled[0].status === 'rejected',
+    riskProfile: settled[1].status === 'rejected',
+    riskFactors: settled[2].status === 'rejected',
+    diseaseAlert: settled[3].status === 'rejected',
+  };
+
+  patientInsightLoading.value = false;
+}
+
+function initStudyDetailRadarChart() {
+  if (!studyDetailRadarChartRef.value || studyDetailRadarChartInstance) return;
+  studyDetailRadarChartInstance = echarts.init(studyDetailRadarChartRef.value);
+}
+
+function updateStudyDetailRadarChart() {
+  if (!studyDetailRadarChartInstance) return;
+  const factors = patientRiskFactors.value?.factors || [];
+  if (!factors.length) return;
+
+  studyDetailRadarChartInstance.setOption(
+    {
+      tooltip: {},
+      radar: {
+        indicator: factors.map((factor) => ({ name: factor.name, max: 100 })),
+        splitNumber: 4,
+        radius: '62%',
+      },
+      series: [
+        {
+          type: 'radar',
+          data: [
+            {
+              value: factors.map((factor) => factor.score),
+              name: '风险评分',
+              areaStyle: { opacity: 0.18 },
+              lineStyle: { width: 2 },
+              symbolSize: 5,
+            },
+          ],
+        },
+      ],
+    },
+    true,
+  );
+}
+
 marked.setOptions({ breaks: true, gfm: true });
 
 // Mock Data
@@ -1156,6 +1459,53 @@ const displayImageUrl = computed(
 );
 
 const analysisResult = computed(() => studyStore.currentStudy?.analysisResult || null);
+const showPatientInsightPanel = computed(() => !!analysisResult.value);
+const patientInsightAvailable = computed(
+  () =>
+    !!patientInsightHistory.value ||
+    !!patientRiskProfile.value ||
+    !!patientRiskFactors.value?.factors?.length ||
+    !!patientDiseaseAlert.value,
+);
+const compactSuspiciousAreas = computed(() => {
+  const areas = analysisResult.value?.suspiciousAreas || [];
+  return areas.slice(0, 4).map((area, index) => {
+    if (typeof area === 'string') {
+      return {
+        location: `区域 ${index + 1}`,
+        description: area,
+        features: '待补充',
+        tag: '重点关注',
+      };
+    }
+
+    return {
+      location: area.location || `区域 ${index + 1}`,
+      description: area.description || '可疑病灶',
+      features: area.features?.join('、') || '结构化特征待补充',
+      tag: index === 0 ? '优先复核' : '建议复核',
+    };
+  });
+});
+const biomarkerSummaryItems = computed(() => {
+  const biomarkers = analysisResult.value?.biomarkers;
+  if (!biomarkers) return [];
+  return [
+    { label: 'HPV', value: biomarkers.HPV || '-' },
+    { label: 'p16', value: biomarkers.p16 || '-' },
+    { label: 'Ki67', value: biomarkers.Ki67 || '-' },
+  ];
+});
+const detailedReportHighlights = computed(() => {
+  const normalized = String(analysisResult.value?.detailedReport || '').replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+  return normalized
+    .split(/(?<=[。；])/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+});
+const compactRiskFactors = computed(() => (patientRiskFactors.value?.factors || []).slice(0, 4));
 
 function hasStructuredMarkdown(text: string) {
   return /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)/m.test(text);
@@ -1247,6 +1597,18 @@ const aiAnnotations = computed<AnalyzerAnnotation[]>(() => {
 watch(displayImageUrl, () => {
   analyzerImageSize.value = { width: 0, height: 0 };
 });
+
+watch(
+  () => analysisResult.value,
+  async (value) => {
+    if (!value) return;
+    await loadPatientInsightsPanel();
+    await nextTick();
+    initStudyDetailRadarChart();
+    updateStudyDetailRadarChart();
+  },
+  { immediate: true },
+);
 
 // Methods
 const triggerFileUpload = () => {
@@ -1467,9 +1829,7 @@ const startAnalysis = async () => {
   isAnalyzingComplete.value = false;
   progress.value = 0;
   progressStatus.value = '等待开始...';
-  logs.value = [];
   lastProgressPhase = ''; // 重置进度阶段
-  addLog('分析任务已启动...');
 
   try {
     // 调用后端API创建分析任务
@@ -1479,8 +1839,6 @@ const startAnalysis = async () => {
     if (response.success && response.data.task) {
       const taskId = response.data.task.task_id;
       currentTaskId.value = taskId;
-      // addLog(`任务已创建: ${taskId}`, 95);
-
       // 开始轮询任务状态
       startPollingTaskStatus(taskId);
 
@@ -1494,7 +1852,6 @@ const startAnalysis = async () => {
   } catch (error) {
     console.error('启动分析失败:', error);
     isAnalyzing.value = false;
-    addLog('启动分析失败', 0);
     $q.notify({
       type: 'negative',
       message: '启动分析失败，请重试',
@@ -1519,16 +1876,13 @@ const clearPollingTaskStatus = () => {
   resetPollingState();
 };
 
-const completeAnalysisFromResult = (message?: string) => {
+const completeAnalysisFromResult = () => {
   clearPollingTaskStatus();
   currentTaskId.value = null;
   isAnalyzing.value = false;
   progress.value = 100;
   progressStatus.value = '分析完成';
   lastFailedTask.value = null;
-  if (message) {
-    addLog(message, 100);
-  }
 };
 
 const stopAnalysis = () => {
@@ -1536,7 +1890,6 @@ const stopAnalysis = () => {
   currentTaskId.value = null;
   isAnalyzing.value = false;
   progressStatus.value = '已停止';
-  addLog('分析已手动停止');
 };
 
 const scheduleNextTaskPoll = (taskId: string, sessionId: number, delay = POLLING_INTERVAL_MS) => {
@@ -1553,12 +1906,10 @@ const scheduleNextTaskPoll = (taskId: string, sessionId: number, delay = POLLING
 
 const stopPollingAndRefresh = async ({
   statusText,
-  logMessage,
   notifyType = 'warning',
   notifyMessage,
 }: {
   statusText: string;
-  logMessage: string;
   notifyType?: 'warning' | 'negative';
   notifyMessage: string;
 }) => {
@@ -1566,11 +1917,10 @@ const stopPollingAndRefresh = async ({
   currentTaskId.value = null;
   isAnalyzing.value = false;
   progressStatus.value = statusText;
-  addLog(logMessage, progress.value);
 
   await refreshStudyData({ allowResumePolling: false });
   if (studyStore.currentStudy?.analysisResult) {
-    completeAnalysisFromResult('检测到分析结果，已同步完成状态');
+    completeAnalysisFromResult();
     return;
   }
 
@@ -1645,24 +1995,13 @@ const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
         progressStatus.value = '报告生成中...';
         currentPhase = 'report_generation';
       }
-      // 只有阶段变化时才添加日志
       if (currentPhase && currentPhase !== lastProgressPhase) {
         lastProgressPhase = currentPhase;
-        if (currentPhase === 'preprocessing') {
-          addLog('图像预处理进行中', 35);
-        } else if (currentPhase === 'feature_extraction') {
-          addLog('特征提取中...', 65);
-        } else if (currentPhase === 'risk_assessment') {
-          addLog('风险评估中...', 80);
-        } else if (currentPhase === 'report_generation') {
-          addLog('正在生成诊断报告...', 92);
-        }
       }
 
       if (stalledProgressPollCount >= MAX_STALLED_PROGRESS_POLLS) {
         await stopPollingAndRefresh({
           statusText: '任务可能卡住',
-          logMessage: '分析进度长时间无变化，已停止自动轮询',
           notifyMessage: '分析进度长时间停留未变化，已停止自动轮询，请稍后重试',
         });
         return;
@@ -1677,7 +2016,6 @@ const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
       currentTaskId.value = null;
       progressStatus.value = '分析完成';
       lastFailedTask.value = null;
-      addLog('分析完成，正在加载结果...', 99);
 
       // 平滑过渡到100%
       const animateToComplete = async () => {
@@ -1732,7 +2070,6 @@ const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
         id: task.taskId,
         ...(task.error && { error: task.error }),
       };
-      addLog(`分析失败: ${task.error || '未知错误'}`, 0);
 
       $q.notify({
         type: 'negative',
@@ -1756,12 +2093,10 @@ const pollTaskStatusOnce = async (taskId: string, sessionId: number) => {
 
     pollingFailureCount += 1;
     console.error('轮询任务状态失败:', error);
-    addLog('轮询任务状态失败，稍后重试...', 0);
 
     if (pollingFailureCount >= MAX_POLLING_FAILURES) {
       await stopPollingAndRefresh({
         statusText: '状态同步失败',
-        logMessage: '分析状态请求连续失败，已停止自动轮询',
         notifyMessage: '分析状态同步连续失败，已停止自动轮询，请稍后重试',
       });
       return;
@@ -1819,21 +2154,6 @@ const refreshStudyData = async (options?: { allowResumePolling?: boolean }) => {
       console.error('刷新病例数据失败:', error);
     }
   }
-};
-
-const addLog = (message: string, confidence?: number) => {
-  logs.value.unshift({
-    time: new Date().toLocaleTimeString(),
-    message,
-    confidence: confidence || 0,
-  });
-  lastUpdated.value = new Date().toLocaleString();
-};
-
-const getConfidenceColor = (conf: number) => {
-  if (conf >= 90) return 'positive';
-  if (conf >= 70) return 'warning';
-  return 'grey';
 };
 
 const getConfidenceBadgeColor = (confidence: number) => {
@@ -1928,7 +2248,7 @@ watch(
 
     // 只要有结果就结束“分析中”态，避免显示与数据不一致
     if (result && isAnalyzing.value && !currentTaskId.value) {
-      completeAnalysisFromResult('检测到分析结果，已同步完成状态');
+        completeAnalysisFromResult();
     }
   },
   { deep: true },
@@ -2004,7 +2324,6 @@ onMounted(async () => {
                 };
                 progress.value = latestTask.progress;
                 progressStatus.value = '分析失败';
-                addLog(`分析失败: ${latestTask.error || '未知错误'}`, 0);
 
                 $q.notify({
                   type: 'negative',
@@ -2070,15 +2389,16 @@ onMounted(async () => {
   }
 
   setTimeout(initChart, 100);
-  window.addEventListener('resize', () => chartInstance?.resize());
+  window.addEventListener('resize', handleWindowResize);
 });
 
 onUnmounted(() => {
   closeReportPreview();
   // 清理轮询定时器
   clearPollingTaskStatus();
-  window.removeEventListener('resize', () => chartInstance?.resize());
+  window.removeEventListener('resize', handleWindowResize);
   chartInstance?.dispose();
+  studyDetailRadarChartInstance?.dispose();
 });
 </script>
 
@@ -2128,6 +2448,46 @@ onUnmounted(() => {
 .report-preview-placeholder-copy {
   max-width: 520px;
   line-height: 1.8;
+}
+.insight-metric-tile {
+  background: #f8fbff;
+  border: 1px solid rgba(32, 103, 176, 0.1);
+  border-radius: 14px;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+.insight-metric-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+.insight-metric-label {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.insight-mini-stat {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #475569;
+}
+.insight-alert-chip {
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #9a3412;
+}
+.study-detail-radar-chart {
+  height: 260px;
 }
 .font-mono {
   font-family: monospace;
