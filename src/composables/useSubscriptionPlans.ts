@@ -9,10 +9,10 @@ import {
   type PaymentGatewayData,
 } from 'src/services/api';
 import {
-  demoHeroHighlights,
   demoPlanComparisonRows,
   demoSubscriptionCatalog,
   type DemoOffer,
+  type DemoPlanGroup,
   type DemoPlanTier,
 } from 'src/constants/demoSubscriptionCatalog';
 import {
@@ -24,7 +24,10 @@ import { getItem, removeItem, setItem, STORAGE_KEYS } from 'src/utils/storage';
 type DemoSubscriptionSource = 'demo' | 'backend' | 'default';
 type PaymentDisplayState = 'idle' | 'redirect' | 'scheme' | 'qrcode' | 'success' | 'failed';
 
-interface DemoSubscriptionStatus {
+export type SubscriptionDisplayMode = 'duration' | 'usage';
+export type SubscriptionBillingFilter = 'monthly' | 'yearly' | 'all';
+
+export interface DemoSubscriptionStatus {
   type: 'trial' | 'active' | 'expired';
   title: string;
   subtitle: string;
@@ -57,15 +60,12 @@ interface DemoPaymentInfo {
   autoRenewHint?: string;
 }
 
-interface HeroHighlightItem {
-  label: string;
-  value: string;
-}
-
-interface HeroStatCardItem {
-  label: string;
-  value: string;
-  description: string;
+export interface SubscriptionPlanGroupView extends DemoPlanGroup {
+  visibleOffers: DemoOffer[];
+  featuredOffer: DemoOffer;
+  hasVisibleOffers: boolean;
+  emptyStateTitle: string;
+  emptyStateDescription: string;
 }
 
 interface PendingPaymentState {
@@ -78,6 +78,21 @@ interface PendingPaymentState {
 const PAYMENT_POLL_INTERVAL_MS = 2500;
 const MAX_PAYMENT_POLL_COUNT = 40;
 const PENDING_PAYMENT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const DEFAULT_DURATION_OFFER_CODE: Record<DemoPlanTier, string> = {
+  basic: 'basic-monthly-auto',
+  premium: 'premium-monthly-auto',
+};
+const DEFAULT_MONTHLY_OFFER_CODE: Record<DemoPlanTier, string> = {
+  basic: 'basic-monthly-auto',
+  premium: 'premium-monthly-auto',
+};
+const YEARLY_OFFER_CODE: Record<DemoPlanTier, string> = {
+  basic: 'basic-yearly',
+  premium: 'premium-yearly',
+};
+const USAGE_OFFER_CODE: Partial<Record<DemoPlanTier, string>> = {
+  basic: 'basic-formal-once',
+};
 
 function detectClientDevice() {
   const ua = window.navigator.userAgent.toLowerCase();
@@ -101,43 +116,14 @@ export function useSubscriptionPlans() {
   const router = useRouter();
 
   const sortedSoftwareCopyrights = SORTED_SOFTWARE_COPYRIGHTS;
-  const heroHighlights: HeroHighlightItem[] = [
-    {
-      label: demoHeroHighlights[0] ?? '双层套餐覆盖',
-      value: '从单次开通到长期合作均可匹配',
-    },
-    {
-      label: demoHeroHighlights[1] ?? '周期选择清晰',
-      value: '按次、包月、半年和年度方案一目了然',
-    },
-    {
-      label: demoHeroHighlights[2] ?? '权益边界明确',
-      value: '检测方式、报告支持和扩展能力清楚可见',
-    },
-  ];
-  const heroStatCards: HeroStatCardItem[] = [
-    {
-      label: '机构适配',
-      value: '门诊到区域协同',
-      description: '基础套餐覆盖常规筛查，顶级套餐适配更高频与协同场景。',
-    },
-    {
-      label: '报告闭环',
-      value: '结构化一体交付',
-      description: '标准报告与高阶输出能力分层明确，便于按需采购。',
-    },
-    {
-      label: '成本规划',
-      value: '周期越长越稳',
-      description: '按次正式开通适合启动阶段，周期套餐更适合固定筛查计划。',
-    },
-  ];
   const planComparisonRows = demoPlanComparisonRows;
   const demoPlanGroups = [demoSubscriptionCatalog.basic, demoSubscriptionCatalog.premium];
 
   const previewVisible = ref(false);
   const activeCertificate = ref<SoftwareCopyrightItem | null>(null);
   const activeTier = ref<DemoPlanTier>('premium');
+  const subscriptionDisplayMode = ref<SubscriptionDisplayMode>('duration');
+  const subscriptionBillingFilter = ref<SubscriptionBillingFilter>('all');
   const selectedOfferByTier = ref<Record<DemoPlanTier, string>>({
     basic: 'basic-monthly-auto',
     premium: 'premium-monthly-auto',
@@ -323,6 +309,26 @@ export function useSubscriptionPlans() {
     return [...group.durationOffers, ...group.usageOffers];
   };
 
+  const getDurationOfferCodeByFilter = (tier: DemoPlanTier): string => {
+    if (subscriptionBillingFilter.value === 'yearly') {
+      return YEARLY_OFFER_CODE[tier];
+    }
+
+    if (subscriptionBillingFilter.value === 'monthly') {
+      return DEFAULT_MONTHLY_OFFER_CODE[tier];
+    }
+
+    return DEFAULT_DURATION_OFFER_CODE[tier];
+  };
+
+  const getGlobalDisplayOfferCode = (tier: DemoPlanTier): string | null => {
+    if (subscriptionDisplayMode.value === 'usage') {
+      return USAGE_OFFER_CODE[tier] ?? null;
+    }
+
+    return getDurationOfferCodeByFilter(tier);
+  };
+
   const getSelectedOffer = (tier: DemoPlanTier): DemoOffer => {
     const offers = getTierOffers(tier);
     if (!offers.length) {
@@ -332,17 +338,40 @@ export function useSubscriptionPlans() {
     return offers.find((offer) => offer.code === selectedOfferByTier.value[tier]) ?? offers[0]!;
   };
 
-  const currentHeroOffer = computed(() => getSelectedOffer(activeTier.value));
-  const currentHeroGroup = computed(() => demoSubscriptionCatalog[activeTier.value]);
-  const currentHeroBullets = computed(() => {
-    const offer = currentHeroOffer.value;
+  const getVisibleOffersByTier = (tier: DemoPlanTier): DemoOffer[] => {
+    const group = demoSubscriptionCatalog[tier];
 
-    return [
-      `${currentHeroGroup.value.badge}适配`,
-      `覆盖 ${offer.featureSummary.length} 项核心权益`,
-      getOfferSupportText(offer),
-    ];
-  });
+    if (subscriptionDisplayMode.value === 'usage') {
+      const currentOfferCode = getGlobalDisplayOfferCode(tier);
+      if (!currentOfferCode) {
+        return [];
+      }
+
+      const currentOffer = getTierOffers(tier).find((offer) => offer.code === currentOfferCode);
+      return currentOffer ? [currentOffer] : [];
+    }
+
+    if (subscriptionBillingFilter.value === 'monthly') {
+      return group.durationOffers.filter((offer) => offer.durationDays === 30);
+    }
+
+    const currentOfferCode = getGlobalDisplayOfferCode(tier);
+    if (!currentOfferCode) {
+      return [];
+    }
+
+    const currentOffer = getTierOffers(tier).find((offer) => offer.code === currentOfferCode);
+    return currentOffer ? [currentOffer] : [];
+  };
+
+  const getFeaturedOffer = (tier: DemoPlanTier): DemoOffer => {
+    const visibleOffers = getVisibleOffersByTier(tier);
+    if (visibleOffers.length > 0) {
+      return visibleOffers[0]!;
+    }
+
+    return getSelectedOffer(tier);
+  };
 
   const formatCurrency = (amount: number | undefined): string => {
     if (amount === undefined) return '0';
@@ -368,30 +397,6 @@ export function useSubscriptionPlans() {
     return offer.billingMode === 'usage' ? '单次开通' : '标准定价';
   };
 
-  const getOfferSupportText = (offer: DemoOffer): string => {
-    if (offer.billingMode === 'usage') {
-      return '适合低频按次使用';
-    }
-
-    if (offer.autoRenewHint) {
-      return '适合长期稳定使用';
-    }
-
-    return offer.durationDays ? `适合 ${offer.durationDays} 天周期使用` : '适合阶段性使用';
-  };
-
-  const getOfferCompactDescription = (offer: DemoOffer): string => {
-    if (offer.billingMode === 'usage') {
-      return '适合按需开通正式单次服务。';
-    }
-
-    if (offer.durationDays) {
-      return `适合 ${offer.durationDays} 天周期使用与稳定筛查。`;
-    }
-
-    return offer.description;
-  };
-
   const getOfferCycleText = (offer: DemoOffer | null): string => {
     if (!offer) return '-';
     if (offer.billingMode === 'usage') return '按次开通';
@@ -400,7 +405,7 @@ export function useSubscriptionPlans() {
   };
 
   const getActionLabel = (tier: DemoPlanTier): string => {
-    const selectedOffer = getSelectedOffer(tier);
+    const selectedOffer = getFeaturedOffer(tier);
     if (selectedOffer.billingMode === 'usage') {
       return '购买单次版';
     }
@@ -414,6 +419,51 @@ export function useSubscriptionPlans() {
       [tier]: offerCode,
     };
     activeTier.value = tier;
+  };
+
+  const syncSelectedOffersWithGlobalFilters = (): void => {
+    const nextOfferForTier = (tier: DemoPlanTier): string => {
+      const visibleOffers = getVisibleOffersByTier(tier);
+      const currentSelectedCode = selectedOfferByTier.value[tier];
+
+      if (visibleOffers.some((offer) => offer.code === currentSelectedCode)) {
+        return currentSelectedCode;
+      }
+
+      if (subscriptionDisplayMode.value === 'usage') {
+        return USAGE_OFFER_CODE[tier] ?? currentSelectedCode ?? DEFAULT_DURATION_OFFER_CODE[tier];
+      }
+
+      if (subscriptionBillingFilter.value === 'monthly') {
+        return DEFAULT_MONTHLY_OFFER_CODE[tier];
+      }
+
+      if (subscriptionBillingFilter.value === 'yearly') {
+        return YEARLY_OFFER_CODE[tier];
+      }
+
+      return DEFAULT_DURATION_OFFER_CODE[tier];
+    };
+
+    selectedOfferByTier.value = {
+      basic: nextOfferForTier('basic'),
+      premium: nextOfferForTier('premium'),
+    };
+  };
+
+  const setSubscriptionDisplayMode = (mode: SubscriptionDisplayMode): void => {
+    subscriptionDisplayMode.value = mode;
+
+    if (mode === 'usage') {
+      subscriptionBillingFilter.value = 'all';
+    }
+    syncSelectedOffersWithGlobalFilters();
+    activeTier.value = mode === 'usage' ? 'basic' : 'premium';
+  };
+
+  const setSubscriptionBillingFilter = (filter: SubscriptionBillingFilter): void => {
+    subscriptionBillingFilter.value = filter;
+    syncSelectedOffersWithGlobalFilters();
   };
 
   const buildPaymentInfo = (offer: DemoOffer): DemoPaymentInfo => {
@@ -615,6 +665,25 @@ export function useSubscriptionPlans() {
     activeCertificate.value = null;
   };
 
+  const visiblePlanGroups = computed<SubscriptionPlanGroupView[]>(() =>
+    demoPlanGroups.map((group) => {
+      const visibleOffers = getVisibleOffersByTier(group.tier);
+      const featuredOffer = getFeaturedOffer(group.tier);
+      const isUsageMode = subscriptionDisplayMode.value === 'usage';
+
+      return {
+        ...group,
+        visibleOffers,
+        featuredOffer,
+        hasVisibleOffers: visibleOffers.length > 0,
+        emptyStateTitle: isUsageMode ? '当前暂无单次开通方案' : '当前筛选下暂无周期方案',
+        emptyStateDescription: isUsageMode
+          ? '该套餐暂不提供按次开通，建议切换周期套餐查看长期使用方案。'
+          : '可以切换到全部、按月或按年查看更适合当前机构节奏的方案。',
+      };
+    }),
+  );
+
   const showPaymentAgreement = (tab: 'agreement' | 'privacy') => {
     paymentAgreementTab.value = tab;
     showPaymentAgreementDialog.value = true;
@@ -633,7 +702,7 @@ export function useSubscriptionPlans() {
   };
 
   const handleUpgrade = (tier: DemoPlanTier): void => {
-    openPaymentDialog(getSelectedOffer(tier));
+    openPaymentDialog(getFeaturedOffer(tier));
   };
 
   const resetPaymentFlow = (): void => {
@@ -927,6 +996,8 @@ export function useSubscriptionPlans() {
   };
 
   onMounted(() => {
+    syncSelectedOffersWithGlobalFilters();
+
     const savedDemoState = readDemoSubscriptionState();
     if (savedDemoState) {
       subscriptionStatus.value = savedDemoState;
@@ -989,23 +1060,17 @@ export function useSubscriptionPlans() {
     agreePaymentTerms,
     cancelPayment,
     copyPaymentLink,
-    currentHeroBullets,
-    currentHeroGroup,
-    currentHeroOffer,
     currentPaymentMethodLabel,
     currentPaymentOffer,
     demoPlanGroups,
     finishDemoPayment,
     formatCurrency,
     getActionLabel,
-    getOfferCompactDescription,
     getOfferCycleText,
     getOfferSavingsText,
-    getOfferSupportText,
+    getFeaturedOffer,
     getSelectedOffer,
     handleUpgrade,
-    heroHighlights,
-    heroStatCards,
     openCertificatePreview,
     openPaymentDialog,
     openPaymentGateway,
@@ -1034,6 +1099,8 @@ export function useSubscriptionPlans() {
     refreshPaymentStatus,
     resetCertificatePreview,
     resetPaymentFlow,
+    setSubscriptionBillingFilter,
+    setSubscriptionDisplayMode,
     selectedOfferByTier,
     selectedPaymentMethod,
     selectOffer,
@@ -1043,6 +1110,9 @@ export function useSubscriptionPlans() {
     showUpgradeDialog,
     sortedSoftwareCopyrights,
     stepper,
+    subscriptionBillingFilter,
+    subscriptionDisplayMode,
     subscriptionStatus,
+    visiblePlanGroups,
   };
 }

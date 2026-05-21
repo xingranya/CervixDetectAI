@@ -50,7 +50,9 @@
       "Bash(agent-reach doctor:*)",
       "mcp__MiniMax__understand_image",
       "Bash(npm run:*)",
-      "mcp__MiniMax__web_search"
+      "mcp__MiniMax__web_search",
+      "WebFetch(domain:jfy.xingranya.cn)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
     ]
   },
   "outputStyle": "Structural Thinking"
