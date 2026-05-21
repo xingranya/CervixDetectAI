@@ -84,6 +84,12 @@
           >
             当前展示：连续包月
           </div>
+          <div
+            v-if="isContinuousOffer(group.featuredOffer)"
+            class="saas-plan-card__promo-note"
+          >
+            推荐用于日常稳定筛查，开通后可持续使用并减少重复下单成本
+          </div>
         </div>
 
         <q-btn
@@ -197,6 +203,8 @@ const isMonthlyDualOffer = (group: SubscriptionPlanGroupView) =>
 
 const isDefaultContinuousOffer = (group: SubscriptionPlanGroupView) =>
   group.featuredOffer.code.endsWith('-monthly-auto') && group.visibleOffers.length === 1;
+
+const isContinuousOffer = (offer: DemoOffer) => offer.code.endsWith('-monthly-auto');
 
 const getMonthlyEquivalent = (offer: DemoOffer): number => {
   if (!offer.durationDays || offer.durationDays <= 0) {
@@ -433,6 +441,17 @@ const getMonthlyEquivalent = (offer: DemoOffer): number => {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.saas-plan-card__promo-note {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4f91;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  border: 1px solid rgba(37, 99, 235, 0.12);
 }
 
 .saas-plan-card__cta,
