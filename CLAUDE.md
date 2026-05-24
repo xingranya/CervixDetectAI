@@ -121,6 +121,43 @@ cd server && bun run dev  # 启动后端服务
 quasar build -m capacitor -T android  # Android 构建
 ```
 
+## CodeGraph 代码图谱
+
+本项目已集成 CodeGraph（AST 级代码知识图谱），索引位于 `.codegraph/`。
+
+### CLI 命令
+
+```bash
+codegraph status              # 查看索引统计
+codegraph index               # 全量索引（--force 强制重建）
+codegraph sync                # 增量更新（文件变更后）
+codegraph query <搜索词>       # 搜索符号（--kind function/class/component --limit 10）
+codegraph callers <符号名>     # 查找谁调用了该符号
+codegraph callees <符号名>     # 查找该符号调用了什么
+codegraph impact <符号名>      # 分析修改该符号的影响范围（--depth 控制层级）
+codegraph context <任务描述>   # 为 AI 构建上下文
+codegraph files [路径]         # 查看文件结构
+```
+
+### MCP 工具（AI 对话中使用）
+
+| 场景 | 工具 |
+|---|---|
+| 搜索符号定义 | `codegraph_search` |
+| 综合上下文（调用链+来源+签名） | `codegraph_context` |
+| 谁调用了 X / X 调用了谁 | `codegraph_callers` / `codegraph_callees` |
+| 修改 X 会影响哪些代码 | `codegraph_impact` |
+| 查看符号源码与签名 | `codegraph_node` |
+| 批量查看多个符号源码 | `codegraph_explore` |
+| 调用路径追踪（A→B） | `codegraph_trace` |
+
+### 使用原则
+
+- **结构查询优先用 CodeGraph**（调用关系、影响分析、符号搜索），比 grep 更精准
+- **文本查询用 ripgrep/grep**（字符串内容、注释、日志）
+- 两者互补：CodeGraph 做语义分析，grep 做文本兜底
+- 索引延迟约 500ms，编辑文件后立即查询可能需要等一下
+
 ## 开发规范
 
 - 使用 ESLint + Prettier 保持代码风格一致

@@ -52,7 +52,22 @@
       "Bash(npm run:*)",
       "mcp__MiniMax__web_search",
       "WebFetch(domain:jfy.xingranya.cn)",
-      "mcp__Claude_in_Chrome__tabs_context_mcp"
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(rtk read *)",
+      "Bash(npm ls *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk find *)",
+      "Bash(rtk du *)",
+      "mcp__codegraph__codegraph_status",
+      "Bash(rtk grep *)",
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_callers",
+      "Bash(time grep *)",
+      "mcp__codegraph__codegraph_callees",
+      "mcp__codegraph__codegraph_node",
+      "mcp__codegraph__codegraph_impact",
+      "Bash(codegraph status *)",
+      "Bash(codegraph callers *)"
     ]
   },
   "outputStyle": "Structural Thinking"
