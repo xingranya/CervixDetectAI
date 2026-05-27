@@ -509,9 +509,9 @@ body.body--dark .brand-glow-sphere {
 
 .hero-title {
   margin: 12px 0 16px;
-  font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  font-family: "Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif CN", "Songti SC", "STSong", "SimSun", serif;
   font-size: clamp(2.2rem, 3vw, 2.8rem);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.02em;
   text-wrap: balance;
