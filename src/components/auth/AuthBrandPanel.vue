@@ -262,6 +262,7 @@ const resetCertificatePreview = (): void => {
   padding: 24px 32px;
   background: transparent;
   color: #0f172a;
+  font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
 }
 
 /* --- Entrance Animation --- */
@@ -443,8 +444,9 @@ body.body--dark .brand-glow-sphere {
   background: linear-gradient(90deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.08));
   border: 1px solid rgba(56, 189, 248, 0.32);
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: #0369a1;
 }
 
@@ -507,10 +509,11 @@ body.body--dark .brand-glow-sphere {
 
 .hero-title {
   margin: 12px 0 16px;
+  font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
   font-size: clamp(2.2rem, 3vw, 2.8rem);
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
   text-wrap: balance;
   background: linear-gradient(
     105deg,
@@ -544,14 +547,15 @@ body.body--dark .brand-glow-sphere {
 .hero-subtitle {
   margin: 0;
   max-width: 68ch;
-  font-size: 0.92rem;
-  line-height: 1.5;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
   color: #334155;
 }
 
 .section-eyebrow {
-  margin-bottom: 12px;
-  font-size: 0.72rem;
+  margin-bottom: 14px;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -790,15 +794,17 @@ body.body--dark .workflow-step-num {
 
 .workflow-title {
   margin-bottom: 6px;
-  font-size: 0.96rem;
+  font-size: 1rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: #0f172a;
 }
 
 .workflow-desc {
   margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
   color: #475569;
 }
 
@@ -860,14 +866,16 @@ body.body--dark .workflow-step-num {
 
 .feature-title {
   margin-bottom: 6px;
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: #0f172a;
 }
 
 .feature-desc {
-  font-size: 0.78rem;
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
   color: #475569;
 }
 
