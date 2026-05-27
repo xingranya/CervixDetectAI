@@ -35,38 +35,38 @@ const workflowSteps: BrandWorkflowStep[] = [
   {
     title: '采集与上传',
     description: '将宫颈影像与基础病例信息统一录入，避免检查资料在多个系统间分散。',
-    icon: 'photo_camera_back',
+    icon: 'upload_file',
   },
   {
     title: '分析与复核',
     description: 'AI 先完成风险提示，医生再结合临床判断进行复核，提升筛查效率与稳定性。',
-    icon: 'biotech',
+    icon: 'psychology',
   },
   {
     title: '报告与归档',
     description: '分析结论、报告导出、随访提醒形成闭环，方便后续追踪与院内管理。',
-    icon: 'assignment_turned_in',
+    icon: 'fact_check',
   },
 ];
 
 const defaultFeatures: BrandFeatureItem[] = [
   {
-    icon: 'manage_search',
+    icon: 'speed',
     title: '快速风险分层',
     description: '优先识别需要重点关注的病例，帮助一线人员更快进入有效判断。',
   },
   {
-    icon: 'hub',
+    icon: 'account_tree',
     title: '统一协作链路',
     description: '影像、病例、分析、报告放在同一工作台内流转，减少信息跳转与遗漏。',
   },
   {
-    icon: 'description',
+    icon: 'summarize',
     title: '结构化报告输出',
     description: '关键结果清晰沉淀，支持院内存档、复盘和后续患者沟通。',
   },
   {
-    icon: 'verified_user',
+    icon: 'track_changes',
     title: '过程可追溯',
     description: '关键节点和操作记录清楚保留，便于质控检查与合规审计。',
   },
