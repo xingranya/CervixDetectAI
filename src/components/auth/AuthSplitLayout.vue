@@ -29,22 +29,29 @@
    BASE THEME (Light Mode Default)
    ========================================= */
 .auth-split-layout {
-  --auth-shared-bg: linear-gradient(100deg, #f0f9ff 0%, #e0f2fe 52%, #f8fafc 100%);
-  --auth-workspace-overlay: linear-gradient(
-    90deg,
-    rgba(240, 249, 255, 0) 0%,
-    rgba(248, 250, 252, 0.32) 36%,
-    rgba(255, 255, 255, 0.64) 100%
-  );
-
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr;
   position: relative;
   overflow: hidden;
-  /* Light Mode Background */
-  background: var(--auth-shared-bg);
   color: #0f172a;
+
+  /* Unified Global Shimmer Background */
+  background: linear-gradient(
+    105deg,
+    #f0f9ff 0%,
+    #e0f2fe 30%,
+    #bae6fd 50%,
+    #e0f2fe 70%,
+    #f0f9ff 100%
+  );
+  background-size: 200% auto;
+  animation: global-bg-shimmer 5s ease-in-out infinite alternate;
+}
+
+@keyframes global-bg-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
 /* 动态网格背景 */
@@ -58,6 +65,16 @@
   opacity: 0.56;
   pointer-events: none;
   z-index: 0;
+  animation: mesh-pan 40s linear infinite;
+}
+
+@keyframes mesh-pan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: -40px -40px;
+  }
 }
 
 /* 氛围光晕 */
@@ -161,9 +178,7 @@
   }
 
   .auth-split-layout__workspace-panel {
-    background: var(--auth-workspace-overlay);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
+    background: transparent;
   }
 }
 
@@ -171,15 +186,15 @@
    DARK MODE OVERRIDES (Quasar body--dark)
    ========================================= */
 body.body--dark .auth-split-layout {
-  --auth-shared-bg: linear-gradient(100deg, #020617 0%, #0f172a 52%, #1e293b 100%);
-  --auth-workspace-overlay: linear-gradient(
-    90deg,
-    rgba(2, 6, 23, 0) 0%,
-    rgba(15, 23, 42, 0.54) 38%,
-    rgba(15, 23, 42, 0.86) 100%
+  background: linear-gradient(
+    105deg,
+    #020617 0%,
+    #0f172a 30%,
+    #1e293b 50%,
+    #0f172a 70%,
+    #020617 100%
   );
-
-  background: var(--auth-shared-bg);
+  background-size: 200% auto;
   color: #f8fafc;
 }
 
@@ -198,9 +213,7 @@ body.body--dark .auth-background-glow {
 
 @media (min-width: 1024px) {
   body.body--dark .auth-split-layout__workspace-panel {
-    background: var(--auth-workspace-overlay);
-    backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
-    -webkit-backdrop-filter: saturate(var(--app-glass-saturate)) blur(12px);
+    background: transparent;
   }
 }
 </style>

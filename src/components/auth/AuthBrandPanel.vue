@@ -144,7 +144,13 @@ const resetCertificatePreview = (): void => {
           </div>
           <div class="hero-badge live-status-badge">
             <span class="live-indicator"></span>
-            <span>今日已安全处理 AI 筛查: <strong class="counter-num">{{ processedCount }}</strong> 例</span>
+            <span>今日已安全处理 AI 筛查:
+              <strong class="counter-num-wrapper">
+                <transition name="roll-up">
+                  <span :key="processedCount" class="counter-num">{{ processedCount }}</span>
+                </transition>
+              </strong> 例
+            </span>
           </div>
         </div>
         <h1 class="hero-title">{{ props.title }}</h1>
@@ -258,6 +264,33 @@ const resetCertificatePreview = (): void => {
   color: #0f172a;
 }
 
+/* --- Entrance Animation --- */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-brand-header,
+.hero-text-group,
+.workflow-panel,
+.feature-section,
+.auth-brand-footer {
+  opacity: 0;
+  animation: slide-up-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.auth-brand-header { animation-delay: 0.1s; }
+.hero-text-group { animation-delay: 0.2s; }
+.workflow-panel { animation-delay: 0.3s; }
+.feature-section { animation-delay: 0.4s; }
+.auth-brand-footer { animation-delay: 0.5s; }
+
 /* Decorative Ambient Glowing Spheres Container */
 .brand-glow-container {
   position: absolute;
@@ -338,7 +371,9 @@ body.body--dark .brand-glow-sphere {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
 }
 
 .logo-box:hover {
@@ -428,9 +463,31 @@ body.body--dark .brand-glow-sphere {
   animation: pulse-green 2s infinite;
 }
 
+.counter-num-wrapper {
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  vertical-align: baseline;
+  transform: translateY(1px);
+}
+
 .counter-num {
+  grid-area: 1 / 1;
   font-weight: 800;
   font-family: monospace;
+}
+
+.roll-up-enter-active,
+.roll-up-leave-active {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.roll-up-enter-from {
+  opacity: 0;
+  transform: translateY(100%);
+}
+.roll-up-leave-to {
+  opacity: 0;
+  transform: translateY(-100%);
 }
 
 @keyframes pulse-green {
@@ -458,14 +515,30 @@ body.body--dark .brand-glow-sphere {
   background: linear-gradient(
     105deg,
     #0f172a 0%,
-    #1e3a8a 55%,
-    #38bdf8 100%
+    #0f172a 42%,
+    #60a5fa 50%,
+    #0f172a 58%,
+    #0f172a 100%
   );
+  background-size: 250% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 8px 16px rgba(37, 99, 235, 0.15));
+  animation: premium-shimmer 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes premium-shimmer {
+  0% {
+    background-position: 100% center;
+  }
+  40% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
 }
 
 .hero-subtitle {
@@ -769,7 +842,10 @@ body.body--dark .workflow-step-num {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.04) 100%);
   color: var(--q-primary, #2563eb);
   border: 1px solid rgba(37, 99, 235, 0.15);
-  transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    background 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .feature-card:hover .feature-icon-box {
@@ -916,10 +992,12 @@ body.body--dark .hero-title {
   background: linear-gradient(
     105deg,
     #f8fafc 0%,
-    #cbd5e1 40%,
-    #60a5fa 80%,
-    #38bdf8 100%
+    #f8fafc 42%,
+    #60a5fa 50%,
+    #f8fafc 58%,
+    #f8fafc 100%
   );
+  background-size: 250% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
