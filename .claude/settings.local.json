@@ -67,7 +67,10 @@
       "mcp__codegraph__codegraph_node",
       "mcp__codegraph__codegraph_impact",
       "Bash(codegraph status *)",
-      "Bash(codegraph callers *)"
+      "Bash(codegraph callers *)",
+      "Bash(rtk git *)",
+      "Bash(git ls-tree *)",
+      "Bash(read f *)"
     ]
   },
   "outputStyle": "Structural Thinking"
