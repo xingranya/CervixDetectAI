@@ -156,7 +156,8 @@
     min-height: 100%;
     position: relative;
     z-index: 1;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .auth-split-layout__workspace-panel {

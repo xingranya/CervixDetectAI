@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
       <div class="auth-workspace-shell__title-block text-center">
         <h2 class="auth-workspace-shell__title">{{ props.title }}</h2>
         <p v-if="props.subtitle" class="auth-workspace-shell__subtitle">
-          <q-icon name="shield" size="14px" class="auth-workspace-shell__subtitle-icon" />
+          <q-icon name="info" size="14px" class="auth-workspace-shell__subtitle-icon" />
           <span>{{ props.subtitle }}</span>
         </p>
       </div>
@@ -111,22 +111,25 @@ const props = withDefaults(defineProps<AuthWorkspaceShellProps>(), {
 
 .auth-workspace-shell__subtitle {
   margin: 0;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.24);
-  background: linear-gradient(135deg, rgba(219, 234, 254, 0.68), rgba(239, 246, 255, 0.92));
-  color: var(--auth-primary-600);
-  font-size: 0.88rem;
-  line-height: 1.3;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(248, 250, 252, 0.6);
+  color: var(--auth-text-secondary, #64748b);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  max-width: 95%;
+  text-wrap: balance;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  max-width: 92%;
-  text-wrap: balance;
 }
 
 .auth-workspace-shell__subtitle-icon {
-  color: var(--auth-primary-500);
+  color: currentColor;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 .auth-workspace-shell__content {
@@ -157,13 +160,9 @@ body.body--dark .auth-workspace-shell__title {
 }
 
 body.body--dark .auth-workspace-shell__subtitle {
-  color: #bfdbfe;
-  border-color: rgba(96, 165, 250, 0.34);
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.24), rgba(30, 58, 138, 0.16));
-}
-
-body.body--dark .auth-workspace-shell__subtitle-icon {
-  color: #93c5fd;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--auth-text-secondary, #94a3b8);
 }
 
 @media (max-width: 1023px) {
@@ -197,11 +196,9 @@ body.body--dark .auth-workspace-shell__subtitle-icon {
 
   .auth-workspace-shell__subtitle {
     width: 100%;
-    justify-content: center;
     text-align: center;
-    padding: 7px 10px;
-    font-size: 0.8rem;
-    line-height: 1.25;
+    font-size: 0.82rem;
+    line-height: 1.35;
     white-space: normal;
     max-width: 100%;
   }

@@ -250,10 +250,10 @@ const resetCertificatePreview = (): void => {
 <style>
 .auth-brand-panel {
   position: relative;
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 40px 48px;
+  padding: 24px 32px;
   background: transparent;
   color: #0f172a;
 }
@@ -317,7 +317,7 @@ body.body--dark .brand-glow-sphere {
 .auth-brand-header {
   display: flex;
   align-items: center;
-  margin-bottom: 34px;
+  margin-bottom: 18px;
 }
 
 .brand-logo-group {
@@ -383,10 +383,9 @@ body.body--dark .brand-glow-sphere {
 }
 
 .auth-brand-content {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .hero-text-group {
@@ -398,7 +397,7 @@ body.body--dark .brand-glow-sphere {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .hero-badge {
@@ -450,44 +449,30 @@ body.body--dark .brand-glow-sphere {
 }
 
 .hero-title {
-  margin: 0 0 14px;
-  font-size: clamp(2.5rem, 3.3vw, 3.18rem);
+  margin: 12px 0 16px;
+  font-size: clamp(2.2rem, 3vw, 2.8rem);
   font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   text-wrap: balance;
   background: linear-gradient(
-    120deg,
-    #0f172a 20%,
-    #1e3a8a 40%,
-    #2563eb 50%,
-    #38bdf8 60%,
-    #1e3a8a 70%,
-    #0f172a 80%
+    105deg,
+    #0f172a 0%,
+    #1e3a8a 55%,
+    #38bdf8 100%
   );
-  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
-  text-shadow: 0 4px 12px rgba(37, 99, 235, 0.04);
-  animation: shimmer-flow 6s linear infinite;
-}
-
-@keyframes shimmer-flow {
-  0% {
-    background-position: 200% center;
-  }
-  100% {
-    background-position: -200% center;
-  }
+  color: transparent;
+  filter: drop-shadow(0 8px 16px rgba(37, 99, 235, 0.15));
 }
 
 .hero-subtitle {
   margin: 0;
   max-width: 68ch;
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.92rem;
+  line-height: 1.5;
   color: #334155;
 }
 
@@ -505,14 +490,14 @@ body.body--dark .brand-glow-sphere {
   background: rgba(255, 255, 255, 0.54);
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 20px;
-  padding: 22px 24px;
+  padding: 14px 18px;
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05);
 }
 
 .workflow-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
   position: relative;
 }
 
@@ -533,10 +518,18 @@ body.body--dark .brand-glow-sphere {
     left: calc(52px + 12px);
     width: calc(100% - 52px - 24px);
     height: 2px;
-    background: linear-gradient(90deg, var(--q-primary, #2563eb) 0%, #38bdf8 50%, rgba(37, 99, 235, 0.15) 100%);
-    background-size: 200% 100%;
-    animation: flow-line-h 2.5s linear infinite;
-    opacity: 0.6;
+    background: linear-gradient(
+      90deg,
+      rgba(226, 232, 240, 0.8) 0%,
+      rgba(226, 232, 240, 0.8) 35%,
+      rgba(147, 197, 253, 0.85) 50%,
+      rgba(226, 232, 240, 0.8) 65%,
+      rgba(226, 232, 240, 0.8) 100%
+    );
+    background-size: 400% 100%;
+    background-position: 100% 0;
+    animation: flow-pulse-h 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    opacity: 0.8;
     z-index: 0;
   }
 }
@@ -550,29 +543,43 @@ body.body--dark .brand-glow-sphere {
     top: calc(52px + 12px);
     width: 2px;
     height: calc(100% - 52px);
-    background: linear-gradient(180deg, var(--q-primary, #2563eb) 0%, #38bdf8 50%, rgba(37, 99, 235, 0.15) 100%);
-    background-size: 100% 200%;
-    animation: flow-line-v 2.5s linear infinite;
-    opacity: 0.6;
+    background: linear-gradient(
+      180deg,
+      rgba(226, 232, 240, 0.8) 0%,
+      rgba(226, 232, 240, 0.8) 35%,
+      rgba(147, 197, 253, 0.85) 50%,
+      rgba(226, 232, 240, 0.8) 65%,
+      rgba(226, 232, 240, 0.8) 100%
+    );
+    background-size: 100% 400%;
+    background-position: 0 100%;
+    animation: flow-pulse-v 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    opacity: 0.8;
     z-index: 0;
   }
 }
 
-@keyframes flow-line-h {
+@keyframes flow-pulse-h {
   0% {
-    background-position: 200% 0;
+    background-position: 150% 0;
+  }
+  70% {
+    background-position: -50% 0;
   }
   100% {
-    background-position: 0 0;
+    background-position: -50% 0;
   }
 }
 
-@keyframes flow-line-v {
+@keyframes flow-pulse-v {
   0% {
-    background-position: 0 200%;
+    background-position: 0 150%;
+  }
+  70% {
+    background-position: 0 -50%;
   }
   100% {
-    background-position: 0 0;
+    background-position: 0 -50%;
   }
 }
 
@@ -725,15 +732,15 @@ body.body--dark .workflow-step-num {
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
 .feature-card {
-  min-height: 112px;
+  min-height: 80px;
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  padding: 16px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 16px;
@@ -789,13 +796,13 @@ body.body--dark .workflow-step-num {
 }
 
 .auth-brand-footer {
-  margin-top: 24px;
+  margin-top: 14px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
-  padding-top: 16px;
+  padding-top: 10px;
 }
 
 .auth-brand-footer-title {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -804,27 +811,31 @@ body.body--dark .workflow-step-num {
 
 .copyright-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .copyright-card {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 12px;
+  padding: 8px 10px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .copyright-card--clickable {
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
 .copyright-card--clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 }
 
 .copyright-card--clickable:focus-visible {
@@ -903,19 +914,17 @@ body.body--dark .auth-brand-panel {
 
 body.body--dark .hero-title {
   background: linear-gradient(
-    120deg,
-    #f8fafc 20%,
-    #93c5fd 40%,
-    #38bdf8 50%,
-    #60a5fa 60%,
-    #93c5fd 70%,
-    #f8fafc 80%
+    105deg,
+    #f8fafc 0%,
+    #cbd5e1 40%,
+    #60a5fa 80%,
+    #38bdf8 100%
   );
-  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 8px 16px rgba(96, 165, 250, 0.2));
 }
 
 body.body--dark .logo-box {
@@ -967,14 +976,30 @@ body.body--dark .feature-section {
 }
 
 body.body--dark .workflow-item:not(:last-child)::after {
-  background: linear-gradient(90deg, #60a5fa 0%, #38bdf8 50%, rgba(96, 165, 250, 0.15) 100%);
-  background-size: 200% 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.08) 35%,
+    rgba(96, 165, 250, 0.4) 50%,
+    rgba(255, 255, 255, 0.08) 65%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 400% 100%;
+  background-position: 100% 0;
 }
 
 @media (max-width: 1180px) {
   body.body--dark .workflow-item:not(:last-child)::after {
-    background: linear-gradient(180deg, #60a5fa 0%, #38bdf8 50%, rgba(96, 165, 250, 0.15) 100%);
-    background-size: 100% 200%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      rgba(96, 165, 250, 0.4) 50%,
+      rgba(255, 255, 255, 0.08) 65%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    background-size: 100% 400%;
+    background-position: 0 100%;
   }
 }
 
@@ -1004,7 +1029,8 @@ body.body--dark .copyright-card {
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-body.body--dark .feature-card:hover {
+body.body--dark .feature-card:hover,
+body.body--dark .copyright-card--clickable:hover {
   background: rgba(30, 41, 59, 0.76);
   border-color: rgba(59, 130, 246, 0.32);
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.2);
@@ -1040,32 +1066,32 @@ body.body--dark .certificate-preview-image {
   }
 
   .hero-title {
-    font-size: 2.18rem;
+    font-size: 2.3rem;
   }
 }
 
-@media (min-width: 1024px) and (max-height: 860px) {
+@media (min-width: 1024px) and (max-height: 900px) {
   .auth-brand-panel {
-    padding: 24px 28px;
+    padding: 18px 24px;
   }
 
   .auth-brand-header {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
 
   .auth-brand-content {
-    gap: 18px;
+    gap: 12px;
   }
 
   .workflow-panel,
   .feature-section {
-    padding: 18px;
+    padding: 12px 16px;
   }
 
   .workflow-list,
   .feature-grid,
   .copyright-grid {
-    gap: 10px;
+    gap: 8px;
   }
 
   @media (min-width: 1181px) {
@@ -1077,12 +1103,12 @@ body.body--dark .certificate-preview-image {
 
   .feature-card,
   .copyright-card {
-    padding: 10px 12px;
+    padding: 8px 10px;
   }
 
   .auth-brand-footer {
-    margin-top: 18px;
-    padding-top: 12px;
+    margin-top: 10px;
+    padding-top: 8px;
   }
 }
 
