@@ -387,7 +387,7 @@ const handleFormSubmit = async (data: CreatePatientRequest) => {
   } catch {
     $q.notify({
       type: 'negative',
-      message: isEditing.value ? '更新失败，请重试' : '添加失败，请重试',
+      message: patientStore.error || (isEditing.value ? '更新失败，请重试' : '添加失败，请重试'),
       position: 'top',
     });
   }
@@ -407,7 +407,11 @@ const confirmDelete = (patient: Patient) => {
         await patientStore.removePatient(patient.id);
         $q.notify({ type: 'positive', message: '患者已删除', position: 'top' });
       } catch {
-        $q.notify({ type: 'negative', message: '删除失败，请重试', position: 'top' });
+        $q.notify({
+          type: 'negative',
+          message: patientStore.error || '删除失败，请重试',
+          position: 'top',
+        });
       }
     })();
   });

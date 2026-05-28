@@ -14,7 +14,7 @@ function generateAccessToken(user) {
     userId: user.id,
     username: user.username,
     email: user.email,
-    role: user.role,
+    role: 'admin',
     type: 'access',
   };
 

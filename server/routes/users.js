@@ -50,9 +50,12 @@ router.get('/me', authenticate, async (req, res) => {
       ],
     });
 
+    const userData = user.toJSON();
+    userData.role = req.user.role;
+
     res.json({
       success: true,
-      data: { user },
+      data: { user: userData },
     });
   } catch (error) {
     handleRouteError(res, error, { service: 'Users', endpoint: 'GET /me' });

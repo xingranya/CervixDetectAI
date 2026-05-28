@@ -153,7 +153,10 @@ export const usePatientStore = defineStore('patient', {
         return newPatient;
       } catch (error) {
         console.error('❌ [PatientStore] 创建患者失败:', error);
-        this.error = error instanceof Error ? error.message : '创建患者失败';
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (error instanceof Error ? error.message : '创建患者失败');
+        this.error = message;
         throw error;
       } finally {
         this.loading = false;
@@ -185,7 +188,10 @@ export const usePatientStore = defineStore('patient', {
         return updated;
       } catch (error) {
         console.error('❌ [PatientStore] 更新患者失败:', error);
-        this.error = error instanceof Error ? error.message : '更新患者失败';
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (error instanceof Error ? error.message : '更新患者失败');
+        this.error = message;
         throw error;
       } finally {
         this.loading = false;
@@ -214,7 +220,10 @@ export const usePatientStore = defineStore('patient', {
         console.log('✅ [PatientStore] 患者删除成功:', id);
       } catch (error) {
         console.error('❌ [PatientStore] 删除患者失败:', error);
-        this.error = error instanceof Error ? error.message : '删除患者失败';
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (error instanceof Error ? error.message : '删除患者失败');
+        this.error = message;
         throw error;
       } finally {
         this.loading = false;
